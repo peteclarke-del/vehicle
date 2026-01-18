@@ -1,0 +1,207 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Controller;
+
+use App\Entity\FuelRecord;
+use App\Entity\User;
+use App\Entity\Vehicle;
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\Routing\Annotation\Route;
+
+#[Route('/api/fuel-records')]
+class FuelRecordController extends AbstractController
+{
+    private const FUEL_TYPES = [
+        'Biodiesel',
+        'Diesel',
+        'E5',
+        'E10',
+        'Electric',
+        'Hybrid',
+        'Hydrogen',
+        'LPG',
+        'Premium Diesel',
+        'Super Unleaded',
+    ];
+
+    public function __construct(private EntityManagerInterface $entityManager)
+    {
+    }
+
+    #[Route('/fuel-types', name: 'api_fuel_types', methods: ['GET'])]
+    public function fuelTypes(): JsonResponse
+    {
+        $response = $this->json(self::FUEL_TYPES);
+        $response->headers->set('Cache-Control', 'no-cache, no-store, must-revalidate');
+        $response->headers->set('Pragma', 'no-cache');
+        $response->headers->set('Expires', '0');
+        return $response;
+    }
+
+    #[Route('', name: 'api_fuel_records_list', methods: ['GET'])]
+    public function list(Request $request): JsonResponse
+    {
+        $user = $this->getUser();
+        if (!$user instanceof User) {
+            return $this->json(['error' => 'Not authenticated'], 401);
+        }
+
+        $vehicleId = $request->query->get('vehicleId');
+
+        if ($vehicleId) {
+            $vehicle = $this->entityManager->getRepository(Vehicle::class)->find($vehicleId);
+            if (!$vehicle || $vehicle->getOwner()->getId() !== $user->getId()) {
+                return $this->json(['error' => 'Vehicle not found'], 404);
+            }
+            $records = $this->entityManager->getRepository(FuelRecord::class)
+                ->findBy(['vehicle' => $vehicle], ['date' => 'DESC']);
+        } else {
+            $records = [];
+        }
+
+        $data = array_map(fn($r) => $this->serializeFuelRecord($r), $records);
+
+        return $this->json($data);
+    }
+
+    #[Route('/{id}', name: 'api_fuel_records_get', methods: ['GET'])]
+    public function get(int $id): JsonResponse
+    {
+        $user = $this->getUser();
+        if (!$user instanceof User) {
+            return $this->json(['error' => 'Not authenticated'], 401);
+        }
+
+        $record = $this->entityManager->getRepository(FuelRecord::class)->find($id);
+
+        if (!$record || $record->getVehicle()->getOwner()->getId() !== $user->getId()) {
+            return $this->json(['error' => 'Fuel record not found'], 404);
+        }
+
+        return $this->json($this->serializeFuelRecord($record));
+    }
+
+    #[Route('', name: 'api_fuel_records_create', methods: ['POST'])]
+    public function create(Request $request): JsonResponse
+    {
+        $user = $this->getUser();
+        if (!$user instanceof User) {
+            return $this->json(['error' => 'Not authenticated'], 401);
+        }
+
+        $data = json_decode($request->getContent(), true);
+
+        $vehicle = $this->entityManager->getRepository(Vehicle::class)
+            ->find($data['vehicleId']);
+
+        if (!$vehicle || $vehicle->getOwner()->getId() !== $user->getId()) {
+            return $this->json(['error' => 'Vehicle not found'], 404);
+        }
+
+        $record = new FuelRecord();
+        $record->setVehicle($vehicle);
+        $this->updateRecordFromData($record, $data);
+
+        $this->entityManager->persist($record);
+        $this->entityManager->flush();
+
+        if (isset($data['mileage']) && $data['mileage'] > ($vehicle->getCurrentMileage() ?? 0)) {
+            $vehicle->setCurrentMileage($data['mileage']);
+            $this->entityManager->flush();
+        }
+
+        return $this->json($this->serializeFuelRecord($record), 201);
+    }
+
+    #[Route('/{id}', name: 'api_fuel_records_update', methods: ['PUT'])]
+    public function update(int $id, Request $request): JsonResponse
+    {
+        $user = $this->getUser();
+        if (!$user instanceof User) {
+            return $this->json(['error' => 'Not authenticated'], 401);
+        }
+
+        $record = $this->entityManager->getRepository(FuelRecord::class)->find($id);
+
+        if (!$record || $record->getVehicle()->getOwner()->getId() !== $user->getId()) {
+            return $this->json(['error' => 'Fuel record not found'], 404);
+        }
+
+        $data = json_decode($request->getContent(), true);
+        $this->updateRecordFromData($record, $data);
+
+        $this->entityManager->flush();
+
+        return $this->json($this->serializeFuelRecord($record));
+    }
+
+    #[Route('/{id}', name: 'api_fuel_records_delete', methods: ['DELETE'])]
+    public function delete(int $id): JsonResponse
+    {
+        $user = $this->getUser();
+        if (!$user instanceof User) {
+            return $this->json(['error' => 'Not authenticated'], 401);
+        }
+
+        $record = $this->entityManager->getRepository(FuelRecord::class)->find($id);
+
+        if (!$record || $record->getVehicle()->getOwner()->getId() !== $user->getId()) {
+            return $this->json(['error' => 'Fuel record not found'], 404);
+        }
+
+        $this->entityManager->remove($record);
+        $this->entityManager->flush();
+
+        return $this->json(['message' => 'Fuel record deleted successfully']);
+    }
+
+    private function serializeFuelRecord(FuelRecord $record): array
+    {
+        return [
+            'id' => $record->getId(),
+            'vehicleId' => $record->getVehicle()->getId(),
+            'date' => $record->getDate()?->format('Y-m-d'),
+            'litres' => $record->getLitres(),
+            'cost' => $record->getCost(),
+            'mileage' => $record->getMileage(),
+            'fuelType' => $record->getFuelType(),
+            'station' => $record->getStation(),
+            'notes' => $record->getNotes(),
+            'receiptAttachmentId' => $record->getReceiptAttachmentId(),
+            'createdAt' => $record->getCreatedAt()?->format('c')
+        ];
+    }
+
+    private function updateRecordFromData(FuelRecord $record, array $data): void
+    {
+        if (isset($data['date'])) {
+            $record->setDate(new \DateTime($data['date']));
+        }
+        if (isset($data['litres'])) {
+            $record->setLitres($data['litres']);
+        }
+        if (isset($data['cost'])) {
+            $record->setCost($data['cost']);
+        }
+        if (isset($data['mileage'])) {
+            $record->setMileage($data['mileage']);
+        }
+        if (isset($data['fuelType'])) {
+            $record->setFuelType($data['fuelType']);
+        }
+        if (isset($data['station'])) {
+            $record->setStation($data['station']);
+        }
+        if (isset($data['notes'])) {
+            $record->setNotes($data['notes']);
+        }
+        if (isset($data['receiptAttachmentId'])) {
+            $record->setReceiptAttachmentId($data['receiptAttachmentId']);
+        }
+    }
+}

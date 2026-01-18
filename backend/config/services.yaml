@@ -1,0 +1,65 @@
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+
+    App\:
+        resource: '../src/'
+        exclude:
+            - '../src/DependencyInjection/'
+            - '../src/Entity/'
+            - '../src/Kernel.php'
+
+    App\Controller\:
+        resource: '../src/Controller/'
+        tags: ['controller.service_arguments']
+
+    App\Service\DepreciationCalculator:
+        public: true
+
+    App\Service\CostCalculator:
+        public: true
+
+    App\Service\DvsaApiService:
+        arguments:
+            $dvsaApiKey: '%env(DVSA_API_KEY)%'
+
+    App\Service\ReceiptOcrService:
+        arguments:
+            $uploadDirectory: '%kernel.project_dir%/uploads'
+
+    App\Service\SiteAdapter\EbayAdapter:
+        arguments:
+            $ebayClientId: '%env(EBAY_CLIENT_ID)%'
+            $ebayClientSecret: '%env(EBAY_CLIENT_SECRET)%'
+            $ebayMarketplace: '%env(EBAY_MARKETPLACE)%'
+            $ebayAccessToken: '%env(EBAY_ACCESS_TOKEN)%'
+
+    App\Service\SiteAdapter\AmazonAdapter:
+        arguments:
+            $amazonAccessKey: '%env(AMAZON_ACCESS_KEY)%'
+            $amazonSecretKey: '%env(AMAZON_SECRET_KEY)%'
+            $amazonAssociateTag: '%env(AMAZON_ASSOCIATE_TAG)%'
+            $amazonRegion: '%env(AMAZON_PARTNER_REGION)%'
+
+    # Vehicle Specification Adapters
+    App\Service\VehicleSpecAdapter\ApiNinjasMotorcycleAdapter:
+        arguments:
+            $apiNinjasKey: '%env(API_NINJAS_KEY)%'
+        tags: ['app.vehicle_spec_adapter']
+
+    App\Service\VehicleSpecAdapter\ApiNinjasCarAdapter:
+        arguments:
+            $apiNinjasKey: '%env(API_NINJAS_KEY)%'
+        tags: ['app.vehicle_spec_adapter']
+
+    # Auto-register adapters with the main service
+    App\Service\VehicleSpecificationScraperService:
+        calls:
+            - registerAdapter: ['@App\Service\VehicleSpecAdapter\ApiNinjasMotorcycleAdapter']
+            - registerAdapter: ['@App\Service\VehicleSpecAdapter\ApiNinjasCarAdapter']
+
+    # VIN Decoder Service
+    App\Service\VinDecoderService:
+        arguments:
+            $apiNinjasKey: '%env(API_NINJAS_KEY)%'

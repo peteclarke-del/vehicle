@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: vehicle_mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: vehicle_management
+      MYSQL_USER: vehicle_user
+      MYSQL_PASSWORD: vehicle_pass
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - vehicle_network
+
+  php:
+    build:
+      context: ./docker/php
+      dockerfile: Dockerfile
+    container_name: vehicle_php
+    volumes:
+      - ./backend:/var/www/html
+    networks:
+      - vehicle_network
+    depends_on:
+      - mysql
+    environment:
+      DATABASE_URL: mysql://vehicle_user:vehicle_pass@mysql:3306/vehicle_management
+
+  nginx:
+    image: nginx:alpine
+    container_name: vehicle_nginx
+    ports:
+      - "8081:80"
+    volumes:
+      - ./backend:/var/www/html
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    networks:
+      - vehicle_network
+    depends_on:
+      - php
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: ../docker/node/Dockerfile
+    container_name: vehicle_frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    networks:
+      - vehicle_network
+    environment:
+      - REACT_APP_API_URL=/api
+      - CHOKIDAR_USEPOLLING=true
+    command: npm start
+
+networks:
+  vehicle_network:
+    driver: bridge
+
+volumes:
+  mysql_data:
