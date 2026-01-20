@@ -153,10 +153,10 @@ const ServiceRecords = () => {
         <Typography variant="h4">{t('service.title')}</Typography>
         <Box display="flex" gap={2}>
           <FormControl size="small" sx={{ width: 240 }}>
-            <InputLabel>Select Vehicle</InputLabel>
+            <InputLabel>{t('common.selectVehicle')}</InputLabel>
             <Select
               value={selectedVehicle}
-              label="Select Vehicle"
+              label={t('common.selectVehicle')}
               onChange={(e) => setSelectedVehicle(e.target.value)}
             >
               {vehicles.map((vehicle) => (
@@ -260,12 +260,12 @@ const ServiceRecords = () => {
                   <TableCell>{service.mileage ? format(convert(service.mileage)) : '-'}</TableCell>
                   <TableCell>{service.serviceProvider || '-'}</TableCell>
                   <TableCell align="center">
-                    <Tooltip title="Edit">
+                    <Tooltip title={t('edit')}>
                       <IconButton size="small" onClick={() => handleEdit(service)}>
                         <EditIcon />
                       </IconButton>
                     </Tooltip>
-                    <Tooltip title="Delete">
+                    <Tooltip title={t('delete')}>
                       <IconButton size="small" onClick={() => handleDelete(service.id)}>
                         <DeleteIcon />
                       </IconButton>

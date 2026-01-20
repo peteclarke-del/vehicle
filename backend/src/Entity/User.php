@@ -37,6 +37,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: 'string', length: 10, options: ['default' => 'en'])]
     private string $preferredLanguage = 'en';
 
+    #[ORM\Column(type: 'string', length: 2, options: ['default' => 'GB'])]
+    private string $country = 'GB';
+
     #[ORM\Column(type: 'string', length: 20, options: ['default' => 'light'])]
     private string $theme = 'light';
 
@@ -180,6 +183,17 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function getDistanceUnit(): string
     {
         return $this->distanceUnit;
+    }
+
+    public function getCountry(): string
+    {
+        return $this->country;
+    }
+
+    public function setCountry(string $country): self
+    {
+        $this->country = $country;
+        return $this;
     }
 
     public function setDistanceUnit(string $distanceUnit): self

@@ -160,22 +160,68 @@ const MotRecords = () => {
         <Typography variant="h4">{t('mot.title')}</Typography>
         <Box display="flex" gap={2}>
           <FormControl size="small" sx={{ width: 240 }}>
-            <InputLabel>Select Vehicle</InputLabel>
+            <InputLabel>{t('common.selectVehicle')}</InputLabel>
             <Select
               value={selectedVehicle}
-              label="Select Vehicle"
+              label={t('common.selectVehicle')}
               onChange={(e) => setSelectedVehicle(e.target.value)}
             >
-              {vehicles.map((vehicle) => (
-                <MenuItem key={vehicle.id} value={vehicle.id}>
-                  {vehicle.name}
-                </MenuItem>
-              ))}
+                {vehicles.map((vehicle) => (
+                  <MenuItem key={vehicle.id} value={vehicle.id}>
+                    {vehicle.registrationNumber ? `${vehicle.registrationNumber} — ${vehicle.name}` : vehicle.name}
+                  </MenuItem>
+                ))}
             </Select>
           </FormControl>
-          <Button variant="contained" color="primary" startIcon={<AddIcon />} onClick={handleAdd}>
-            {t('mot.addMot')}
-          </Button>
+          {(() => {
+            const sel = vehicles.find(v => v.id === selectedVehicle);
+            const disabled = sel ? (sel.isMotExempt || sel.motExempt) : false;
+            return (
+              <Button variant="contained" color="primary" startIcon={<AddIcon />} onClick={handleAdd} disabled={disabled}>
+                {t('mot.addMot')}
+              </Button>
+            );
+          })()}
+          {(() => {
+            const sel = vehicles.find(v => v.id === selectedVehicle);
+            const disabled = sel ? (sel.isMotExempt || sel.motExempt) : true;
+            return (
+              <Button
+                variant="outlined"
+                color="secondary"
+                startIcon={<VisibilityIcon />}
+                onClick={async () => {
+                  if (!sel) return;
+                  const regToUse = sel.registrationNumber || sel.registration || '';
+                  if (!regToUse) {
+                    // eslint-disable-next-line no-alert
+                    alert(t('mot.importFailed'));
+                    return;
+                  }
+                  if (!window.confirm(t('mot.importConfirm', { reg: regToUse }))) return;
+                  try {
+                    const resp = await api.post('/mot-records/import-dvsa', {
+                      vehicleId: selectedVehicle,
+                      registration: regToUse,
+                    });
+                    const imported = resp.data?.imported ?? 0;
+                    const ids = resp.data?.importedIds ?? [];
+                    // eslint-disable-next-line no-alert
+                    alert(t('mot.importResult', { count: imported }) + (ids.length ? '\nIDs: ' + ids.join(', ') : ''));
+                    loadMotRecords();
+                  } catch (err) {
+                    // eslint-disable-next-line no-console
+                    console.error('Error importing MOT history:', err);
+                    // eslint-disable-next-line no-alert
+                    alert(t('mot.importFailed'));
+                  }
+                }}
+                disabled={disabled}
+              >
+                {t('mot.importFromDvsa', 'Import MOT history')}
+              </Button>
+            );
+          })()}
         </Box>
       </Box>
 
@@ -199,6 +245,15 @@ const MotRecords = () => {
                   onClick={() => handleRequestSort('result')}
                 >
                   {t('mot.result')}
+                </TableSortLabel>
+              </TableCell>
+              <TableCell>
+                <TableSortLabel
+                  active={orderBy === 'expiryDate'}
+                  direction={orderBy === 'expiryDate' ? order : 'asc'}
+                  onClick={() => handleRequestSort('expiryDate')}
+                >
+                  {t('mot.expiryDate')}
                 </TableSortLabel>
               </TableCell>
               <TableCell align="right">
@@ -252,7 +307,7 @@ const MotRecords = () => {
           <TableBody>
             {sortedMotRecords.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} align="center">
+                <TableCell colSpan={9} align="center">
                   {t('common.noRecords')}
                 </TableCell>
               </TableRow>
@@ -261,22 +316,35 @@ const MotRecords = () => {
                 <TableRow key={mot.id} sx={{ '&:nth-of-type(odd)': { backgroundColor: 'action.hover' } }}>
                   <TableCell>{new Date(mot.testDate).toLocaleDateString()}</TableCell>
                   <TableCell>{getResultChip(mot.result)}</TableCell>
+                  <TableCell>{mot.expiryDate ? new Date(mot.expiryDate).toLocaleDateString() : '-'}</TableCell>
                   <TableCell align="right">{formatCurrency(mot.testCost)}</TableCell>
                   <TableCell align="right">{formatCurrency(mot.repairCost)}</TableCell>
                   <TableCell align="right">{formatCurrency(mot.totalCost)}</TableCell>
                   <TableCell>{mot.mileage ? format(convert(mot.mileage)) : '-'}</TableCell>
                   <TableCell>{mot.testCenter || '-'}</TableCell>
                   <TableCell align="center">
-                    <Tooltip title="Edit">
-                      <IconButton size="small" onClick={() => handleEdit(mot)}>
-                        <EditIcon />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Delete">
-                      <IconButton size="small" onClick={() => handleDelete(mot.id)}>
-                        <DeleteIcon />
-                      </IconButton>
-                    </Tooltip>
+                    {(() => {
+                      const sel = vehicles.find(v => v.id === selectedVehicle);
+                      const disabled = sel ? (sel.isMotExempt || sel.motExempt) : false;
+                      return (
+                        <>
+                          <Tooltip title={t('edit')}>
+                            <span>
+                              <IconButton size="small" onClick={() => handleEdit(mot)} disabled={disabled}>
+                                <EditIcon />
+                              </IconButton>
+                            </span>
+                          </Tooltip>
+                          <Tooltip title={t('delete')}>
+                            <span>
+                              <IconButton size="small" onClick={() => handleDelete(mot.id)} disabled={disabled}>
+                                <DeleteIcon />
+                              </IconButton>
+                            </span>
+                          </Tooltip>
+                        </>
+                      );
+                    })()}
                   </TableCell>
                 </TableRow>
               ))

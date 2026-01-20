@@ -10,9 +10,17 @@ import {
   Tabs,
   Tab,
   Chip,
+  Tooltip,
   Divider,
   Stack,
   IconButton,
+  Table,
+  TableHead,
+  TableBody,
+  TableRow,
+  TableCell,
+  TableContainer,
+  Paper,
 } from '@mui/material';
 import {
   DirectionsCar as CarIcon,
@@ -42,7 +50,7 @@ const VehicleDetails = () => {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState(0);
   const { api, user } = useAuth();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { convert, format, getLabel, convertFuelConsumption, getFuelConsumptionLabel, userUnit } = useDistance();
 
   console.log('VehicleDetails - userUnit:', userUnit);
@@ -108,8 +116,8 @@ const VehicleDetails = () => {
         <Tab label={t('vehicleDetails.overview')} />
         <Tab label={t('vehicleDetails.statistics')} />
         <Tab label={t('stats.depreciation')} />
-        <Tab label="Specifications" />
-        <Tab label="Pictures" />
+        <Tab label={t('vehicleDetails.specifications')} />
+        <Tab label={t('vehicleDetails.pictures')} />
       </Tabs>
 
       {tab === 0 && (
@@ -266,7 +274,9 @@ const VehicleDetails = () => {
           <Grid item xs={12} sm={6} md={3}>
             <Card>
               <CardContent>
-                <Typography color="textSecondary" gutterBottom>{t('vehicle.purchaseCost')}</Typography>
+                <Tooltip title={t('vehicleDetails.tooltip.purchaseCost') || 'Original purchase cost of the vehicle'}>
+                  <Typography color="textSecondary" gutterBottom>{t('vehicle.purchaseCost')}</Typography>
+                </Tooltip>
                 <Typography variant="h5">£{stats.stats.purchaseCost}</Typography>
               </CardContent>
             </Card>
@@ -274,7 +284,9 @@ const VehicleDetails = () => {
           <Grid item xs={12} sm={6} md={3}>
             <Card>
               <CardContent>
-                <Typography color="textSecondary" gutterBottom>{t('stats.currentValue')}</Typography>
+                <Tooltip title={t('vehicleDetails.tooltip.currentValue') || 'Estimated current market value'}>
+                  <Typography color="textSecondary" gutterBottom>{t('stats.currentValue')}</Typography>
+                </Tooltip>
                 <Typography variant="h5">£{stats.stats.currentValue}</Typography>
               </CardContent>
             </Card>
@@ -282,7 +294,9 @@ const VehicleDetails = () => {
           <Grid item xs={12} sm={6} md={3}>
             <Card>
               <CardContent>
-                <Typography color="textSecondary" gutterBottom>{t('stats.totalFuelCost')}</Typography>
+                <Tooltip title={t('vehicleDetails.tooltip.totalFuelCost') || 'Sum of fuel costs for this vehicle'}>
+                  <Typography color="textSecondary" gutterBottom>{t('stats.totalFuelCost')}</Typography>
+                </Tooltip>
                 <Typography variant="h5">£{stats.stats.totalFuelCost}</Typography>
               </CardContent>
             </Card>
@@ -290,7 +304,9 @@ const VehicleDetails = () => {
           <Grid item xs={12} sm={6} md={3}>
             <Card>
               <CardContent>
-                <Typography color="textSecondary" gutterBottom>{t('stats.totalPartsCost')}</Typography>
+                <Tooltip title={t('vehicleDetails.tooltip.totalPartsCost') || 'Sum of parts costs for this vehicle'}>
+                  <Typography color="textSecondary" gutterBottom>{t('stats.totalPartsCost')}</Typography>
+                </Tooltip>
                 <Typography variant="h5">£{stats.stats.totalPartsCost}</Typography>
               </CardContent>
             </Card>
@@ -298,7 +314,9 @@ const VehicleDetails = () => {
           <Grid item xs={12} sm={6} md={3}>
             <Card>
               <CardContent>
-                <Typography color="textSecondary" gutterBottom>{t('stats.totalRunningCost')}</Typography>
+                <Tooltip title={t('vehicleDetails.tooltip.totalRunningCost') || 'Fuel + parts + consumables costs'}>
+                  <Typography color="textSecondary" gutterBottom>{t('stats.totalRunningCost')}</Typography>
+                </Tooltip>
                 <Typography variant="h5">£{stats.stats.totalRunningCost}</Typography>
               </CardContent>
             </Card>
@@ -306,30 +324,36 @@ const VehicleDetails = () => {
           <Grid item xs={12} sm={6} md={3}>
             <Card>
               <CardContent>
-                <Typography color="textSecondary" gutterBottom>{t('stats.totalCostToDate')}</Typography>
+                <Tooltip title={t('vehicleDetails.tooltip.totalCostToDate') || 'Purchase cost + running costs to date'}>
+                  <Typography color="textSecondary" gutterBottom>{t('stats.totalCostToDate')}</Typography>
+                </Tooltip>
                 <Typography variant="h5">£{stats.stats.totalCostToDate}</Typography>
               </CardContent>
             </Card>
           </Grid>
-          {stats.stats.costPerMile && (
-            <Grid item xs={12} sm={6} md={3}>
-              <Card>
-                <CardContent>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card>
+              <CardContent>
+                <Tooltip title={t('vehicleDetails.tooltip.costPerDistance') || 'Total running cost divided by current mileage'}>
                   <Typography color="textSecondary" gutterBottom>
                     {t('vehicleDetails.costPerDistance')} ({getLabel()})
                   </Typography>
-                  <Typography variant="h5">
-                    £{(stats.stats.costPerMile * (userUnit === 'mi' ? 1.60934 : 1)).toFixed(2)}
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-          )}
+                </Tooltip>
+                <Typography variant="h5">
+                  {stats.stats.costPerMile !== null && stats.stats.costPerMile !== undefined
+                    ? `£${(stats.stats.costPerMile * (userUnit === 'mi' ? 1.60934 : 1)).toFixed(2)}`
+                    : 'N/A'}
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
           {stats.stats.averageFuelConsumption && (
             <Grid item xs={12} sm={6} md={3}>
               <Card>
                 <CardContent>
-                  <Typography color="textSecondary" gutterBottom>{t('vehicleDetails.avgFuelConsumption')}</Typography>
+                  <Tooltip title={t('vehicleDetails.tooltip.avgFuelConsumption') || 'Average fuel consumption (litres/100km) calculated from fuel records'}>
+                    <Typography color="textSecondary" gutterBottom>{t('vehicleDetails.avgFuelConsumption')}</Typography>
+                  </Tooltip>
                   <Typography variant="h5">
                     {convertFuelConsumption(stats.stats.averageFuelConsumption).toFixed(1)} {getFuelConsumptionLabel()}
                   </Typography>
@@ -344,13 +368,60 @@ const VehicleDetails = () => {
         <Card>
           <CardContent>
             <Typography variant="h6" gutterBottom>{t('vehicleDetails.depreciationSchedule')}</Typography>
-            <LineChart
-              xAxis={[{ data: stats.depreciationSchedule.map(s => s.year), label: t('vehicleDetails.year') }]}
-              series={[
-                { data: stats.depreciationSchedule.map(s => s.value), label: t('vehicleDetails.value') },
-              ]}
-              height={400}
-            />
+            <Grid container spacing={2} alignItems="flex-start">
+              <Grid item xs={12} md={10}>
+                {(() => {
+                  const baseYear = vehicle.purchaseDate
+                    ? new Date(vehicle.purchaseDate).getFullYear()
+                    : (vehicle.year || new Date().getFullYear());
+                  const categories = stats.depreciationSchedule.map((s) => String(Math.trunc(baseYear + Number(s.year))));
+                  const values = stats.depreciationSchedule.map((s) => Number(s.value));
+
+                  // If no data, show a small placeholder to avoid rendering issues
+                  if (!categories.length || !values.length) {
+                    return <Typography>{t('vehicleDetails.noDepreciationData') || 'No data'}</Typography>;
+                  }
+
+                  return (
+                    <LineChart
+                      xAxis={[{ data: categories, label: t('vehicleDetails.year'), scaleType: 'point' }]}
+                      series={[{ data: values, label: t('vehicleDetails.value') }]}
+                      height={340}
+                    />
+                  );
+                })()}
+              </Grid>
+
+              <Grid item xs={12} md={2}>
+                <Typography variant="subtitle1" gutterBottom>{t('vehicleDetails.valuesTableTitle')}</Typography>
+                <TableContainer component={Paper} sx={{ overflow: 'visible' }}>
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>{t('vehicleDetails.year')}</TableCell>
+                        <TableCell align="right">{t('vehicleDetails.value')}</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {stats.depreciationSchedule.map((s, idx) => {
+                        const baseYear = vehicle.purchaseDate
+                          ? new Date(vehicle.purchaseDate).getFullYear()
+                          : (vehicle.year || new Date().getFullYear());
+                        const yearLabel = Math.trunc(baseYear + Number(s.year));
+                        const formatter = new Intl.NumberFormat(i18n.language || undefined, { style: 'currency', currency: 'GBP' });
+                        const valueLabel = formatter.format(Number(s.value));
+                        return (
+                          <TableRow key={idx}>
+                            <TableCell>{yearLabel}</TableCell>
+                            <TableCell align="right">{valueLabel}</TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </Grid>
+            </Grid>
           </CardContent>
         </Card>
       )}

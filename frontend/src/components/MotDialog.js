@@ -9,6 +9,8 @@ import {
   Grid,
   MenuItem,
   CircularProgress,
+  Checkbox,
+  FormControlLabel,
 } from '@mui/material';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
@@ -22,6 +24,10 @@ const MotDialog = ({ open, motRecord, vehicleId, onClose }) => {
     repairCost: '0',
     mileage: '',
     testCenter: '',
+    expiryDate: '',
+    motTestNumber: '',
+    testerName: '',
+    isRetest: false,
     advisories: '',
     failures: '',
     repairDetails: '',
@@ -40,8 +46,12 @@ const MotDialog = ({ open, motRecord, vehicleId, onClose }) => {
           result: motRecord.result || 'Pass',
           testCost: motRecord.testCost || '',
           repairCost: motRecord.repairCost || '0',
-          mileage: motRecord.mileage ? Math.round(convert(motRecord.mileage)) : '',
-          testCenter: motRecord.testCenter || '',
+            mileage: motRecord.mileage ? Math.round(convert(motRecord.mileage)) : '',
+            testCenter: motRecord.testCenter || '',
+            expiryDate: motRecord.expiryDate || '',
+            motTestNumber: motRecord.motTestNumber || '',
+            testerName: motRecord.testerName || '',
+            isRetest: !!motRecord.isRetest,
           advisories: motRecord.advisories || '',
           failures: motRecord.failures || '',
           repairDetails: motRecord.repairDetails || '',
@@ -55,6 +65,10 @@ const MotDialog = ({ open, motRecord, vehicleId, onClose }) => {
           repairCost: '0',
           mileage: '',
           testCenter: '',
+          expiryDate: '',
+          motTestNumber: '',
+          testerName: '',
+          isRetest: false,
           advisories: '',
           failures: '',
           repairDetails: '',
@@ -151,6 +165,35 @@ const MotDialog = ({ open, motRecord, vehicleId, onClose }) => {
             <Grid item xs={12} sm={4}>
               <TextField
                 fullWidth
+                type="date"
+                name="expiryDate"
+                label={t('mot.expiryDate')}
+                value={formData.expiryDate}
+                onChange={handleChange}
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <TextField
+                fullWidth
+                name="motTestNumber"
+                label={t('mot.motTestNumber')}
+                value={formData.motTestNumber}
+                onChange={handleChange}
+              />
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <TextField
+                fullWidth
+                name="testerName"
+                label={t('mot.testerName')}
+                value={formData.testerName}
+                onChange={handleChange}
+              />
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <TextField
+                fullWidth
                 type="number"
                 name="repairCost"
                 label={t('mot.repairCost')}
@@ -166,6 +209,18 @@ const MotDialog = ({ open, motRecord, vehicleId, onClose }) => {
                 label={t('mot.testCenter')}
                 value={formData.testCenter}
                 onChange={handleChange}
+              />
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <FormControlLabel
+                control={(
+                  <Checkbox
+                    checked={!!formData.isRetest}
+                    onChange={(e) => setFormData({ ...formData, isRetest: e.target.checked })}
+                    name="isRetest"
+                  />
+                )}
+                label={t('mot.isRetest')}
               />
             </Grid>
             <Grid item xs={12}>

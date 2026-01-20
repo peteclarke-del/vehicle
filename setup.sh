@@ -24,6 +24,19 @@ echo "Running migrations..."
 docker exec vehicle_php bin/console doctrine:migrations:migrate --no-interaction
 
 echo "Loading fixtures..."
+if [ "$FORCE_FIXTURES" != "1" ] && [ "$APP_ENV" != "test" ]; then
+	if [ -t 0 ]; then
+		read -p "WARNING: Loading fixtures will DESTROY dev DB data. Type 'yes' to proceed: " ans
+		if [ "$ans" != "yes" ]; then
+			echo "Aborting fixture load."
+			exit 1
+		fi
+	else
+		echo "Refusing to run fixtures non-interactively without FORCE_FIXTURES=1 or APP_ENV=test"
+		exit 1
+	fi
+fi
+
 docker exec vehicle_php bin/console doctrine:fixtures:load --no-interaction
 
 echo "Installing frontend dependencies..."

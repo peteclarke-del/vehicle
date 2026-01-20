@@ -12,15 +12,34 @@ class DvsaApiService
     private HttpClientInterface $httpClient;
     private LoggerInterface $logger;
     private ?string $apiKey;
+    private ?string $accessToken = null;
+    private int $accessTokenExpiresAt = 0;
+    private ?string $tokenUrl = null;
+    private ?string $clientId = null;
+    private ?string $clientSecret = null;
+    private ?string $scope = null;
+    private string $apiUrl = 'https://tapi.dvsa.gov.uk/trade/vehicles/mot-tests';
 
     public function __construct(
         HttpClientInterface $httpClient,
         LoggerInterface $logger,
-        ?string $dvsaApiKey = null
+        ?string $dvsaApiKey = null,
+        ?string $dvsaTokenUrl = null,
+        ?string $dvsaClientId = null,
+        ?string $dvsaClientSecret = null,
+        ?string $dvsaScope = null,
+        ?string $dvsaApiUrl = null
     ) {
         $this->httpClient = $httpClient;
         $this->logger = $logger;
         $this->apiKey = $dvsaApiKey;
+        $this->tokenUrl = $dvsaTokenUrl;
+        $this->clientId = $dvsaClientId;
+        $this->clientSecret = $dvsaClientSecret;
+        $this->scope = $dvsaScope;
+        if (!empty($dvsaApiUrl)) {
+            $this->apiUrl = $dvsaApiUrl;
+        }
     }
 
     /**
@@ -28,31 +47,125 @@ class DvsaApiService
      */
     public function getMotHistory(string $registration): ?array
     {
-        if (!$this->apiKey) {
-            $this->logger->warning('DVSA API key not configured');
+        // Prefer OAuth2 token flow when configured (per DVSA auth docs). If not configured, fall back to x-api-key.
+        if (!$this->apiKey && !$this->tokenUrl) {
+            $this->logger->warning('DVSA API key and token URL not configured');
             return null;
         }
 
         try {
-            $apiUrl = 'https://beta.check-mot.service.gov.uk/trade/vehicles/mot-tests';
+            // Build request URL by appending the registration to configured API URL.
+            $normalized = strtoupper(str_replace(' ', '', $registration));
+            $apiUrl = rtrim($this->apiUrl, '/') . '/' . rawurlencode($normalized);
+
+            // Build headers. Attempt to ensure an access token exists if token endpoint configured.
+            $headers = ['Accept' => 'application/json'];
+
+            $token = $this->getAccessToken();
+            if ($token) {
+                $headers['Authorization'] = 'Bearer ' . $token;
+            }
+
+            if ($this->apiKey) {
+                $headers['x-api-key'] = $this->apiKey;
+            }
+
+            // Log headers and URL we're about to call for diagnostics
+            $this->logger->info('DVSA request url: ' . $apiUrl);
+            $this->logger->info('DVSA request headers: ' . json_encode($headers));
+
             $response = $this->httpClient->request('GET', $apiUrl, [
-                'headers' => [
-                    'x-api-key' => $this->apiKey,
-                    'Accept' => 'application/json+v6',
-                ],
-                'query' => [
-                    'registration' => strtoupper(str_replace(' ', '', $registration)),
-                ],
+                'headers' => $headers,
             ]);
 
-            if ($response->getStatusCode() === 200) {
+            // Log response headers for diagnostics
+            try {
+                $respHeaders = $response->getHeaders(false);
+                $this->logger->info('DVSA response headers: ' . json_encode($respHeaders));
+            } catch (\Throwable $e) {
+                $this->logger->warning('Failed to get DVSA response headers: ' . $e->getMessage());
+            }
+
+            $status = $response->getStatusCode();
+            $content = $response->getContent(false); // don't throw on non-200
+
+            if ($status === 200) {
                 $data = $response->toArray();
+
+                // The history API can return a single vehicle object or an array.
+                // Normalize to an array of vehicle objects so callers can always use index 0.
+                if (is_array($data) && array_keys($data) !== range(0, count($data) - 1)) {
+                    // associative array => single object
+                    return [$data];
+                }
+
                 return $data;
             }
 
+            $this->logger->warning(sprintf('DVSA API returned status %d for %s: %s', $status, $registration, $content));
             return null;
         } catch (\Exception $e) {
-            $this->logger->error('DVSA API error: ' . $e->getMessage());
+            $this->logger->error('DVSA API exception for ' . $registration . ': ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Ensure we have a valid access token (cached until expiry).
+     */
+    private function getAccessToken(): ?string
+    {
+        // Return cached token if still valid
+        if ($this->accessToken && time() < $this->accessTokenExpiresAt) {
+            return $this->accessToken;
+        }
+
+        // Attempt to fetch a token if token endpoint is configured
+        $tokenUrl = $this->tokenUrl;
+        $clientId = $this->clientId;
+        $clientSecret = $this->clientSecret;
+
+        if (empty($tokenUrl) || empty($clientId) || empty($clientSecret)) {
+            return null;
+        }
+
+        try {
+            $response = $this->httpClient->request('POST', $tokenUrl, [
+                'headers' => [
+                    'Accept' => 'application/json',
+                ],
+                'body' => [
+                    'grant_type' => 'client_credentials',
+                    'client_id' => $clientId,
+                    'client_secret' => $clientSecret,
+                    'scope' => $this->scope ?? '',
+                ],
+            ]);
+
+            $status = $response->getStatusCode();
+            $content = $response->getContent(false);
+
+            if ($status !== 200) {
+                $this->logger->warning(sprintf('DVSA token endpoint returned %d: %s', $status, $content));
+                return null;
+            }
+
+            $data = $response->toArray();
+            if (empty($data['access_token'])) {
+                $this->logger->warning('DVSA token endpoint did not return access_token: ' . $content);
+                return null;
+            }
+
+            $this->accessToken = $data['access_token'];
+            $expiresIn = isset($data['expires_in']) ? (int)$data['expires_in'] : 300;
+            // expire a little earlier to be safe
+            $this->accessTokenExpiresAt = time() + max(60, $expiresIn - 30);
+
+            $this->logger->info('DVSA access token obtained, expires in ' . $expiresIn . 's');
+
+            return $this->accessToken;
+        } catch (\Exception $e) {
+            $this->logger->error('DVSA token fetch exception: ' . $e->getMessage());
             return null;
         }
     }

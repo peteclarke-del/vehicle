@@ -21,9 +21,9 @@ const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose }) => {
     serviceType: 'Full Service',
     laborCost: '',
     partsCost: '0',
+    items: [],
     mileage: '',
     serviceProvider: '',
-    workPerformed: '',
     notes: '',
   });
   const [loading, setLoading] = useState(false);
@@ -40,9 +40,10 @@ const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose }) => {
           serviceType: serviceRecord.serviceType || 'Full Service',
           laborCost: serviceRecord.laborCost || '',
           partsCost: serviceRecord.partsCost || '0',
+          items: serviceRecord.items || [],
           mileage: serviceRecord.mileage ? Math.round(convert(serviceRecord.mileage)) : '',
           serviceProvider: serviceRecord.serviceProvider || '',
-          workPerformed: serviceRecord.workPerformed || '',
+          notes: serviceRecord.notes || '',
           notes: serviceRecord.notes || '',
         });
         setReceiptAttachmentId(serviceRecord.receiptAttachmentId || null);
@@ -52,9 +53,10 @@ const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose }) => {
           serviceType: 'Full Service',
           laborCost: '',
           partsCost: '0',
+          items: [],
           mileage: '',
           serviceProvider: '',
-          workPerformed: '',
+          notes: '',
           notes: '',
         });
         setReceiptAttachmentId(null);
@@ -64,6 +66,22 @@ const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose }) => {
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const updateItem = (index, key, value) => {
+    const items = [...(formData.items || [])];
+    items[index] = { ...(items[index] || {}), [key]: value };
+    setFormData({ ...formData, items });
+  };
+
+  const addItem = () => {
+    setFormData({ ...formData, items: [...(formData.items || []), { type: 'part', description: '', cost: '0.00', quantity: 1 }] });
+  };
+
+  const removeItem = (index) => {
+    const items = [...(formData.items || [])];
+    items.splice(index, 1);
+    setFormData({ ...formData, items });
   };
 
   const handleReceiptUploaded = (attachmentId, ocrData) => {
@@ -85,11 +103,28 @@ const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose }) => {
     e.preventDefault();
     setLoading(true);
     try {
+      // compute totals from itemised entries if present
+      let laborTotal = parseFloat(formData.laborCost || 0);
+      let partsTotal = parseFloat(formData.partsCost || 0);
+      const items = (formData.items || []).map(it => ({
+        type: it.type,
+        description: it.description,
+        cost: it.cost,
+        quantity: it.quantity || 1
+      }));
+      if (items.length > 0) {
+        laborTotal = items.filter(i => i.type === 'labour').reduce((s, i) => s + (parseFloat(i.cost || 0) * (parseInt(i.quantity || 1))), 0);
+        partsTotal = items.filter(i => i.type === 'part').reduce((s, i) => s + (parseFloat(i.cost || 0) * (parseInt(i.quantity || 1))), 0);
+      }
+
       const data = { 
         ...formData, 
         vehicleId,
         mileage: formData.mileage ? Math.round(toKm(parseFloat(formData.mileage))) : null,
-        receiptAttachmentId
+        receiptAttachmentId,
+        items,
+        laborCost: laborTotal.toFixed(2),
+        partsCost: partsTotal.toFixed(2),
       };
       if (serviceRecord) {
         await api.put(`/service-records/${serviceRecord.id}`, data);
@@ -142,28 +177,38 @@ const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose }) => {
                 <MenuItem value="Other">{t('service.other')}</MenuItem>
               </TextField>
             </Grid>
-            <Grid item xs={12} sm={4}>
-              <TextField
-                fullWidth
-                required
-                type="number"
-                name="laborCost"
-                label={t('service.laborCost')}
-                value={formData.laborCost}
-                onChange={handleChange}
-                inputProps={{ min: 0, step: 0.01 }}
-              />
-            </Grid>
-            <Grid item xs={12} sm={4}>
-              <TextField
-                fullWidth
-                type="number"
-                name="partsCost"
-                label={t('service.partsCost')}
-                value={formData.partsCost}
-                onChange={handleChange}
-                inputProps={{ min: 0, step: 0.01 }}
-              />
+            <Grid item xs={12}>
+              <Button variant="outlined" onClick={addItem} style={{ marginBottom: 8 }}>
+                {t('service.addItem') || 'Add item'}
+              </Button>
+              {(formData.items || []).map((it, idx) => (
+                <Grid container spacing={1} key={idx} style={{ marginBottom: 8 }}>
+                  <Grid item xs={12} sm={3}>
+                    <TextField
+                      fullWidth
+                      select
+                      value={it.type}
+                      onChange={(e) => updateItem(idx, 'type', e.target.value)}
+                    >
+                      <MenuItem value="part">{t('service.part') || 'Part'}</MenuItem>
+                      <MenuItem value="labour">{t('service.labour') || 'Labour'}</MenuItem>
+                      <MenuItem value="consumable">{t('service.consumable') || 'Consumable'}</MenuItem>
+                    </TextField>
+                  </Grid>
+                  <Grid item xs={12} sm={5}>
+                    <TextField fullWidth value={it.description} onChange={(e) => updateItem(idx, 'description', e.target.value)} />
+                  </Grid>
+                  <Grid item xs={6} sm={2}>
+                    <TextField type="number" fullWidth value={it.cost} onChange={(e) => updateItem(idx, 'cost', e.target.value)} inputProps={{ min: 0, step: 0.01 }} />
+                  </Grid>
+                  <Grid item xs={6} sm={1}>
+                    <TextField type="number" fullWidth value={it.quantity} onChange={(e) => updateItem(idx, 'quantity', e.target.value)} inputProps={{ min: 1 }} />
+                  </Grid>
+                  <Grid item xs={12} sm={1}>
+                    <Button color="secondary" onClick={() => removeItem(idx)}>×</Button>
+                  </Grid>
+                </Grid>
+              ))}
             </Grid>
             <Grid item xs={12} sm={4}>
               <TextField
@@ -184,17 +229,7 @@ const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose }) => {
                 onChange={handleChange}
               />
             </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                multiline
-                rows={3}
-                name="workPerformed"
-                label={t('service.workPerformed')}
-                value={formData.workPerformed}
-                onChange={handleChange}
-              />
-            </Grid>
+            {/* workPerformed removed — use notes for freeform descriptions */}
             <Grid item xs={12}>
               <ReceiptUpload
                 entityType="service"

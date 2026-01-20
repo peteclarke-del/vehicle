@@ -85,6 +85,10 @@ migrate: ## Run database migrations
 
 fixtures: ## Load database fixtures
 	@echo '${BLUE}Loading database fixtures...${NC}'
+	@if [ -z "$(FORCE_FIXTURES)" ] && [ "$(APP_ENV)" != "test" ]; then \
+		echo '${RED}Refusing to load fixtures into non-test environment. Set FORCE_FIXTURES=1 or APP_ENV=test to proceed.${NC}'; \
+		exit 1; \
+	fi
 	docker-compose exec php bin/console doctrine:fixtures:load --no-interaction
 	@echo '${GREEN}Fixtures loaded.${NC}'
 	@echo '${YELLOW}Admin user created:${NC} admin@vehicle.local / changeme'

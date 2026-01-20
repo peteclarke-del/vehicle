@@ -1,0 +1,6 @@
+services:
+    App\EventSubscriber\TestAuthSubscriber:
+        autowire: true
+        autoconfigure: false
+        tags: ['kernel.event_subscriber']
+        public: false

@@ -27,6 +27,9 @@ const Login = () => {
       await login(email, password);
       navigate('/');
     } catch (err) {
+      // Log full error for debugging (server response may contain details)
+      // eslint-disable-next-line no-console
+      console.error('Login error:', err?.response?.data ?? err.message ?? err);
       setError(t('common.invalidCredentials'));
     }
   };

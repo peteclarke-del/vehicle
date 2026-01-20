@@ -12,9 +12,11 @@ use Symfony\Bundle\FrameworkBundle\KernelBrowser;
  * 
  * Integration tests for Vehicle CRUD operations
  */
-class VehicleControllerTest extends WebTestCase
+use App\Tests\TestCase\BaseWebTestCase;
+
+class VehicleControllerTest extends BaseWebTestCase
 {
-    private KernelBrowser $client;
+    protected KernelBrowser $client;
 
     /**
      * Set up test environment before each test
@@ -29,10 +31,10 @@ class VehicleControllerTest extends WebTestCase
      * 
      * @return string JWT token
      */
-    private function getAuthToken(): string
+    protected function getAuthToken(): string
     {
-        // Mock JWT token - replace with actual token generation in real tests
-        return 'Bearer mock-jwt-token-12345';
+        // Return the test mock header value (email) set by BaseWebTestCase
+        return self::$authToken;
     }
 
     /**
@@ -55,7 +57,7 @@ class VehicleControllerTest extends WebTestCase
             '/api/vehicles',
             [],
             [],
-            ['HTTP_AUTHORIZATION' => $this->getAuthToken()]
+            ['HTTP_X_TEST_MOCK_AUTH' => $this->getAuthToken()]
         );
 
         $this->assertResponseIsSuccessful();
@@ -89,7 +91,7 @@ class VehicleControllerTest extends WebTestCase
             [],
             [],
             [
-                'HTTP_AUTHORIZATION' => $this->getAuthToken(),
+                'HTTP_X_TEST_MOCK_AUTH' => $this->getAuthToken(),
                 'CONTENT_TYPE' => 'application/json',
             ],
             json_encode($vehicleData)
@@ -122,7 +124,7 @@ class VehicleControllerTest extends WebTestCase
             [],
             [],
             [
-                'HTTP_AUTHORIZATION' => $this->getAuthToken(),
+                'HTTP_X_TEST_MOCK_AUTH' => $this->getAuthToken(),
                 'CONTENT_TYPE' => 'application/json',
             ],
             json_encode($vehicleData)
@@ -150,7 +152,7 @@ class VehicleControllerTest extends WebTestCase
             [],
             [],
             [
-                'HTTP_AUTHORIZATION' => $this->getAuthToken(),
+                'HTTP_X_TEST_MOCK_AUTH' => $this->getAuthToken(),
                 'CONTENT_TYPE' => 'application/json',
             ],
             json_encode($vehicleData)
@@ -165,7 +167,7 @@ class VehicleControllerTest extends WebTestCase
             '/api/vehicles/' . $vehicleId,
             [],
             [],
-            ['HTTP_AUTHORIZATION' => $this->getAuthToken()]
+            ['HTTP_X_TEST_MOCK_AUTH' => $this->getAuthToken()]
         );
 
         $this->assertResponseIsSuccessful();
@@ -184,7 +186,7 @@ class VehicleControllerTest extends WebTestCase
             '/api/vehicles/99999',
             [],
             [],
-            ['HTTP_AUTHORIZATION' => $this->getAuthToken()]
+            ['HTTP_X_TEST_MOCK_AUTH' => $this->getAuthToken()]
         );
 
         $this->assertResponseStatusCodeSame(404);
@@ -210,7 +212,7 @@ class VehicleControllerTest extends WebTestCase
             [],
             [],
             [
-                'HTTP_AUTHORIZATION' => $this->getAuthToken(),
+                'HTTP_X_TEST_MOCK_AUTH' => $this->getAuthToken(),
                 'CONTENT_TYPE' => 'application/json',
             ],
             json_encode($vehicleData)
@@ -231,7 +233,7 @@ class VehicleControllerTest extends WebTestCase
             [],
             [],
             [
-                'HTTP_AUTHORIZATION' => $this->getAuthToken(),
+                'HTTP_X_TEST_MOCK_AUTH' => $this->getAuthToken(),
                 'CONTENT_TYPE' => 'application/json',
             ],
             json_encode($updateData)
@@ -277,7 +279,7 @@ class VehicleControllerTest extends WebTestCase
             '/api/vehicles/' . $vehicleId,
             [],
             [],
-            ['HTTP_AUTHORIZATION' => $this->getAuthToken()]
+            ['HTTP_X_TEST_MOCK_AUTH' => $this->getAuthToken()]
         );
 
         $this->assertResponseStatusCodeSame(204);
@@ -288,7 +290,7 @@ class VehicleControllerTest extends WebTestCase
             '/api/vehicles/' . $vehicleId,
             [],
             [],
-            ['HTTP_AUTHORIZATION' => $this->getAuthToken()]
+            ['HTTP_X_TEST_MOCK_AUTH' => $this->getAuthToken()]
         );
 
         $this->assertResponseStatusCodeSame(404);
@@ -323,14 +325,14 @@ class VehicleControllerTest extends WebTestCase
         $vehicleId = $createResponse['id'];
 
         // Try to access as different user (different token)
-        $differentUserToken = 'Bearer different-user-token';
+        $differentUserToken = 'other@vehicle.local';
 
         $this->client->request(
             'GET',
             '/api/vehicles/' . $vehicleId,
             [],
             [],
-            ['HTTP_AUTHORIZATION' => $differentUserToken]
+            ['HTTP_X_TEST_MOCK_AUTH' => $differentUserToken]
         );
 
         $this->assertResponseStatusCodeSame(403);

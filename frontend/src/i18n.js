@@ -5,13 +5,17 @@ import HttpBackend from 'i18next-http-backend';
 
 // Get available languages by checking for translation files
 export const getAvailableLanguages = async () => {
-  const languages = [
-    { code: 'en', name: 'English', nativeName: 'English' },
-    { code: 'es', name: 'Spanish', nativeName: 'Español' },
-    { code: 'fr', name: 'French', nativeName: 'Français' }
-  ];
-  
-  return languages;
+  try {
+    const resp = await fetch('/locales/manifest.json');
+    if (!resp.ok) throw new Error('manifest not found');
+    const json = await resp.json();
+    return json.languages || [];
+  } catch (e) {
+    // Fallback to English if manifest isn't available
+    return [
+      { code: 'en', name: 'English', nativeName: 'English' },
+    ];
+  }
 };
 
 i18n
@@ -24,10 +28,7 @@ i18n
     
     // Map language variants to base languages
     load: 'languageOnly', // This strips region codes (en-GB -> en, es-ES -> es)
-    
-    supportedLngs: ['en', 'es', 'fr'],
-    nonExplicitSupportedLngs: true, // Allows en-GB to fallback to en
-    
+  
     interpolation: {
       escapeValue: false,
     },

@@ -24,6 +24,47 @@ class VehicleController extends AbstractController
     ) {
     }
 
+    private function computeLastServiceDate(Vehicle $vehicle): ?string
+    {
+        $latest = $this->entityManager->getRepository(\App\Entity\ServiceRecord::class)
+            ->createQueryBuilder('sr')
+            ->where('sr.vehicle = :vehicle')
+            ->setParameter('vehicle', $vehicle)
+            ->orderBy('sr.serviceDate', 'DESC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+
+        if ($latest && $latest->getServiceDate()) {
+            return $latest->getServiceDate()->format('Y-m-d');
+        }
+
+        return $vehicle->getLastServiceDate()?->format('Y-m-d');
+    }
+
+    private function computeMotExpiryDate(Vehicle $vehicle): ?string
+    {
+        $latest = $this->entityManager->getRepository(\App\Entity\MotRecord::class)
+            ->createQueryBuilder('mr')
+            ->where('mr.vehicle = :vehicle')
+            ->setParameter('vehicle', $vehicle)
+            ->orderBy('mr.testDate', 'DESC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+
+        if ($latest) {
+            if ($latest->getExpiryDate()) {
+                return $latest->getExpiryDate()->format('Y-m-d');
+            }
+            if ($latest->getTestDate()) {
+                return $latest->getTestDate()->format('Y-m-d');
+            }
+        }
+
+        return $vehicle->getMotExpiryDate()?->format('Y-m-d');
+    }
+
     #[Route('', name: 'api_vehicles_list', methods: ['GET'])]
     public function list(): JsonResponse
     {
@@ -143,6 +184,56 @@ class VehicleController extends AbstractController
         ]);
     }
 
+    #[Route('/totals', name: 'api_vehicles_totals', methods: ['GET'])]
+    public function totals(Request $request): JsonResponse
+    {
+        $user = $this->getUser();
+        if (!$user instanceof User) {
+            return $this->json(['error' => 'Not authenticated'], 401);
+        }
+
+        $periodMonths = (int) ($request->query->get('period') ?? 12);
+        $periodMonths = $periodMonths > 0 ? $periodMonths : 12;
+        $cutoff = new \DateTimeImmutable(sprintf('-%d months', $periodMonths));
+
+        // Fuel total
+        $dqlFuel = 'SELECT SUM(fr.cost) FROM App\\Entity\\FuelRecord fr JOIN fr.vehicle v WHERE v.owner = :user AND fr.date >= :cutoff';
+        $fuelTotal = (float) ($this->entityManager->createQuery($dqlFuel)
+            ->setParameter('user', $user)
+            ->setParameter('cutoff', $cutoff)
+            ->getSingleScalarResult() ?? 0.0);
+
+        // Parts total (use purchaseDate)
+        $dqlParts = 'SELECT SUM(p.cost) FROM App\\Entity\\Part p JOIN p.vehicle v WHERE v.owner = :user AND p.purchaseDate >= :cutoff';
+        $partsTotal = (float) ($this->entityManager->createQuery($dqlParts)
+            ->setParameter('user', $user)
+            ->setParameter('cutoff', $cutoff)
+            ->getSingleScalarResult() ?? 0.0);
+
+        // Consumables total (use createdAt)
+        $dqlConsumables = 'SELECT SUM(c.cost) FROM App\\Entity\\Consumable c JOIN c.vehicle v WHERE v.owner = :user AND c.createdAt >= :cutoff';
+        $consumablesTotal = (float) ($this->entityManager->createQuery($dqlConsumables)
+            ->setParameter('user', $user)
+            ->setParameter('cutoff', $cutoff)
+            ->getSingleScalarResult() ?? 0.0);
+
+        // Average service cost over the period (labor + parts + additional)
+        $dqlServiceAvg = 'SELECT AVG(COALESCE(sr.laborCost, 0) + COALESCE(sr.partsCost, 0) + COALESCE(sr.additionalCosts, 0))'
+            . ' FROM App\\Entity\\ServiceRecord sr JOIN sr.vehicle v WHERE v.owner = :user AND sr.serviceDate >= :cutoff';
+        $serviceAvg = (float) ($this->entityManager->createQuery($dqlServiceAvg)
+            ->setParameter('user', $user)
+            ->setParameter('cutoff', $cutoff)
+            ->getSingleScalarResult() ?? 0.0);
+
+        return $this->json([
+            'periodMonths' => $periodMonths,
+            'fuel' => round($fuelTotal, 2),
+            'parts' => round($partsTotal, 2),
+            'consumables' => round($consumablesTotal, 2),
+            'averageServiceCost' => round($serviceAvg, 2),
+        ]);
+    }
+
     private function serializeVehicle(Vehicle $vehicle): array
     {
         return [
@@ -159,12 +250,17 @@ class VehicleController extends AbstractController
             'v5DocumentNumber' => $vehicle->getV5DocumentNumber(),
             'purchaseCost' => $vehicle->getPurchaseCost(),
             'purchaseDate' => $vehicle->getPurchaseDate()?->format('Y-m-d'),
-            'currentMileage' => $vehicle->getCurrentMileage(),
-            'lastServiceDate' => $vehicle->getLastServiceDate()?->format('Y-m-d'),
-            'motExpiryDate' => $vehicle->getMotExpiryDate()?->format('Y-m-d'),
+            'purchaseMileage' => $vehicle->getPurchaseMileage(),
+            // Current mileage is computed from the latest fuel records when available
+            'currentMileage' => $this->computeCurrentMileage($vehicle),
+            // Prefer latest related records (service / MOT); fall back to stored vehicle values
+            'lastServiceDate' => $this->computeLastServiceDate($vehicle),
+            'motExpiryDate' => $this->computeMotExpiryDate($vehicle),
             'roadTaxExpiryDate' => $vehicle->getRoadTaxExpiryDate()?->format('Y-m-d'),
-            'insuranceExpiryDate' => $vehicle->getInsuranceExpiryDate()
-                ?->format('Y-m-d'),
+            'insuranceExpiryDate' => $vehicle->getComputedInsuranceExpiryDate()?->format('Y-m-d'),
+            'isRoadTaxExempt' => $vehicle->isRoadTaxExempt(),
+            'isMotExempt' => $vehicle->isMotExempt(),
+            'roadTaxAnnualCost' => $vehicle->getComputedRoadTaxAnnualCost(),
             'securityFeatures' => $vehicle->getSecurityFeatures(),
             'vehicleColor' => $vehicle->getVehicleColor(),
             'serviceIntervalMonths' => $vehicle->getServiceIntervalMonths(),
@@ -191,6 +287,33 @@ class VehicleController extends AbstractController
             }
         }
 
+        // Ensure a vehicle type is set — tests often omit this; choose a sensible
+        // default by using the first existing VehicleType, or create one.
+        if (!$vehicle->getVehicleType()) {
+            $vehicleTypeRepo = $this->entityManager
+                ->getRepository(\App\Entity\VehicleType::class);
+            $firstType = $vehicleTypeRepo->findOneBy([]);
+            if ($firstType) {
+                $vehicle->setVehicleType($firstType);
+            } else {
+                $newType = new \App\Entity\VehicleType();
+                $newType->setName('Default');
+                $this->entityManager->persist($newType);
+                $vehicle->setVehicleType($newType);
+            }
+        }
+
+        // If no explicit name provided and the vehicle has no name yet,
+        // derive a sensible default from registration or make+model.
+        if (!isset($data['name']) && !$vehicle->getName()) {
+            $defaultName = $data['registration'] ?? null;
+            if (!$defaultName && isset($data['make'], $data['model'])) {
+                $defaultName = $data['make'] . ' ' . $data['model'];
+            }
+            if ($defaultName) {
+                $vehicle->setName($defaultName);
+            }
+        }
         if (isset($data['name'])) {
             $vehicle->setName($data['name']);
         }
@@ -206,8 +329,11 @@ class VehicleController extends AbstractController
         if (isset($data['vin'])) {
             $vehicle->setVin($data['vin']);
         }
+        // Accept both 'registrationNumber' and legacy/test 'registration'
         if (isset($data['registrationNumber'])) {
             $vehicle->setRegistrationNumber($data['registrationNumber']);
+        } elseif (isset($data['registration'])) {
+            $vehicle->setRegistrationNumber($data['registration']);
         }
         if (isset($data['engineNumber'])) {
             $vehicle->setEngineNumber($data['engineNumber']);
@@ -215,36 +341,32 @@ class VehicleController extends AbstractController
         if (isset($data['v5DocumentNumber'])) {
             $vehicle->setV5DocumentNumber($data['v5DocumentNumber']);
         }
+        // Accept both 'purchaseCost' and legacy/test 'purchasePrice'
         if (isset($data['purchaseCost'])) {
-            $vehicle->setPurchaseCost($data['purchaseCost']);
+            $vehicle->setPurchaseCost((string) $data['purchaseCost']);
+        } elseif (isset($data['purchasePrice'])) {
+            $vehicle->setPurchaseCost((string) $data['purchasePrice']);
         }
         if (isset($data['purchaseDate'])) {
             $vehicle->setPurchaseDate(new \DateTime($data['purchaseDate']));
         }
-        if (isset($data['currentMileage'])) {
-            $vehicle->setCurrentMileage($data['currentMileage']);
+        if (isset($data['purchaseMileage'])) {
+            $vehicle->setPurchaseMileage($data['purchaseMileage'] !== null ? (int) $data['purchaseMileage'] : null);
         }
-        if (isset($data['lastServiceDate'])) {
-            $vehicle->setLastServiceDate(new \DateTime($data['lastServiceDate']));
-        }
-        if (isset($data['motExpiryDate'])) {
-            $vehicle->setMotExpiryDate(new \DateTime($data['motExpiryDate']));
-        }
-        if (isset($data['roadTaxExpiryDate'])) {
-            $vehicle->setRoadTaxExpiryDate(
-                new \DateTime($data['roadTaxExpiryDate'])
-            );
-        }
-        if (isset($data['insuranceExpiryDate'])) {
-            $vehicle->setInsuranceExpiryDate(
-                new \DateTime($data['insuranceExpiryDate'])
-            );
-        }
+        // `currentMileage` is computed from fuel records; do not accept it via API
+        // lastServiceDate, motExpiryDate and roadTaxExpiryDate are derived from related
+        // records (ServiceRecord, MotRecord and future RoadTax entity) and must not
+        // be directly set via the vehicle update API.
+        // `insuranceExpiryDate` is derived from related Insurance records
+        // and must not be directly set via the vehicle update API.
         if (isset($data['securityFeatures'])) {
             $vehicle->setSecurityFeatures($data['securityFeatures']);
         }
+        // Accept both 'vehicleColor' and 'colour'
         if (isset($data['vehicleColor'])) {
             $vehicle->setVehicleColor($data['vehicleColor']);
+        } elseif (isset($data['colour'])) {
+            $vehicle->setVehicleColor($data['colour']);
         }
         if (isset($data['serviceIntervalMonths'])) {
             $vehicle->setServiceIntervalMonths($data['serviceIntervalMonths']);
@@ -261,5 +383,32 @@ class VehicleController extends AbstractController
         if (isset($data['depreciationRate'])) {
             $vehicle->setDepreciationRate($data['depreciationRate']);
         }
+        // Allow an explicit override for road tax exemption
+        if (array_key_exists('roadTaxExempt', $data)) {
+            $vehicle->setRoadTaxExempt($data['roadTaxExempt'] !== null ? (bool) $data['roadTaxExempt'] : null);
+        }
+        // Allow an explicit override for MOT exemption
+        if (array_key_exists('motExempt', $data)) {
+            $vehicle->setMotExempt($data['motExempt'] !== null ? (bool) $data['motExempt'] : null);
+        }
+    }
+
+    private function computeCurrentMileage(Vehicle $vehicle): ?int
+    {
+        $latest = $this->entityManager->getRepository(\App\Entity\FuelRecord::class)
+            ->createQueryBuilder('fr')
+            ->where('fr.vehicle = :vehicle')
+            ->andWhere('fr.mileage IS NOT NULL')
+            ->setParameter('vehicle', $vehicle)
+            ->orderBy('fr.mileage', 'DESC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+
+        if ($latest && method_exists($latest, 'getMileage') && $latest->getMileage()) {
+            return (int) $latest->getMileage();
+        }
+
+        return $vehicle->getCurrentMileage();
     }
 }

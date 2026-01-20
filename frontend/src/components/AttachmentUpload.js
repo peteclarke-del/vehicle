@@ -19,11 +19,12 @@ import {
   InsertDriveFile,
   Image as ImageIcon,
   PictureAsPdf,
+  Receipt as ReceiptIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 
-const AttachmentUpload = ({ entityType, entityId, onChange }) => {
+const AttachmentUpload = ({ entityType, entityId, onChange, compact = false }) => {
   const [attachments, setAttachments] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -51,7 +52,7 @@ const AttachmentUpload = ({ entityType, entityId, onChange }) => {
   };
 
   const handleFileSelect = async (event) => {
-    const files = Array.from(event.target.files);
+    const files = Array.from(event.target.files || []);
     if (files.length === 0) return;
 
     setUploading(true);
@@ -65,8 +66,9 @@ const AttachmentUpload = ({ entityType, entityId, onChange }) => {
         const response = await api.post('/attachments', formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
-        setAttachments(prev => [...prev, response.data]);
-        if (onChange) onChange([...attachments, response.data]);
+        const newAttachments = [...attachments, response.data];
+        setAttachments(newAttachments);
+        if (onChange) onChange(newAttachments);
       } catch (error) {
         console.error('Error uploading file:', error);
         alert(t('common.uploadFailed', { filename: file.name }));
@@ -109,12 +111,14 @@ const AttachmentUpload = ({ entityType, entityId, onChange }) => {
   };
 
   const getFileIcon = (mimeType) => {
+    if (!mimeType) return <InsertDriveFile />;
     if (mimeType.startsWith('image/')) return <ImageIcon />;
     if (mimeType === 'application/pdf') return <PictureAsPdf />;
     return <InsertDriveFile />;
   };
 
   const formatFileSize = (bytes) => {
+    if (bytes == null) return '';
     if (bytes < 1024) return bytes + ' B';
     if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
     return (bytes / 1048576).toFixed(1) + ' MB';
@@ -122,33 +126,106 @@ const AttachmentUpload = ({ entityType, entityId, onChange }) => {
 
   return (
     <Box>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-        <Typography variant="subtitle1">{t('attachments.title')}</Typography>
-        <Button
-          variant="outlined"
-          component="label"
-          startIcon={uploading ? <CircularProgress size={20} /> : <CloudUpload />}
-          disabled={uploading}
-        >
-          {t('attachments.upload')}
-          <input
-            type="file"
-            hidden
-            multiple
-            accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx"
-            onChange={handleFileSelect}
-          />
-        </Button>
-      </Box>
+      {!compact && (
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+          <Typography variant="subtitle1">{t('attachments.title')}</Typography>
+          <Button
+            variant="outlined"
+            component="label"
+            startIcon={uploading ? <CircularProgress size={20} /> : <CloudUpload />}
+            disabled={uploading}
+          >
+            {t('attachments.upload')}
+            <input
+              type="file"
+              hidden
+              multiple
+              accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx"
+              onChange={handleFileSelect}
+            />
+          </Button>
+        </Box>
+      )}
 
       {loading ? (
         <Box display="flex" justifyContent="center" p={2}>
           <CircularProgress />
         </Box>
       ) : attachments.length === 0 ? (
-        <Typography variant="body2" color="text.secondary" align="center" py={2}>
-          {t('attachments.noFiles')}
-        </Typography>
+        compact ? (
+          // Compact upload box full-width
+          <Box component="label" sx={{ display: 'block', width: '100%' }}>
+            <input
+              type="file"
+              hidden
+              multiple
+              accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx"
+              onChange={handleFileSelect}
+            />
+            <Box
+              sx={{
+                border: '1px solid',
+                borderColor: 'divider',
+                borderRadius: 1,
+                height: '56px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                width: '100%',
+                '&:hover': {
+                  bgcolor: 'action.hover',
+                  borderColor: 'primary.main'
+                }
+              }}
+            >
+              {uploading ? (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <CircularProgress size={20} />
+                  <Typography variant="body2">{t('attachment.uploading')}</Typography>
+                </Box>
+              ) : (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <CloudUpload color="action" />
+                  <Typography variant="body2" color="textSecondary">{t('attachment.uploadReceipt')}</Typography>
+                </Box>
+              )}
+            </Box>
+          </Box>
+        ) : (
+          <Typography variant="body2" color="text.secondary" align="center" py={2}>
+            {t('attachments.noFiles')}
+          </Typography>
+        )
+      ) : compact ? (
+        // Compact mode: mirror ReceiptUpload attached view for the first attachment
+        (() => {
+          const att = attachments[0];
+          return (
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+                border: '1px solid',
+                borderColor: 'divider',
+                borderRadius: 1,
+                height: '56px',
+                px: 2,
+                width: '100%'
+              }}
+            >
+              <ReceiptIcon color="primary" />
+              <Typography variant="body2" sx={{ flex: 1 }}>{t('attachment.receiptAttached')}</Typography>
+              <IconButton size="small" onClick={() => handleDownload(att)}>
+                <DownloadIcon />
+              </IconButton>
+              <IconButton size="small" onClick={() => handleDelete(att.id)}>
+                <DeleteIcon />
+              </IconButton>
+            </Box>
+          );
+        })()
       ) : (
         <List dense>
           {attachments.map((attachment) => (
@@ -186,3 +263,4 @@ const AttachmentUpload = ({ entityType, entityId, onChange }) => {
 };
 
 export default AttachmentUpload;
+

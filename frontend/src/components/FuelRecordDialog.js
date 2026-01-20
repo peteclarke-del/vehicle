@@ -51,7 +51,12 @@ const FuelRecordDialog = ({ open, record, vehicleId, onClose }) => {
   const loadFuelTypes = async () => {
     try {
       const response = await api.get('/fuel-records/fuel-types');
-      setFuelTypes(response.data);
+      if (Array.isArray(response.data)) {
+        setFuelTypes(response.data);
+      } else {
+        console.warn('Unexpected fuel types response:', response.data);
+        setFuelTypes([]);
+      }
     } catch (error) {
       console.error('Error loading fuel types:', error);
     }
@@ -238,11 +243,11 @@ const FuelRecordDialog = ({ open, record, vehicleId, onClose }) => {
                   <MenuItem value="">
                     <em>{t('attachment.none')}</em>
                   </MenuItem>
-                  {fuelTypes.map((type) => (
+                  {Array.isArray(fuelTypes) ? fuelTypes.map((type) => (
                     <MenuItem key={type} value={type}>
                       {type}
                     </MenuItem>
-                  ))}
+                  )) : null}
                 </Select>
               </FormControl>
             </Grid>

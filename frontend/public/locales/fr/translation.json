@@ -26,14 +26,17 @@
     "invalidCredentials": "Identifiants invalides",
     "exportFailed": "Échec de l'exportation des véhicules",
     "importFailed": "Échec de l'importation des véhicules. Veuillez vérifier le format du fichier.",
-    "deleteFailed": "Échec de la suppression des véhicules",
+    "deleteFailed": "Échec de la suppression de la pièce jointe",
     "importSuccess": "{count} véhicules importés avec succès",
     "importWarnings": "Importation terminée avec des avertissements:\n{imported} sur {total} importés\n\nErreurs:\n{errors}",
     "deleteSuccess": "{count} véhicule(s) supprimé(s) avec succès",
     "saveError": "Erreur lors de l'enregistrement de {type}",
     "uploadFailed": "Échec du téléchargement de {filename}",
-    "deleteFailed": "Échec de la suppression de la pièce jointe",
-    "downloadFailed": "Échec du téléchargement de la pièce jointe"
+    "downloadFailed": "Échec du téléchargement de la pièce jointe",
+    "back": "Back",
+    "deleteError": "Delete failed",
+    "undo": "Undo",
+    "unknown": "Unknown"
   },
   "auth": {
     "login": "Connexion",
@@ -54,7 +57,9 @@
     "passwordChangeSuccess": "Mot de passe changé avec succès",
     "passwordChangeFailed": "Échec du changement de mot de passe",
     "passwordRequirements": "Minimum 8 caractères",
-    "changing": "Changement..."
+    "changing": "Changement...",
+    "alreadyHaveAccount": "Already Have Account",
+    "dontHaveAccount": "Dont Have Account"
   },
   "nav": {
     "dashboard": "Tableau de bord",
@@ -65,7 +70,9 @@
     "insurance": "Assurance",
     "motRecords": "Registres de contrôle technique",
     "serviceRecords": "Registres de service",
-    "profile": "Profil"
+    "profile": "Profil",
+    "reports": "Reports",
+    "roadTax": "Road Tax"
   },
   "vehicle": {
     "deleteConfirm": "Êtes-vous sûr de vouloir supprimer ce véhicule ?",
@@ -103,7 +110,11 @@
     "depreciationRate": "Taux d'amortissement (%)",
     "straightLine": "Linéaire",
     "decliningBalance": "Solde dégressif",
-    "doubleDeclining": "Double dégressif"
+    "doubleDeclining": "Double dégressif",
+    "lookupFailed": "Lookup failed. Please try again later.",
+    "motExempt": "Mot Exempt",
+    "purchaseMileage": "Purchase Mileage",
+    "roadTaxExempt": "Road Tax Exempt"
   },
   "fuel": {
     "title": "Registres de carburant",
@@ -117,7 +128,9 @@
     "station": "Station",
     "notes": "Notes",
     "totalCost": "Coût total",
-    "totalLitres": "Litres totaux"
+    "totalLitres": "Litres totaux",
+    "deleteConfirm": "Delete Confirm",
+    "receiptAttached": "Receipt Attached"
   },
   "parts": {
     "title": "Pièces et pièces de rechange",
@@ -134,7 +147,18 @@
     "notes": "Notes",
     "totalCost": "Coût total des pièces",
     "warranty": "Garantie",
-    "supplier": "Fournisseur"
+    "supplier": "Fournisseur",
+    "addNewPart": "Add New Part",
+    "delete": "Delete",
+    "enterUrl": "Enter Url",
+    "filterByCategory": "Filter By Category",
+    "noParts": "No Parts",
+    "scrape": "Scrape",
+    "scrapeFromUrl": "Scrape From Url",
+    "search": "Search",
+    "selectVehicle": "Select Vehicle",
+    "sortBy": "Sort By",
+    "url": "Url"
   },
   "consumables": {
     "title": "Consommables",
@@ -149,7 +173,9 @@
     "notes": "Notes",
     "totalCost": "Coût total des consommables",
     "nextChange": "Prochain changement",
-    "brand": "Marque"
+    "brand": "Marque",
+    "partNumber": "Part Number",
+    "supplier": "Supplier"
   },
   "insurance": {
     "title": "Assurance",
@@ -167,12 +193,58 @@
     "thirdPartyFireTheft": "Responsabilité civile + incendie et vol",
     "expired": "Expiré",
     "deleteConfirm": "Êtes-vous sûr de vouloir supprimer ce dossier d'assurance?",
-    "totalAnnualCost": "Coût annuel total"
+    "totalAnnualCost": "Coût annuel total",
+    "commonFields": {
+      "provider": "Provider",
+      "policyNumber": "Policy Number",
+      "startDate": "Start Date",
+      "expiryDate": "Expiry Date",
+      "annualCost": "Annual Cost",
+      "coverageType": "Coverage Type",
+      "vehicles": "Vehicles",
+      "notes": "Notes"
+    },
+    "policies": {
+      "title": "Insurance Policies",
+      "addPolicy": "Add Policy",
+      "editPolicy": "Edit Policy",
+      "provider": "Provider",
+      "policyNumber": "Policy Number",
+      "holder": "Holder",
+      "ncdYears": "NCD Years",
+      "ncdPercentage": "NCD %",
+      "endDate": "End Date",
+      "excess": "Excess",
+      "mileageLimit": "Mileage Limit",
+      "autoRenewal": "Auto Renewal",
+      "expiryDate": "Expiry Date",
+      "startDate": "Start Date",
+      "annualCost": "Annual Cost",
+      "vehicles": "Vehicles",
+      "selectVehicles": "Select vehicles to attach",
+      "deleteUndo": "Policy deleted",
+      "deleteConfirm": "Delete this policy?",
+      "coverType": "Cover Type",
+      "coverTypes": {
+        "comprehensive": "Comprehensive",
+        "thirdParty": "Third Party",
+        "thirdPartyFireTheft": "Third Party Fire and Theft"
+      },
+      "notes": "Notes",
+      "status": {
+        "expired": "Expired",
+        "cancelled": "Cancelled"
+      }
+    }
   },
   "mot": {
     "title": "Registres de contrôle technique",
     "addMot": "Ajouter un contrôle technique",
     "editMot": "Modifier le contrôle technique",
+        "expiryDate": "Date d'expiration",
+        "motTestNumber": "Numéro de test MOT",
+        "testerName": "Nom du testeur",
+        "isRetest": "Retest",
     "testDate": "Date du test",
     "result": "Résultat",
     "testCost": "Coût du test",
@@ -209,7 +281,11 @@
     "brakeService": "Service de freins",
     "other": "Autre",
     "deleteConfirm": "Êtes-vous sûr de vouloir supprimer ce registre de service?",
-    "viewItems": "Voir les pièces/consommables"
+    "viewItems": "Voir les pièces/consommables",
+    "addItem": "Add Item",
+    "consumable": "Consumable",
+    "labour": "Labour",
+    "part": "Part"
   },
   "attachments": {
     "title": "Pièces jointes",
@@ -244,7 +320,35 @@
     "mileage": "Kilométrage",
     "lastService": "Dernier service",
     "serviceDue": "Service ÉCHÉANT",
-    "noServiceHistory": "Pas d'historique de service"
+    "noServiceHistory": "Pas d'historique de service",
+    "addVehicle": "Add Vehicle",
+    "averageServiceCost": "Average Service Cost",
+    "averageServiceCostDesc": "Average Service Cost Desc",
+    "byType": "By Type",
+    "expired": "Expired",
+    "expiredInsurance": "Expired Insurance",
+    "expiredMot": "Expired M.O.T.",
+    "expiredTax": "Expired Tax",
+    "fuel": "Fuel",
+    "hideVehicleCards": "Hide Vehicle Cards",
+    "make": "Make",
+    "monthlyAverage": "Monthly Average",
+    "name": "Name",
+    "noVehicles": "No Vehicles",
+    "purchaseCost": "Purchase Cost",
+    "refresh": "Refresh",
+    "registration": "Registration",
+    "selectVehicle": "Select Vehicle",
+    "showVehicleCards": "Show Vehicle Cards",
+    "sortBy": "Sort By",
+    "title": "Title",
+    "totalCosts": "Total Costs",
+    "totalFuelCost": "Total Fuel Cost",
+    "totalMileage": "Total Mileage",
+    "upcomingMot": "Upcoming Mot",
+    "upcomingRenewal": "Upcoming Renewal",
+    "vehicles": "Vehicles",
+    "year": "Year"
   },
   "languages": {
     "en": "Anglais",
@@ -299,7 +403,22 @@
     "depreciationSchedule": "Calendrier de Dépréciation",
     "year": "Année",
     "value": "Valeur",
-    "vehicleNotFound": "Véhicule non trouvé"
+    "vehicleNotFound": "Véhicule non trouvé",
+    "noDepreciationData": "No Depreciation Data",
+    "pictures": "Pictures",
+    "specifications": "Specifications",
+    "title": "Title",
+    "tooltip": {
+      "avgFuelConsumption": "Avg Fuel Consumption",
+      "costPerDistance": "Cost Per Distance",
+      "currentValue": "Current Value",
+      "purchaseCost": "Purchase Cost",
+      "totalCostToDate": "Total Cost To Date",
+      "totalFuelCost": "Total Fuel Cost",
+      "totalPartsCost": "Total Parts Cost",
+      "totalRunningCost": "Total Running Cost"
+    },
+    "valuesTableTitle": "Values Table Title"
   },
   "profile": {
     "userInformation": "Informations de l'utilisateur",
@@ -328,5 +447,394 @@
     "scrape": "Extraire",
     "failed": "Échec de l'extraction des données du produit",
     "helper": "Collez une URL depuis un site e-commerce pour remplir automatiquement les détails du produit"
+  },
+  "100%": "100",
+  "110,000": "110 000",
+  "2": "2",
+  "2 vehicles": {
+    "vehicles": "Vehicles"
+  },
+  "2020": "2020",
+  "2020 Toyota Corolla": "2020 Toyota Corolla",
+  "2021": "2021",
+  "2022": "2022",
+  "2023": "2023",
+  "2026-01-10": "2026 01 10",
+  "2026-01-15": "2026 01 15",
+  "2027-01-15": "2027 01 15",
+  "3": "3",
+  "45,000": "45 000",
+  "49,000": "49 000",
+  "50%": "50",
+  "50,000": "50 000",
+  "50000": "50000",
+  "52,000": "52 000",
+  "55,000": "55 000",
+  "AB12 CDE": "Ab12 Cde",
+  "ABC123": "Abc123",
+  "AF-12345": "Af 12345",
+  "Air Filter": "Air Filter",
+  "Annual Service": "Annual Service",
+  "AutoParts Ltd": "Auto Parts Ltd",
+  "BP": "Bp",
+  "Brake Fluid": "Brake Fluid",
+  "Brake Pads": "Brake Pads",
+  "Brake pads below minimum": "Brake Pads Below Minimum",
+  "Brake pads worn": "Brake Pads Worn",
+  "Child 1": "Child 1",
+  "Child 2": "Child 2",
+  "Child 3": "Child 3",
+  "Comprehensive": "Comprehensive",
+  "Corolla": "Corolla",
+  "Cost Breakdown": "Cost Breakdown",
+  "Custom Error UI": "Custom Error Ui",
+  "DVLA is busy; please try again later": {
+    "": ""
+  },
+  "Dashboard": "Dashboard",
+  "Details": "Details",
+  "Engine Oil": "Engine Oil",
+  "Fail": "Fail",
+  "Feb": "Feb",
+  "Fuel": "Fuel",
+  "Fuel Economy Trend": "Fuel Economy Trend",
+  "Headlight alignment incorrect": "Headlight Alignment Incorrect",
+  "Home": "Home",
+  "Honda": "Honda",
+  "Honda Civic": "Honda Civic",
+  "Insurance": "Insurance",
+  "Jan": "Jan",
+  "MOT123456789": "Mot123456789",
+  "Main Content": "Main Content",
+  "Mann Filter": "Mann Filter",
+  "Manual": "Manual",
+  "Oil Change": "Oil Change",
+  "Outside boundary": "Outside Boundary",
+  "POL123": "Pol123",
+  "Parts": "Parts",
+  "Pass": "Pass",
+  "Petrol": "Petrol",
+  "Service": "Service",
+  "Shell": "Shell",
+  "Sidebar Content": "Sidebar Content",
+  "Silver": "Silver",
+  "T": "T",
+  "Test Content": "Test Content",
+  "Test Insurance": "Test Insurance",
+  "Test Insurance Co": "Test Insurance Co",
+  "Test MOT Center": "Test Mot Center",
+  "Toyota": "Toyota",
+  "Toyota Corolla": "Toyota Corolla",
+  "Tyre tread low": "Tyre Tread Low",
+  "Vehicle 2": "Vehicle 2",
+  "Vehicle Depreciation": "Vehicle Depreciation",
+  "Vehicle Details": "Vehicle Details",
+  "Vehicles": "Vehicles",
+  "XYZ789": "Xyz789",
+  "a": "A",
+  "annualCost": "Annual Cost",
+  "brand": "Brand",
+  "cancel": "Cancel",
+  "category": "Category",
+  "consumableType": "Consumable Type",
+  "cost": "Cost",
+  "coverageType": "Coverage Type",
+  "currentMileage": "Current Mileage",
+  "date": "Date",
+  "delete": "Delete",
+  "deleteAll": {
+    "button": "Button",
+    "confirm": "Confirm",
+    "message": "Message",
+    "title": "Title"
+  },
+  "depreciation": {
+    "decliningBalance": "Declining Balance",
+    "doubleDeclining": "Double Declining",
+    "straightLine": "Straight Line"
+  },
+  "description": "Description",
+  "div": "Div",
+  "dvla": {
+    "lookupBusy": "DVLA is currently busy — please try again later.",
+    "lookup_busy": "DVLA Lookup Service is busy right now, please try again later, or manually fill in the required fields."
+  },
+  "edit": "Edit",
+  "errors": {
+    "failedToSavePreferences": "Failed To Save Preferences",
+    "registrationFailed": "Registration Failed"
+  },
+  "expiryDate": "Expiry Date",
+  "fuelDialog": {
+    "editRecord": "Edit Record"
+  },
+  "fuelRecord": {
+    "newTitle": "New Title"
+  },
+  "fuelRecords": {
+    "addNewRecord": "Add New Record",
+    "addRecord": "Add Record",
+    "averageMpg": "Average Mpg",
+    "costPerMile": "Cost Per Mile",
+    "delete": "Delete",
+    "endDate": "End Date",
+    "fullTank": "Full Tank",
+    "litresPer100km": "Litres Per100km",
+    "monthlyAverage": "Monthly Average",
+    "noRecords": "No Records",
+    "pricePerLitre": "Price Per Litre",
+    "selectVehicle": "Select Vehicle",
+    "sortBy": "Sort By",
+    "startDate": "Start Date",
+    "title": "Title",
+    "totalCost": "Total Cost"
+  },
+  "fuelType": "Fuel Type",
+  "installationDate": "Installation Date",
+  "laborCost": "Labor Cost",
+  "lastChanged": "Last Changed",
+  "litres": "Litres",
+  "make": "Make",
+  "manufacturer": "Manufacturer",
+  "mileage": "Mileage",
+  "mileageAtChange": "Mileage At Change",
+  "model": "Model",
+  "mot-receipt": {
+    "pdf": "Pdf"
+  },
+  "motRecord": {
+    "newTitle": "New Title"
+  },
+  "motRecords": {
+    "addNewRecord": "Add New Record",
+    "addRecord": "Add Record",
+    "averageMileage": "Average Mileage",
+    "delete": "Delete",
+    "expired": "Expired",
+    "import": "Import",
+    "importDvsaHistory": "Import Dvsa History",
+    "importFromDvsa": "Import From Dvsa",
+    "nextDue": "Next Due",
+    "noRecords": "No Records",
+    "passRate": "Pass Rate",
+    "registration": "Registration",
+    "selectVehicle": "Select Vehicle",
+    "sortBy": "Sort By",
+    "title": "Title"
+  },
+  "name": "Name",
+  "notifications": {
+    "insuranceExpired": "Insurance Expired",
+    "insuranceExpiredMessage": "Insurance expired on {{date}}",
+    "insuranceExpiringSoon": "Insurance Expiring Soon",
+    "motExpired": "Mot Expired",
+    "motExpiringSoon": "Mot Expiring Soon",
+    "roadTaxExpired": "Road Tax Expired",
+    "roadTaxExpiringSoon": "Road Tax Expiring Soon",
+    "serviceOverdue": "Service Overdue",
+    "title": "Title"
+  },
+  "oil_change": "Oil Change",
+  "part": {
+    "jpg": "Jpg",
+    "newTitle": "New Title"
+  },
+  "partCategories": {
+    "selectCategory": "Select Category"
+  },
+  "partNumber": "Part Number",
+  "partsCost": "Parts Cost",
+  "password": {
+    "change": "Change",
+    "changeFailed": "Change Failed",
+    "changeRequired": "Change Required",
+    "changing": "Changing",
+    "confirmPassword": "Confirm Password",
+    "currentPassword": "Current Password",
+    "newPassword": "New Password",
+    "passwordChangeRequiredMessage": "Password Change Required Message",
+    "passwordMinLength": "Password Min Length",
+    "passwordRequirements": "Password Requirements",
+    "passwordsDoNotMatch": "Passwords Do Not Match"
+  },
+  "path[d]": "Path D",
+  "purchaseDate": "Purchase Date",
+  "quantity": "Quantity",
+  "receipt": {
+    "jpg": "Jpg",
+    "pdf": "Pdf"
+  },
+  "register": {
+    "success": "Success"
+  },
+  "registrationNumber": "Registration Number",
+  "repairCost": "Repair Cost",
+  "reports": {
+    "title": "Title"
+  },
+  "result": "Result",
+  "roadTax": {
+    "add": "Add",
+    "amount": "Amount",
+    "confirmDelete": "Confirm Delete",
+    "edit": "Edit",
+    "expiryDate": "Expiry Date",
+    "notes": "Notes",
+    "startDate": "Start Date",
+    "title": "Title"
+  },
+  "scheduled": "Scheduled",
+  "securityFeatures": {
+    "selectFeatures": "Select Features",
+    "selectVehicleFirst": "Select Vehicle First"
+  },
+  "serviceDate": "Service Date",
+  "serviceProvider": "Service Provider",
+  "serviceRecord": {
+    "newTitle": "New Title"
+  },
+  "serviceRecords": {
+    "addNewRecord": "Add New Record",
+    "addRecord": "Add Record",
+    "delete": "Delete",
+    "edit": "Edit",
+    "editRecord": "Edit Record",
+    "endDate": "End Date",
+    "export": "Export",
+    "filterByType": "Filter By Type",
+    "labourCost": "Labour Cost",
+    "nextServiceDue": "Next Service Due",
+    "noRecords": "No Records",
+    "partsCost": "Parts Cost",
+    "selectVehicle": "Select Vehicle",
+    "sortBy": "Sort By",
+    "startDate": "Start Date",
+    "title": "Title",
+    "totalCost": "Total Cost",
+    "uploadAttachment": "Upload Attachment"
+  },
+  "serviceType": "Service Type",
+  "specification": "Specification",
+  "startDate": "Start Date",
+  "station": "Station",
+  "testCenter": "Test Center",
+  "testCost": "Test Cost",
+  "testDate": "Test Date",
+  "totalCost": "Total Cost",
+  "vehicleCard": {
+    "viewDetails": "View Details"
+  },
+  "vehicleDialog": {
+    "editVehicle": "Edit Vehicle"
+  },
+  "vehicleSpecifications": {
+    "bore": "Bore",
+    "compression": "Compression",
+    "displacement": "Displacement",
+    "editTooltip": "Edit Tooltip",
+    "engine": "Engine",
+    "engineType": "Engine Type",
+    "errorPrefix": "Error Prefix",
+    "fuelSystem": "Fuel System",
+    "noSpecificationsInfo": "No Specifications Info",
+    "power": "Power",
+    "requiresMakeModel": "Requires Make Model",
+    "scrapeOnline": "Scrape Online",
+    "scrapeTooltip": "Scrape Tooltip",
+    "scraping": "Scraping",
+    "stroke": "Stroke",
+    "title": "Title",
+    "torque": "Torque"
+  },
+  "vehicleType": "Vehicle Type",
+  "vehicles": {
+    "addFirstVehicle": "Add First Vehicle",
+    "addNewVehicle": "Add New Vehicle",
+    "addVehicle": "Add Vehicle",
+    "delete": "Delete",
+    "edit": "Edit",
+    "editVehicle": "Edit Vehicle",
+    "export": "Export",
+    "filterByMake": "Filter By Make",
+    "groupBy": "Group By",
+    "noVehicles": "No Vehicles",
+    "refresh": "Refresh",
+    "search": "Search",
+    "sortBy": "Sort By",
+    "title": "Title",
+    "toggleView": "Toggle View",
+    "totalMileage": "Total Mileage",
+    "totalValue": "Total Value",
+    "view": "View"
+  },
+  "vinDecoder": {
+    "chipVds": "Chip Vds",
+    "chipVis": "Chip Vis",
+    "chipWmi": "Chip Wmi",
+    "countryOfOrigin": "Country Of Origin",
+    "decoding": "Decoding",
+    "forceRefreshTooltip": "Force Refresh Tooltip",
+    "manufacturer": "Manufacturer",
+    "model": "Model",
+    "noVin": "No Vin",
+    "refresh": "Refresh",
+    "refreshFromApi": "Refresh From Api",
+    "region": "Region",
+    "title": "Title",
+    "vehicleClass": "Vehicle Class",
+    "vinLabel": "Vin Label",
+    "year": "Year"
+  },
+  "year": "Year",
+  "£1": {
+    "50": "50"
+  },
+  "£105": {
+    "00": "00"
+  },
+  "£110": {
+    "99": "99"
+  },
+  "£140": {
+    "25": "25"
+  },
+  "£15,000": {
+    "00": "00"
+  },
+  "£200": {
+    "00": "00"
+  },
+  "£225": {
+    "00": "00"
+  },
+  "£25": {
+    "99": "99"
+  },
+  "£27,000": {
+    "00": "00"
+  },
+  "£305": {
+    "00": "00"
+  },
+  "£35": {
+    "00": "00"
+  },
+  "£45": {
+    "00": "00"
+  },
+  "£625": {
+    "00": "00"
+  },
+  "£68": {
+    "25": "25"
+  },
+  "£72": {
+    "00": "00"
+  },
+  "£80": {
+    "00": "00"
+  },
+  "£85": {
+    "00": "00"
   }
 }

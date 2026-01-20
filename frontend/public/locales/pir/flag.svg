@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 48">
+  <rect width="64" height="48" fill="#000"/>
+  <g transform="translate(8,6) scale(0.85)" fill="#fff">
+    <circle cx="24" cy="12" r="10" />
+    <rect x="20" y="18" width="8" height="6" rx="1"/>
+    <path d="M12 28c8 4 20 4 28 0l4 6c-10 6-26 6-36 0l4-6z" />
+  </g>
+  <g transform="translate(0,0)" fill="#fff">
+    <path d="M44 28c6 6 18 6 24 0l-6 8c-6 6-18 6-24 0l6-8z"/>
+    <path d="M20 28c-6 6-18 6-24 0l6 8c6 6 18 6 24 0l-6-8z"/>
+  </g>
+</svg>

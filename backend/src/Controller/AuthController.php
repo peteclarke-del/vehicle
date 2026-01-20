@@ -44,6 +44,13 @@ class AuthController extends AbstractController
         ]);
     }
 
+    // Legacy route support for tests expecting /api/auth/login
+    #[Route('/auth/login', name: 'api_auth_login', methods: ['POST'])]
+    public function authLogin(): JsonResponse
+    {
+        return $this->login();
+    }
+
     #[Route('/register', name: 'api_register', methods: ['POST'])]
     public function register(Request $request): JsonResponse
     {
@@ -99,6 +106,7 @@ class AuthController extends AbstractController
             'theme' => $user->getTheme(),
             'sessionTimeout' => $user->getSessionTimeout(),
             'distanceUnit' => $user->getDistanceUnit(),
+            'country' => $user->getCountry(),
             'roles' => $user->getRoles(),
             'passwordChangeRequired' => $user->isPasswordChangeRequired()
         ]);
@@ -151,6 +159,11 @@ class AuthController extends AbstractController
             if (in_array($unit, ['km', 'mi'])) {
                 $user->setDistanceUnit($unit);
             }
+        }
+
+        if (isset($data['country'])) {
+            // Expect ISO 2-letter country code
+            $user->setCountry(substr((string) $data['country'], 0, 2));
         }
 
         $this->entityManager->flush();

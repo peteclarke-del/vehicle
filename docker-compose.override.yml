@@ -7,6 +7,8 @@ services:
       XDEBUG_CONFIG: client_host=host.docker.internal
     volumes:
       - ./backend:/var/www/html:cached
+    user: "0:0"
+    entrypoint: ["/usr/local/bin/docker-entrypoint.sh"]
 
   frontend:
     environment:

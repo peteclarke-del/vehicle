@@ -14,6 +14,7 @@ import {
   InputLabel,
   Paper,
   IconButton,
+  CircularProgress,
 } from '@mui/material';
 import { PieChart } from '@mui/x-charts/PieChart';
 import {
@@ -41,8 +42,12 @@ import PreferencesDialog from '../components/PreferencesDialog';
 
 const Dashboard = () => {
   const { api } = useAuth();
+  const { user } = useAuth();
   const { data: vehicles, loading, fetchData: loadVehicles } = useApiData('/vehicles');
   const { convert, format } = useDistance();
+  const [last12FuelTotal, setLast12FuelTotal] = useState(0);
+  const [avgServiceCost, setAvgServiceCost] = useState(0);
+  const [totalsLoading, setTotalsLoading] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [preferencesOpen, setPreferencesOpen] = useState(false);
   const [orderedVehicles, setOrderedVehicles] = useState([]);
@@ -60,6 +65,23 @@ const Dashboard = () => {
     loadVehicles();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // If the first fetch returned an empty list due to a transient timing issue,
+  // retry once after a short delay. This prevents the UI from showing "no
+  // vehicles" briefly when a race or intermittent network issue occurs.
+  const didRetryRef = React.useRef(false);
+  useEffect(() => {
+    if (!loading && (!vehicles || vehicles.length === 0) && !didRetryRef.current) {
+      didRetryRef.current = true;
+      const timer = setTimeout(() => {
+        loadVehicles();
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+    return undefined;
+    // Only depend on loading and vehicles reference
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, vehicles]);
 
   // Load vehicles and apply sort order
   useEffect(() => {
@@ -92,6 +114,34 @@ const Dashboard = () => {
       setOrderedVehicles(ordered);
     }
   }, [vehicles, sortOrder]);
+
+  // Fetch totals for the last 12 months (fuel + parts/consumables)
+  useEffect(() => {
+    const fetchTotals = async () => {
+      if (!vehicles || vehicles.length === 0) {
+        setLast12FuelTotal(0);
+        setAvgServiceCost(0);
+        return;
+      }
+
+      setTotalsLoading(true);
+      try {
+        const res = await api.get('/vehicles/totals?period=12');
+        const data = res.data || {};
+        setLast12FuelTotal(data.fuel || 0);
+        setAvgServiceCost(data.averageServiceCost || 0);
+      } catch (e) {
+        console.error('Error fetching aggregated totals:', e);
+        setLast12FuelTotal(0);
+        setAvgServiceCost(0);
+      } finally {
+        setTotalsLoading(false);
+      }
+    };
+
+    fetchTotals();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vehicles]);
 
   const handleDialogClose = (reload) => {
     setDialogOpen(false);
@@ -134,22 +184,21 @@ const Dashboard = () => {
     return date < today;
   };
 
+  // Treat missing service date as overdue (no records yet)
   const isServiceDue = (vehicle) => {
-    if (!vehicle.lastServiceDate) return { due: false, reason: null };
-
+    if (!vehicle.lastServiceDate) {
+      return { due: true, reason: 'No service record found' };
+    }
     const lastService = new Date(vehicle.lastServiceDate);
     const today = new Date();
-    
     const monthsDiff = (today - lastService) / (1000 * 60 * 60 * 24 * 30.44);
     const monthsOverdue = monthsDiff > vehicle.serviceIntervalMonths;
-    
     if (monthsOverdue) {
       return { 
         due: true, 
         reason: `Over ${vehicle.serviceIntervalMonths} months since last service` 
       };
     }
-    
     return { due: false, reason: null };
   };
 
@@ -226,24 +275,14 @@ const Dashboard = () => {
 
   const ServiceChip = ({ vehicle }) => {
     const serviceDue = isServiceDue(vehicle);
-    
-    if (!vehicle.lastServiceDate) {
-      return (
-        <Chip
-          size="small"
-          label={t('dashboard.noServiceHistory')}
-          color="default"
-          sx={{ mb: 0.5, mr: 0.5 }}
-        />
-      );
-    }
-    
     if (serviceDue.due) {
       return (
         <Tooltip title={serviceDue.reason}>
           <Chip
             size="small"
-            label={`${t('dashboard.serviceDue')}: ${new Date(vehicle.lastServiceDate).toLocaleDateString()}`}
+            label={vehicle.lastServiceDate
+              ? `${t('dashboard.serviceDue')}: ${new Date(vehicle.lastServiceDate).toLocaleDateString()}`
+              : t('dashboard.serviceDue')}
             color="error"
             icon={<WarningIcon />}
             sx={{ mb: 0.5, mr: 0.5 }}
@@ -251,7 +290,6 @@ const Dashboard = () => {
         </Tooltip>
       );
     }
-    
     return (
       <Chip
         size="small"
@@ -280,15 +318,18 @@ const Dashboard = () => {
 
     vehicles.forEach(vehicle => {
       // Count expired items
-      if (vehicle.motExpiryDate && new Date(vehicle.motExpiryDate) < now) {
-        stats.expiredMot++;
-      }
-      if (vehicle.roadTaxExpiryDate && new Date(vehicle.roadTaxExpiryDate) < now) {
-        stats.expiredTax++;
-      }
-      if (vehicle.insuranceExpiryDate && new Date(vehicle.insuranceExpiryDate) < now) {
-        stats.expiredInsurance++;
-      }
+        // Treat missing expiry dates as expired (no records yet) but only when country requires them
+        if (user?.country === 'GB') {
+          if (!vehicle.motExpiryDate || new Date(vehicle.motExpiryDate) < now) {
+            stats.expiredMot++;
+          }
+          if (!vehicle.roadTaxExpiryDate || new Date(vehicle.roadTaxExpiryDate) < now) {
+            stats.expiredTax++;
+          }
+        }
+        if (!vehicle.insuranceExpiryDate || new Date(vehicle.insuranceExpiryDate) < now) {
+          stats.expiredInsurance++;
+        }
       
       // Check service due
       const serviceDue = isServiceDue(vehicle);
@@ -319,13 +360,13 @@ const Dashboard = () => {
     const now = new Date();
     return orderedVehicles.filter(vehicle => {
       if (activeFilter === 'expiredMot') {
-        return vehicle.motExpiryDate && new Date(vehicle.motExpiryDate) < now;
+        return !vehicle.motExpiryDate || new Date(vehicle.motExpiryDate) < now;
       }
       if (activeFilter === 'expiredTax') {
-        return vehicle.roadTaxExpiryDate && new Date(vehicle.roadTaxExpiryDate) < now;
+        return !vehicle.roadTaxExpiryDate || new Date(vehicle.roadTaxExpiryDate) < now;
       }
       if (activeFilter === 'expiredInsurance') {
-        return vehicle.insuranceExpiryDate && new Date(vehicle.insuranceExpiryDate) < now;
+        return !vehicle.insuranceExpiryDate || new Date(vehicle.insuranceExpiryDate) < now;
       }
       if (activeFilter === 'serviceDue') {
         return isServiceDue(vehicle).due;
@@ -537,6 +578,43 @@ const Dashboard = () => {
                     <Typography variant="h6" color="text.secondary" sx={{ mb: 1 }}>{t('dashboard.totalValue')}</Typography>
                     <Typography variant="h4" color="primary">£{stats.totalValue.toLocaleString('en-GB', { maximumFractionDigits: 0 })}</Typography>
                     <Typography variant="body2" color="text.secondary">{t('dashboard.purchaseCost')}</Typography>
+                  </Paper>
+                </Box>
+
+                {/* Row 2, Col 5-6: Fuel spent (last 12 months) */}
+                <Box sx={{ gridColumn: { lg: '5 / 7' }, gridRow: { lg: '2' } }}>
+                  <Paper sx={{ 
+                    p: 2, 
+                    textAlign: 'center', 
+                    height: 140,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center'
+                  }}>
+                    <Typography variant="h6" color="text.secondary" sx={{ mb: 1 }}>{t('dashboard.totalFuelCost')} (12m)</Typography>
+                    <Typography variant="h4" color="primary">
+                      {totalsLoading ? (
+                        <CircularProgress size={24} />
+                      ) : (
+                        `£${last12FuelTotal.toLocaleString('en-GB', { maximumFractionDigits: 2 })}`
+                      )}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">{t('dashboard.fuel')}</Typography>
+                  </Paper>
+                </Box>
+
+                {/* Row 2, Col 7-8: Parts & Consumables spent (last 12 months) */}
+                <Box sx={{ gridColumn: { lg: '7 / 9' }, gridRow: { lg: '2' } }}>
+                  <Paper sx={{ p: 2, textAlign: 'center', height: 140, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                    <Typography variant="h6" color="text.secondary" sx={{ mb: 1 }}>{t('dashboard.averageServiceCost')} (12m)</Typography>
+                    <Typography variant="h4" color="primary">
+                      {totalsLoading ? (
+                        <CircularProgress size={24} />
+                      ) : (
+                        `£${avgServiceCost.toLocaleString('en-GB', { maximumFractionDigits: 2 })}`
+                      )}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">{t('dashboard.averageServiceCostDesc')}</Typography>
                   </Paper>
                 </Box>
 

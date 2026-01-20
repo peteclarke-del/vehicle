@@ -165,13 +165,13 @@ const Parts = () => {
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Typography variant="h4">{t('parts.title')}</Typography>
         <Box display="flex" gap={2}>
-          <FormControl size="small" sx={{ width: 240 }}>
-            <InputLabel>Select Vehicle</InputLabel>
-            <Select
-              value={selectedVehicle}
-              label="Select Vehicle"
-              onChange={(e) => setSelectedVehicle(e.target.value)}
-            >
+                <FormControl size="small" sx={{ width: 240 }}>
+                  <InputLabel>{t('common.selectVehicle')}</InputLabel>
+                  <Select
+                    value={selectedVehicle}
+                    label={t('common.selectVehicle')}
+                    onChange={(e) => setSelectedVehicle(e.target.value)}
+                  >
               {vehicles.map((vehicle) => (
                 <MenuItem key={vehicle.id} value={vehicle.id}>
                   {vehicle.name}
@@ -292,12 +292,12 @@ const Parts = () => {
                   <TableCell>{part.purchaseDate || '-'}</TableCell>
                   <TableCell>{part.installationDate || '-'}</TableCell>
                   <TableCell>
-                    <Tooltip title="Edit">
+                        <Tooltip title={t('edit')}>
                       <IconButton size="small" onClick={() => handleEdit(part)}>
                         <Edit />
                       </IconButton>
                     </Tooltip>
-                    <Tooltip title="Delete">
+                        <Tooltip title={t('delete')}>
                       <IconButton size="small" onClick={() => handleDelete(part.id)}>
                         <Delete />
                       </IconButton>

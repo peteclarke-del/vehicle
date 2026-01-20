@@ -55,7 +55,6 @@ class VehicleModel
     #[ORM\Column(type: 'boolean', options: ['default' => true])]
     private bool $isActive = true;
 
-    #[ORM\OneToMany(mappedBy: 'model', targetEntity: Vehicle::class)]
     private Collection $vehicles;
 
     public function __construct()

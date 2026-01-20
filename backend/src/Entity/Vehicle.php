@@ -7,6 +7,7 @@ namespace App\Entity;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use App\Entity\InsurancePolicy;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'vehicles')]
@@ -62,19 +63,9 @@ class Vehicle
     private ?\DateTimeInterface $purchaseDate = null;
 
     #[ORM\Column(type: 'integer', nullable: true)]
-    private ?int $currentMileage = null;
+    private ?int $purchaseMileage = null;
 
-    #[ORM\Column(type: 'date', nullable: true)]
-    private ?\DateTimeInterface $lastServiceDate = null;
-
-    #[ORM\Column(type: 'date', nullable: true)]
-    private ?\DateTimeInterface $motExpiryDate = null;
-
-    #[ORM\Column(type: 'date', nullable: true)]
-    private ?\DateTimeInterface $roadTaxExpiryDate = null;
-
-    #[ORM\Column(type: 'date', nullable: true)]
-    private ?\DateTimeInterface $insuranceExpiryDate = null;
+    // current mileage is computed from fuel records; do not persist
 
     #[ORM\Column(type: 'text', nullable: true)]
     private ?string $securityFeatures = null;
@@ -112,6 +103,12 @@ class Vehicle
     #[ORM\Column(type: 'datetime')]
     private ?\DateTimeInterface $updatedAt = null;
 
+    #[ORM\Column(type: 'boolean', nullable: true)]
+    private ?bool $roadTaxExempt = null;
+    
+    #[ORM\Column(type: 'boolean', nullable: true)]
+    private ?bool $motExempt = null;
+
     #[ORM\OneToMany(mappedBy: 'vehicle', targetEntity: FuelRecord::class, cascade: ['remove'])]
     private Collection $fuelRecords;
 
@@ -124,11 +121,14 @@ class Vehicle
     #[ORM\OneToMany(mappedBy: 'vehicle', targetEntity: ServiceRecord::class, cascade: ['remove'])]
     private Collection $serviceRecords;
 
-    #[ORM\OneToMany(mappedBy: 'vehicle', targetEntity: Insurance::class, cascade: ['remove'])]
-    private Collection $insuranceRecords;
+    #[ORM\ManyToMany(targetEntity: InsurancePolicy::class, mappedBy: 'vehicles')]
+    private Collection $insurancePolicies;
 
     #[ORM\OneToMany(mappedBy: 'vehicle', targetEntity: MotRecord::class, cascade: ['remove'])]
     private Collection $motRecords;
+
+    #[ORM\OneToMany(mappedBy: 'vehicle', targetEntity: RoadTax::class, cascade: ['remove'])]
+    private Collection $roadTaxRecords;
 
     #[ORM\OneToMany(mappedBy: 'vehicle', targetEntity: VehicleImage::class, cascade: ['remove'], orphanRemoval: true)]
     #[ORM\OrderBy(['displayOrder' => 'ASC', 'id' => 'ASC'])]
@@ -140,8 +140,9 @@ class Vehicle
         $this->parts = new ArrayCollection();
         $this->consumables = new ArrayCollection();
         $this->serviceRecords = new ArrayCollection();
-        $this->insuranceRecords = new ArrayCollection();
+        $this->insurancePolicies = new ArrayCollection();
         $this->motRecords = new ArrayCollection();
+        $this->roadTaxRecords = new ArrayCollection();
         $this->images = new ArrayCollection();
         $this->createdAt = new \DateTime();
         $this->updatedAt = new \DateTime();
@@ -320,60 +321,182 @@ class Vehicle
         return $this;
     }
 
+    public function getPurchaseMileage(): ?int
+    {
+        return $this->purchaseMileage;
+    }
+
+    public function setPurchaseMileage(?int $purchaseMileage): self
+    {
+        $this->purchaseMileage = $purchaseMileage;
+        return $this;
+    }
+
     public function getCurrentMileage(): ?int
     {
-        return $this->currentMileage;
+        return $this->getComputedCurrentMileage();
     }
 
     public function setCurrentMileage(?int $currentMileage): self
     {
-        $this->currentMileage = $currentMileage;
+        // persisted current mileage was removed; setting is a no-op
         return $this;
     }
 
     public function getLastServiceDate(): ?\DateTimeInterface
     {
-        return $this->lastServiceDate;
-    }
-
-    public function setLastServiceDate(?\DateTimeInterface $lastServiceDate): self
-    {
-        $this->lastServiceDate = $lastServiceDate;
-        return $this;
+        return $this->getComputedLastServiceDate();
     }
 
     public function getMotExpiryDate(): ?\DateTimeInterface
     {
-        return $this->motExpiryDate;
+        return $this->getComputedMotExpiryDate();
     }
 
-    public function setMotExpiryDate(?\DateTimeInterface $motExpiryDate): self
+    /**
+     * Compute the most recently recorded service date from related ServiceRecord
+     * entities. Falls back to the stored `lastServiceDate` when no records exist.
+     *
+     * @return \DateTimeInterface|null
+     */
+    public function getComputedLastServiceDate(): ?\DateTimeInterface
     {
-        $this->motExpiryDate = $motExpiryDate;
-        return $this;
+        $latest = null;
+        foreach ($this->serviceRecords as $sr) {
+            $d = $sr->getServiceDate();
+            if ($d instanceof \DateTimeInterface) {
+                if ($latest === null || $d > $latest) {
+                    $latest = $d;
+                }
+            }
+        }
+
+        return $latest;
     }
 
     public function getRoadTaxExpiryDate(): ?\DateTimeInterface
     {
-        return $this->roadTaxExpiryDate;
+        return $this->getComputedRoadTaxExpiryDate();
     }
 
-    public function setRoadTaxExpiryDate(?\DateTimeInterface $roadTaxExpiryDate): self
+    /**
+     * Compute road tax expiry. Currently no RoadTax entity exists, so
+     * return null until RoadTax records are modelled.
+     */
+    public function getComputedRoadTaxExpiryDate(): ?\DateTimeInterface
     {
-        $this->roadTaxExpiryDate = $roadTaxExpiryDate;
+        $latest = null;
+        foreach ($this->roadTaxRecords as $rt) {
+            $d = $rt->getExpiryDate();
+            if ($d instanceof \DateTimeInterface) {
+                if ($latest === null || $d > $latest) {
+                    $latest = $d;
+                }
+            }
+        }
+        return $latest;
+    }
+
+    public function getRoadTaxRecords(): Collection
+    {
+        return $this->roadTaxRecords;
+    }
+
+    /** @return Collection<int, InsurancePolicy> */
+    public function getInsurancePolicies(): Collection
+    {
+        return $this->insurancePolicies;
+    }
+
+    public function addInsurancePolicy(InsurancePolicy $policy): self
+    {
+        if (!$this->insurancePolicies->contains($policy)) {
+            $this->insurancePolicies->add($policy);
+        }
         return $this;
+    }
+
+    public function removeInsurancePolicy(InsurancePolicy $policy): self
+    {
+        if ($this->insurancePolicies->contains($policy)) {
+            $this->insurancePolicies->removeElement($policy);
+        }
+        return $this;
+    }
+
+    /**
+     * Compute current mileage from the vehicle's FuelRecord collection. Returns
+     * the highest mileage found, or the stored `currentMileage` as a fallback.
+     */
+    public function getComputedCurrentMileage(): ?int
+    {
+        $max = null;
+        foreach ($this->fuelRecords as $fr) {
+            if (method_exists($fr, 'getMileage')) {
+                $m = $fr->getMileage();
+                if ($m !== null) {
+                    if ($max === null || $m > $max) {
+                        $max = $m;
+                    }
+                }
+            }
+        }
+
+        return $max;
+    }
+
+    /**
+     * Compute MOT expiry from the latest MotRecord. Prefers the record's
+     * `expiryDate` when present, otherwise falls back to `testDate`. If no
+     * records exist returns the stored `motExpiryDate`.
+     */
+    public function getComputedMotExpiryDate(): ?\DateTimeInterface
+    {
+        $latest = null;
+        foreach ($this->motRecords as $mr) {
+            $d = $mr->getTestDate() ?? $mr->getExpiryDate();
+            if ($d instanceof \DateTimeInterface) {
+                if ($latest === null || $d > $latest) {
+                    $latest = $d;
+                }
+            }
+        }
+
+        if ($latest !== null) {
+            // If the latest mot record has an explicit expiry date prefer that
+            foreach ($this->motRecords as $mr) {
+                if ($mr->getTestDate() === $latest && $mr->getExpiryDate() !== null) {
+                    return $mr->getExpiryDate();
+                }
+            }
+            return $latest;
+        }
+
+        return $latest;
+    }
+
+    /**
+     * Compute insurance expiry from the latest Insurance record. Falls back
+     * to the stored `insuranceExpiryDate` when no records exist.
+     */
+    public function getComputedInsuranceExpiryDate(): ?\DateTimeInterface
+    {
+        $latest = null;
+        foreach ($this->insurancePolicies as $policy) {
+            $d = $policy->getExpiryDate();
+            if ($d instanceof \DateTimeInterface) {
+                if ($latest === null || $d > $latest) {
+                    $latest = $d;
+                }
+            }
+        }
+
+        return $latest;
     }
 
     public function getInsuranceExpiryDate(): ?\DateTimeInterface
     {
-        return $this->insuranceExpiryDate;
-    }
-
-    public function setInsuranceExpiryDate(
-        ?\DateTimeInterface $insuranceExpiryDate
-    ): self {
-        $this->insuranceExpiryDate = $insuranceExpiryDate;
-        return $this;
+        return $this->getComputedInsuranceExpiryDate();
     }
 
     public function getSecurityFeatures(): ?string
@@ -495,10 +618,7 @@ class Vehicle
         return $this->serviceRecords;
     }
 
-    public function getInsuranceRecords(): Collection
-    {
-        return $this->insuranceRecords;
-    }
+    
 
     public function getMotRecords(): Collection
     {
@@ -656,6 +776,85 @@ class Vehicle
     public function isClassic(): bool
     {
         return $this->getAge() >= 25;
+    }
+
+    /**
+     * Vehicle-level override for road tax exemption. When null the exemption
+     * is computed from vehicle age (30+ years). When set, it forces the
+     * exemption state.
+     */
+    public function getRoadTaxExempt(): ?bool
+    {
+        return $this->roadTaxExempt;
+    }
+
+    public function setRoadTaxExempt(?bool $roadTaxExempt): self
+    {
+        $this->roadTaxExempt = $roadTaxExempt;
+        return $this;
+    }
+
+    /**
+     * True when the vehicle is considered exempt from road tax. Uses the
+     * manual override when provided; otherwise vehicles 30 years or older
+     * are treated as exempt.
+     */
+    public function isRoadTaxExempt(): bool
+    {
+        if ($this->roadTaxExempt !== null) {
+            return (bool) $this->roadTaxExempt;
+        }
+        return $this->getAge() >= 30;
+    }
+
+    public function getMotExempt(): ?bool
+    {
+        return $this->motExempt;
+    }
+
+    public function setMotExempt(?bool $motExempt): self
+    {
+        $this->motExempt = $motExempt;
+        return $this;
+    }
+
+    /**
+     * True when the vehicle is considered exempt from MOT. Uses the
+     * manual override when provided; otherwise vehicles 30 years or older
+     * are treated as exempt.
+     */
+    public function isMotExempt(): bool
+    {
+        if ($this->motExempt !== null) {
+            return (bool) $this->motExempt;
+        }
+        return $this->getAge() >= 30;
+    }
+
+    /**
+     * Compute the annualized road tax cost from the latest RoadTax record.
+     * Returns a string representing the annual cost (two decimal places),
+     * or null when no amount is available.
+     */
+    public function getComputedRoadTaxAnnualCost(): ?string
+    {
+        $latestDate = null;
+        $latestRecord = null;
+        foreach ($this->roadTaxRecords as $rt) {
+            $d = $rt->getExpiryDate() ?? $rt->getStartDate();
+            if ($d instanceof \DateTimeInterface) {
+                if ($latestDate === null || $d > $latestDate) {
+                    $latestDate = $d;
+                    $latestRecord = $rt;
+                }
+            }
+        }
+
+        if ($latestRecord) {
+            return $latestRecord->getNormalizedAnnualAmount();
+        }
+
+        return null;
     }
 
     /**
