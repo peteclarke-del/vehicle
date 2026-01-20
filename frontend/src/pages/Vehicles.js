@@ -34,7 +34,10 @@ import {
   TrendingDown, 
   ViewModule as CardViewIcon,
   ViewList as TableViewIcon,
-  DragIndicator as DragIndicatorIcon,
+  DirectionsCar,
+  TwoWheeler as MotorcycleIcon,
+  LocalShipping as VanIcon,
+  LocalShipping as TruckIcon,
   FileDownload as ExportIcon,
   FileUpload as ImportIcon,
   DeleteSweep as PurgeIcon,
@@ -46,7 +49,7 @@ import { fetchArrayData } from '../hooks/useApiData';
 import { useDistance } from '../hooks/useDistance';
 import VehicleDialog from '../components/VehicleDialog';
 import VehicleSpecifications from '../components/VehicleSpecifications';
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+// no drag-and-drop for vehicle cards any more
 
 const Vehicles = () => {
   const [vehicles, setVehicles] = useState([]);
@@ -54,7 +57,6 @@ const Vehicles = () => {
   const { convert, format } = useDistance();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
-  const [orderedVehicles, setOrderedVehicles] = useState([]);
   const [viewMode, setViewMode] = useState(() => {
     return localStorage.getItem('vehiclesViewMode') || 'card';
   });
@@ -72,9 +74,7 @@ const Vehicles = () => {
     loadVehicles();
   }, []);
 
-  useEffect(() => {
-    setOrderedVehicles(vehicles);
-  }, [vehicles]);
+  // no local ordering state — cards are not draggable anymore
 
   const loadVehicles = async () => {
     setLoading(true);
@@ -90,25 +90,7 @@ const Vehicles = () => {
     }
   };
 
-  const handleDragEnd = (result) => {
-    if (!result.destination) return;
-
-    const items = Array.from(orderedVehicles);
-    const [reorderedItem] = items.splice(result.source.index, 1);
-    items.splice(result.destination.index, 0, reorderedItem);
-
-    setOrderedVehicles(items);
-
-    const orderMap = {};
-    items.forEach((vehicle, index) => {
-      orderMap[vehicle.id] = index;
-    });
-    localStorage.setItem('vehiclesCustomOrder', JSON.stringify(orderMap));
-  };
-
-  const handleDragStart = () => {
-    // Custom ordering handled by drag and drop
-  };
+  // drag & drop removed
 
   const handleExport = async () => {
     try {
@@ -211,6 +193,11 @@ const Vehicles = () => {
         bValue = parseInt(b.year) || 0;
       }
 
+      if (orderBy === 'vehicleType') {
+        aValue = a.vehicleType?.name || '';
+        bValue = b.vehicleType?.name || '';
+      }
+
       if (!aValue) aValue = '';
       if (!bValue) bValue = '';
 
@@ -272,6 +259,22 @@ const Vehicles = () => {
       </Box>
     );
   }
+
+  const getVehicleIcon = (vehicleType) => {
+    const iconProps = { fontSize: 28, opacity: 0.9 };
+    if (!vehicleType) return <DirectionsCar sx={iconProps} />;
+    switch (vehicleType.name) {
+      case 'Motorcycle':
+        return <MotorcycleIcon sx={iconProps} />;
+      case 'Van':
+        return <VanIcon sx={iconProps} />;
+      case 'Truck':
+        return <TruckIcon sx={iconProps} />;
+      case 'Car':
+      default:
+        return <DirectionsCar sx={iconProps} />;
+    }
+  };
 
   return (
     <Box>
@@ -355,107 +358,71 @@ const Vehicles = () => {
       </Dialog>
 
       {viewMode === 'card' ? (
-        <DragDropContext onDragEnd={handleDragEnd} onDragStart={handleDragStart}>
-          <Droppable droppableId="vehicles">
-            {(provided) => (
-              <Box
-                ref={provided.innerRef}
-                {...provided.droppableProps}
-              >
-                <Grid container spacing={3}>
-                  {sortedVehicles.map((vehicle, index) => (
-                    <Draggable key={vehicle.id} draggableId={String(vehicle.id)} index={index}>
-                      {(provided, snapshot) => (
-                        <Grid 
-                          item 
-                          xs={12} 
-                          sm={6} 
-                          md={4}
-                          ref={provided.innerRef}
-                          {...provided.draggableProps}
-                          style={{
-                            ...provided.draggableProps.style,
-                            transition: 'transform 0.2s ease',
-                          }}
-                        >
-                          <Card sx={{
-                            transform: snapshot.isDragging ? 'rotate(2deg)' : 'none',
-                            boxShadow: snapshot.isDragging ? 8 : 1,
-                            opacity: snapshot.isDragging ? 0.9 : 1,
-                            height: '100%',
-                            cursor: 'pointer',
-                          }}
-                          onClick={() => handleViewDetails(vehicle)}
-                          >
-                                <CardContent>
-                                  <Box display="flex" justifyContent="space-between" alignItems="start">
-                                    <Box display="flex" alignItems="center" gap={1} flex={1}>
-                                      <Box 
-                                        {...provided.dragHandleProps} 
-                                        sx={{ 
-                                          display: 'flex', 
-                                          alignItems: 'center', 
-                                          cursor: 'grab',
-                                          '&:active': {
-                                            cursor: 'grabbing',
-                                          }
-                                        }}
-                                      >
-                                        <DragIndicatorIcon sx={{ fontSize: 24, color: 'text.primary' }} />
-                                      </Box>
-                                      <Typography variant="h6" gutterBottom sx={{ mb: 0 }}>
-                                        {vehicle.name}
-                                      </Typography>
-                                    </Box>
-                                    <Box>
-                                      <Tooltip title="Edit">
-                                        <IconButton size="small" onClick={(e) => { e.stopPropagation(); handleEdit(vehicle); }}>
-                                          <Edit fontSize="small" />
-                                        </IconButton>
-                                      </Tooltip>
-                                      <Tooltip title="Delete">
-                                        <IconButton size="small" onClick={(e) => { e.stopPropagation(); handleDelete(vehicle.id); }}>
-                                          <Delete fontSize="small" />
-                                        </IconButton>
-                                      </Tooltip>
-                                    </Box>
-                                  </Box>
-                                  <Typography color="textSecondary" gutterBottom>
-                                    {vehicle.make} {vehicle.model} ({vehicle.year})
-                                  </Typography>
-                                  <Typography variant="body2">
-                                    {t('vehicle.registrationNumber')}: {vehicle.registrationNumber || 'N/A'}
-                                  </Typography>
-                                  <Typography variant="body2">
-                                    {t('vehicle.currentMileage')}: {vehicle.currentMileage ? format(convert(vehicle.currentMileage)) : 'N/A'}
-                                  </Typography>
-                                  <Box mt={2}>
-                                    <Button
-                                      fullWidth
-                                      variant="outlined"
-                                      startIcon={<TrendingDown />}
-                                      onClick={() => !snapshot.isDragging && navigate(`/vehicles/${vehicle.id}`)}
-                                    >
-                                      {t('vehicleCard.viewDetails')}
-                                    </Button>
-                                  </Box>
-                                </CardContent>
-                              </Card>
-                            </Grid>
-                          )}
-                        </Draggable>
-                      ))}
-                    </Grid>
-                    {provided.placeholder}
+        <Grid container spacing={3}>
+          {sortedVehicles.map((vehicle) => (
+            <Grid key={vehicle.id} item xs={12} sm={6} md={4}>
+              <Card sx={{ height: '100%', cursor: 'pointer' }} onClick={() => handleViewDetails(vehicle)}>
+                <CardContent>
+                  <Box display="flex" justifyContent="space-between" alignItems="start">
+                    <Box display="flex" alignItems="center" gap={1} flex={1}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        {getVehicleIcon(vehicle.vehicleType)}
+                        <Typography variant="h6" gutterBottom sx={{ mb: 0 }}>
+                          {vehicle.name}
+                        </Typography>
+                      </Box>
+                    </Box>
+                    <Box>
+                      <Tooltip title={t('edit')}>
+                        <IconButton size="small" onClick={(e) => { e.stopPropagation(); handleEdit(vehicle); }}>
+                          <Edit fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title={t('delete')}>
+                        <IconButton size="small" onClick={(e) => { e.stopPropagation(); handleDelete(vehicle.id); }}>
+                          <Delete fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
                   </Box>
-                )}
-              </Droppable>
-            </DragDropContext>
-          ) : (
+                  <Typography color="textSecondary" gutterBottom>
+                    {vehicle.make} {vehicle.model} ({vehicle.year})
+                  </Typography>
+                  <Typography variant="body2">
+                    {t('vehicle.registrationNumber')}: {vehicle.registrationNumber || 'N/A'}
+                  </Typography>
+                  <Typography variant="body2">
+                    {t('vehicle.currentMileage')}: {vehicle.currentMileage ? format(convert(vehicle.currentMileage)) : 'N/A'}
+                  </Typography>
+                  <Box mt={2}>
+                    <Button
+                      fullWidth
+                      variant="outlined"
+                      startIcon={<TrendingDown />}
+                      onClick={() => navigate(`/vehicles/${vehicle.id}`)}
+                    >
+                      {t('vehicleCard.viewDetails')}
+                    </Button>
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
+      ) : (
             <TableContainer component={Paper} sx={{ maxHeight: 'calc(100vh - 180px)', overflow: 'auto' }}>
               <Table stickyHeader>
                 <TableHead>
               <TableRow>
+                <TableCell sx={{ fontWeight: 'bold', fontSize: '1rem', width: 72 }}>
+                  <TableSortLabel
+                    active={orderBy === 'vehicleType'}
+                    direction={orderBy === 'vehicleType' ? order : 'asc'}
+                    onClick={() => handleRequestSort('vehicleType')}
+                  >
+                    {t('vehicle.vehicleType')}
+                  </TableSortLabel>
+                </TableCell>
                 <TableCell sx={{ fontWeight: 'bold', fontSize: '1rem' }}>
                   <TableSortLabel
                     active={orderBy === 'name'}
@@ -526,14 +493,19 @@ const Vehicles = () => {
                   }}
                   onClick={() => navigate(`/vehicles/${vehicle.id}`)}
                 >
+                  <TableCell>
+                    <Box display="flex" alignItems="center" gap={1}>
+                      {getVehicleIcon(vehicle.vehicleType)}
+                    </Box>
+                  </TableCell>
                   <TableCell>{vehicle.name}</TableCell>
                   <TableCell>{vehicle.make}</TableCell>
                   <TableCell>{vehicle.model}</TableCell>
-                  <TableCell>{vehicle.year || 'N/A'}</TableCell>
-                  <TableCell>{vehicle.registrationNumber || 'N/A'}</TableCell>
-                  <TableCell>{vehicle.currentMileage ? format(convert(vehicle.currentMileage)) : 'N/A'}</TableCell>
+                  <TableCell>{vehicle.year || t('vehicleDetails.na')}</TableCell>
+                  <TableCell>{vehicle.registrationNumber || t('vehicleDetails.na')}</TableCell>
+                  <TableCell>{vehicle.currentMileage ? format(convert(vehicle.currentMileage)) : t('vehicleDetails.na')}</TableCell>
                   <TableCell align="right">
-                    <Tooltip title="Edit">
+                    <Tooltip title={t('edit')}>
                       <IconButton 
                         size="small" 
                         onClick={(e) => {
@@ -544,7 +516,7 @@ const Vehicles = () => {
                         <Edit fontSize="small" />
                       </IconButton>
                     </Tooltip>
-                    <Tooltip title="Delete">
+                    <Tooltip title={t('delete')}>
                       <IconButton 
                         size="small" 
                         onClick={(e) => {
@@ -583,23 +555,23 @@ const Vehicles = () => {
         </DialogTitle>
         <DialogContent>
           <Tabs value={selectedTabValue} onChange={handleTabChange} sx={{ borderBottom: 1, borderColor: 'divider' }}>
-            <Tab label="Details" />
-            <Tab label="Specifications" />
+            <Tab label={t('vehicleDetails.overview')} />
+            <Tab label={t('vehicleDetails.vehicleInformation')} />
           </Tabs>
           <Box sx={{ mt: 2 }}>
             {selectedTabValue === 0 && (
               <Box>
                 <Typography variant="body1" paragraph>
-                  <strong>Registration:</strong> {selectedVehicle?.registrationNumber || 'N/A'}
+                  <strong>{t('vehicle.registrationNumber')}:</strong> {selectedVehicle?.registrationNumber || t('vehicleDetails.na')}
                 </Typography>
                 <Typography variant="body1" paragraph>
-                  <strong>VIN:</strong> {selectedVehicle?.vin || 'N/A'}
+                  <strong>{t('vehicle.vin')}:</strong> {selectedVehicle?.vin || t('vehicleDetails.na')}
                 </Typography>
                 <Typography variant="body1" paragraph>
-                  <strong>Current Mileage:</strong> {selectedVehicle?.currentMileage ? format(convert(selectedVehicle.currentMileage)) : 'N/A'}
+                  <strong>{t('vehicle.currentMileage')}:</strong> {selectedVehicle?.currentMileage ? format(convert(selectedVehicle.currentMileage)) : t('vehicleDetails.na')}
                 </Typography>
                 <Typography variant="body1" paragraph>
-                  <strong>Type:</strong> {selectedVehicle?.vehicleType?.name || 'N/A'}
+                  <strong>{t('vehicle.vehicleType')}:</strong> {selectedVehicle?.vehicleType?.name || t('vehicleDetails.na')}
                 </Typography>
               </Box>
             )}
@@ -609,7 +581,7 @@ const Vehicles = () => {
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDetailsDialogOpen(false)}>Close</Button>
+          <Button onClick={() => setDetailsDialogOpen(false)}>{t('common.cancel')}</Button>
         </DialogActions>
       </Dialog>
     </Box>

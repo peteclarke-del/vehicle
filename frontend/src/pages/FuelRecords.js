@@ -32,6 +32,8 @@ const FuelRecords = () => {
   const [vehicles, setVehicles] = useState([]);
   const [selectedVehicle, setSelectedVehicle] = useState('');
   const [loading, setLoading] = useState(true);
+  const [loadingRecords, setLoadingRecords] = useState(false);
+  const recordsAbortRef = React.useRef(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [orderBy, setOrderBy] = useState(() => localStorage.getItem('fuelRecordsSortBy') || 'date');
@@ -58,13 +60,51 @@ const FuelRecords = () => {
     }
     setLoading(false);
   };
+  
+  // Send client-side logs to backend if endpoint exists, otherwise console.warn/error
+  const sendClientLog = async (level, message, context = {}) => {
+    const payload = { level, message, context, ts: new Date().toISOString() };
+    try {
+      // attempt to post to /client-logs; ignore failures
+      await api.post('/client-logs', payload);
+    } catch (err) {
+      if (level === 'error') console.error('[client-log]', message, context, err);
+      else console.warn('[client-log]', message, context, err);
+    }
+  };
 
   const loadRecords = async () => {
+    // Cancel any outstanding records request
+    if (recordsAbortRef.current) {
+      try { recordsAbortRef.current.abort(); } catch (e) {}
+      recordsAbortRef.current = null;
+    }
+    const controller = new AbortController();
+    recordsAbortRef.current = controller;
+    setLoadingRecords(true);
+    let timeoutId;
     try {
-      const response = await api.get(`/fuel-records?vehicleId=${selectedVehicle}`);
+      // Safety: abort the request if it takes too long
+      timeoutId = setTimeout(() => {
+        try { controller.abort(); } catch (e) {}
+        sendClientLog('error', 'fuel_records_request_timeout', { vehicleId: selectedVehicle });
+      }, 15000);
+
+      const response = await api.get(`/fuel-records?vehicleId=${selectedVehicle}`, { signal: controller.signal });
       setRecords(response.data);
     } catch (error) {
-      console.error('Error loading fuel records:', error);
+      const isCanceled = (error && (error.name === 'CanceledError' || error.name === 'AbortError' || error.code === 'ERR_CANCELED' || error.message === 'canceled'));
+      if (isCanceled) {
+        // request was cancelled, ignore
+        sendClientLog('debug', 'fuel_records_request_cancelled', { vehicleId: selectedVehicle });
+      } else {
+        console.error('Error loading fuel records:', error);
+        sendClientLog('error', 'Error loading fuel records', { vehicleId: selectedVehicle, error: (error && error.toString && error.toString()) || error });
+      }
+    } finally {
+      if (timeoutId) clearTimeout(timeoutId);
+      setLoadingRecords(false);
+      recordsAbortRef.current = null;
     }
   };
 
@@ -145,6 +185,11 @@ const FuelRecords = () => {
     return [...records].sort(comparator);
   }, [records, order, orderBy]);
 
+  // For UX: show the Date column's sort arrow so that newest-first (internal 'desc') appears as an up arrow.
+  const dateDisplayDirection = orderBy === 'date' ? (order === 'desc' ? 'asc' : 'desc') : order;
+
+  const headingText = (records && records.length > 0) ? `Fuel Records (${records.length})` : t('fuel.title');
+
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
@@ -156,13 +201,13 @@ const FuelRecords = () => {
   return (
     <Box>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h4">{t('fuel.title')}</Typography>
+        <Typography variant="h4">{headingText}</Typography>
         <Box display="flex" gap={2}>
           <FormControl size="small" sx={{ width: 240 }}>
-            <InputLabel>Select Vehicle</InputLabel>
+            <InputLabel>{t('common.selectVehicle')}</InputLabel>
             <Select
               value={selectedVehicle}
-              label="Select Vehicle"
+              label={t('common.selectVehicle')}
               onChange={(e) => setSelectedVehicle(e.target.value)}
             >
               {vehicles.map((vehicle) => (
@@ -183,14 +228,19 @@ const FuelRecords = () => {
         </Box>
       </Box>
 
-      <TableContainer component={Paper} sx={{ maxHeight: 'calc(100vh - 180px)', overflow: 'auto' }}>
-        <Table stickyHeader>
+      {loadingRecords ? (
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight="40vh">
+          <CircularProgress />
+        </Box>
+      ) : (
+        <TableContainer component={Paper} sx={{ maxHeight: 'calc(100vh - 180px)', overflow: 'auto' }}>
+          <Table stickyHeader>
           <TableHead>
             <TableRow>
               <TableCell>
                 <TableSortLabel
                   active={orderBy === 'date'}
-                  direction={orderBy === 'date' ? order : 'asc'}
+                  direction={dateDisplayDirection}
                   onClick={() => handleRequestSort('date')}
                 >
                   {t('fuel.date')}
@@ -241,7 +291,7 @@ const FuelRecords = () => {
                   {t('fuel.station')}
                 </TableSortLabel>
               </TableCell>
-              <TableCell>Actions</TableCell>
+              <TableCell>{t('common.actions')}</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -254,12 +304,12 @@ const FuelRecords = () => {
                 <TableCell>{record.fuelType || 'N/A'}</TableCell>
                 <TableCell>{record.station || 'N/A'}</TableCell>
                 <TableCell>
-                  <Tooltip title="Edit">
+                  <Tooltip title={t('edit')}>
                     <IconButton size="small" onClick={() => handleEdit(record)}>
                       <Edit fontSize="small" />
                     </IconButton>
                   </Tooltip>
-                  <Tooltip title="Delete">
+                  <Tooltip title={t('delete')}>
                     <IconButton size="small" onClick={() => handleDelete(record.id)}>
                       <Delete fontSize="small" />
                     </IconButton>
@@ -268,8 +318,9 @@ const FuelRecords = () => {
               </TableRow>
             ))}
           </TableBody>
-        </Table>
-      </TableContainer>
+          </Table>
+        </TableContainer>
+      )}
 
       <FuelRecordDialog
         open={dialogOpen}

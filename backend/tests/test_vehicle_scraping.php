@@ -12,6 +12,12 @@ use Symfony\Component\Dotenv\Dotenv;
 use App\Kernel;
 use Symfony\Component\HttpFoundation\Request;
 
+// Prevent this standalone debug script from running when PHPUnit or other
+// tooling includes this file. Only execute when invoked directly from CLI.
+if (PHP_SAPI !== 'cli' || realpath($_SERVER['argv'][0]) !== __FILE__) {
+    return;
+}
+
 // Load environment variables
 $dotenv = new Dotenv();
 $dotenv->load(__DIR__ . '/../.env');

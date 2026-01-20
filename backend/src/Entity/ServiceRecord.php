@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
+use App\Entity\ServiceItem;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'service_records')]
@@ -15,7 +18,7 @@ class ServiceRecord
     #[ORM\Column(type: 'integer')]
     private ?int $id = null;
 
-    #[ORM\ManyToOne(targetEntity: Vehicle::class)]
+    #[ORM\ManyToOne(targetEntity: Vehicle::class, inversedBy: 'serviceRecords')]
     #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
     private ?Vehicle $vehicle = null;
 
@@ -64,9 +67,54 @@ class ServiceRecord
     #[ORM\Column(type: 'integer', nullable: true)]
     private ?int $receiptAttachmentId = null;
 
+    /**
+     * @var Collection<int, ServiceItem>
+     */
+    #[ORM\OneToMany(mappedBy: 'serviceRecord', targetEntity: ServiceItem::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
+    private Collection $items;
+
     public function __construct()
     {
         $this->createdAt = new \DateTime();
+        $this->items = new ArrayCollection();
+    }
+
+    /**
+     * @return ServiceItem[]
+     */
+    public function getItems(): array
+    {
+        return $this->items->toArray();
+    }
+
+    public function addItem(ServiceItem $item): self
+    {
+        if (!$this->items->contains($item)) {
+            $this->items->add($item);
+            $item->setServiceRecord($this);
+        }
+        return $this;
+    }
+
+    public function removeItem(ServiceItem $item): self
+    {
+        if ($this->items->contains($item)) {
+            $this->items->removeElement($item);
+            $item->setServiceRecord(null);
+        }
+        return $this;
+    }
+
+    private function sumItemsByType(string $type): string
+    {
+        $total = '0.00';
+        foreach ($this->items as $it) {
+            if ($it->getType() === $type) {
+                $amount = $it->getTotal();
+                $total = bcadd($total, $amount, 2);
+            }
+        }
+        return $total;
     }
 
     public function getId(): ?int

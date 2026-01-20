@@ -29,23 +29,50 @@ import {
   Security,
   AssignmentTurnedIn,
   HomeRepairService,
+  Assessment,
 } from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useTranslation } from 'react-i18next';
 import NotificationMenu from './NotificationMenu';
+import { Tooltip, IconButton as MuiIconButton } from '@mui/material';
+import { getAvailableLanguages } from '../i18n';
 
 const drawerWidth = 240;
 
 const Layout = () => {
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { logout, user, updateProfile } = useAuth();
   const { mode, toggleTheme } = useTheme();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const muiTheme = useMuiTheme();
   const isMobile = useMediaQuery(muiTheme.breakpoints.down('sm'));
+  const location = useLocation();
+  const [languages, setLanguages] = React.useState([]);
+
+  React.useEffect(() => {
+    let mounted = true;
+    getAvailableLanguages().then((langs) => {
+      if (mounted) setLanguages(langs);
+    }).catch(() => {
+      setLanguages([
+        { code: 'en', nativeName: 'English' },
+        { code: 'es', nativeName: 'Español' },
+        { code: 'fr', nativeName: 'Français' },
+      ]);
+    });
+    return () => { mounted = false; };
+  }, []);
+
+  const currentLangBase = (i18n.language || '').split('-')[0];
+
+  const isActive = (path) => {
+    if (!location || !location.pathname) return false;
+    if (path === '/') return location.pathname === '/';
+    return location.pathname.startsWith(path);
+  };
 
   const menuItems = [
     { text: t('nav.dashboard'), icon: <DashboardIcon />, path: '/' },
@@ -55,7 +82,9 @@ const Layout = () => {
     { text: t('nav.consumables'), icon: <Inventory />, path: '/consumables' },
     { text: t('nav.insurance'), icon: <Security />, path: '/insurance' },
     { text: t('nav.motRecords'), icon: <AssignmentTurnedIn />, path: '/mot-records' },
+    { text: t('nav.roadTax'), icon: <AssignmentTurnedIn />, path: '/road-tax' },
     { text: t('nav.serviceRecords'), icon: <HomeRepairService />, path: '/service-records' },
+    { text: t('nav.reports'), icon: <Assessment />, path: '/reports' },
     { text: t('nav.profile'), icon: <AccountCircle />, path: '/profile' },
   ];
 
@@ -80,7 +109,20 @@ const Layout = () => {
       <List>
         {menuItems.map((item) => (
           <ListItem key={item.text} disablePadding>
-            <ListItemButton onClick={() => handleNavigation(item.path)}>
+            <ListItemButton
+              onClick={() => handleNavigation(item.path)}
+              selected={isActive(item.path)}
+              sx={{
+                '&:hover': { backgroundColor: (theme) => theme.palette.action.hover },
+                '&.Mui-selected': {
+                  backgroundColor: (theme) => theme.palette.action.selected,
+                  '& .MuiListItemIcon-root, & .MuiListItemText-primary': {
+                    color: (theme) => theme.palette.primary.main,
+                    fontWeight: 700,
+                  },
+                },
+              }}
+            >
               <ListItemIcon>{item.icon}</ListItemIcon>
               <ListItemText primary={item.text} />
             </ListItemButton>
@@ -114,9 +156,69 @@ const Layout = () => {
           >
             <MenuIcon />
           </IconButton>
-          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-            Vehicle Management System
-          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1 }}>
+            <Typography variant="h6" noWrap component="div" sx={{ textAlign: 'left' }}>
+              Vehicle Management System
+            </Typography>
+          </Box>
+
+          <Box sx={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 1, zIndex: 2000 }}>
+            {languages.map((lang) => {
+              const selected = currentLangBase === lang.code;
+              const imgStyle = {
+                width: 22,
+                height: 16,
+                display: 'block',
+                borderRadius: 3,
+                boxShadow: selected ? '0 0 0 3px rgba(25,118,210,0.24)' : 'none',
+              };
+
+              return (
+                <Tooltip key={lang.code} title={lang.nativeName} arrow>
+                  <MuiIconButton
+                    size="small"
+                    color="inherit"
+                    aria-label={`Change language to ${lang.nativeName}`}
+                    onClick={async () => {
+                      // eslint-disable-next-line no-console
+                      console.log('Language flag clicked:', lang.code, 'current=', i18n.language);
+                      try {
+                        const url = `/locales/${lang.code}/translation.json`;
+                        const resp = await fetch(url, { cache: 'no-store' });
+                        if (resp.ok) {
+                          const bundle = await resp.json();
+                          i18n.addResourceBundle(lang.code, 'translation', bundle, true, true);
+                          // eslint-disable-next-line no-console
+                          console.log('Added/updated resource bundle for', lang.code);
+                        } else {
+                          // eslint-disable-next-line no-console
+                          console.warn('Locale file not found at', url, 'status', resp.status);
+                        }
+
+                        await i18n.changeLanguage(lang.code);
+                        // Persist choice to user profile when logged in
+                        if (user && updateProfile) {
+                          try {
+                            await updateProfile({ language: lang.code });
+                          } catch (err) {
+                            // eslint-disable-next-line no-console
+                            console.warn('Failed to persist language preference', err);
+                          }
+                        }
+                        // eslint-disable-next-line no-console
+                        console.log('Language changed to', i18n.language);
+                      } catch (err) {
+                        // eslint-disable-next-line no-console
+                        console.error('Language switch error', err);
+                      }
+                    }}
+                  >
+                    <img src={`/locales/${lang.code}/flag.svg`} alt={lang.nativeName} style={imgStyle} />
+                  </MuiIconButton>
+                </Tooltip>
+              );
+            })}
+          </Box>
           <NotificationMenu />
           <IconButton color="inherit" onClick={toggleTheme}>
             {mode === 'dark' ? <Brightness7 /> : <Brightness4 />}

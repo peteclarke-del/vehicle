@@ -10,11 +10,15 @@ use App\Entity\VehicleMake;
 use App\Entity\VehicleModel;
 use App\Entity\FuelRecord;
 use App\Entity\Part;
+use App\Entity\VehicleImage;
+use App\Entity\Attachment;
 use App\Entity\Consumable;
 use App\Entity\ConsumableType;
 use App\Entity\ServiceRecord;
 use App\Entity\MotRecord;
-use App\Entity\Insurance;
+use App\Entity\RoadTax;
+use App\Entity\Specification;
+use App\Entity\InsurancePolicy;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -34,7 +38,7 @@ class VehicleImportExportController extends AbstractController
     }
 
     #[Route('/export', name: 'vehicles_export', methods: ['GET'])]
-    public function export(EntityManagerInterface $entityManager): JsonResponse
+    public function export(Request $request, EntityManagerInterface $entityManager)
     {
         $user = $this->getUserEntity();
         if (!$user) {
@@ -124,9 +128,15 @@ class VehicleImportExportController extends AbstractController
                 ];
             }
 
-            // Export insurance records
-            $insuranceRecords = $entityManager->getRepository(Insurance::class)
-                ->findBy(['vehicle' => $vehicle], ['startDate' => 'ASC']);
+            // Export insurance policy records linked to this vehicle
+            $insuranceRecords = $entityManager->getRepository(InsurancePolicy::class)
+                ->createQueryBuilder('p')
+                ->innerJoin('p.vehicles', 'v')
+                ->where('v = :vehicle')
+                ->setParameter('vehicle', $vehicle)
+                ->orderBy('p.startDate', 'ASC')
+                ->getQuery()
+                ->getResult();
             $insuranceRecordsData = [];
             foreach ($insuranceRecords as $insurance) {
                 $insuranceRecordsData[] = [
@@ -140,6 +150,37 @@ class VehicleImportExportController extends AbstractController
                 ];
             }
 
+            $images = [];
+            foreach ($vehicle->getImages() as $image) {
+                $images[] = [
+                    'path' => $image->getPath(),
+                    'caption' => $image->getCaption(),
+                    'isPrimary' => $image->getIsPrimary(),
+                    'displayOrder' => $image->getDisplayOrder(),
+                    'isScraped' => $image->getIsScraped(),
+                    'sourceUrl' => $image->getSourceUrl(),
+                    'uploadedAt' => $image->getUploadedAt()?->format('Y-m-d H:i:s'),
+                ];
+            }
+
+            $attachments = [];
+            $vehicleAttachments = $entityManager->getRepository(\App\Entity\Attachment::class)
+                ->findBy(['vehicle' => $vehicle], ['uploadedAt' => 'ASC']);
+            foreach ($vehicleAttachments as $att) {
+                $attachments[] = [
+                    'filename' => $att->getFilename(),
+                    'originalName' => $att->getOriginalName(),
+                    'mimeType' => $att->getMimeType(),
+                    'fileSize' => $att->getFileSize(),
+                    'storagePath' => $att->getStoragePath(),
+                    'category' => $att->getCategory(),
+                    'virusScanStatus' => $att->getVirusScanStatus(),
+                    'virusScanDate' => $att->getVirusScanDate()?->format('Y-m-d H:i:s'),
+                    'uploadedAt' => $att->getUploadedAt()?->format('Y-m-d H:i:s'),
+                    'description' => $att->getDescription(),
+                ];
+            }
+
             $vehicleData = [
                 'name' => $vehicle->getName(),
                 'vehicleType' => $vehicle->getVehicleType()->getName(),
@@ -147,16 +188,20 @@ class VehicleImportExportController extends AbstractController
                 'model' => $vehicle->getModel(),
                 'year' => $vehicle->getYear(),
                 'vin' => $vehicle->getVin(),
+                'vinDecodedData' => $vehicle->getVinDecodedData(),
+                'vinDecodedAt' => $vehicle->getVinDecodedAt()?->format('Y-m-d H:i:s'),
                 'registrationNumber' => $vehicle->getRegistrationNumber(),
                 'engineNumber' => $vehicle->getEngineNumber(),
                 'v5DocumentNumber' => $vehicle->getV5DocumentNumber(),
                 'purchaseCost' => $vehicle->getPurchaseCost(),
                 'purchaseDate' => $vehicle->getPurchaseDate()?->format('Y-m-d'),
-                'currentMileage' => $vehicle->getCurrentMileage(),
-                'lastServiceDate' => $vehicle->getLastServiceDate()?->format('Y-m-d'),
-                'motExpiryDate' => $vehicle->getMotExpiryDate()?->format('Y-m-d'),
-                'roadTaxExpiryDate' => $vehicle->getRoadTaxExpiryDate()?->format('Y-m-d'),
-                'insuranceExpiryDate' => $vehicle->getInsuranceExpiryDate()?->format('Y-m-d'),
+                'purchaseMileage' => $vehicle->getPurchaseMileage(),
+                // Note: computed fields (current mileage, last service, MOT/road tax)
+                // are display-only and derived from related records. They are not
+                // emitted here to avoid storing derived state in the import/export
+                // manifest; consumers should compute them from the related records.
+                // Insurance expiry is derived from related `Insurance` records;
+                // do not include as a vehicle-level field in the export manifest.
                 'securityFeatures' => $vehicle->getSecurityFeatures(),
                 'vehicleColor' => $vehicle->getVehicleColor(),
                 'serviceIntervalMonths' => $vehicle->getServiceIntervalMonths(),
@@ -164,14 +209,113 @@ class VehicleImportExportController extends AbstractController
                 'depreciationMethod' => $vehicle->getDepreciationMethod(),
                 'depreciationYears' => $vehicle->getDepreciationYears(),
                 'depreciationRate' => $vehicle->getDepreciationRate(),
+                'createdAt' => $vehicle->getCreatedAt()?->format('Y-m-d H:i:s'),
+                'updatedAt' => $vehicle->getUpdatedAt()?->format('Y-m-d H:i:s'),
                 'fuelRecords' => $fuelRecords,
                 'parts' => $parts,
                 'consumables' => $consumables,
                 'serviceRecords' => $serviceRecordsData,
                 'motRecords' => $motRecordsData,
+                'roadTaxRecords' => (function() use ($vehicle) {
+                    $rtData = [];
+                    foreach ($vehicle->getRoadTaxRecords() as $rt) {
+                        $rtData[] = [
+                            'startDate' => $rt->getStartDate()?->format('Y-m-d'),
+                            'expiryDate' => $rt->getExpiryDate()?->format('Y-m-d'),
+                            'amount' => $rt->getAmount(),
+                            'frequency' => $rt->getFrequency(),
+                            'notes' => $rt->getNotes(),
+                            'createdAt' => $rt->getCreatedAt()?->format('Y-m-d H:i:s'),
+                        ];
+                    }
+                    return $rtData;
+                })(),
+                'motExempt' => $vehicle->getMotExempt(),
+                'roadTaxExempt' => $vehicle->getRoadTaxExempt(),
                 'insuranceRecords' => $insuranceRecordsData,
+                'images' => $images,
+                'attachments' => $attachments,
+                // Export vehicle technical specifications (one-to-one)
+                'specifications' => (function() use ($entityManager, $vehicle) {
+                    $spec = $entityManager->getRepository(Specification::class)->findOneBy(['vehicle' => $vehicle]);
+                    if (!$spec) {
+                        return null;
+                    }
+                    return [
+                        'engineType' => $spec->getEngineType(),
+                        'displacement' => $spec->getDisplacement(),
+                        'power' => $spec->getPower(),
+                        'torque' => $spec->getTorque(),
+                        'compression' => $spec->getCompression(),
+                        'bore' => $spec->getBore(),
+                        'stroke' => $spec->getStroke(),
+                        'fuelSystem' => $spec->getFuelSystem(),
+                        'cooling' => $spec->getCooling(),
+                        'gearbox' => $spec->getGearbox(),
+                        'transmission' => $spec->getTransmission(),
+                        'clutch' => $spec->getClutch(),
+                        'frame' => $spec->getFrame(),
+                        'frontSuspension' => $spec->getFrontSuspension(),
+                        'rearSuspension' => $spec->getRearSuspension(),
+                        'frontBrakes' => $spec->getFrontBrakes(),
+                        'rearBrakes' => $spec->getRearBrakes(),
+                        'frontTyre' => $spec->getFrontTyre(),
+                        'rearTyre' => $spec->getRearTyre(),
+                        'frontWheelTravel' => $spec->getFrontWheelTravel(),
+                        'rearWheelTravel' => $spec->getRearWheelTravel(),
+                        'wheelbase' => $spec->getWheelbase(),
+                        'seatHeight' => $spec->getSeatHeight(),
+                        'groundClearance' => $spec->getGroundClearance(),
+                        'dryWeight' => $spec->getDryWeight(),
+                        'wetWeight' => $spec->getWetWeight(),
+                        'fuelCapacity' => $spec->getFuelCapacity(),
+                        'topSpeed' => $spec->getTopSpeed(),
+                        'additionalInfo' => $spec->getAdditionalInfo(),
+                        'scrapedAt' => $spec->getScrapedAt()?->format('Y-m-d H:i:s'),
+                        'sourceUrl' => $spec->getSourceUrl(),
+                    ];
+                })(),
             ];
             $data[] = $vehicleData;
+        }
+
+        // If archive requested, build ZIP with manifest + files
+        if ($request->query->get('archive')) {
+            $tmpFile = sys_get_temp_dir() . '/vehicle_export_' . uniqid() . '.zip';
+            $zip = new \ZipArchive();
+            if ($zip->open($tmpFile, \ZipArchive::CREATE) === true) {
+                $zip->addFromString('manifest.json', json_encode($data, JSON_PRETTY_PRINT));
+
+                // Add attachment files (backend uploads directory)
+                foreach ($data as $vehicleEntry) {
+                    if (!empty($vehicleEntry['attachments'])) {
+                        foreach ($vehicleEntry['attachments'] as $att) {
+                            $attPath = __DIR__ . '/../../../uploads/' . ($att['filename'] ?? '');
+                            if ($att['filename'] && file_exists($attPath)) {
+                                $zip->addFile($attPath, 'files/attachments/' . basename($attPath));
+                            }
+                        }
+                    }
+                    if (!empty($vehicleEntry['images'])) {
+                        foreach ($vehicleEntry['images'] as $img) {
+                            if (!empty($img['path'])) {
+                                $imgPath = $this->getParameter('kernel.project_dir') . '/public' . $img['path'];
+                                if (file_exists($imgPath)) {
+                                    $zip->addFile($imgPath, 'files/images/' . basename($imgPath));
+                                }
+                            }
+                        }
+                    }
+                }
+
+                $zip->close();
+
+                $response = new \Symfony\Component\HttpFoundation\BinaryFileResponse($tmpFile);
+                $response->setContentDisposition(\Symfony\Component\HttpFoundation\ResponseHeaderBag::DISPOSITION_ATTACHMENT, 'vehicles_export_' . date('Ymd') . '.zip');
+                $response->deleteFileAfterSend(true);
+                return $response;
+            }
+            // Failed to create zip, fall through to JSON response
         }
 
         return new JsonResponse($data);
@@ -184,7 +328,36 @@ class VehicleImportExportController extends AbstractController
         if (!$user) {
             return new JsonResponse(['error' => 'Unauthorized'], 401);
         }
-        $data = json_decode($request->getContent(), true);
+        $extractedDir = null;
+
+        // Support archive upload (multipart/form-data with file field 'archive')
+        if ($request->files->get('archive')) {
+            $archive = $request->files->get('archive');
+            if ($archive instanceof \Symfony\Component\HttpFoundation\File\UploadedFile) {
+                $tmpPath = sys_get_temp_dir() . '/vehicle_import_' . uniqid() . '.zip';
+                $archive->move(sys_get_temp_dir(), basename($tmpPath));
+                $zip = new \ZipArchive();
+                $extractedDir = sys_get_temp_dir() . '/vehicle_import_' . uniqid();
+                if ($zip->open($tmpPath) === true) {
+                    @mkdir($extractedDir, 0755, true);
+                    $zip->extractTo($extractedDir);
+                    $zip->close();
+                    $manifestPath = $extractedDir . '/manifest.json';
+                    if (!file_exists($manifestPath)) {
+                        return new JsonResponse(['error' => 'manifest.json not found in archive'], 400);
+                    }
+                    $data = json_decode(file_get_contents($manifestPath), true);
+                    // remove uploaded zip
+                    @unlink($tmpPath);
+                } else {
+                    return new JsonResponse(['error' => 'Invalid ZIP file'], 400);
+                }
+            } else {
+                return new JsonResponse(['error' => 'Invalid archive upload'], 400);
+            }
+        } else {
+            $data = json_decode($request->getContent(), true);
+        }
 
         if (!is_array($data)) {
             return new JsonResponse(['error' => 'Invalid JSON format'], Response::HTTP_BAD_REQUEST);
@@ -274,6 +447,12 @@ class VehicleImportExportController extends AbstractController
                 if (!empty($vehicleData['vin'])) {
                     $vehicle->setVin($vehicleData['vin']);
                 }
+                if (isset($vehicleData['vinDecodedData'])) {
+                    $vehicle->setVinDecodedData($vehicleData['vinDecodedData']);
+                }
+                if (!empty($vehicleData['vinDecodedAt'])) {
+                    $vehicle->setVinDecodedAt(new \DateTime($vehicleData['vinDecodedAt']));
+                }
                 if (!empty($vehicleData['registrationNumber'])) {
                     $vehicle->setRegistrationNumber($vehicleData['registrationNumber']);
                 }
@@ -286,19 +465,23 @@ class VehicleImportExportController extends AbstractController
 
                 $vehicle->setPurchaseCost($vehicleData['purchaseCost']);
                 $vehicle->setPurchaseDate(new \DateTime($vehicleData['purchaseDate']));
+                if (isset($vehicleData['purchaseMileage'])) {
+                    $vehicle->setPurchaseMileage($vehicleData['purchaseMileage'] !== null ? (int) $vehicleData['purchaseMileage'] : null);
+                }
 
-                if (isset($vehicleData['currentMileage'])) {
-                    $vehicle->setCurrentMileage($vehicleData['currentMileage']);
+                // Import explicit exemption flags when provided
+                if (array_key_exists('motExempt', $vehicleData)) {
+                    $vehicle->setMotExempt($vehicleData['motExempt'] !== null ? (bool)$vehicleData['motExempt'] : null);
                 }
-                if (!empty($vehicleData['lastServiceDate'])) {
-                    $vehicle->setLastServiceDate(new \DateTime($vehicleData['lastServiceDate']));
+                if (array_key_exists('roadTaxExempt', $vehicleData)) {
+                    $vehicle->setRoadTaxExempt($vehicleData['roadTaxExempt'] !== null ? (bool)$vehicleData['roadTaxExempt'] : null);
                 }
-                if (!empty($vehicleData['motExpiryDate'])) {
-                    $vehicle->setMotExpiryDate(new \DateTime($vehicleData['motExpiryDate']));
-                }
-                if (!empty($vehicleData['roadTaxExpiryDate'])) {
-                    $vehicle->setRoadTaxExpiryDate(new \DateTime($vehicleData['roadTaxExpiryDate']));
-                }
+
+                // Computed/display-only fields (currentMileage, lastServiceDate,
+                // motExpiryDate, roadTaxExpiryDate) are intentionally ignored on
+                // import. Importers should provide detailed related records
+                // (fuelRecords, serviceRecords, motRecords) rather than vehicle-
+                // level derived values.
                 if (!empty($vehicleData['securityFeatures'])) {
                     $vehicle->setSecurityFeatures($vehicleData['securityFeatures']);
                 }
@@ -311,11 +494,8 @@ class VehicleImportExportController extends AbstractController
                 if (isset($vehicleData['serviceIntervalMiles'])) {
                     $vehicle->setServiceIntervalMiles($vehicleData['serviceIntervalMiles']);
                 }
-                if (!empty($vehicleData['insuranceExpiryDate'])) {
-                    $vehicle->setInsuranceExpiryDate(
-                        new \DateTime($vehicleData['insuranceExpiryDate'])
-                    );
-                }
+                // Insurance expiry is derived from `insuranceRecords`; ignore
+                // any vehicle-level insuranceExpiryDate supplied in the manifest.
                 if (!empty($vehicleData['depreciationMethod'])) {
                     $vehicle->setDepreciationMethod($vehicleData['depreciationMethod']);
                 }
@@ -326,10 +506,18 @@ class VehicleImportExportController extends AbstractController
                     $vehicle->setDepreciationRate($vehicleData['depreciationRate']);
                 }
 
+                if (!empty($vehicleData['createdAt'])) {
+                    $vehicle->setCreatedAt(new \DateTime($vehicleData['createdAt']));
+                }
+                if (!empty($vehicleData['updatedAt'])) {
+                    $vehicle->setUpdatedAt(new \DateTime($vehicleData['updatedAt']));
+                }
+
                 $entityManager->persist($vehicle);
                 $entityManager->flush(); // Flush to get vehicle ID
 
                 // Import fuel records
+                $importedFuelCount = 0;
                 if (!empty($vehicleData['fuelRecords'])) {
                     foreach ($vehicleData['fuelRecords'] as $fuelData) {
                         $fuelRecord = new FuelRecord();
@@ -358,6 +546,7 @@ class VehicleImportExportController extends AbstractController
                         }
 
                         $entityManager->persist($fuelRecord);
+                        $importedFuelCount++;
                     }
                 }
 
@@ -445,6 +634,7 @@ class VehicleImportExportController extends AbstractController
                 }
 
                 // Import service records
+                $importedServiceCount = 0;
                 if (!empty($vehicleData['serviceRecords'])) {
                     foreach ($vehicleData['serviceRecords'] as $serviceData) {
                         $serviceRecord = new ServiceRecord();
@@ -476,10 +666,12 @@ class VehicleImportExportController extends AbstractController
                         }
 
                         $entityManager->persist($serviceRecord);
+                        $importedServiceCount++;
                     }
                 }
 
                 // Import MOT records
+                $importedMotCount = 0;
                 if (!empty($vehicleData['motRecords'])) {
                     foreach ($vehicleData['motRecords'] as $motData) {
                         $motRecord = new MotRecord();
@@ -517,41 +709,307 @@ class VehicleImportExportController extends AbstractController
                         }
 
                         $entityManager->persist($motRecord);
+                        $importedMotCount++;
                     }
                 }
 
-                // Import insurance records
+                // Import road tax records
+                if (!empty($vehicleData['roadTaxRecords'])) {
+                    foreach ($vehicleData['roadTaxRecords'] as $rtData) {
+                        $rt = new RoadTax();
+                        $rt->setVehicle($vehicle);
+
+                        if (!empty($rtData['startDate'])) {
+                            $rt->setStartDate(new \DateTime($rtData['startDate']));
+                        }
+                        if (!empty($rtData['expiryDate'])) {
+                            $rt->setExpiryDate(new \DateTime($rtData['expiryDate']));
+                        }
+                        if (isset($rtData['amount'])) {
+                            $rt->setAmount($rtData['amount']);
+                        }
+                        if (!empty($rtData['frequency'])) {
+                            $rt->setFrequency($rtData['frequency']);
+                        }
+                        if (!empty($rtData['notes'])) {
+                            $rt->setNotes($rtData['notes']);
+                        }
+                        if (!empty($rtData['createdAt'])) {
+                            $rt->setCreatedAt(new \DateTime($rtData['createdAt']));
+                        }
+
+                        $entityManager->persist($rt);
+                    }
+                }
+
+                // Vehicle-level derived values are ignored; import only creates
+                // detailed related records supplied in the manifest.
+
+                // Import insurance policy records
                 if (!empty($vehicleData['insuranceRecords'])) {
                     foreach ($vehicleData['insuranceRecords'] as $insuranceData) {
-                        $insurance = new Insurance();
-                        $insurance->setVehicle($vehicle);
+                        $policy = new InsurancePolicy();
+                        // Link policy to vehicle via many-to-many relation
+                        $policy->addVehicle($vehicle);
 
                         if (!empty($insuranceData['provider'])) {
-                            $insurance->setProvider($insuranceData['provider']);
+                            $policy->setProvider($insuranceData['provider']);
                         }
                         if (!empty($insuranceData['policyNumber'])) {
-                            $insurance->setPolicyNumber($insuranceData['policyNumber']);
+                            $policy->setPolicyNumber($insuranceData['policyNumber']);
                         }
                         if (!empty($insuranceData['coverageType'])) {
-                            $insurance->setCoverageType($insuranceData['coverageType']);
+                            $policy->setCoverageType($insuranceData['coverageType']);
                         }
                         if (isset($insuranceData['annualCost'])) {
-                            $insurance->setAnnualCost($insuranceData['annualCost']);
+                            $policy->setAnnualCost($insuranceData['annualCost']);
                         }
                         if (!empty($insuranceData['startDate'])) {
-                            $insurance->setStartDate(new \DateTime($insuranceData['startDate']));
+                            $policy->setStartDate(new \DateTime($insuranceData['startDate']));
                         }
                         if (!empty($insuranceData['expiryDate'])) {
-                            $insurance->setExpiryDate(new \DateTime($insuranceData['expiryDate']));
+                            $policy->setExpiryDate(new \DateTime($insuranceData['expiryDate']));
                         }
                         if (!empty($insuranceData['notes'])) {
-                            $insurance->setNotes($insuranceData['notes']);
+                            $policy->setNotes($insuranceData['notes']);
                         }
 
-                        $entityManager->persist($insurance);
+                        // Set holder to importing user
+                        $policy->setHolderId($user->getId());
+
+                        $entityManager->persist($policy);
                     }
                 }
 
+                // Import images (and copy files from archive if present)
+                if (!empty($vehicleData['images'])) {
+                    foreach ($vehicleData['images'] as $imgData) {
+                        $image = new VehicleImage();
+                        $image->setVehicle($vehicle);
+
+                        // If archive provided, look for file in extracted dir
+                        if (!empty($extractedDir) && !empty($imgData['path'])) {
+                            $basename = basename($imgData['path']);
+                            $candidate = $extractedDir . '/files/images/' . $basename;
+                            if (file_exists($candidate)) {
+                                $targetDir = $this->getParameter('kernel.project_dir') . '/public/uploads/vehicles/' . $vehicle->getId();
+                                if (!is_dir($targetDir)) {
+                                    mkdir($targetDir, 0755, true);
+                                }
+                                $newFilename = uniqid() . '_' . $basename;
+                                copy($candidate, $targetDir . '/' . $newFilename);
+                                $image->setPath('/uploads/vehicles/' . $vehicle->getId() . '/' . $newFilename);
+                            } else {
+                                // fallback to provided path
+                                $image->setPath($imgData['path']);
+                            }
+                        } else {
+                            if (!empty($imgData['path'])) {
+                                $image->setPath($imgData['path']);
+                            }
+                        }
+
+                        if (array_key_exists('caption', $imgData)) {
+                            $image->setCaption($imgData['caption']);
+                        }
+                        if (isset($imgData['isPrimary'])) {
+                            $image->setIsPrimary((bool)$imgData['isPrimary']);
+                        }
+                        if (isset($imgData['displayOrder'])) {
+                            $image->setDisplayOrder((int)$imgData['displayOrder']);
+                        }
+                        if (isset($imgData['isScraped'])) {
+                            $image->setIsScraped((bool)$imgData['isScraped']);
+                        }
+                        if (!empty($imgData['sourceUrl'])) {
+                            $image->setSourceUrl($imgData['sourceUrl']);
+                        }
+                        if (!empty($imgData['uploadedAt'])) {
+                            $image->setUploadedAt(new \DateTime($imgData['uploadedAt']));
+                        }
+
+                        $entityManager->persist($image);
+                    }
+                }
+
+                // Import attachments (and copy files from archive if present)
+                if (!empty($vehicleData['attachments'])) {
+                    foreach ($vehicleData['attachments'] as $attData) {
+                        $att = new Attachment();
+                        $att->setVehicle($vehicle);
+
+                        // Try to locate file in extracted archive
+                        $foundFile = null;
+                        if (!empty($extractedDir)) {
+                            if (!empty($attData['filename'])) {
+                                $candidate = $extractedDir . '/files/attachments/' . basename($attData['filename']);
+                                if (file_exists($candidate)) {
+                                    $foundFile = $candidate;
+                                }
+                            }
+                            if (!$foundFile && !empty($attData['storagePath'])) {
+                                $candidate = $extractedDir . '/files/attachments/' . basename($attData['storagePath']);
+                                if (file_exists($candidate)) {
+                                    $foundFile = $candidate;
+                                }
+                            }
+                        }
+
+                        if ($foundFile) {
+                            $uploadsDir = __DIR__ . '/../../../uploads';
+                            if (!is_dir($uploadsDir)) {
+                                mkdir($uploadsDir, 0755, true);
+                            }
+                            $newFilename = uniqid() . '_' . basename($foundFile);
+                            copy($foundFile, $uploadsDir . '/' . $newFilename);
+                            $att->setFilename($newFilename);
+                            $att->setStoragePath($uploadsDir . '/' . $newFilename);
+                        } else {
+                            if (!empty($attData['filename'])) {
+                                $att->setFilename($attData['filename']);
+                            }
+                            if (!empty($attData['storagePath'])) {
+                                $att->setStoragePath($attData['storagePath']);
+                            }
+                        }
+
+                        if (!empty($attData['originalName'])) {
+                            $att->setOriginalName($attData['originalName']);
+                        }
+                        if (!empty($attData['mimeType'])) {
+                            $att->setMimeType($attData['mimeType']);
+                        }
+                        if (isset($attData['fileSize'])) {
+                            $att->setFileSize((int)$attData['fileSize']);
+                        }
+                        if (!empty($attData['category'])) {
+                            $att->setCategory($attData['category']);
+                        }
+                        if (!empty($attData['virusScanStatus'])) {
+                            $att->setVirusScanStatus($attData['virusScanStatus']);
+                        }
+                        if (!empty($attData['virusScanDate'])) {
+                            $att->setVirusScanDate(new \DateTime($attData['virusScanDate']));
+                        }
+                        if (!empty($attData['uploadedAt'])) {
+                            $att->setUploadedAt(new \DateTime($attData['uploadedAt']));
+                        }
+                        if (!empty($attData['description'])) {
+                            $att->setDescription($attData['description']);
+                        }
+
+                        // Assign uploadedBy to importing user
+                        $att->setUploadedBy($user);
+                        $entityManager->persist($att);
+                    }
+                }
+
+                // Import vehicle specifications (one-to-one) — merge with existing when present
+                if (!empty($vehicleData['specifications']) && is_array($vehicleData['specifications'])) {
+                    $specData = $vehicleData['specifications'];
+                    // Try to find existing specification for this vehicle and update it
+                    $spec = $entityManager->getRepository(Specification::class)->findOneBy(['vehicle' => $vehicle]);
+                    if (!$spec) {
+                        $spec = new Specification();
+                        $spec->setVehicle($vehicle);
+                    }
+
+                    if (!empty($specData['engineType'])) {
+                        $spec->setEngineType($specData['engineType']);
+                    }
+                    if (!empty($specData['displacement'])) {
+                        $spec->setDisplacement($specData['displacement']);
+                    }
+                    if (!empty($specData['power'])) {
+                        $spec->setPower($specData['power']);
+                    }
+                    if (!empty($specData['torque'])) {
+                        $spec->setTorque($specData['torque']);
+                    }
+                    if (!empty($specData['compression'])) {
+                        $spec->setCompression($specData['compression']);
+                    }
+                    if (!empty($specData['bore'])) {
+                        $spec->setBore($specData['bore']);
+                    }
+                    if (!empty($specData['stroke'])) {
+                        $spec->setStroke($specData['stroke']);
+                    }
+                    if (!empty($specData['fuelSystem'])) {
+                        $spec->setFuelSystem($specData['fuelSystem']);
+                    }
+                    if (!empty($specData['cooling'])) {
+                        $spec->setCooling($specData['cooling']);
+                    }
+                    if (!empty($specData['gearbox'])) {
+                        $spec->setGearbox($specData['gearbox']);
+                    }
+                    if (!empty($specData['transmission'])) {
+                        $spec->setTransmission($specData['transmission']);
+                    }
+                    if (!empty($specData['clutch'])) {
+                        $spec->setClutch($specData['clutch']);
+                    }
+                    if (!empty($specData['frame'])) {
+                        $spec->setFrame($specData['frame']);
+                    }
+                    if (!empty($specData['frontSuspension'])) {
+                        $spec->setFrontSuspension($specData['frontSuspension']);
+                    }
+                    if (!empty($specData['rearSuspension'])) {
+                        $spec->setRearSuspension($specData['rearSuspension']);
+                    }
+                    if (!empty($specData['frontBrakes'])) {
+                        $spec->setFrontBrakes($specData['frontBrakes']);
+                    }
+                    if (!empty($specData['rearBrakes'])) {
+                        $spec->setRearBrakes($specData['rearBrakes']);
+                    }
+                    if (!empty($specData['frontTyre'])) {
+                        $spec->setFrontTyre($specData['frontTyre']);
+                    }
+                    if (!empty($specData['rearTyre'])) {
+                        $spec->setRearTyre($specData['rearTyre']);
+                    }
+                    if (!empty($specData['frontWheelTravel'])) {
+                        $spec->setFrontWheelTravel($specData['frontWheelTravel']);
+                    }
+                    if (!empty($specData['rearWheelTravel'])) {
+                        $spec->setRearWheelTravel($specData['rearWheelTravel']);
+                    }
+                    if (!empty($specData['wheelbase'])) {
+                        $spec->setWheelbase($specData['wheelbase']);
+                    }
+                    if (!empty($specData['seatHeight'])) {
+                        $spec->setSeatHeight($specData['seatHeight']);
+                    }
+                    if (!empty($specData['groundClearance'])) {
+                        $spec->setGroundClearance($specData['groundClearance']);
+                    }
+                    if (!empty($specData['dryWeight'])) {
+                        $spec->setDryWeight($specData['dryWeight']);
+                    }
+                    if (!empty($specData['wetWeight'])) {
+                        $spec->setWetWeight($specData['wetWeight']);
+                    }
+                    if (!empty($specData['fuelCapacity'])) {
+                        $spec->setFuelCapacity($specData['fuelCapacity']);
+                    }
+                    if (!empty($specData['topSpeed'])) {
+                        $spec->setTopSpeed($specData['topSpeed']);
+                    }
+                    if (!empty($specData['additionalInfo'])) {
+                        $spec->setAdditionalInfo($specData['additionalInfo']);
+                    }
+                    if (!empty($specData['scrapedAt'])) {
+                        $spec->setScrapedAt(new \DateTime($specData['scrapedAt']));
+                    }
+                    if (!empty($specData['sourceUrl'])) {
+                        $spec->setSourceUrl($specData['sourceUrl']);
+                    }
+
+                    $entityManager->persist($spec);
+                }
                 $imported++;
             } catch (\Exception $e) {
                 $errors[] = "Vehicle at index $index: " . $e->getMessage();
@@ -559,6 +1017,20 @@ class VehicleImportExportController extends AbstractController
         }
 
         $entityManager->flush();
+
+        // Cleanup extracted directory if used
+        if (!empty($extractedDir) && is_dir($extractedDir)) {
+            $it = new \RecursiveDirectoryIterator($extractedDir, \FilesystemIterator::SKIP_DOTS);
+            $files = new \RecursiveIteratorIterator($it, \RecursiveIteratorIterator::CHILD_FIRST);
+            foreach ($files as $file) {
+                if ($file->isDir()) {
+                    @rmdir($file->getRealPath());
+                } else {
+                    @unlink($file->getRealPath());
+                }
+            }
+            @rmdir($extractedDir);
+        }
 
         $response = [
             'imported' => $imported,

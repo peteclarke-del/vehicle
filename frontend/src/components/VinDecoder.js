@@ -17,9 +17,11 @@ import {
   Info as InfoIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 const VinDecoder = ({ vehicle }) => {
   const { api } = useAuth();
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [vinData, setVinData] = useState(null);
   const [error, setError] = useState('');
@@ -89,10 +91,10 @@ const VinDecoder = ({ vehicle }) => {
         <CardContent>
           <Box display="flex" alignItems="center" gap={1} mb={2}>
             <QrCodeIcon color="action" />
-            <Typography variant="h6">VIN Decoding</Typography>
+            <Typography variant="h6">{t('vinDecoder.title')}</Typography>
           </Box>
           <Alert severity="info">
-            No VIN number stored for this vehicle. Add a VIN to enable automatic decoding.
+            {t('vinDecoder.noVin')}
           </Alert>
         </CardContent>
       </Card>
@@ -113,15 +115,15 @@ const VinDecoder = ({ vehicle }) => {
             startIcon={loading ? <CircularProgress size={16} /> : <RefreshIcon />}
             onClick={() => decodeVin(true)}
             disabled={loading}
-            title="Force refresh from API (ignores cache)"
+            title={t('vinDecoder.forceRefreshTooltip')}
           >
-            {loading ? 'Decoding...' : cached ? 'Refresh from API' : 'Refresh'}
+            {loading ? t('vinDecoder.decoding') : cached ? t('vinDecoder.refreshFromApi') : t('vinDecoder.refresh')}
           </Button>
         </Box>
 
         <Box mb={2}>
           <Typography variant="body2" color="textSecondary" gutterBottom>
-            Vehicle Identification Number
+            {t('vinDecoder.vinLabel')}
           </Typography>
           <Typography variant="h5" fontFamily="monospace" fontWeight="bold">
             {vehicle.vin}
@@ -154,7 +156,7 @@ const VinDecoder = ({ vehicle }) => {
               {vinData.make && (
                 <Grid item xs={12} sm={6}>
                   <Typography variant="body2" color="textSecondary">
-                    Manufacturer
+                    {t('vinDecoder.manufacturer')}
                   </Typography>
                   <Typography variant="body1" fontWeight="medium">
                     {vinData.make}
@@ -165,7 +167,7 @@ const VinDecoder = ({ vehicle }) => {
               {vinData.model && (
                 <Grid item xs={12} sm={6}>
                   <Typography variant="body2" color="textSecondary">
-                    Model
+                    {t('vinDecoder.model')}
                   </Typography>
                   <Typography variant="body1" fontWeight="medium">
                     {vinData.model}
@@ -176,7 +178,7 @@ const VinDecoder = ({ vehicle }) => {
               {vinData.year && (
                 <Grid item xs={12} sm={6}>
                   <Typography variant="body2" color="textSecondary">
-                    Year
+                    {t('vinDecoder.year')}
                   </Typography>
                   <Typography variant="body1" fontWeight="medium">
                     {vinData.year}
@@ -187,7 +189,7 @@ const VinDecoder = ({ vehicle }) => {
               {vinData.class && (
                 <Grid item xs={12} sm={6}>
                   <Typography variant="body2" color="textSecondary">
-                    Vehicle Class
+                    {t('vinDecoder.vehicleClass')}
                   </Typography>
                   <Typography variant="body1" fontWeight="medium">
                     {vinData.class}
@@ -198,7 +200,7 @@ const VinDecoder = ({ vehicle }) => {
               {vinData.country && (
                 <Grid item xs={12} sm={6}>
                   <Typography variant="body2" color="textSecondary">
-                    Country of Origin
+                    {t('vinDecoder.countryOfOrigin')}
                   </Typography>
                   <Typography variant="body1" fontWeight="medium">
                     {vinData.country}
@@ -209,7 +211,7 @@ const VinDecoder = ({ vehicle }) => {
               {vinData.region && (
                 <Grid item xs={12} sm={6}>
                   <Typography variant="body2" color="textSecondary">
-                    Region
+                    {t('vinDecoder.region')}
                   </Typography>
                   <Typography variant="body1" fontWeight="medium">
                     {vinData.region}
@@ -231,7 +233,7 @@ const VinDecoder = ({ vehicle }) => {
                       label={`WMI: ${vinData.wmi}`}
                       size="small"
                       variant="outlined"
-                      title="World Manufacturer Identifier (characters 1-3)"
+                      title={t('vinDecoder.chipWmi')}
                     />
                   )}
                   {vinData.vds && (
@@ -239,7 +241,7 @@ const VinDecoder = ({ vehicle }) => {
                       label={`VDS: ${vinData.vds}`}
                       size="small"
                       variant="outlined"
-                      title="Vehicle Descriptor Section (characters 4-9)"
+                      title={t('vinDecoder.chipVds')}
                     />
                   )}
                   {vinData.vis && (
@@ -247,7 +249,7 @@ const VinDecoder = ({ vehicle }) => {
                       label={`VIS: ${vinData.vis}`}
                       size="small"
                       variant="outlined"
-                      title="Vehicle Identifier Section (characters 10-17)"
+                      title={t('vinDecoder.chipVis')}
                     />
                   )}
                 </Box>

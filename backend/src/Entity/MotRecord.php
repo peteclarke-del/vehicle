@@ -15,7 +15,7 @@ class MotRecord
     #[ORM\Column(type: 'integer')]
     private ?int $id = null;
 
-    #[ORM\ManyToOne(targetEntity: Vehicle::class)]
+    #[ORM\ManyToOne(targetEntity: Vehicle::class, inversedBy: 'motRecords')]
     #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
     private ?Vehicle $vehicle = null;
 

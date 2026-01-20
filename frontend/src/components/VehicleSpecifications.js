@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Paper,
@@ -14,9 +14,41 @@ import {
 } from '@mui/material';
 import { Edit, Save, Cancel, Download } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
+import { useTranslation } from 'react-i18next';
+
+// Stable memoized spec field component to avoid remounting and losing focus
+const SpecField = React.memo(function SpecField({ label, field, multiline = false, editing, formValue, onChange, specifications }) {
+  if (editing) {
+    return (
+      <TextField
+        label={label}
+        value={formValue || ''}
+        onChange={onChange}
+        fullWidth
+        size="small"
+        multiline={multiline}
+        rows={multiline ? 3 : 1}
+      />
+    );
+  }
+
+  const value = specifications?.[field];
+  if (!value) return null;
+
+  return (
+    <Box>
+      <Typography variant="caption" color="text.secondary">
+        {label}
+        import { useTranslation } from 'react-i18next';
+      </Typography>
+      <Typography variant="body2">{value}</Typography>
+    </Box>
+  );
+});
 
 const VehicleSpecifications = ({ vehicle }) => {
   const { api } = useAuth();
+  const { t } = useTranslation();
   const [specifications, setSpecifications] = useState(null);
   const [loading, setLoading] = useState(true);
   const [scraping, setScraping] = useState(false);
@@ -93,37 +125,11 @@ const VehicleSpecifications = ({ vehicle }) => {
     }
   };
 
-  const handleChange = (field) => (event) => {
-    setFormData({ ...formData, [field]: event.target.value });
-  };
+  const handleChange = useCallback((field) => (event) => {
+    const val = event.target.value;
+    setFormData(prev => ({ ...prev, [field]: val }));
+  }, []);
 
-  const SpecField = ({ label, field, multiline = false }) => {
-    if (editing) {
-      return (
-        <TextField
-          label={label}
-          value={formData[field] || ''}
-          onChange={handleChange(field)}
-          fullWidth
-          size="small"
-          multiline={multiline}
-          rows={multiline ? 3 : 1}
-        />
-      );
-    }
-    
-    const value = specifications?.[field];
-    if (!value) return null;
-    
-    return (
-      <Box>
-        <Typography variant="caption" color="text.secondary">
-          {label}
-        </Typography>
-        <Typography variant="body2">{value}</Typography>
-      </Box>
-    );
-  };
 
   if (loading) {
     return (
@@ -136,26 +142,26 @@ const VehicleSpecifications = ({ vehicle }) => {
   return (
     <Paper sx={{ p: 3 }}>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h6">Vehicle Specifications</Typography>
+        <Typography variant="h6">{t('vehicleSpecifications.title')}</Typography>
         <Box display="flex" gap={1}>
           {!editing && (
             <>
-              <Tooltip title="Scrape specifications from online sources">
+              <Tooltip title={t('vehicleSpecifications.scrapeTooltip')}>
                 <Button
                   variant="outlined"
                   startIcon={scraping ? <CircularProgress size={20} /> : <Download />}
                   onClick={handleScrape}
                   disabled={scraping || !vehicle.make || !vehicle.model}
                 >
-                  {scraping ? 'Scraping...' : 'Scrape Online'}
+                  {scraping ? t('vehicleSpecifications.scraping') : t('vehicleSpecifications.scrapeOnline')}
                 </Button>
               </Tooltip>
               {!vehicle.make || !vehicle.model ? (
                 <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
-                  (Requires make and model)
+                  ({t('vehicleSpecifications.requiresMakeModel')})
                 </Typography>
               ) : null}
-              <Tooltip title="Edit specifications">
+              <Tooltip title={t('vehicleSpecifications.editTooltip')}>
                 <IconButton onClick={handleEdit} color="primary">
                   <Edit />
                 </IconButton>
@@ -164,13 +170,13 @@ const VehicleSpecifications = ({ vehicle }) => {
           )}
           {editing && (
             <>
-              <Button
+                <Button
                 variant="contained"
                 startIcon={saving ? <CircularProgress size={20} /> : <Save />}
                 onClick={handleSave}
                 disabled={saving}
               >
-                Save
+                {t('common.save')}
               </Button>
               <Button
                 variant="outlined"
@@ -178,7 +184,7 @@ const VehicleSpecifications = ({ vehicle }) => {
                 onClick={handleCancel}
                 disabled={saving}
               >
-                Cancel
+                {t('common.cancel')}
               </Button>
             </>
           )}
@@ -187,7 +193,7 @@ const VehicleSpecifications = ({ vehicle }) => {
 
       {error && (
         <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
-          {error}
+          {t('vehicleSpecifications.errorPrefix') + ': ' + error}
         </Alert>
       )}
 
@@ -199,43 +205,43 @@ const VehicleSpecifications = ({ vehicle }) => {
 
       {!specifications && !editing && (
         <Alert severity="info">
-          No specifications found. Click "Scrape Online" to fetch from online sources (currently supports motorcycles), or click the edit button to enter manually. All vehicle types (cars, trucks, vans, motorcycles) are supported - not all fields may be applicable to your vehicle type.
+          {t('vehicleSpecifications.noSpecificationsInfo')}
         </Alert>
       )}
 
       {(specifications || editing) && (
         <>
           <Typography variant="subtitle1" gutterBottom sx={{ mt: 2, fontWeight: 'bold' }}>
-            Engine
+            {t('vehicleSpecifications.engine')}
           </Typography>
           <Divider sx={{ mb: 2 }} />
           <Grid container spacing={2}>
             <Grid item xs={12} sm={6} md={4}>
-              <SpecField label="Engine Type" field="engineType" />
+              <SpecField label={t('vehicleSpecifications.engineType')} field="engineType" editing={editing} formValue={formData.engineType} onChange={handleChange('engineType')} specifications={specifications} />
             </Grid>
             <Grid item xs={12} sm={6} md={4}>
-              <SpecField label="Displacement" field="displacement" />
+              <SpecField label={t('vehicleSpecifications.displacement')} field="displacement" editing={editing} formValue={formData.displacement} onChange={handleChange('displacement')} specifications={specifications} />
             </Grid>
             <Grid item xs={12} sm={6} md={4}>
-              <SpecField label="Power" field="power" />
+              <SpecField label={t('vehicleSpecifications.power')} field="power" editing={editing} formValue={formData.power} onChange={handleChange('power')} specifications={specifications} />
             </Grid>
             <Grid item xs={12} sm={6} md={4}>
-              <SpecField label="Torque" field="torque" />
+              <SpecField label={t('vehicleSpecifications.torque')} field="torque" editing={editing} formValue={formData.torque} onChange={handleChange('torque')} specifications={specifications} />
             </Grid>
             <Grid item xs={12} sm={6} md={4}>
-              <SpecField label="Compression" field="compression" />
+              <SpecField label={t('vehicleSpecifications.compression')} field="compression" editing={editing} formValue={formData.compression} onChange={handleChange('compression')} specifications={specifications} />
             </Grid>
             <Grid item xs={12} sm={6} md={4}>
-              <SpecField label="Bore" field="bore" />
+              <SpecField label={t('vehicleSpecifications.bore')} field="bore" editing={editing} formValue={formData.bore} onChange={handleChange('bore')} specifications={specifications} />
             </Grid>
             <Grid item xs={12} sm={6} md={4}>
-              <SpecField label="Stroke" field="stroke" />
+              <SpecField label={t('vehicleSpecifications.stroke')} field="stroke" editing={editing} formValue={formData.stroke} onChange={handleChange('stroke')} specifications={specifications} />
             </Grid>
             <Grid item xs={12} sm={6} md={4}>
-              <SpecField label="Fuel System" field="fuelSystem" />
+              <SpecField label={t('vehicleSpecifications.fuelSystem')} field="fuelSystem" editing={editing} formValue={formData.fuelSystem} onChange={handleChange('fuelSystem')} specifications={specifications} />
             </Grid>
             <Grid item xs={12} sm={6} md={4}>
-              <SpecField label="Cooling" field="cooling" />
+              <SpecField label="Cooling" field="cooling" editing={editing} formValue={formData.cooling} onChange={handleChange('cooling')} specifications={specifications} />
             </Grid>
           </Grid>
 
@@ -245,13 +251,13 @@ const VehicleSpecifications = ({ vehicle }) => {
           <Divider sx={{ mb: 2 }} />
           <Grid container spacing={2}>
             <Grid item xs={12} sm={6} md={4}>
-              <SpecField label="Gearbox" field="gearbox" />
+              <SpecField label="Gearbox" field="gearbox" editing={editing} formValue={formData.gearbox} onChange={handleChange('gearbox')} specifications={specifications} />
             </Grid>
             <Grid item xs={12} sm={6} md={4}>
-              <SpecField label="Transmission" field="transmission" />
+              <SpecField label="Transmission" field="transmission" editing={editing} formValue={formData.transmission} onChange={handleChange('transmission')} specifications={specifications} />
             </Grid>
             <Grid item xs={12} sm={6} md={4}>
-              <SpecField label="Clutch" field="clutch" />
+              <SpecField label="Clutch" field="clutch" editing={editing} formValue={formData.clutch} onChange={handleChange('clutch')} specifications={specifications} />
             </Grid>
           </Grid>
 
@@ -261,19 +267,19 @@ const VehicleSpecifications = ({ vehicle }) => {
           <Divider sx={{ mb: 2 }} />
           <Grid container spacing={2}>
             <Grid item xs={12} sm={6} md={4}>
-              <SpecField label="Frame" field="frame" />
+              <SpecField label="Frame" field="frame" editing={editing} formValue={formData.frame} onChange={handleChange('frame')} specifications={specifications} />
             </Grid>
             <Grid item xs={12} sm={6} md={4}>
-              <SpecField label="Front Suspension" field="frontSuspension" />
+              <SpecField label="Front Suspension" field="frontSuspension" editing={editing} formValue={formData.frontSuspension} onChange={handleChange('frontSuspension')} specifications={specifications} />
             </Grid>
             <Grid item xs={12} sm={6} md={4}>
-              <SpecField label="Rear Suspension" field="rearSuspension" />
+              <SpecField label="Rear Suspension" field="rearSuspension" editing={editing} formValue={formData.rearSuspension} onChange={handleChange('rearSuspension')} specifications={specifications} />
             </Grid>
             <Grid item xs={12} sm={6} md={4}>
-              <SpecField label="Front Wheel Travel" field="frontWheelTravel" />
+              <SpecField label="Front Wheel Travel" field="frontWheelTravel" editing={editing} formValue={formData.frontWheelTravel} onChange={handleChange('frontWheelTravel')} specifications={specifications} />
             </Grid>
             <Grid item xs={12} sm={6} md={4}>
-              <SpecField label="Rear Wheel Travel" field="rearWheelTravel" />
+              <SpecField label="Rear Wheel Travel" field="rearWheelTravel" editing={editing} formValue={formData.rearWheelTravel} onChange={handleChange('rearWheelTravel')} specifications={specifications} />
             </Grid>
           </Grid>
 
@@ -283,16 +289,16 @@ const VehicleSpecifications = ({ vehicle }) => {
           <Divider sx={{ mb: 2 }} />
           <Grid container spacing={2}>
             <Grid item xs={12} sm={6} md={4}>
-              <SpecField label="Front Brakes" field="frontBrakes" />
+              <SpecField label="Front Brakes" field="frontBrakes" editing={editing} formValue={formData.frontBrakes} onChange={handleChange('frontBrakes')} specifications={specifications} />
             </Grid>
             <Grid item xs={12} sm={6} md={4}>
-              <SpecField label="Rear Brakes" field="rearBrakes" />
+              <SpecField label="Rear Brakes" field="rearBrakes" editing={editing} formValue={formData.rearBrakes} onChange={handleChange('rearBrakes')} specifications={specifications} />
             </Grid>
             <Grid item xs={12} sm={6} md={4}>
-              <SpecField label="Front Tyre" field="frontTyre" />
+              <SpecField label="Front Tyre" field="frontTyre" editing={editing} formValue={formData.frontTyre} onChange={handleChange('frontTyre')} specifications={specifications} />
             </Grid>
             <Grid item xs={12} sm={6} md={4}>
-              <SpecField label="Rear Tyre" field="rearTyre" />
+              <SpecField label="Rear Tyre" field="rearTyre" editing={editing} formValue={formData.rearTyre} onChange={handleChange('rearTyre')} specifications={specifications} />
             </Grid>
           </Grid>
 
@@ -302,22 +308,22 @@ const VehicleSpecifications = ({ vehicle }) => {
           <Divider sx={{ mb: 2 }} />
           <Grid container spacing={2}>
             <Grid item xs={12} sm={6} md={4}>
-              <SpecField label="Wheelbase" field="wheelbase" />
+              <SpecField label="Wheelbase" field="wheelbase" editing={editing} formValue={formData.wheelbase} onChange={handleChange('wheelbase')} specifications={specifications} />
             </Grid>
             <Grid item xs={12} sm={6} md={4}>
-              <SpecField label="Seat Height" field="seatHeight" />
+              <SpecField label="Seat Height" field="seatHeight" editing={editing} formValue={formData.seatHeight} onChange={handleChange('seatHeight')} specifications={specifications} />
             </Grid>
             <Grid item xs={12} sm={6} md={4}>
-              <SpecField label="Ground Clearance" field="groundClearance" />
+              <SpecField label="Ground Clearance" field="groundClearance" editing={editing} formValue={formData.groundClearance} onChange={handleChange('groundClearance')} specifications={specifications} />
             </Grid>
             <Grid item xs={12} sm={6} md={4}>
-              <SpecField label="Dry Weight" field="dryWeight" />
+              <SpecField label="Dry Weight" field="dryWeight" editing={editing} formValue={formData.dryWeight} onChange={handleChange('dryWeight')} specifications={specifications} />
             </Grid>
             <Grid item xs={12} sm={6} md={4}>
-              <SpecField label="Wet Weight" field="wetWeight" />
+              <SpecField label="Wet Weight" field="wetWeight" editing={editing} formValue={formData.wetWeight} onChange={handleChange('wetWeight')} specifications={specifications} />
             </Grid>
             <Grid item xs={12} sm={6} md={4}>
-              <SpecField label="Fuel Capacity" field="fuelCapacity" />
+              <SpecField label="Fuel Capacity" field="fuelCapacity" editing={editing} formValue={formData.fuelCapacity} onChange={handleChange('fuelCapacity')} specifications={specifications} />
             </Grid>
           </Grid>
 
@@ -327,7 +333,7 @@ const VehicleSpecifications = ({ vehicle }) => {
           <Divider sx={{ mb: 2 }} />
           <Grid container spacing={2}>
             <Grid item xs={12} sm={6} md={4}>
-              <SpecField label="Top Speed" field="topSpeed" />
+              <SpecField label="Top Speed" field="topSpeed" editing={editing} formValue={formData.topSpeed} onChange={handleChange('topSpeed')} specifications={specifications} />
             </Grid>
           </Grid>
 
@@ -337,7 +343,7 @@ const VehicleSpecifications = ({ vehicle }) => {
           <Divider sx={{ mb: 2 }} />
           <Grid container spacing={2}>
             <Grid item xs={12}>
-              <SpecField label="Notes" field="additionalInfo" multiline />
+              <SpecField label="Notes" field="additionalInfo" multiline editing={editing} formValue={formData.additionalInfo} onChange={handleChange('additionalInfo')} specifications={specifications} />
             </Grid>
           </Grid>
 

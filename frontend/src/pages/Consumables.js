@@ -166,10 +166,10 @@ const Consumables = () => {
         <Typography variant="h4">{t('consumables.title')}</Typography>
         <Box display="flex" gap={2}>
           <FormControl size="small" sx={{ width: 240 }}>
-            <InputLabel>Select Vehicle</InputLabel>
+            <InputLabel>{t('common.selectVehicle')}</InputLabel>
             <Select
               value={selectedVehicle}
-              label="Select Vehicle"
+              label={t('common.selectVehicle')}
               onChange={(e) => setSelectedVehicle(e.target.value)}
             >
               {vehicles.map((vehicle) => (
@@ -293,16 +293,16 @@ const Consumables = () => {
                   <TableCell>{consumable.lastChanged || '-'}</TableCell>
                   <TableCell>{consumable.mileageAtChange ? format(convert(consumable.mileageAtChange)) : '-'}</TableCell>
                   <TableCell>
-                    <Tooltip title="Edit">
-                      <IconButton size="small" onClick={() => handleEdit(consumable)}>
-                        <Edit />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Delete">
-                      <IconButton size="small" onClick={() => handleDelete(consumable.id)}>
-                        <Delete />
-                      </IconButton>
-                    </Tooltip>
+                      <Tooltip title={t('edit')}>
+                        <IconButton size="small" onClick={() => handleEdit(consumable)}>
+                          <Edit />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title={t('delete')}>
+                        <IconButton size="small" onClick={() => handleDelete(consumable.id)}>
+                          <Delete />
+                        </IconButton>
+                      </Tooltip>
                   </TableCell>
                 </TableRow>
               ))

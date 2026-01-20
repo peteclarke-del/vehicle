@@ -146,11 +146,13 @@ class PartController extends AbstractController
             'description' => $part->getDescription(),
             'partNumber' => $part->getPartNumber(),
             'manufacturer' => $part->getManufacturer(),
+            'supplier' => $part->getSupplier(),
             'cost' => $part->getCost(),
             'category' => $part->getCategory(),
             'installationDate' => $part->getInstallationDate()?->format('Y-m-d'),
             'mileageAtInstallation' => $part->getMileageAtInstallation(),
             'notes' => $part->getNotes(),
+            'warranty' => $part->getWarranty(),
             'receiptAttachmentId' => $part->getReceiptAttachmentId(),
             'productUrl' => $part->getProductUrl(),
             'createdAt' => $part->getCreatedAt()?->format('c')
@@ -171,8 +173,12 @@ class PartController extends AbstractController
         if (isset($data['manufacturer'])) {
             $part->setManufacturer($data['manufacturer']);
         }
+        if (isset($data['supplier'])) {
+            $part->setSupplier($data['supplier']);
+        }
         if (isset($data['cost'])) {
-            $part->setCost($data['cost']);
+            // Ensure entity expects a string — cast numeric values to string
+            $part->setCost((string) $data['cost']);
         }
         if (isset($data['category'])) {
             $part->setCategory($data['category']);
@@ -182,6 +188,10 @@ class PartController extends AbstractController
         }
         if (isset($data['mileageAtInstallation'])) {
             $part->setMileageAtInstallation($data['mileageAtInstallation']);
+        }
+        if (isset($data['warranty'])) {
+            // Frontend sends warranty as a string/number under `warranty`
+            $part->setWarranty($data['warranty']);
         }
         if (isset($data['notes'])) {
             $part->setNotes($data['notes']);

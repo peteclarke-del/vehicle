@@ -10,7 +10,7 @@ use App\Entity\ServiceRecord;
 use App\Entity\Part;
 use App\Entity\Consumable;
 use App\Entity\FuelRecord;
-use App\Entity\Insurance;
+use App\Entity\InsurancePolicy;
 use PHPUnit\Framework\TestCase;
 use Doctrine\Common\Collections\ArrayCollection;
 
@@ -167,15 +167,15 @@ class CostCalculatorTest extends TestCase
     {
         $vehicle = $this->createMockVehicle();
 
-        // Add insurance records
-        $insurance1 = new Insurance();
-        $insurance1->setAnnualCost(650.00);
+        // Add insurance policy records
+        $policy1 = new InsurancePolicy();
+        $policy1->setAnnualCost(650.00);
 
-        $insurance2 = new Insurance();
-        $insurance2->setAnnualCost(700.00);
+        $policy2 = new InsurancePolicy();
+        $policy2->setAnnualCost(700.00);
 
-        $vehicle->addInsurance($insurance1);
-        $vehicle->addInsurance($insurance2);
+        $vehicle->addInsurancePolicy($policy1);
+        $vehicle->addInsurancePolicy($policy2);
 
         $result = $this->calculator->calculateTotalCosts($vehicle);
 

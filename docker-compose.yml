@@ -29,6 +29,10 @@ services:
       - mysql
     environment:
       DATABASE_URL: mysql://vehicle_user:vehicle_pass@mysql:3306/vehicle_management
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
+    command: ["php-fpm", "-F"]
 
   nginx:
     image: nginx:alpine

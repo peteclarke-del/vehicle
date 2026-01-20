@@ -9,8 +9,12 @@ import {
   Grid,
   MenuItem,
   CircularProgress,
+  IconButton,
+  Checkbox,
+  FormControlLabel,
   Autocomplete,
 } from '@mui/material';
+import SearchIcon from '@mui/icons-material/Search';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { fetchArrayData } from '../hooks/useApiData';
@@ -18,7 +22,7 @@ import { useDistance } from '../hooks/useDistance';
 
 const VehicleDialog = ({ open, vehicle, onClose }) => {
   const { convert, toKm, getLabel } = useDistance();
-  const [formData, setFormData] = useState({
+  const initialForm = {
     name: '',
     make: '',
     model: '',
@@ -29,10 +33,9 @@ const VehicleDialog = ({ open, vehicle, onClose }) => {
     v5DocumentNumber: '',
     purchaseCost: '',
     purchaseDate: new Date().toISOString().split('T')[0],
-    currentMileage: '',
-    lastServiceDate: '',
-    motExpiryDate: '',
-    roadTaxExpiryDate: '',
+    purchaseMileage: '',
+    motExempt: false,
+    roadTaxExempt: false,
     securityFeatures: [],
     vehicleColor: '',
     serviceIntervalMonths: 12,
@@ -41,7 +44,9 @@ const VehicleDialog = ({ open, vehicle, onClose }) => {
     depreciationMethod: 'declining_balance',
     depreciationYears: 10,
     depreciationRate: 5,
-  });
+  };
+
+  const [formData, setFormData] = useState(initialForm);
   const [vehicleTypes, setVehicleTypes] = useState([]);
   const [makes, setMakes] = useState([]);
   const [models, setModels] = useState([]);
@@ -79,6 +84,18 @@ const VehicleDialog = ({ open, vehicle, onClose }) => {
     'Metallic Grey',
     'Matte Black',
   ];
+
+  const [extraColors, setExtraColors] = useState([]);
+
+  const colorOptions = React.useMemo(() => {
+    return [...vehicleColors, ...extraColors];
+  }, [extraColors]);
+
+  const capitalizeFirst = (s) => {
+    if (!s) return s;
+    const str = String(s).trim();
+    return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+  };
 
   // Map color values to translation keys
   const getColorTranslationKey = (color) => {
@@ -220,13 +237,15 @@ const VehicleDialog = ({ open, vehicle, onClose }) => {
   }, [formData.vehicleTypeId, vehicleTypes]);
 
   useEffect(() => {
-    if (open) {
+        if (open) {
       loadVehicleTypes();
       if (vehicle) {
         setFormData({
           ...vehicle,
           vehicleTypeId: vehicle.vehicleType?.id || '',
-          currentMileage: vehicle.currentMileage ? convert(vehicle.currentMileage) : '',
+            purchaseMileage: vehicle.purchaseMileage ? convert(vehicle.purchaseMileage) : '',
+          motExempt: vehicle.motExempt ?? vehicle.isMotExempt ?? false,
+          roadTaxExempt: vehicle.roadTaxExempt ?? vehicle.isRoadTaxExempt ?? false,
           serviceIntervalMiles: vehicle.serviceIntervalMiles ? convert(vehicle.serviceIntervalMiles) : 4000,
           securityFeatures: typeof vehicle.securityFeatures === 'string' 
             ? vehicle.securityFeatures.split(',').map(s => s.trim()).filter(Boolean)
@@ -234,30 +253,7 @@ const VehicleDialog = ({ open, vehicle, onClose }) => {
         });
       } else {
         // Reset to defaults when no vehicle (add new)
-        setFormData({
-          name: '',
-          make: '',
-          model: '',
-          year: new Date().getFullYear(),
-          vin: '',
-          registrationNumber: '',
-          engineNumber: '',
-          v5DocumentNumber: '',
-          purchaseCost: '',
-          purchaseDate: new Date().toISOString().split('T')[0],
-          currentMileage: '',
-          lastServiceDate: '',
-          motExpiryDate: '',
-          roadTaxExpiryDate: '',
-          securityFeatures: [],
-          vehicleColor: '',
-          serviceIntervalMonths: 12,
-          serviceIntervalMiles: 4000,
-          vehicleTypeId: '',
-          depreciationMethod: 'straight_line',
-          depreciationYears: 5,
-          depreciationRate: 20,
-        });
+        setFormData(initialForm);
       }
     }
   }, [open, vehicle]);
@@ -302,6 +298,11 @@ const VehicleDialog = ({ open, vehicle, onClose }) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  const handleClose = (saved) => {
+    setFormData(initialForm);
+    onClose(saved);
+  };
+
   const lookupRegistration = async (registration) => {
     if (!registration || registration.length < 3) {
       return;
@@ -309,7 +310,7 @@ const VehicleDialog = ({ open, vehicle, onClose }) => {
 
     setLookingUpReg(true);
     try {
-      const response = await api.get(`/dvsa/vehicle/${registration}`);
+      const response = await api.get(`/dvla/vehicle/${registration}`);
       const data = response.data;
 
       if (data && !data.error) {
@@ -320,54 +321,124 @@ const VehicleDialog = ({ open, vehicle, onClose }) => {
           if (existingMake) {
             makeId = existingMake.id;
           } else {
-            // Create new make
+            // Create new make (include current vehicleTypeId or pick a sensible default)
             try {
-              const newMake = await api.post('/vehicle-makes', { name: data.make });
+              const payload = { name: data.make };
+              let selectedTypeId = formData.vehicleTypeId;
+              if (!selectedTypeId && vehicleTypes && vehicleTypes.length > 0) {
+                // Prefer a 'Car' type if present, otherwise use the first available type
+                const carType = vehicleTypes.find(t => /car/i.test(t.name));
+                selectedTypeId = (carType && carType.id) ? carType.id : vehicleTypes[0].id;
+              }
+              if (selectedTypeId) {
+                payload.vehicleTypeId = selectedTypeId;
+                // Ensure form reflects the selected type so subsequent flows use it
+                setFormData(prev => ({ ...prev, vehicleTypeId: selectedTypeId }));
+              }
+              const newMake = await api.post('/vehicle-makes', payload);
               makeId = newMake.data.id;
-              setMakes([...makes, newMake.data]);
+              setMakes(prev => [...prev, newMake.data]);
             } catch (err) {
               console.error('Error creating make:', err);
             }
           }
         }
 
-        // Update form with vehicle details
+        // Update form with vehicle details (prefer DVLA fields when present)
+        const rawColor = (data.primaryColour ?? data.colour) ?? formData.vehicleColor;
+        const color = rawColor ? capitalizeFirst(rawColor) : rawColor;
+
         const updates = {
-          make: data.make || formData.make,
-          model: data.model || formData.model,
-          year: data.yearOfManufacture || formData.year,
-          vehicleColor: data.primaryColour || formData.vehicleColor,
-          registrationNumber: data.registration || formData.registrationNumber,
+          vin: data.vin ?? formData.vin,
+          make: data.make ? capitalizeFirst(data.make) : formData.make,
+          model: data.model ? capitalizeFirst(data.model) : formData.model,
+          year: data.yearOfManufacture ?? formData.year,
+          vehicleColor: color ?? formData.vehicleColor,
+          registrationNumber: data.registration ?? formData.registrationNumber,
+          engineNumber: data.engineNumber ?? formData.engineNumber,
+          v5DocumentNumber: data.v5DocumentNumber ?? formData.v5DocumentNumber,
         };
 
-        // Get latest MOT data
-        try {
-          const motResponse = await api.get(`/dvsa/latest-mot/${registration}`);
-          if (motResponse.data && !motResponse.data.error) {
-            updates.motExpiryDate = motResponse.data.expiryDate?.split('T')[0] || formData.motExpiryDate;
-            if (motResponse.data.odometerValue) {
-              updates.currentMileage = motResponse.data.odometerUnit === 'km' 
-                ? Math.round(motResponse.data.odometerValue / 1.60934)
-                : motResponse.data.odometerValue;
-            }
+        // Set vehicleTypeId by matching DVLA vehicleType name to available vehicleTypes
+        if (data.vehicleType && vehicleTypes && vehicleTypes.length > 0) {
+          const match = vehicleTypes.find(t => t.name && data.vehicleType && t.name.toLowerCase() === data.vehicleType.toLowerCase());
+          if (match) {
+            updates.vehicleTypeId = match.id;
           }
-        } catch (motErr) {
-          console.log('MOT data not available');
         }
 
-        setFormData({ ...formData, ...updates });
+        // Road tax / MOT indicators
+        if (typeof data.motExempt !== 'undefined') {
+          updates.motExempt = !!data.motExempt;
+        }
+        if (typeof data.taxStatus !== 'undefined') {
+          const ts = (data.taxStatus ?? '') .toString().toLowerCase();
+          updates.roadTaxExempt = ts.includes('sorn') || ts.includes('untaxed') || ts.includes('exempt');
+        }
 
-        // Load models if we have a make
+        // Prefer DVLA-only data; do not invoke external APIs here
+        setFormData(prev => ({ ...prev, ...updates }));
+
+        // Ensure colour is in options (case-insensitive match)
+        if (color) {
+          const found = colorOptions.find(c => c.toLowerCase() === color.toLowerCase());
+          if (!found) {
+            setExtraColors(prev => Array.from(new Set([...prev, color])));
+          }
+        }
+
+        // Load models if we have a make and year
         if (makeId && updates.year) {
           loadModels(makeId, updates.year);
         }
       }
     } catch (error) {
-      console.log('Could not lookup registration:', error.response?.data?.error || error.message);
+      const serverError = error?.response?.data?.error;
+      const status = error?.response?.status;
+
+      // DVLA busy - show a friendly message and allow manual entry
+      if (status === 503 && serverError === 'dvla.lookup_busy') {
+        try {
+          alert(t('dvla.lookupBusy'));
+        } catch (e) {
+          alert('DVLA is busy; please try again later.');
+        }
+        return;
+      }
+
+      // Not found - allow manual entry without alarming the user
+      if (status === 404) {
+        console.info('DVLA returned 404; no record found for', registration);
+        return;
+      }
+
+      if (serverError) {
+        // If backend returned a translation key, show translated message
+        try {
+          alert(t(serverError));
+        } catch (e) {
+          alert(serverError);
+        }
+      } else {
+        console.log('Could not lookup registration:', error.response?.data?.error || error.message);
+        alert(t('vehicle.lookupFailed'));
+      }
     } finally {
       setLookingUpReg(false);
     }
   };
+
+    const lookupByVin = async (vin) => {
+      // VIN-based lookup via DVLA is not supported by our backend proxy.
+      // If a registration is present we can attempt a DVLA registration lookup,
+      // otherwise skip auto-lookup and let the user fill remaining fields.
+      if (!vin || vin.length < 6) return;
+      if (formData.registrationNumber) {
+        await lookupRegistration(formData.registrationNumber);
+      } else {
+        console.log('VIN lookup skipped: no registration present and DVLA VIN lookup unavailable');
+      }
+    };
 
   const handleRegistrationBlur = (e) => {
     const reg = e.target.value;
@@ -384,19 +455,24 @@ const VehicleDialog = ({ open, vehicle, onClose }) => {
       // Convert distances back to km for storage
       const dataToSend = {
         ...formData,
-        currentMileage: formData.currentMileage ? toKm(parseInt(formData.currentMileage)) : null,
+        purchaseMileage: formData.purchaseMileage ? toKm(parseInt(formData.purchaseMileage)) : null,
         serviceIntervalMiles: formData.serviceIntervalMiles ? toKm(parseInt(formData.serviceIntervalMiles)) : null,
         securityFeatures: Array.isArray(formData.securityFeatures) 
           ? formData.securityFeatures.join(', ')
           : formData.securityFeatures,
       };
+      // Do not send service/MOT/road-tax dates from the vehicle form — these
+      // are computed from related records and should not be editable here.
+      delete dataToSend.lastServiceDate;
+      delete dataToSend.motExpiryDate;
+      delete dataToSend.roadTaxExpiryDate;
       
       if (vehicle) {
         await api.put(`/vehicles/${vehicle.id}`, dataToSend);
       } else {
         await api.post('/vehicles', dataToSend);
       }
-      onClose(true);
+      handleClose(true);
     } catch (error) {
       console.error('Error saving vehicle:', error);
       alert(t('common.saveError', { type: 'vehicle' }));
@@ -406,14 +482,14 @@ const VehicleDialog = ({ open, vehicle, onClose }) => {
   };
 
   return (
-    <Dialog open={open} onClose={() => onClose(false)} maxWidth="md" fullWidth>
+    <Dialog open={open} onClose={() => handleClose(false)} maxWidth="md" fullWidth>
       <DialogTitle>
         {vehicle ? t('vehicleDialog.editVehicle') : t('vehicle.addVehicle')}
       </DialogTitle>
       <form onSubmit={handleSubmit}>
         <DialogContent>
           <Grid container spacing={2}>
-            <Grid item xs={12} sm={6}>
+            <Grid item xs={12} sm={12}>
               <TextField
                 fullWidth
                 required
@@ -513,6 +589,17 @@ const VehicleDialog = ({ open, vehicle, onClose }) => {
                 label={t('vehicle.vin')}
                 value={formData.vin}
                 onChange={handleChange}
+                onBlur={(e) => { if (!vehicle) lookupByVin(e.target.value); }}
+                InputProps={{
+                  endAdornment: (
+                    <>
+                      {lookingUpReg ? <CircularProgress size={20} /> : null}
+                      <IconButton size="small" onClick={() => lookupByVin(formData.vin)} aria-label="fetch-vin">
+                        <SearchIcon fontSize="small" />
+                      </IconButton>
+                    </>
+                  ),
+                }}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -525,7 +612,14 @@ const VehicleDialog = ({ open, vehicle, onClose }) => {
                 onBlur={handleRegistrationBlur}
                 helperText={lookingUpReg ? t('vehicle.lookingUpRegistration') : t('vehicle.registrationHelper')}
                 InputProps={{
-                  endAdornment: lookingUpReg ? <CircularProgress size={20} /> : null,
+                  endAdornment: (
+                    <>
+                      {lookingUpReg ? <CircularProgress size={20} /> : null}
+                      <IconButton size="small" onClick={() => lookupRegistration(formData.registrationNumber)} aria-label="fetch-reg">
+                        <SearchIcon fontSize="small" />
+                      </IconButton>
+                    </>
+                  ),
                 }}
               />
             </Grid>
@@ -570,49 +664,50 @@ const VehicleDialog = ({ open, vehicle, onClose }) => {
                 InputLabelProps={{ shrink: true }}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                type="number"
-                name="currentMileage"
-                label={`${t('vehicle.currentMileage')} (${getLabel()})`}
-                value={formData.currentMileage}
-                onChange={handleChange}
-              />
+            <Grid item xs={12} sm={12}>
+              <Grid container spacing={1} alignItems="center">
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    type="number"
+                    name="purchaseMileage"
+                    label={`${t('vehicle.purchaseMileage')} (${getLabel()})`}
+                    value={formData.purchaseMileage}
+                    onChange={handleChange}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={3}>
+                  <div style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={!!formData.motExempt}
+                          onChange={(e) => setFormData({ ...formData, motExempt: e.target.checked })}
+                          name="motExempt"
+                        />
+                      }
+                      label={t('vehicle.motExempt')}
+                    />
+                  </div>
+                </Grid>
+                <Grid item xs={12} sm={3}>
+                  <div style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={!!formData.roadTaxExempt}
+                          onChange={(e) => setFormData({ ...formData, roadTaxExempt: e.target.checked })}
+                          name="roadTaxExempt"
+                        />
+                      }
+                      label={t('vehicle.roadTaxExempt')}
+                    />
+                  </div>
+                </Grid>
+              </Grid>
             </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                type="date"
-                name="lastServiceDate"
-                label={t('vehicle.lastServiceDate')}
-                value={formData.lastServiceDate}
-                onChange={handleChange}
-                InputLabelProps={{ shrink: true }}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                type="date"
-                name="motExpiryDate"
-                label={t('vehicle.motExpiryDate')}
-                value={formData.motExpiryDate}
-                onChange={handleChange}
-                InputLabelProps={{ shrink: true }}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                type="date"
-                name="roadTaxExpiryDate"
-                label={t('vehicle.roadTaxExpiryDate')}
-                value={formData.roadTaxExpiryDate}
-                onChange={handleChange}
-                InputLabelProps={{ shrink: true }}
-              />
-            </Grid>
+            {/* currentMileage is computed from fuel records and is not editable here */}
+            {/* Service / MOT / Road tax dates are derived from related records and are not editable here */}
             <Grid item xs={12}>
               <Autocomplete
                 multiple
@@ -686,6 +781,7 @@ const VehicleDialog = ({ open, vehicle, onClose }) => {
                 helperText={t('vehicle.serviceIntervalMilesHelper')}
               />
             </Grid>
+            
             <Grid item xs={12} sm={4}>
               <TextField
                 fullWidth
@@ -723,7 +819,7 @@ const VehicleDialog = ({ open, vehicle, onClose }) => {
           </Grid>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => onClose(false)}>{t('common.cancel')}</Button>
+          <Button onClick={() => handleClose(false)}>{t('common.cancel')}</Button>
           <Button type="submit" variant="contained" disabled={loading}>
             {loading ? <CircularProgress size={24} /> : t('common.save')}
           </Button>

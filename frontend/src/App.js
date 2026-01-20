@@ -13,7 +13,9 @@ import Parts from './pages/Parts';
 import Consumables from './pages/Consumables';
 import Insurance from './pages/Insurance';
 import MotRecords from './pages/MotRecords';
+import RoadTax from './pages/RoadTax';
 import ServiceRecords from './pages/ServiceRecords';
+import Reports from './pages/Reports';
 import Profile from './pages/Profile';
 import PasswordChangeDialog from './components/PasswordChangeDialog';
 import SessionTimeoutWarning from './components/SessionTimeoutWarning';
@@ -66,7 +68,9 @@ function AppRoutes() {
           <Route path="consumables" element={<Consumables />} />
           <Route path="insurance" element={<Insurance />} />
           <Route path="mot-records" element={<MotRecords />} />
+          <Route path="road-tax" element={<RoadTax />} />
           <Route path="service-records" element={<ServiceRecords />} />
+          <Route path="reports" element={<Reports />} />
           <Route path="profile" element={<Profile />} />
         </Route>
       </Routes>

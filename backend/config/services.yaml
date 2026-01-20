@@ -23,6 +23,17 @@ services:
     App\Service\DvsaApiService:
         arguments:
             $dvsaApiKey: '%env(DVSA_API_KEY)%'
+            $dvsaTokenUrl: '%env(DVSA_TOKEN_URL)%'
+            $dvsaClientId: '%env(DVSA_CLIENT_ID)%'
+            $dvsaClientSecret: '%env(DVSA_CLIENT_SECRET)%'
+            $dvsaScope: '%env(DVSA_SCOPE_URL)%'
+            $dvsaApiUrl: '%env(DVSA_API_URL)%'
+
+    App\Service\DvlaApiService:
+        arguments:
+            $dvlaApiKey: '%env(DVLA_API_KEY)%'
+
+    # Controllers are autowired; specific controller argument wiring removed to avoid coupling
 
     App\Service\ReceiptOcrService:
         arguments:
@@ -53,9 +64,15 @@ services:
             $apiNinjasKey: '%env(API_NINJAS_KEY)%'
         tags: ['app.vehicle_spec_adapter']
 
+    App\Service\VehicleSpecAdapter\DvlaAdapter:
+        arguments:
+            $dvlaService: '@App\Service\DvlaApiService'
+        tags: ['app.vehicle_spec_adapter']
+
     # Auto-register adapters with the main service
     App\Service\VehicleSpecificationScraperService:
         calls:
+            - registerAdapter: ['@App\Service\VehicleSpecAdapter\DvlaAdapter']
             - registerAdapter: ['@App\Service\VehicleSpecAdapter\ApiNinjasMotorcycleAdapter']
             - registerAdapter: ['@App\Service\VehicleSpecAdapter\ApiNinjasCarAdapter']
 

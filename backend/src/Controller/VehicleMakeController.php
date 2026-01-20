@@ -43,22 +43,37 @@ class VehicleMakeController extends AbstractController
     {
         $data = json_decode($request->getContent(), true);
 
-        $vehicleType = $em->getRepository(VehicleType::class)->find($data['vehicleTypeId']);
+        if (!is_array($data)) {
+            return $this->json(['error' => 'Invalid JSON body'], 400);
+        }
+
+        if (empty($data['vehicleTypeId'])) {
+            return $this->json(['error' => 'Missing vehicleTypeId'], 400);
+        }
+
+        if (empty($data['name'])) {
+            return $this->json(['error' => 'Missing name'], 400);
+        }
+
+        $vehicleTypeRepo = $em->getRepository(VehicleType::class);
+        $vehicleType = $vehicleTypeRepo->find($data['vehicleTypeId']);
         if (!$vehicleType) {
             return $this->json(['error' => 'Vehicle type not found'], 404);
         }
 
         $make = new VehicleMake();
-        $make->setName($data['name']);
+        $make->setName((string) $data['name']);
         $make->setVehicleType($vehicleType);
 
         $em->persist($make);
         $em->flush();
 
-        return $this->json([
-            'id' => $make->getId(),
-            'name' => $make->getName(),
-            'vehicleTypeId' => $make->getVehicleType()->getId()
-        ]);
+        return $this->json(
+            [
+                'id' => $make->getId(),
+                'name' => $make->getName(),
+                'vehicleTypeId' => $make->getVehicleType()->getId(),
+            ]
+        );
     }
 }

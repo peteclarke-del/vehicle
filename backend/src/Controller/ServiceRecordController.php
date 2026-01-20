@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Entity\ServiceRecord;
+use App\Entity\ServiceItem;
 use App\Entity\Vehicle;
 use App\Entity\Part;
 use App\Entity\Consumable;
@@ -141,13 +142,23 @@ class ServiceRecordController extends AbstractController
 
     private function serializeServiceRecord(ServiceRecord $service, bool $detailed = false): array
     {
+        $laborCost = $service->getLaborCost();
+        $partsCost = $service->getPartsCost();
+
+        // If itemised entries exist, compute costs from them
+        $items = $service->getItems();
+        if (count($items) > 0) {
+            $laborCost = $service->sumItemsByType('labour');
+            $partsCost = $service->sumItemsByType('part');
+        }
+
         $data = [
             'id' => $service->getId(),
             'vehicleId' => $service->getVehicle()->getId(),
             'serviceDate' => $service->getServiceDate()?->format('Y-m-d'),
             'serviceType' => $service->getServiceType(),
-            'laborCost' => $service->getLaborCost(),
-            'partsCost' => $service->getPartsCost(),
+            'laborCost' => $laborCost,
+            'partsCost' => $partsCost,
             'totalCost' => $service->getTotalCost(),
             'mileage' => $service->getMileage(),
             'serviceProvider' => $service->getServiceProvider(),
@@ -156,6 +167,11 @@ class ServiceRecordController extends AbstractController
             'receiptAttachmentId' => $service->getReceiptAttachmentId(),
             'createdAt' => $service->getCreatedAt()?->format('c'),
         ];
+
+        // include items when detailed or available
+        if ($detailed || count($items) > 0) {
+            $data['items'] = array_map(fn($it) => $this->serializeItem($it), $items);
+        }
 
         return $data;
     }
@@ -175,6 +191,18 @@ class ServiceRecordController extends AbstractController
             'id' => $consumable->getId(),
             'specification' => $consumable->getSpecification(),
             'cost' => $consumable->getCost(),
+        ];
+    }
+
+    private function serializeItem(ServiceItem $item): array
+    {
+        return [
+            'id' => $item->getId(),
+            'type' => $item->getType(),
+            'description' => $item->getDescription(),
+            'cost' => $item->getCost(),
+            'quantity' => $item->getQuantity(),
+            'total' => $item->getTotal(),
         ];
     }
 
@@ -206,6 +234,26 @@ class ServiceRecordController extends AbstractController
         }
         if (isset($data['receiptAttachmentId'])) {
             $service->setReceiptAttachmentId($data['receiptAttachmentId']);
+        }
+
+        // Handle itemised entries (parts / labour / consumables)
+        if (isset($data['items']) && is_array($data['items'])) {
+            // remove existing items
+            $existing = $this->entityManager->getRepository(ServiceItem::class)
+                ->findBy(['serviceRecord' => $service]);
+            foreach ($existing as $ex) {
+                $this->entityManager->remove($ex);
+            }
+
+            foreach ($data['items'] as $it) {
+                $si = new ServiceItem();
+                $si->setServiceRecord($service);
+                $si->setType($it['type'] ?? 'part');
+                $si->setDescription($it['description'] ?? null);
+                $si->setCost($it['cost'] ?? '0.00');
+                $si->setQuantity(isset($it['quantity']) ? (int)$it['quantity'] : 1);
+                $this->entityManager->persist($si);
+            }
         }
     }
 }

@@ -2,16 +2,23 @@
 /backend/var/
 /backend/vendor/
 /backend/config/jwt/
+/backend/.env.dev
 /backend/.env.local
 /backend/.env.local.php
 /backend/.env.*.local
+/backend/tools/
 /backend/uploads/*
 !/backend/uploads/.gitkeep
 
 # React
 /frontend/node_modules/
 /frontend/build/
+/frontend/scripts
 /frontend/.env.local
+
+# Global
+/.env.dev
+/.env.local
 
 # IDE
 /.idea/
