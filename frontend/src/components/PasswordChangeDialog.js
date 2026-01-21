@@ -30,14 +30,44 @@ export default function PasswordChangeDialog({ open, onClose, required = false }
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const password = formData.newPassword || '';
-  const criteria = {
-    length: password.length >= 8,
-    upper: /[A-Z]/.test(password),
-    lower: /[a-z]/.test(password),
-    digit: /[0-9]/.test(password),
-    special: /[^A-Za-z0-9]/.test(password),
+  const passwordRegex = process.env.REACT_APP_PASSWORD_POLICY;
+  const parseRequirementsFromRegex = (regex) => {
+    if (!regex) return null;
+    const reqs = {
+      length: 8, // default
+      upper: false,
+      lower: false,
+      digit: false,
+      special: false,
+    };
+    // Check for length
+    const lengthMatch = regex.match(/\{(\d+),?\d*\}/);
+    if (lengthMatch) reqs.length = parseInt(lengthMatch[1]);
+    // Check for requirements
+    reqs.upper = /(?=.*[A-Z])/.test(regex);
+    reqs.lower = /(?=.*[a-z])/.test(regex);
+    reqs.digit = /(?=.*\d)/.test(regex);
+    reqs.special = /(?=.*[^A-Za-z0-9])/.test(regex);
+    return reqs;
   };
+
+  const dynamicReqs = parseRequirementsFromRegex(passwordRegex);
+  console.log('dynamicReqs:', dynamicReqs);
+  const criteria = dynamicReqs ? {
+    length: formData.newPassword.length >= dynamicReqs.length,
+    upper: dynamicReqs.upper ? /[A-Z]/.test(formData.newPassword) : true,
+    lower: dynamicReqs.lower ? /[a-z]/.test(formData.newPassword) : true,
+    digit: dynamicReqs.digit ? /[0-9]/.test(formData.newPassword) : true,
+    special: dynamicReqs.special ? /[^A-Za-z0-9]/.test(formData.newPassword) : true,
+  } : {
+    length: formData.newPassword.length >= 8,
+    upper: /[A-Z]/.test(formData.newPassword),
+    lower: /[a-z]/.test(formData.newPassword),
+    digit: /[0-9]/.test(formData.newPassword),
+    special: /[^A-Za-z0-9]/.test(formData.newPassword),
+  };
+
+  const isValidPassword = passwordRegex ? new RegExp(passwordRegex).test(formData.newPassword) : Object.values(criteria).every(Boolean);
 
   useEffect(() => {
     if (open) {
@@ -62,8 +92,8 @@ export default function PasswordChangeDialog({ open, onClose, required = false }
       return;
     }
 
-    if (formData.newPassword.length < 8) {
-      setError(t('password.passwordMinLength'));
+    if (!isValidPassword) {
+      setError(passwordRegex ? t('password.passwordDoesNotMatchPolicy') : t('password.passwordMinLength'));
       return;
     }
 
@@ -131,61 +161,6 @@ export default function PasswordChangeDialog({ open, onClose, required = false }
               required
               fullWidth
             />
-            <Box>
-              <Typography variant="caption">{t('password.passwordRequirements')}</Typography>
-              <List dense>
-                <ListItem>
-                  <ListItemIcon>
-                    {criteria.length ? (
-                      <CheckCircleIcon color="success" fontSize="small" />
-                    ) : (
-                      <RadioButtonUncheckedIcon fontSize="small" />
-                    )}
-                  </ListItemIcon>
-                  <ListItemText primary={t('password.requireLength', { count: 8 })} />
-                </ListItem>
-                <ListItem>
-                  <ListItemIcon>
-                    {criteria.upper ? (
-                      <CheckCircleIcon color="success" fontSize="small" />
-                    ) : (
-                      <RadioButtonUncheckedIcon fontSize="small" />
-                    )}
-                  </ListItemIcon>
-                  <ListItemText primary={t('password.requireUpper')} />
-                </ListItem>
-                <ListItem>
-                  <ListItemIcon>
-                    {criteria.lower ? (
-                      <CheckCircleIcon color="success" fontSize="small" />
-                    ) : (
-                      <RadioButtonUncheckedIcon fontSize="small" />
-                    )}
-                  </ListItemIcon>
-                  <ListItemText primary={t('password.requireLower')} />
-                </ListItem>
-                <ListItem>
-                  <ListItemIcon>
-                    {criteria.digit ? (
-                      <CheckCircleIcon color="success" fontSize="small" />
-                    ) : (
-                      <RadioButtonUncheckedIcon fontSize="small" />
-                    )}
-                  </ListItemIcon>
-                  <ListItemText primary={t('password.requireDigit')} />
-                </ListItem>
-                <ListItem>
-                  <ListItemIcon>
-                    {criteria.special ? (
-                      <CheckCircleIcon color="success" fontSize="small" />
-                    ) : (
-                      <RadioButtonUncheckedIcon fontSize="small" />
-                    )}
-                  </ListItemIcon>
-                  <ListItemText primary={t('password.requireSpecial')} />
-                </ListItem>
-              </List>
-            </Box>
             <TextField
               label={t('password.confirmPassword')}
               type="password"
@@ -195,6 +170,71 @@ export default function PasswordChangeDialog({ open, onClose, required = false }
               required
               fullWidth
             />
+            <Box sx={{ alignSelf: 'center', textAlign: 'left', maxWidth: 'fit-content' }}>
+              <Typography variant="caption">{t('password.passwordRequirements')}</Typography>
+              <List dense>
+                {(dynamicReqs ? dynamicReqs.length > 0 : true) && (
+                  <ListItem>
+                    <ListItemIcon>
+                      {criteria.length ? (
+                        <CheckCircleIcon color="success" fontSize="small" />
+                      ) : (
+                        <RadioButtonUncheckedIcon fontSize="small" />
+                      )}
+                    </ListItemIcon>
+                    <ListItemText primary={t('password.requireLength', { count: dynamicReqs ? dynamicReqs.length : 8 })} />
+                  </ListItem>
+                )}
+                {(dynamicReqs ? dynamicReqs.upper : true) && (
+                  <ListItem>
+                    <ListItemIcon>
+                      {criteria.upper ? (
+                        <CheckCircleIcon color="success" fontSize="small" />
+                      ) : (
+                        <RadioButtonUncheckedIcon fontSize="small" />
+                      )}
+                    </ListItemIcon>
+                    <ListItemText primary={t('password.requireUpper')} />
+                  </ListItem>
+                )}
+                {(dynamicReqs ? dynamicReqs.lower : true) && (
+                  <ListItem>
+                    <ListItemIcon>
+                      {criteria.lower ? (
+                        <CheckCircleIcon color="success" fontSize="small" />
+                      ) : (
+                        <RadioButtonUncheckedIcon fontSize="small" />
+                      )}
+                    </ListItemIcon>
+                    <ListItemText primary={t('password.requireLower')} />
+                  </ListItem>
+                )}
+                {(dynamicReqs ? dynamicReqs.digit : true) && (
+                  <ListItem>
+                    <ListItemIcon>
+                      {criteria.digit ? (
+                        <CheckCircleIcon color="success" fontSize="small" />
+                      ) : (
+                        <RadioButtonUncheckedIcon fontSize="small" />
+                      )}
+                    </ListItemIcon>
+                    <ListItemText primary={t('password.requireDigit')} />
+                  </ListItem>
+                )}
+                {(dynamicReqs ? dynamicReqs.special : true) && (
+                  <ListItem>
+                    <ListItemIcon>
+                      {criteria.special ? (
+                        <CheckCircleIcon color="success" fontSize="small" />
+                      ) : (
+                        <RadioButtonUncheckedIcon fontSize="small" />
+                      )}
+                    </ListItemIcon>
+                    <ListItemText primary={t('password.requireSpecial')} />
+                  </ListItem>
+                )}
+              </List>
+            </Box>
           </Box>
         </DialogContent>
         <DialogActions>

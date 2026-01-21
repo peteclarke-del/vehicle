@@ -160,8 +160,6 @@ class InsurancePolicy
         return $this;
     }
 
-
-
     public function getExcess(): ?string
     {
         return $this->excess;

@@ -48,6 +48,23 @@ fi
 if [ -f "$TARGET_DIR/bin/console" ]; then
   echo "[entrypoint] detected Symfony console"
 
+  # Wait for database to be ready
+  echo "[entrypoint] waiting for database to be ready"
+  while ! php -r "
+    try {
+      \$pdo = new PDO('mysql:host=mysql;port=3306;dbname=vehicle_management', 'vehicle_user', 'vehicle_pass');
+      echo 'OK';
+    } catch (Exception \$e) {
+      exit(1);
+    }
+  " 2>/dev/null | grep -q OK; do
+    echo '[entrypoint] database not ready, waiting...'
+    sleep 2
+  done
+  echo '[entrypoint] database is ready'
+
+  if [ "${SKIP_MIGRATIONS:-0}" != "1" ]; then
+
   if [ "${SKIP_MIGRATIONS:-0}" != "1" ]; then
     echo "[entrypoint] running doctrine migrations (may take a moment)"
     (cd "$TARGET_DIR" && php bin/console doctrine:migrations:migrate --no-interaction --allow-no-migration) || echo "[entrypoint] migrations failed or no migrations to run"

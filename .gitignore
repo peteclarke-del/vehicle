@@ -6,6 +6,7 @@
 /backend/.env.local
 /backend/.env.local.php
 /backend/.env.*.local
+/backend/.env
 /backend/tools/
 /backend/uploads/*
 !/backend/uploads/.gitkeep
