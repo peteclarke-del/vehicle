@@ -1,0 +1,12 @@
+[
+  {
+    "type": "Motorcycle",
+    "name": "Indian",
+    "logoUrl": "https://example.com/indian-logo.png",
+    "countryOfOrigin": "United States",
+    "foundedYear": 1901,
+    "headquarters": "Spirit Lake, Iowa, USA",
+    "isActive": true,
+    "popularity": 0
+  }
+]

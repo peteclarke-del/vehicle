@@ -1,0 +1,98 @@
+[
+  {
+    "make": "Vauxhall",
+    "name": "Vivaro",
+    "startYear": 2001,
+    "endYear": null,
+    "vehicleType": "Van",
+    "productionStartYear": 2001,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/vauxhall-vivaro.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Vauxhall",
+    "name": "Movano",
+    "startYear": 1998,
+    "endYear": null,
+    "vehicleType": "Van",
+    "productionStartYear": 1998,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/vauxhall-movano.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Vauxhall",
+    "name": "Combo",
+    "startYear": 2001,
+    "endYear": null,
+    "vehicleType": "Van",
+    "productionStartYear": 2001,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/vauxhall-combo.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Vauxhall",
+    "name": "Corsavan",
+    "startYear": 2014,
+    "endYear": null,
+    "vehicleType": "Van",
+    "productionStartYear": 2014,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/vauxhall-corsavan.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  }
+]

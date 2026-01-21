@@ -1,0 +1,12 @@
+[
+  {
+    "type": "Motorcycle",
+    "name": "Harley-Davidson",
+    "logoUrl": "https://example.com/harley-logo.png",
+    "countryOfOrigin": "United States",
+    "foundedYear": 1903,
+    "headquarters": "Milwaukee, Wisconsin, USA",
+    "isActive": true,
+    "popularity": 0
+  }
+]

@@ -1,0 +1,12 @@
+[
+  {
+    "type": "Car",
+    "name": "Alfa Romeo",
+    "logoUrl": "https://example.com/alfa-romeo-logo.png",
+    "countryOfOrigin": "Italy",
+    "foundedYear": 1910,
+    "headquarters": "Turin, Italy",
+    "isActive": true,
+    "popularity": 0
+  }
+]

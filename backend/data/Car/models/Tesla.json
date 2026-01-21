@@ -1,0 +1,107 @@
+[
+  {
+    "make": "Tesla",
+    "name": "Roadster",
+    "startYear": 2008,
+    "endYear": 2012,
+    "vehicleType": "Car",
+    "productionStartYear": 2008,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/tesla-roadster.jpg",
+    "engineOptions": [
+      {
+        "type": "electric"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Tesla",
+    "name": "Model S",
+    "startYear": 2012,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 2012,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/tesla-model-s.jpg",
+    "engineOptions": [
+      {
+        "type": "electric"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Tesla",
+    "name": "Model 3",
+    "startYear": 2017,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 2017,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/tesla-model-3.jpg",
+    "engineOptions": [
+      {
+        "type": "electric"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Tesla",
+    "name": "Model X",
+    "startYear": 2015,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 2015,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/tesla-model-x.jpg",
+    "engineOptions": [
+      {
+        "type": "electric"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Tesla",
+    "name": "Model Y",
+    "startYear": 2020,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 2020,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/tesla-model-y.jpg",
+    "engineOptions": [
+      {
+        "type": "electric"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  }
+]

@@ -1,0 +1,122 @@
+[
+  {
+    "make": "Subaru",
+    "name": "Impreza",
+    "startYear": 1992,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 1992,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/subaru-impreza.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Subaru",
+    "name": "Legacy",
+    "startYear": 1989,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 1989,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/subaru-legacy.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Subaru",
+    "name": "Forester",
+    "startYear": 1997,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 1997,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/subaru-forester.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Subaru",
+    "name": "Outback",
+    "startYear": 1994,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 1994,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/subaru-outback.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Subaru",
+    "name": "BRZ",
+    "startYear": 2012,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 2012,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/subaru-brz.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  }
+]

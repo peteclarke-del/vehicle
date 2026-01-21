@@ -1,0 +1,122 @@
+[
+  {
+    "make": "Mercedes-Benz",
+    "name": "Sprinter",
+    "startYear": 1995,
+    "endYear": null,
+    "vehicleType": "Van",
+    "productionStartYear": 1995,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/mercedes-benz-sprinter.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Mercedes-Benz",
+    "name": "Vito",
+    "startYear": 1996,
+    "endYear": null,
+    "vehicleType": "Van",
+    "productionStartYear": 1996,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/mercedes-benz-vito.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Mercedes-Benz",
+    "name": "Citan",
+    "startYear": 2012,
+    "endYear": null,
+    "vehicleType": "Van",
+    "productionStartYear": 2012,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/mercedes-benz-citan.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Mercedes-Benz",
+    "name": "Metris",
+    "startYear": 2015,
+    "endYear": null,
+    "vehicleType": "Van",
+    "productionStartYear": 2015,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/mercedes-benz-metris.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Mercedes-Benz",
+    "name": "eSprinter",
+    "startYear": 2019,
+    "endYear": null,
+    "vehicleType": "Van",
+    "productionStartYear": 2019,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/mercedes-benz-esprinter.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  }
+]

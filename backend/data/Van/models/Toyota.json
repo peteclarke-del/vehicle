@@ -1,0 +1,98 @@
+[
+  {
+    "make": "Toyota",
+    "name": "Hiace",
+    "startYear": 1967,
+    "endYear": null,
+    "vehicleType": "Van",
+    "productionStartYear": 1967,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/toyota-hiace.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Toyota",
+    "name": "Proace",
+    "startYear": 2016,
+    "endYear": null,
+    "vehicleType": "Van",
+    "productionStartYear": 2016,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/toyota-proace.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Toyota",
+    "name": "Proace City",
+    "startYear": 2019,
+    "endYear": null,
+    "vehicleType": "Van",
+    "productionStartYear": 2019,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/toyota-proace-city.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Toyota",
+    "name": "LiteAce",
+    "startYear": 1970,
+    "endYear": null,
+    "vehicleType": "Van",
+    "productionStartYear": 1970,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/toyota-liteace.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  }
+]

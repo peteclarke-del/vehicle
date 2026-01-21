@@ -476,8 +476,8 @@ class Vehicle
     }
 
     /**
-     * Compute insurance expiry from the latest Insurance record. Falls back
-     * to the stored `insuranceExpiryDate` when no records exist.
+     * Compute insurance expiry from the latest InsurancePolicy expiry date. Falls back
+     * to the stored `insuranceExpiryDate` when no policies exist.
      */
     public function getComputedInsuranceExpiryDate(): ?\DateTimeInterface
     {

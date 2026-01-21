@@ -1,0 +1,12 @@
+[
+  {
+    "type": "Car",
+    "name": "Skoda",
+    "logoUrl": "https://example.com/skoda-logo.png",
+    "countryOfOrigin": "Czech Republic",
+    "foundedYear": 1895,
+    "headquarters": "Mlada Boleslav, Czech Republic",
+    "isActive": true,
+    "popularity": 0
+  }
+]

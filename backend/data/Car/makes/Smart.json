@@ -1,0 +1,12 @@
+[
+  {
+    "type": "Car",
+    "name": "Smart",
+    "logoUrl": "https://example.com/smart-logo.png",
+    "countryOfOrigin": "Germany",
+    "foundedYear": 1994,
+    "headquarters": "Böblingen, Germany",
+    "isActive": true,
+    "popularity": 0
+  }
+]

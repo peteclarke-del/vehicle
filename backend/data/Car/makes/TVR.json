@@ -1,0 +1,12 @@
+[
+  {
+    "type": "Car",
+    "name": "TVR",
+    "logoUrl": "https://example.com/tvr-logo.png",
+    "countryOfOrigin": "United Kingdom",
+    "foundedYear": 1947,
+    "headquarters": "Blackpool, United Kingdom",
+    "isActive": true,
+    "popularity": 0
+  }
+]

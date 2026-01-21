@@ -1,0 +1,146 @@
+[
+  {
+    "make": "Volkswagen",
+    "name": "Crafter",
+    "startYear": 2006,
+    "endYear": null,
+    "vehicleType": "Van",
+    "productionStartYear": 2006,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/volkswagen-crafter.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Volkswagen",
+    "name": "California",
+    "startYear": 1980,
+    "endYear": null,
+    "vehicleType": "Van",
+    "productionStartYear": 1980,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/volkswagen-california.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Volkswagen",
+    "name": "Caravelle",
+    "startYear": 1950,
+    "endYear": null,
+    "vehicleType": "Van",
+    "productionStartYear": 1950,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/volkswagen-caravelle.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Volkswagen",
+    "name": "Multivan",
+    "startYear": 1950,
+    "endYear": null,
+    "vehicleType": "Van",
+    "productionStartYear": 1950,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/volkswagen-multivan.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Volkswagen",
+    "name": "Transporter",
+    "startYear": 1950,
+    "endYear": null,
+    "vehicleType": "Van",
+    "productionStartYear": 1950,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/volkswagen-transporter.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Volkswagen",
+    "name": "Amarok",
+    "startYear": 2010,
+    "endYear": null,
+    "vehicleType": "Van",
+    "productionStartYear": 2010,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/volkswagen-amarok.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  }
+]

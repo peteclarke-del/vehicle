@@ -1,0 +1,62 @@
+[
+    {
+        "vehicleType": "EV",
+        "name": "Battery Pack Coolant",
+        "unit": "litres",
+        "description": "Coolant for battery thermal management systems."
+    },
+    {
+        "vehicleType": "EV",
+        "name": "12V Auxiliary Battery",
+        "unit": "unit",
+        "description": "12V battery used for accessories and vehicle electronics."
+    },
+    {
+        "vehicleType": "EV",
+        "name": "Brake Fluid",
+        "unit": "ml",
+        "description": "Hydraulic brake fluid (DOT 4/DOT 5.1) for regenerative braking systems."
+    },
+    {
+        "vehicleType": "EV",
+        "name": "Tyres/Tires",
+        "unit": "psi / bar",
+        "description": "Tyre specification and recommended pressures; low rolling resistance tyres common."
+    },
+    {
+        "vehicleType": "EV",
+        "name": "Cabin/Pollen Filter",
+        "unit": "unit",
+        "description": "Passenger compartment air filter."
+    },
+    {
+        "vehicleType": "EV",
+        "name": "Windscreen Washer Fluid",
+        "unit": "litres",
+        "description": "Washer fluid for windscreen/windshield."
+    },
+    {
+        "vehicleType": "EV",
+        "name": "Wiper Blades",
+        "unit": "set",
+        "description": "Front and rear wiper blades."
+    },
+    {
+        "vehicleType": "EV",
+        "name": "A/C Filter",
+        "unit": "unit",
+        "description": "Filter for HVAC and heat pump systems."
+    },
+    {
+        "vehicleType": "EV",
+        "name": "Coolant Pump",
+        "unit": "unit",
+        "description": "Pump for coolant circulation in battery/thermal systems."
+    },
+    {
+        "vehicleType": "EV",
+        "name": "Thermal Interface Materials",
+        "unit": "unit",
+        "description": "Gaskets, seals, or pads used in battery modules."
+    }
+]

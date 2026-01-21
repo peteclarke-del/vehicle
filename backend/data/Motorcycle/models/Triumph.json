@@ -1,0 +1,1178 @@
+[
+  {
+    "make": "Triumph",
+    "name": "Bonneville",
+    "startYear": 1959,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1959,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/triumph-bonneville.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Triumph",
+    "name": "Street Triple",
+    "startYear": 2007,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2007,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/triumph-street-triple.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Triumph",
+    "name": "Tiger",
+    "startYear": 1993,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1993,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/triumph-tiger.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Triumph",
+    "name": "Daytona",
+    "startYear": 1991,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1991,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/triumph-daytona.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Triumph",
+    "name": "Speed Triple",
+    "startYear": 1994,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1994,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/triumph-speed-triple.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Triumph",
+    "name": "Street Triple 765 RS",
+    "startYear": 2017,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2017,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/triumph-street-triple-765-rs.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Triumph",
+    "name": "Street Triple 765 R",
+    "startYear": 2017,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2017,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/triumph-street-triple-765-r.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Triumph",
+    "name": "Street Triple 675",
+    "startYear": 2013,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2013,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/triumph-street-triple-675.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Triumph",
+    "name": "Street Triple 675 R",
+    "startYear": 2013,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2013,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/triumph-street-triple-675-r.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Triumph",
+    "name": "Street Triple S",
+    "startYear": 2008,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2008,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/triumph-street-triple-s.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Triumph",
+    "name": "Street Triple R",
+    "startYear": 2009,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2009,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/triumph-street-triple-r.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Triumph",
+    "name": "Speed Triple 1200 RS",
+    "startYear": 2019,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2019,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/triumph-speed-triple-1200-rs.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Triumph",
+    "name": "Speed Triple 1200 RR",
+    "startYear": 2018,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2018,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/triumph-speed-triple-1200-rr.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Triumph",
+    "name": "Speed Triple 1050",
+    "startYear": 2011,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2011,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/triumph-speed-triple-1050.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Triumph",
+    "name": "Speed Triple 955i",
+    "startYear": 1997,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1997,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/triumph-speed-triple-955i.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Triumph",
+    "name": "Tiger 1200",
+    "startYear": 2018,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2018,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/triumph-tiger-1200.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Triumph",
+    "name": "Tiger 1200 Rally Pro",
+    "startYear": 2019,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2019,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/triumph-tiger-1200-rally-pro.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Triumph",
+    "name": "Tiger 1200 Rally Explorer",
+    "startYear": 2019,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2019,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/triumph-tiger-1200-rally-explorer.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Triumph",
+    "name": "Tiger 900",
+    "startYear": 2020,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2020,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/triumph-tiger-900.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Triumph",
+    "name": "Tiger 900 Rally Pro",
+    "startYear": 2020,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2020,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/triumph-tiger-900-rally-pro.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Triumph",
+    "name": "Tiger 900 Rally Explorer",
+    "startYear": 2020,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2020,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/triumph-tiger-900-rally-explorer.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Triumph",
+    "name": "Tiger 800",
+    "startYear": 2011,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2011,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/triumph-tiger-800.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Triumph",
+    "name": "Tiger 800 XC",
+    "startYear": 2011,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2011,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/triumph-tiger-800-xc.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Triumph",
+    "name": "Tiger 800 XR",
+    "startYear": 2015,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2015,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/triumph-tiger-800-xr.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Triumph",
+    "name": "Tiger 800 XRx",
+    "startYear": 2015,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2015,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/triumph-tiger-800-xrx.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Triumph",
+    "name": "Tiger 800 XCa",
+    "startYear": 2016,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2016,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/triumph-tiger-800-xca.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Triumph",
+    "name": "Tiger 800 XRT",
+    "startYear": 2018,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2018,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/triumph-tiger-800-xrt.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Triumph",
+    "name": "Bonneville T120",
+    "startYear": 2016,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2016,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/triumph-bonneville-t120.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Triumph",
+    "name": "Bonneville T100",
+    "startYear": 2000,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2000,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/triumph-bonneville-t100.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Triumph",
+    "name": "Bonneville Bobber",
+    "startYear": 2017,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2017,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/triumph-bonneville-bobber.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Triumph",
+    "name": "Bonneville Speedmaster",
+    "startYear": 2018,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2018,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/triumph-bonneville-speedmaster.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Triumph",
+    "name": "Bonneville America",
+    "startYear": 2001,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2001,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/triumph-bonneville-america.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Triumph",
+    "name": "Thruxton 1200",
+    "startYear": 2016,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2016,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/triumph-thruxton-1200.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Triumph",
+    "name": "Thruxton 1200 R",
+    "startYear": 2016,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2016,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/triumph-thruxton-1200-r.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Triumph",
+    "name": "Thruxton 900",
+    "startYear": 2004,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2004,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/triumph-thruxton-900.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Triumph",
+    "name": "Scrambler 1200",
+    "startYear": 2019,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2019,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/triumph-scrambler-1200.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Triumph",
+    "name": "Scrambler 1200 XC",
+    "startYear": 2019,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2019,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/triumph-scrambler-1200-xc.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Triumph",
+    "name": "Scrambler 900",
+    "startYear": 2006,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2006,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/triumph-scrambler-900.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Triumph",
+    "name": "Rocket III",
+    "startYear": 2004,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2004,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/triumph-rocket-iii.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Triumph",
+    "name": "Rocket III Roadster",
+    "startYear": 2007,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2007,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/triumph-rocket-iii-roadster.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Triumph",
+    "name": "Rocket III Touring",
+    "startYear": 2010,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2010,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/triumph-rocket-iii-touring.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Triumph",
+    "name": "Rocket III Classic",
+    "startYear": 2011,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2011,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/triumph-rocket-iii-classic.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Triumph",
+    "name": "Daytona 675",
+    "startYear": 2006,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2006,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/triumph-daytona-675.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Triumph",
+    "name": "Daytona 675 R",
+    "startYear": 2011,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2011,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/triumph-daytona-675-r.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Triumph",
+    "name": "Sprint ST 1050",
+    "startYear": 2005,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2005,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/triumph-sprint-st-1050.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Triumph",
+    "name": "Sprint GT 1050",
+    "startYear": 2006,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2006,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/triumph-sprint-gt-1050.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Triumph",
+    "name": "TT 600",
+    "startYear": 2000,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2000,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/triumph-tt-600.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Triumph",
+    "name": "Speed Four 600",
+    "startYear": 2002,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2002,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/triumph-speed-four-600.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Triumph",
+    "name": "Speedmaster 1200",
+    "startYear": 2018,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2018,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/triumph-speedmaster-1200.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  }
+]

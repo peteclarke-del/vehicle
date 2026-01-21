@@ -1,0 +1,1226 @@
+[
+  {
+    "make": "Yamaha",
+    "name": "YZF-R1",
+    "startYear": 1998,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1998,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/yamaha-yzf-r1.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Yamaha",
+    "name": "YZF-R6",
+    "startYear": 1999,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1999,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/yamaha-yzf-r6.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Yamaha",
+    "name": "MT-07",
+    "startYear": 2014,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2014,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/yamaha-mt-07.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Yamaha",
+    "name": "MT-09",
+    "startYear": 2013,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2013,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/yamaha-mt-09.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Yamaha",
+    "name": "Tenere",
+    "startYear": 1983,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1983,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/yamaha-tenere.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Yamaha",
+    "name": "YZF-R3",
+    "startYear": 2015,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2015,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/yamaha-yzf-r3.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Yamaha",
+    "name": "MT-03",
+    "startYear": 2016,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2016,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/yamaha-mt-03.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Yamaha",
+    "name": "MT-125",
+    "startYear": 2015,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2015,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/yamaha-mt-125.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Yamaha",
+    "name": "MT-25",
+    "startYear": 2015,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2015,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/yamaha-mt-25.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Yamaha",
+    "name": "Tracer 900",
+    "startYear": 2015,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2015,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/yamaha-tracer-900.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Yamaha",
+    "name": "Tracer 700",
+    "startYear": 2016,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2016,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/yamaha-tracer-700.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Yamaha",
+    "name": "FJR1300",
+    "startYear": 2001,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2001,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/yamaha-fjr1300.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Yamaha",
+    "name": "FJR1300A",
+    "startYear": 2006,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2006,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/yamaha-fjr1300a.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Yamaha",
+    "name": "YZF-R125",
+    "startYear": 2008,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2008,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/yamaha-yzf-r125.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Yamaha",
+    "name": "YZF-R15",
+    "startYear": 2008,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2008,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/yamaha-yzf-r15.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Yamaha",
+    "name": "XSR900",
+    "startYear": 2016,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2016,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/yamaha-xsr900.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Yamaha",
+    "name": "XSR700",
+    "startYear": 2018,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2018,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/yamaha-xsr700.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Yamaha",
+    "name": "WR250R",
+    "startYear": 2008,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2008,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/yamaha-wr250r.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Yamaha",
+    "name": "WR450F",
+    "startYear": 2015,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2015,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/yamaha-wr450f.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Yamaha",
+    "name": "YZ450F",
+    "startYear": 2003,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2003,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/yamaha-yz450f.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Yamaha",
+    "name": "YZ250F",
+    "startYear": 2001,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2001,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/yamaha-yz250f.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Yamaha",
+    "name": "YZ125",
+    "startYear": 1974,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1974,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/yamaha-yz125.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Yamaha",
+    "name": "YZ250",
+    "startYear": 1974,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1974,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/yamaha-yz250.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Yamaha",
+    "name": "YZ450",
+    "startYear": 2006,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2006,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/yamaha-yz450.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Yamaha",
+    "name": "PW50",
+    "startYear": 1978,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1978,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/yamaha-pw50.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Yamaha",
+    "name": "TT-R125",
+    "startYear": 2000,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2000,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/yamaha-tt-r125.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Yamaha",
+    "name": "TT-R230",
+    "startYear": 2005,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2005,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/yamaha-tt-r230.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Yamaha",
+    "name": "XT250",
+    "startYear": 2008,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2008,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/yamaha-xt250.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Yamaha",
+    "name": "XT500",
+    "startYear": 1976,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1976,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/yamaha-xt500.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Yamaha",
+    "name": "XT600",
+    "startYear": 1983,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1983,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/yamaha-xt600.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Yamaha",
+    "name": "XT660R",
+    "startYear": 2004,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2004,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/yamaha-xt660r.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Yamaha",
+    "name": "XT660Z",
+    "startYear": 2008,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2008,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/yamaha-xt660z.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Yamaha",
+    "name": "XT1200Z",
+    "startYear": 2010,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2010,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/yamaha-xt1200z.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Yamaha",
+    "name": "XV250",
+    "startYear": 1988,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1988,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/yamaha-xv250.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Yamaha",
+    "name": "XV535",
+    "startYear": 1994,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1994,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/yamaha-xv535.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Yamaha",
+    "name": "XV750",
+    "startYear": 1981,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1981,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/yamaha-xv750.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Yamaha",
+    "name": "XV1100",
+    "startYear": 1986,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1986,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/yamaha-xv1100.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Yamaha",
+    "name": "XV1600",
+    "startYear": 1999,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1999,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/yamaha-xv1600.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Yamaha",
+    "name": "XV1700",
+    "startYear": 2006,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2006,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/yamaha-xv1700.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Yamaha",
+    "name": "XV1900",
+    "startYear": 2006,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2006,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/yamaha-xv1900.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Yamaha",
+    "name": "V Star 650",
+    "startYear": 1998,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1998,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/yamaha-v-star-650.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Yamaha",
+    "name": "V Star 1100",
+    "startYear": 1999,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1999,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/yamaha-v-star-1100.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Yamaha",
+    "name": "V Star 1300",
+    "startYear": 2007,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2007,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/yamaha-v-star-1300.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Yamaha",
+    "name": "Road Star",
+    "startYear": 1999,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1999,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/yamaha-road-star.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Yamaha",
+    "name": "Stratoliner",
+    "startYear": 2006,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2006,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/yamaha-stratoliner.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Yamaha",
+    "name": "Raider",
+    "startYear": 2008,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2008,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/yamaha-raider.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Yamaha",
+    "name": "Royal Star",
+    "startYear": 2000,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2000,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/yamaha-royal-star.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Yamaha",
+    "name": "Majesty",
+    "startYear": 2005,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2005,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/yamaha-majesty.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Yamaha",
+    "name": "TMAX",
+    "startYear": 2001,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2001,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/yamaha-tmax.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Yamaha",
+    "name": "XMAX",
+    "startYear": 2006,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2006,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/yamaha-xmax.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Yamaha",
+    "name": "NMAX",
+    "startYear": 2015,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2015,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/yamaha-nmax.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  }
+]

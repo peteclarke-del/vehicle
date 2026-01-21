@@ -1,0 +1,722 @@
+[
+  {
+    "make": "BMW",
+    "name": "R 1250 GS",
+    "startYear": 2019,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2019,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/bmw-r-1250-gs.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "BMW",
+    "name": "R 1250 GS Adventure",
+    "startYear": 2019,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2019,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/bmw-r-1250-gs-adventure.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "BMW",
+    "name": "R 1250 RT",
+    "startYear": 2019,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2019,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/bmw-r-1250-rt.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "BMW",
+    "name": "R 1250 R",
+    "startYear": 2019,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2019,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/bmw-r-1250-r.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "BMW",
+    "name": "R 1250 RS",
+    "startYear": 2019,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2019,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/bmw-r-1250-rs.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "BMW",
+    "name": "S 1000 RR",
+    "startYear": 2009,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2009,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/bmw-s-1000-rr.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "BMW",
+    "name": "S 1000 R",
+    "startYear": 2014,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2014,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/bmw-s-1000-r.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "BMW",
+    "name": "S 1000 XR",
+    "startYear": 2015,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2015,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/bmw-s-1000-xr.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "BMW",
+    "name": "F 900 R",
+    "startYear": 2020,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2020,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/bmw-f-900-r.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "BMW",
+    "name": "F 900 XR",
+    "startYear": 2020,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2020,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/bmw-f-900-xr.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "BMW",
+    "name": "F 850 GS",
+    "startYear": 2018,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2018,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/bmw-f-850-gs.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "BMW",
+    "name": "F 850 GS Adventure",
+    "startYear": 2019,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2019,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/bmw-f-850-gs-adventure.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "BMW",
+    "name": "G 310 R",
+    "startYear": 2016,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2016,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/bmw-g-310-r.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "BMW",
+    "name": "G 310 GS",
+    "startYear": 2016,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2016,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/bmw-g-310-gs.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "BMW",
+    "name": "R nineT",
+    "startYear": 2014,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2014,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/bmw-r-ninet.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "BMW",
+    "name": "R nineT Scrambler",
+    "startYear": 2016,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2016,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/bmw-r-ninet-scrambler.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "BMW",
+    "name": "R nineT Pure",
+    "startYear": 2016,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2016,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/bmw-r-ninet-pure.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "BMW",
+    "name": "R nineT Urban G/S",
+    "startYear": 2017,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2017,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/bmw-r-ninet-urban-g/s.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "BMW",
+    "name": "R nineT Racer",
+    "startYear": 2017,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2017,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/bmw-r-ninet-racer.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "BMW",
+    "name": "K 1600 GT",
+    "startYear": 2011,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2011,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/bmw-k-1600-gt.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "BMW",
+    "name": "K 1600 GTL",
+    "startYear": 2011,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2011,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/bmw-k-1600-gtl.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "BMW",
+    "name": "K 1600 B",
+    "startYear": 2017,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2017,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/bmw-k-1600-b.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "BMW",
+    "name": "R 1200 GS",
+    "startYear": 2004,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2004,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/bmw-r-1200-gs.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "BMW",
+    "name": "R 1200 GS Adventure",
+    "startYear": 2006,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2006,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/bmw-r-1200-gs-adventure.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "BMW",
+    "name": "R 1200 RT",
+    "startYear": 2005,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2005,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/bmw-r-1200-rt.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "BMW",
+    "name": "R 1200 R",
+    "startYear": 2010,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2010,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/bmw-r-1200-r.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "BMW",
+    "name": "R 1200 RS",
+    "startYear": 2015,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2015,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/bmw-r-1200-rs.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "BMW",
+    "name": "S 1000 RR",
+    "startYear": 2009,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2009,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/bmw-s-1000-rr.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "BMW",
+    "name": "HP4",
+    "startYear": 2013,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2013,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/bmw-hp4.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "BMW",
+    "name": "HP4 Race",
+    "startYear": 2017,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2017,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/bmw-hp4-race.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  }
+]

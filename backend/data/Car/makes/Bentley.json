@@ -1,0 +1,12 @@
+[
+  {
+    "type": "Car",
+    "name": "Bentley",
+    "logoUrl": "https://example.com/bentley-logo.png",
+    "countryOfOrigin": "United Kingdom",
+    "foundedYear": 1919,
+    "headquarters": "Crewe, United Kingdom",
+    "isActive": true,
+    "popularity": 0
+  }
+]

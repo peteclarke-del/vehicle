@@ -1,0 +1,98 @@
+[
+  {
+    "make": "Renault",
+    "name": "Master",
+    "startYear": 1980,
+    "endYear": null,
+    "vehicleType": "Van",
+    "productionStartYear": 1980,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/renault-master.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Renault",
+    "name": "Trafic",
+    "startYear": 1980,
+    "endYear": null,
+    "vehicleType": "Van",
+    "productionStartYear": 1980,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/renault-trafic.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Renault",
+    "name": "Kangoo",
+    "startYear": 1997,
+    "endYear": null,
+    "vehicleType": "Van",
+    "productionStartYear": 1997,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/renault-kangoo.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Renault",
+    "name": "Express",
+    "startYear": 1995,
+    "endYear": null,
+    "vehicleType": "Van",
+    "productionStartYear": 1995,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/renault-express.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  }
+]

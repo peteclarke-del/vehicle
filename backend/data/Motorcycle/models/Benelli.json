@@ -1,0 +1,1154 @@
+[
+  {
+    "make": "Benelli",
+    "name": "TNT 135",
+    "startYear": 2005,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2005,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/benelli-tnt-135.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Benelli",
+    "name": "TNT 1130",
+    "startYear": 2005,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2005,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/benelli-tnt-1130.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Benelli",
+    "name": "TNT 899",
+    "startYear": 2010,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2010,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/benelli-tnt-899.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Benelli",
+    "name": "TNT 1130 Titan",
+    "startYear": 2006,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2006,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/benelli-tnt-1130-titan.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Benelli",
+    "name": "TNT 1130 Cafe Racer",
+    "startYear": 2007,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2007,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/benelli-tnt-1130-cafe-racer.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Benelli",
+    "name": "TNT 600 GT",
+    "startYear": 2007,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2007,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/benelli-tnt-600-gt.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Benelli",
+    "name": "TNT 600 i",
+    "startYear": 2008,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2008,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/benelli-tnt-600-i.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Benelli",
+    "name": "TNT 600 Sport",
+    "startYear": 2008,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2008,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/benelli-tnt-600-sport.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Benelli",
+    "name": "TNT 25",
+    "startYear": 2014,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2014,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/benelli-tnt-25.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Benelli",
+    "name": "TNT 300",
+    "startYear": 2015,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2015,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/benelli-tnt-300.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Benelli",
+    "name": "TNT 600",
+    "startYear": 2016,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2016,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/benelli-tnt-600.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Benelli",
+    "name": "TNT 899",
+    "startYear": 2010,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2010,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/benelli-tnt-899.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Benelli",
+    "name": "TNT R",
+    "startYear": 2011,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2011,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/benelli-tnt-r.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Benelli",
+    "name": "Leoncino 250",
+    "startYear": 2017,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2017,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/benelli-leoncino-250.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Benelli",
+    "name": "Leoncino 500",
+    "startYear": 2017,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2017,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/benelli-leoncino-500.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Benelli",
+    "name": "Leoncino 800",
+    "startYear": 2019,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2019,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/benelli-leoncino-800.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Benelli",
+    "name": "Leoncino 800 Trail",
+    "startYear": 2019,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2019,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/benelli-leoncino-800-trail.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Benelli",
+    "name": "302R",
+    "startYear": 2014,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2014,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/benelli-302r.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Benelli",
+    "name": "302S",
+    "startYear": 2014,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2014,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/benelli-302s.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Benelli",
+    "name": "402S",
+    "startYear": 2017,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2017,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/benelli-402s.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Benelli",
+    "name": "502C",
+    "startYear": 2017,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2017,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/benelli-502c.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Benelli",
+    "name": "752S",
+    "startYear": 2018,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2018,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/benelli-752s.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Benelli",
+    "name": "BN 125",
+    "startYear": 2004,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2004,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/benelli-bn-125.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Benelli",
+    "name": "BN 251",
+    "startYear": 2005,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2005,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/benelli-bn-251.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Benelli",
+    "name": "BN 302",
+    "startYear": 2006,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2006,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/benelli-bn-302.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Benelli",
+    "name": "BN 600",
+    "startYear": 2007,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2007,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/benelli-bn-600.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Benelli",
+    "name": "BN 600 GT",
+    "startYear": 2008,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2008,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/benelli-bn-600-gt.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Benelli",
+    "name": "BN 600 R",
+    "startYear": 2009,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2009,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/benelli-bn-600-r.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Benelli",
+    "name": "BN 600 Sport",
+    "startYear": 2010,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2010,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/benelli-bn-600-sport.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Benelli",
+    "name": "Velvet 125",
+    "startYear": 2006,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2006,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/benelli-velvet-125.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Benelli",
+    "name": "Velvet 150",
+    "startYear": 2007,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2007,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/benelli-velvet-150.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Benelli",
+    "name": "Velvet 250",
+    "startYear": 2008,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2008,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/benelli-velvet-250.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Benelli",
+    "name": "Velvet 400",
+    "startYear": 2009,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2009,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/benelli-velvet-400.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Benelli",
+    "name": "Velvet 500",
+    "startYear": 2010,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2010,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/benelli-velvet-500.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Benelli",
+    "name": "Pepe 125",
+    "startYear": 2005,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2005,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/benelli-pepe-125.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Benelli",
+    "name": "Pepe 150",
+    "startYear": 2006,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2006,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/benelli-pepe-150.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Benelli",
+    "name": "Pepe 200",
+    "startYear": 2007,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2007,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/benelli-pepe-200.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Benelli",
+    "name": "Pepe 250",
+    "startYear": 2008,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2008,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/benelli-pepe-250.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Benelli",
+    "name": "Tornado Naked Tre 1130",
+    "startYear": 2006,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2006,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/benelli-tornado-naked-tre-1130.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Benelli",
+    "name": "Tornado Tre 1130",
+    "startYear": 2006,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2006,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/benelli-tornado-tre-1130.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Benelli",
+    "name": "Tornado Tre 900",
+    "startYear": 2007,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2007,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/benelli-tornado-tre-900.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Benelli",
+    "name": "Tornado Naked Tre 900",
+    "startYear": 2007,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2007,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/benelli-tornado-naked-tre-900.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Benelli",
+    "name": "Tre 1130 K",
+    "startYear": 2005,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2005,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/benelli-tre-1130-k.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Benelli",
+    "name": "Tre K 1130",
+    "startYear": 2005,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2005,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/benelli-tre-k-1130.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Benelli",
+    "name": "Tre 1130",
+    "startYear": 2005,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2005,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/benelli-tre-1130.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Benelli",
+    "name": "Tre 899",
+    "startYear": 2006,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2006,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/benelli-tre-899.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Benelli",
+    "name": "Tre 1130 Sport",
+    "startYear": 2007,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2007,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/benelli-tre-1130-sport.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Benelli",
+    "name": "Tre 1130 GT",
+    "startYear": 2008,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2008,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/benelli-tre-1130-gt.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  }
+]

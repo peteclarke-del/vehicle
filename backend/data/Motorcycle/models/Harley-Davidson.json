@@ -1,0 +1,722 @@
+[
+  {
+    "make": "Harley-Davidson",
+    "name": "Sportster Iron 883",
+    "startYear": 2009,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2009,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/harley-davidson-sportster-iron-883.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Harley-Davidson",
+    "name": "Sportster Forty-Eight",
+    "startYear": 2010,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2010,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/harley-davidson-sportster-forty-eight.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Harley-Davidson",
+    "name": "Sportster Seventy-Two",
+    "startYear": 2012,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2012,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/harley-davidson-sportster-seventy-two.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Harley-Davidson",
+    "name": "Sportster Roadster",
+    "startYear": 2016,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2016,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/harley-davidson-sportster-roadster.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Harley-Davidson",
+    "name": "Sportster SuperLow",
+    "startYear": 2007,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2007,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/harley-davidson-sportster-superlow.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Harley-Davidson",
+    "name": "Sportster Custom",
+    "startYear": 2010,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2010,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/harley-davidson-sportster-custom.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Harley-Davidson",
+    "name": "Softail Standard",
+    "startYear": 2000,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2000,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/harley-davidson-softail-standard.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Harley-Davidson",
+    "name": "Softail Deluxe",
+    "startYear": 2005,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2005,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/harley-davidson-softail-deluxe.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Harley-Davidson",
+    "name": "Softail Fat Boy",
+    "startYear": 1990,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1990,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/harley-davidson-softail-fat-boy.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Harley-Davidson",
+    "name": "Softail Fat Boy 114",
+    "startYear": 2018,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2018,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/harley-davidson-softail-fat-boy-114.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Harley-Davidson",
+    "name": "Softail Heritage Classic",
+    "startYear": 1986,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1986,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/harley-davidson-softail-heritage-classic.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Harley-Davidson",
+    "name": "Softail Slim",
+    "startYear": 2012,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2012,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/harley-davidson-softail-slim.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Harley-Davidson",
+    "name": "Softail Breakout",
+    "startYear": 2013,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2013,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/harley-davidson-softail-breakout.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Harley-Davidson",
+    "name": "Softail Low Rider",
+    "startYear": 2014,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2014,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/harley-davidson-softail-low-rider.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Harley-Davidson",
+    "name": "Softail Street Bob",
+    "startYear": 2018,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2018,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/harley-davidson-softail-street-bob.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Harley-Davidson",
+    "name": "Dyna Super Glide",
+    "startYear": 1991,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1991,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/harley-davidson-dyna-super-glide.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Harley-Davidson",
+    "name": "Dyna Wide Glide",
+    "startYear": 1993,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1993,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/harley-davidson-dyna-wide-glide.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Harley-Davidson",
+    "name": "Dyna Low Rider",
+    "startYear": 1993,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1993,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/harley-davidson-dyna-low-rider.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Harley-Davidson",
+    "name": "Dyna Fat Bob",
+    "startYear": 2008,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2008,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/harley-davidson-dyna-fat-bob.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Harley-Davidson",
+    "name": "Touring Road King",
+    "startYear": 1994,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1994,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/harley-davidson-touring-road-king.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Harley-Davidson",
+    "name": "Touring Road Glide",
+    "startYear": 1998,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1998,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/harley-davidson-touring-road-glide.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Harley-Davidson",
+    "name": "Touring Street Glide",
+    "startYear": 2006,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2006,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/harley-davidson-touring-street-glide.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Harley-Davidson",
+    "name": "Touring Electra Glide",
+    "startYear": 1965,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1965,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/harley-davidson-touring-electra-glide.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Harley-Davidson",
+    "name": "Touring Ultra Limited",
+    "startYear": 2014,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2014,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/harley-davidson-touring-ultra-limited.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Harley-Davidson",
+    "name": "Touring Road Glide Ultra",
+    "startYear": 2011,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2011,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/harley-davidson-touring-road-glide-ultra.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Harley-Davidson",
+    "name": "CVO Limited",
+    "startYear": 2014,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2014,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/harley-davidson-cvo-limited.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Harley-Davidson",
+    "name": "CVO Road Glide",
+    "startYear": 2015,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2015,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/harley-davidson-cvo-road-glide.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Harley-Davidson",
+    "name": "Livewire",
+    "startYear": 2019,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2019,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/harley-davidson-livewire.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Harley-Davidson",
+    "name": "Pan America 1250",
+    "startYear": 2021,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2021,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/harley-davidson-pan-america-1250.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Harley-Davidson",
+    "name": "Pan America 1250 Special",
+    "startYear": 2021,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2021,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/harley-davidson-pan-america-1250-special.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  }
+]

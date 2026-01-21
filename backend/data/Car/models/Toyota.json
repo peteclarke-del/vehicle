@@ -1,0 +1,218 @@
+[
+  {
+    "make": "Toyota",
+    "name": "Corolla",
+    "startYear": 1966,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 1966,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/toyota-corolla.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Toyota",
+    "name": "Camry",
+    "startYear": 1982,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 1982,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/toyota-camry.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Toyota",
+    "name": "Prius",
+    "startYear": 1997,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 1997,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/toyota-prius.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Toyota",
+    "name": "Yaris",
+    "startYear": 1999,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 1999,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/toyota-yaris.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Toyota",
+    "name": "RAV4",
+    "startYear": 1994,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 1994,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/toyota-rav4.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Toyota",
+    "name": "Hilux",
+    "startYear": 1968,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 1968,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/toyota-hilux.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Toyota",
+    "name": "Land Cruiser",
+    "startYear": 1951,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 1951,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/toyota-land-cruiser.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Toyota",
+    "name": "Supra",
+    "startYear": 1978,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 1978,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/toyota-supra.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Toyota",
+    "name": "C-HR",
+    "startYear": 2016,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 2016,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/toyota-c-hr.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  }
+]

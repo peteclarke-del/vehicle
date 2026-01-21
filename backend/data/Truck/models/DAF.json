@@ -1,0 +1,86 @@
+[
+  {
+    "make": "DAF",
+    "name": "XF",
+    "startYear": 1997,
+    "endYear": null,
+    "vehicleType": "Truck",
+    "productionStartYear": 1997,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/daf-xf.jpg",
+    "engineOptions": [
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "DAF",
+    "name": "CF",
+    "startYear": 2000,
+    "endYear": null,
+    "vehicleType": "Truck",
+    "productionStartYear": 2000,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/daf-cf.jpg",
+    "engineOptions": [
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "DAF",
+    "name": "LF",
+    "startYear": 2001,
+    "endYear": null,
+    "vehicleType": "Truck",
+    "productionStartYear": 2001,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/daf-lf.jpg",
+    "engineOptions": [
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "DAF",
+    "name": "XG",
+    "startYear": 2021,
+    "endYear": null,
+    "vehicleType": "Truck",
+    "productionStartYear": 2021,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/daf-xg.jpg",
+    "engineOptions": [
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  }
+]

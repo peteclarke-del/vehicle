@@ -1,0 +1,146 @@
+[
+  {
+    "make": "Porsche",
+    "name": "911",
+    "startYear": 1963,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 1963,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/porsche-911.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Porsche",
+    "name": "Boxster",
+    "startYear": 1996,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 1996,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/porsche-boxster.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Porsche",
+    "name": "Cayman",
+    "startYear": 2005,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 2005,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/porsche-cayman.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Porsche",
+    "name": "Cayenne",
+    "startYear": 2002,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 2002,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/porsche-cayenne.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Porsche",
+    "name": "Macan",
+    "startYear": 2014,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 2014,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/porsche-macan.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Porsche",
+    "name": "Panamera",
+    "startYear": 2009,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 2009,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/porsche-panamera.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  }
+]

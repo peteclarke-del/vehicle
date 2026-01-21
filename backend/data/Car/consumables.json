@@ -1,0 +1,290 @@
+[
+    {
+        "vehicleType": "Car",
+        "name": "Engine Oil",
+        "unit": "litres",
+        "description": "Engine oil specification (e.g., 5W-30). Note SAE (US) and ACEA (EU/UK) ratings. Check manufacturer's recommended capacity."
+    },
+    {
+        "vehicleType": "Car",
+        "name": "Transmission Fluid",
+        "unit": "litres",
+        "description": "Automatic Transmission Fluid (ATF) or manual gear oil. Specify Dexron, Mercon, or manufacturer-specific type."
+    },
+    {
+        "vehicleType": "Car",
+        "name": "Front Tyres/Tires",
+        "unit": "psi / bar",
+        "description": "Front tyre/tire size, load/speed rating, and cold pressure. Metric (e.g., 225/45R17) or imperial sizing."
+    },
+    {
+        "vehicleType": "Car",
+        "name": "Rear Tyres/Tires",
+        "unit": "psi / bar",
+        "description": "Rear tyre/tire specification and pressure. Note 'PSI' (US) or 'Bar' (UK/EU)."
+    },
+    {
+        "vehicleType": "Car",
+        "name": "Brake Fluid",
+        "unit": "ml",
+        "description": "Hydraulic brake fluid (DOT 3, DOT 4, DOT 5.1). DOT 4 is UK/EU standard."
+    },
+    {
+        "vehicleType": "Car",
+        "name": "Engine Coolant/Antifreeze",
+        "unit": "litres",
+        "description": "Coolant type (OAT, HOAT). Note concentrate or ready-mix ratio."
+    },
+    {
+        "vehicleType": "Car",
+        "name": "Air Filter",
+        "unit": "unit",
+        "description": "Engine intake air filter specification."
+    },
+    {
+        "vehicleType": "Car",
+        "name": "Cabin/Pollen Filter",
+        "unit": "unit",
+        "description": "Passenger compartment air filter (standard or activated carbon)."
+    },
+    {
+        "vehicleType": "Car",
+        "name": "Oil Filter",
+        "unit": "unit",
+        "description": "Spin-on or cartridge engine oil filter."
+    },
+    {
+        "vehicleType": "Car",
+        "name": "Fuel Filter",
+        "unit": "unit",
+        "description": "In-line or in-tank fuel filter for petrol/gasoline or diesel."
+    },
+    {
+        "vehicleType": "Car",
+        "name": "Spark Plugs",
+        "unit": "unit",
+        "description": "Spark plug type, heat range, gap, and quantity (Iridium, Platinum, Copper)."
+    },
+    {
+        "vehicleType": "Car",
+        "name": "Windscreen/Windshield Washer Fluid",
+        "unit": "litres",
+        "description": "Screenwash concentrate (summer, winter anti-freeze, or all-season)."
+    },
+    {
+        "vehicleType": "Car",
+        "name": "Power Steering Fluid",
+        "unit": "litres",
+        "description": "Hydraulic power steering fluid (ATF-compatible or specific type)."
+    },
+    {
+        "vehicleType": "Car",
+        "name": "Differential Oil",
+        "unit": "litres",
+        "description": "Gear oil for rear/front differential (viscosity e.g., 75W-90 and GL rating)."
+    },
+    {
+        "vehicleType": "Car",
+        "name": "Transfer Case Fluid",
+        "unit": "litres",
+        "description": "Fluid for transfer case on 4WD/AWD vehicles."
+    },
+    {
+        "vehicleType": "Car",
+        "name": "12V Battery",
+        "unit": "unit",
+        "description": "12V battery (CCA rating for US, Ah and EN/SAE size for UK)."
+    },
+    {
+        "vehicleType": "Car",
+        "name": "Windscreen/Windshield Wiper Blades (Front)",
+        "unit": "set",
+        "description": "Front wiper blades with hook, pin, or bayonet attachment."
+    },
+    {
+        "vehicleType": "Car",
+        "name": "Windscreen/Windshield Wiper Blade (Rear)",
+        "unit": "unit",
+        "description": "Rear wiper blade (if applicable)."
+    },
+    {
+        "vehicleType": "Car",
+        "name": "Clutch Fluid",
+        "unit": "ml",
+        "description": "Hydraulic fluid for clutch master/slave cylinder (often shared with brake fluid)."
+    },
+    {
+        "vehicleType": "Car",
+        "name": "AdBlue/DEF (Diesel)",
+        "unit": "litres",
+        "description": "Aqueous urea solution for Selective Catalytic Reduction (SCR) systems."
+    },
+    {
+        "vehicleType": "Car",
+        "name": "A/C Refrigerant",
+        "unit": "grams",
+        "description": "Refrigerant (R-134a, R-1234yf) and system capacity."
+    },
+    {
+        "vehicleType": "Car",
+        "name": "A/C Compressor Oil",
+        "unit": "ml",
+        "description": "PAG or POE oil specific to A/C system."
+    },
+    {
+        "vehicleType": "Car",
+        "name": "Grease/Lubricant",
+        "unit": "grams",
+        "description": "Multi-purpose lithium or silicone-based grease for joints, bearings, locks."
+    },
+    {
+        "vehicleType": "Car",
+        "name": "Brake Pads (Front)",
+        "unit": "set",
+        "description": "Front brake pads (low-metallic, ceramic, etc.)."
+    },
+    {
+        "vehicleType": "Car",
+        "name": "Brake Pads (Rear)",
+        "unit": "set",
+        "description": "Rear brake pads."
+    },
+    {
+        "vehicleType": "Car",
+        "name": "Brake Discs/Rotors (Front)",
+        "unit": "pair",
+        "description": "Front brake discs/rotors (dimensions, material, ventilated or solid)."
+    },
+    {
+        "vehicleType": "Car",
+        "name": "Brake Discs/Rotors (Rear)",
+        "unit": "pair",
+        "description": "Rear brake discs/rotors."
+    },
+    {
+        "vehicleType": "Car",
+        "name": "Headlight Bulbs",
+        "unit": "unit",
+        "description": "Halogen (H1, H4, H7), HID (D1S, D2S), or LED bulb specification."
+    },
+    {
+        "vehicleType": "Car",
+        "name": "Taillight/Brake Light Bulbs",
+        "unit": "unit",
+        "description": "Bulbs for rear tail, brake, and indicator/turn signal lights."
+    },
+    {
+        "vehicleType": "Car",
+        "name": "Auxiliary/Drive Belt",
+        "unit": "unit",
+        "description": "Serpentine/V-belt for alternator, A/C, etc. (length and rib count)."
+    },
+    {
+        "vehicleType": "Car",
+        "name": "Timing Belt/Chain Kit",
+        "unit": "kit",
+        "description": "Complete timing component kit (belt/chain, tensioners, guides)."
+    },
+    {
+        "vehicleType": "Car",
+        "name": "Thermostat",
+        "unit": "unit",
+        "description": "Engine thermostat with specified opening temperature (e.g., 88°C)."
+    },
+    {
+        "vehicleType": "Car",
+        "name": "Shock Absorbers/Struts",
+        "unit": "pair",
+        "description": "Front/rear suspension dampers (note if complete strut assembly)."
+    },
+    {
+        "vehicleType": "Car",
+        "name": "Wheel Bearings",
+        "unit": "unit",
+        "description": "Front or rear wheel bearing/hub assembly."
+    },
+    {
+        "vehicleType": "Car",
+        "name": "Engine Gasket Set",
+        "unit": "set",
+        "description": "Set of gaskets for engine components (rocker cover, sump, inlet manifold). Specify material (e.g., cork, rubber, composite)."
+    },
+    {
+        "vehicleType": "Car",
+        "name": "Exhaust Gasket Set",
+        "unit": "set",
+        "description": "Set of gaskets for exhaust manifold, downpipe, and joint connections."
+    },
+    {
+        "vehicleType": "Car",
+        "name": "Engine Mounts",
+        "unit": "unit",
+        "description": "Rubber/hydraulic engine mounts for vibration damping."
+    },
+    {
+        "vehicleType": "Car",
+        "name": "Clutch Kit",
+        "unit": "kit",
+        "description": "Complete clutch kit (pressure plate, friction disc, release bearing)."
+    },
+    {
+        "vehicleType": "Car",
+        "name": "Fuel Pump",
+        "unit": "unit",
+        "description": "In-tank or external fuel pump (specify petrol/gasoline or diesel)."
+    },
+    {
+        "vehicleType": "Car",
+        "name": "Ignition Coils",
+        "unit": "unit",
+        "description": "Ignition coil(s) for spark plug firing."
+    },
+    {
+        "vehicleType": "Car",
+        "name": "Thermostat Housing Gasket",
+        "unit": "unit",
+        "description": "Gasket for thermostat housing. Specify material."
+    },
+    {
+        "vehicleType": "Car",
+        "name": "Radiator Cap",
+        "unit": "unit",
+        "description": "Pressure-rated radiator cap."
+    },
+    {
+        "vehicleType": "Car",
+        "name": "Oil Drain Plug Gasket",
+        "unit": "unit",
+        "description": "Crush washer or gasket for sump drain plug."
+    },
+    {
+        "vehicleType": "Car",
+        "name": "Wheel Nuts/Bolts",
+        "unit": "set",
+        "description": "Set of wheel securing nuts or bolts."
+    },
+    {
+        "vehicleType": "Car",
+        "name": "Locking Wheel Nut Key",
+        "unit": "unit",
+        "description": "Security key for locking wheel nuts."
+    },
+    {
+        "vehicleType": "Car",
+        "name": "Number Plate/Registration Plate Bulbs",
+        "unit": "unit",
+        "description": "Bulbs for illuminating the rear number/registration plate."
+    },
+    {
+        "vehicleType": "Car",
+        "name": "Interior Bulbs",
+        "unit": "unit",
+        "description": "Bulbs for interior lighting (dome, map, glovebox)."
+    },
+    {
+        "vehicleType": "Car",
+        "name": "Horn",
+        "unit": "unit",
+        "description": "Electric horn (single or dual tone)."
+    }
+]

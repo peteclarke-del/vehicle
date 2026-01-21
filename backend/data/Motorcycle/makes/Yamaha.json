@@ -1,0 +1,12 @@
+[
+  {
+    "type": "Motorcycle",
+    "name": "Yamaha",
+    "logoUrl": "https://example.com/yamaha-logo.png",
+    "countryOfOrigin": "Japan",
+    "foundedYear": 1887,
+    "headquarters": "Hamamatsu, Japan",
+    "isActive": true,
+    "popularity": 0
+  }
+]

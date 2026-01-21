@@ -1,0 +1,12 @@
+[
+  {
+    "type": "Car",
+    "name": "Rolls-Royce",
+    "logoUrl": "https://example.com/rolls-royce-logo.png",
+    "countryOfOrigin": "United Kingdom",
+    "foundedYear": 1904,
+    "headquarters": "Goodwood, United Kingdom",
+    "isActive": true,
+    "popularity": 0
+  }
+]

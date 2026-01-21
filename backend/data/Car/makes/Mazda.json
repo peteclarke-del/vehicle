@@ -1,0 +1,12 @@
+[
+  {
+    "type": "Car",
+    "name": "Mazda",
+    "logoUrl": "https://example.com/mazda-logo.png",
+    "countryOfOrigin": "Japan",
+    "foundedYear": 1920,
+    "headquarters": "Hiroshima, Japan",
+    "isActive": true,
+    "popularity": 0
+  }
+]

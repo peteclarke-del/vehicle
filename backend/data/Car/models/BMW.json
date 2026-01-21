@@ -1,0 +1,410 @@
+[
+  {
+    "make": "BMW",
+    "name": "1 Series",
+    "startYear": 2004,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 2004,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/bmw-1-series.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "BMW",
+    "name": "2 Series",
+    "startYear": 2014,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 2014,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/bmw-2-series.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "BMW",
+    "name": "3 Series",
+    "startYear": 1975,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 1975,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/bmw-3-series.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "BMW",
+    "name": "4 Series",
+    "startYear": 2013,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 2013,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/bmw-4-series.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "BMW",
+    "name": "5 Series",
+    "startYear": 1972,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 1972,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/bmw-5-series.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "BMW",
+    "name": "6 Series",
+    "startYear": 1976,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 1976,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/bmw-6-series.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "BMW",
+    "name": "7 Series",
+    "startYear": 1977,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 1977,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/bmw-7-series.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "BMW",
+    "name": "8 Series",
+    "startYear": 2018,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 2018,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/bmw-8-series.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "BMW",
+    "name": "X1",
+    "startYear": 2009,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 2009,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/bmw-x1.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "BMW",
+    "name": "X3",
+    "startYear": 2003,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 2003,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/bmw-x3.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "BMW",
+    "name": "X5",
+    "startYear": 1999,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 1999,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/bmw-x5.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "BMW",
+    "name": "X6",
+    "startYear": 2008,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 2008,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/bmw-x6.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "BMW",
+    "name": "X7",
+    "startYear": 2018,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 2018,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/bmw-x7.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "BMW",
+    "name": "Z4",
+    "startYear": 2002,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 2002,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/bmw-z4.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "BMW",
+    "name": "i3",
+    "startYear": 2013,
+    "endYear": 2024,
+    "vehicleType": "Car",
+    "productionStartYear": 2013,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/bmw-i3.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "BMW",
+    "name": "i4",
+    "startYear": 2021,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 2021,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/bmw-i4.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "BMW",
+    "name": "i8",
+    "startYear": 2014,
+    "endYear": 2020,
+    "vehicleType": "Car",
+    "productionStartYear": 2014,
+    "productionEndYear": 2020,
+    "imageUrl": "https://example.com/bmw-i8.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  }
+]

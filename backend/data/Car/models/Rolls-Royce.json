@@ -1,0 +1,122 @@
+[
+  {
+    "make": "Rolls-Royce",
+    "name": "Phantom",
+    "startYear": 1925,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 1925,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/rolls-royce-phantom.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Rolls-Royce",
+    "name": "Ghost",
+    "startYear": 2009,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 2009,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/rolls-royce-ghost.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Rolls-Royce",
+    "name": "Wraith",
+    "startYear": 2013,
+    "endYear": 2020,
+    "vehicleType": "Car",
+    "productionStartYear": 2013,
+    "productionEndYear": 2020,
+    "imageUrl": "https://example.com/rolls-royce-wraith.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Rolls-Royce",
+    "name": "Silver Shadow",
+    "startYear": 1965,
+    "endYear": 1980,
+    "vehicleType": "Car",
+    "productionStartYear": 1965,
+    "productionEndYear": 1980,
+    "imageUrl": "https://example.com/rolls-royce-silver-shadow.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Rolls-Royce",
+    "name": "Corniche",
+    "startYear": 1971,
+    "endYear": 2002,
+    "vehicleType": "Car",
+    "productionStartYear": 1971,
+    "productionEndYear": 2002,
+    "imageUrl": "https://example.com/rolls-royce-corniche.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  }
+]

@@ -1,0 +1,12 @@
+[
+  {
+    "type": "Car",
+    "name": "Lexus",
+    "logoUrl": "https://example.com/lexus-logo.png",
+    "countryOfOrigin": "Japan",
+    "foundedYear": 1989,
+    "headquarters": "Nagoya, Japan",
+    "isActive": true,
+    "popularity": 0
+  }
+]

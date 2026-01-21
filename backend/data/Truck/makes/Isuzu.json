@@ -1,0 +1,12 @@
+[
+  {
+    "type": "Truck",
+    "name": "Isuzu",
+    "logoUrl": "https://example.com/isuzu-logo.png",
+    "countryOfOrigin": "Japan",
+    "foundedYear": 1916,
+    "headquarters": "Tokyo, Japan",
+    "isActive": true,
+    "popularity": 0
+  }
+]

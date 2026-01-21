@@ -1,0 +1,12 @@
+[
+  {
+    "type": "Car",
+    "name": "Seat",
+    "logoUrl": "https://example.com/seat-logo.png",
+    "countryOfOrigin": "Spain",
+    "foundedYear": 1950,
+    "headquarters": "Martorell, Spain",
+    "isActive": true,
+    "popularity": 0
+  }
+]

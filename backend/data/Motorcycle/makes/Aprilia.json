@@ -1,0 +1,12 @@
+[
+  {
+    "type": "Motorcycle",
+    "name": "Aprilia",
+    "logoUrl": "https://example.com/aprilia-logo.png",
+    "countryOfOrigin": "Italy",
+    "foundedYear": 1945,
+    "headquarters": "Noale, Italy",
+    "isActive": true,
+    "popularity": 0
+  }
+]

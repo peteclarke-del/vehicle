@@ -1,0 +1,12 @@
+[
+  {
+    "type": "Motorcycle",
+    "name": "Moto Guzzi",
+    "logoUrl": "https://example.com/moto-guzzi-logo.png",
+    "countryOfOrigin": "Italy",
+    "foundedYear": 1921,
+    "headquarters": "Mandello del Lario, Italy",
+    "isActive": true,
+    "popularity": 0
+  }
+]

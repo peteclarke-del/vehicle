@@ -1,0 +1,12 @@
+[
+  {
+    "type": "Car",
+    "name": "Nissan",
+    "logoUrl": "https://example.com/nissan-logo.png",
+    "countryOfOrigin": "Japan",
+    "foundedYear": 1933,
+    "headquarters": "Yokohama, Japan",
+    "isActive": true,
+    "popularity": 0
+  }
+]

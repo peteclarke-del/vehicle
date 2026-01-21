@@ -1,0 +1,12 @@
+[
+  {
+    "type": "Car",
+    "name": "Fiat",
+    "logoUrl": "https://example.com/fiat-logo.png",
+    "countryOfOrigin": "Italy",
+    "foundedYear": 1899,
+    "headquarters": "Turin, Italy",
+    "isActive": true,
+    "popularity": 0
+  }
+]

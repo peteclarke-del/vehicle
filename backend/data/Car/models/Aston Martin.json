@@ -1,0 +1,98 @@
+[
+  {
+    "make": "Aston Martin",
+    "name": "DB11",
+    "startYear": 2016,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 2016,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/aston-martin-db11.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Aston Martin",
+    "name": "DBS",
+    "startYear": 2007,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 2007,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/aston-martin-dbs.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Aston Martin",
+    "name": "Vantage",
+    "startYear": 2005,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 2005,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/aston-martin-vantage.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Aston Martin",
+    "name": "Rapide",
+    "startYear": 2010,
+    "endYear": 2020,
+    "vehicleType": "Car",
+    "productionStartYear": 2010,
+    "productionEndYear": 2020,
+    "imageUrl": "https://example.com/aston-martin-rapide.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  }
+]

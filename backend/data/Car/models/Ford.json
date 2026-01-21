@@ -1,0 +1,194 @@
+[
+  {
+    "make": "Ford",
+    "name": "Fiesta",
+    "startYear": 1976,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 1976,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/ford-fiesta.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Ford",
+    "name": "Focus",
+    "startYear": 1998,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 1998,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/ford-focus.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Ford",
+    "name": "Mondeo",
+    "startYear": 1993,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 1993,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/ford-mondeo.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Ford",
+    "name": "Ka",
+    "startYear": 1996,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 1996,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/ford-ka.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Ford",
+    "name": "Puma",
+    "startYear": 1997,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 1997,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/ford-puma.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Ford",
+    "name": "Mustang",
+    "startYear": 1964,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 1964,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/ford-mustang.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Ford",
+    "name": "Kuga",
+    "startYear": 2008,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 2008,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/ford-kuga.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Ford",
+    "name": "Ranger",
+    "startYear": 1982,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 1982,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/ford-ranger.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  }
+]

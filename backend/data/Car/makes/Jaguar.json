@@ -1,0 +1,12 @@
+[
+  {
+    "type": "Car",
+    "name": "Jaguar",
+    "logoUrl": "https://example.com/jaguar-logo.png",
+    "countryOfOrigin": "United Kingdom",
+    "foundedYear": 1922,
+    "headquarters": "Coventry, United Kingdom",
+    "isActive": true,
+    "popularity": 0
+  }
+]

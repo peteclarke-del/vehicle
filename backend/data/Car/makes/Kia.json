@@ -1,0 +1,12 @@
+[
+  {
+    "type": "Car",
+    "name": "Kia",
+    "logoUrl": "https://example.com/kia-logo.png",
+    "countryOfOrigin": "South Korea",
+    "foundedYear": 1944,
+    "headquarters": "Seoul, South Korea",
+    "isActive": true,
+    "popularity": 0
+  }
+]

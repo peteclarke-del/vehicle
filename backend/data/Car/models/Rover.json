@@ -1,0 +1,98 @@
+[
+  {
+    "make": "Rover",
+    "name": "P4",
+    "startYear": 1949,
+    "endYear": 1964,
+    "vehicleType": "Car",
+    "productionStartYear": 1949,
+    "productionEndYear": 1964,
+    "imageUrl": "https://example.com/rover-p4.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Rover",
+    "name": "P5",
+    "startYear": 1958,
+    "endYear": 1973,
+    "vehicleType": "Car",
+    "productionStartYear": 1958,
+    "productionEndYear": 1973,
+    "imageUrl": "https://example.com/rover-p5.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Rover",
+    "name": "SD1",
+    "startYear": 1976,
+    "endYear": 1986,
+    "vehicleType": "Car",
+    "productionStartYear": 1976,
+    "productionEndYear": 1986,
+    "imageUrl": "https://example.com/rover-sd1.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Rover",
+    "name": "75",
+    "startYear": 1998,
+    "endYear": 2005,
+    "vehicleType": "Car",
+    "productionStartYear": 1998,
+    "productionEndYear": 2005,
+    "imageUrl": "https://example.com/rover-75.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  }
+]

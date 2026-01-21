@@ -1,0 +1,12 @@
+[
+  {
+    "type": "Car",
+    "name": "Vauxhall",
+    "logoUrl": "https://example.com/vauxhall-logo.png",
+    "countryOfOrigin": "United Kingdom",
+    "foundedYear": 1857,
+    "headquarters": "Luton, United Kingdom",
+    "isActive": true,
+    "popularity": 0
+  }
+]

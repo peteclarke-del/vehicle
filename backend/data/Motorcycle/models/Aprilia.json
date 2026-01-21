@@ -1,0 +1,770 @@
+[
+  {
+    "make": "Aprilia",
+    "name": "RSV4 1100",
+    "startYear": 2010,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2010,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/aprilia-rsv4-1100.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Aprilia",
+    "name": "RSV4 1000",
+    "startYear": 2009,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2009,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/aprilia-rsv4-1000.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Aprilia",
+    "name": "RSV4 RF",
+    "startYear": 2015,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2015,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/aprilia-rsv4-rf.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Aprilia",
+    "name": "RSV4 RR",
+    "startYear": 2015,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2015,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/aprilia-rsv4-rr.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Aprilia",
+    "name": "RSV4 Factory",
+    "startYear": 2017,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2017,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/aprilia-rsv4-factory.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Aprilia",
+    "name": "Tuono V4 1100",
+    "startYear": 2011,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2011,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/aprilia-tuono-v4-1100.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Aprilia",
+    "name": "Tuono V4 1100 Factory",
+    "startYear": 2011,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2011,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/aprilia-tuono-v4-1100-factory.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Aprilia",
+    "name": "Tuono 125",
+    "startYear": 2002,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2002,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/aprilia-tuono-125.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Aprilia",
+    "name": "Tuono 1000 R",
+    "startYear": 2003,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2003,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/aprilia-tuono-1000-r.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Aprilia",
+    "name": "Tuono 1000 R Factory",
+    "startYear": 2004,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2004,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/aprilia-tuono-1000-r-factory.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Aprilia",
+    "name": "Shiver 900",
+    "startYear": 2007,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2007,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/aprilia-shiver-900.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Aprilia",
+    "name": "Shiver 750",
+    "startYear": 2007,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2007,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/aprilia-shiver-750.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Aprilia",
+    "name": "Dorsoduro 1200",
+    "startYear": 2010,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2010,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/aprilia-dorsoduro-1200.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Aprilia",
+    "name": "Dorsoduro 900",
+    "startYear": 2008,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2008,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/aprilia-dorsoduro-900.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Aprilia",
+    "name": "Dorsoduro 750",
+    "startYear": 2008,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2008,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/aprilia-dorsoduro-750.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Aprilia",
+    "name": "Mana 850",
+    "startYear": 2007,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2007,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/aprilia-mana-850.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Aprilia",
+    "name": "Mana 850 GT",
+    "startYear": 2008,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2008,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/aprilia-mana-850-gt.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Aprilia",
+    "name": "Scarabeo 500",
+    "startYear": 2006,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2006,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/aprilia-scarabeo-500.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Aprilia",
+    "name": "Scarabeo 300",
+    "startYear": 2008,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2008,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/aprilia-scarabeo-300.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Aprilia",
+    "name": "Scarabeo 250",
+    "startYear": 2009,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2009,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/aprilia-scarabeo-250.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Aprilia",
+    "name": "Scarabeo 200",
+    "startYear": 2010,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2010,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/aprilia-scarabeo-200.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Aprilia",
+    "name": "Scarabeo 125",
+    "startYear": 2000,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2000,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/aprilia-scarabeo-125.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Aprilia",
+    "name": "Scarabeo 100",
+    "startYear": 2003,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2003,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/aprilia-scarabeo-100.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Aprilia",
+    "name": "Atlantic 500",
+    "startYear": 2002,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2002,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/aprilia-atlantic-500.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Aprilia",
+    "name": "Atlantic 250",
+    "startYear": 2003,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2003,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/aprilia-atlantic-250.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Aprilia",
+    "name": "Atlantic 125",
+    "startYear": 2002,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2002,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/aprilia-atlantic-125.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Aprilia",
+    "name": "RS 125",
+    "startYear": 1995,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1995,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/aprilia-rs-125.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Aprilia",
+    "name": "RS 250",
+    "startYear": 1995,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1995,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/aprilia-rs-250.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Aprilia",
+    "name": "RS4 125",
+    "startYear": 2011,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2011,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/aprilia-rs4-125.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Aprilia",
+    "name": "RS4 50",
+    "startYear": 2013,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2013,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/aprilia-rs4-50.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Aprilia",
+    "name": "Tuono 660",
+    "startYear": 2021,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2021,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/aprilia-tuono-660.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Aprilia",
+    "name": "RS 660",
+    "startYear": 2021,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 2021,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/aprilia-rs-660.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  }
+]

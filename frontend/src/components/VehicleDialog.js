@@ -525,7 +525,7 @@ const VehicleDialog = ({ open, vehicle, onClose }) => {
                 )}
               />
             </Grid>
-            <Grid item xs={12} sm={4}>
+            <Grid item xs={12} sm={6}>
               <Autocomplete
                 freeSolo
                 options={makes.map(m => m.name)}
@@ -545,7 +545,7 @@ const VehicleDialog = ({ open, vehicle, onClose }) => {
                 )}
               />
             </Grid>
-            <Grid item xs={12} sm={4}>
+            <Grid item xs={12} sm={6}>
               <TextField
                 select
                 fullWidth
@@ -562,7 +562,7 @@ const VehicleDialog = ({ open, vehicle, onClose }) => {
                 ))}
               </TextField>
             </Grid>
-            <Grid item xs={12} sm={4}>
+            <Grid item xs={12} sm={6}>
               <Autocomplete
                 freeSolo
                 options={models.map(m => m.name)}

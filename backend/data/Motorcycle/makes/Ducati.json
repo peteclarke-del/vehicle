@@ -1,0 +1,12 @@
+[
+  {
+    "type": "Motorcycle",
+    "name": "Ducati",
+    "logoUrl": "https://example.com/ducati-logo.png",
+    "countryOfOrigin": "Italy",
+    "foundedYear": 1926,
+    "headquarters": "Bologna, Italy",
+    "isActive": true,
+    "popularity": 0
+  }
+]

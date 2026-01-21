@@ -1,0 +1,1370 @@
+[
+  {
+    "make": "AJS",
+    "name": "7R",
+    "startYear": 1948,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1948,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/ajs-7r.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "AJS",
+    "name": "7R3",
+    "startYear": 1949,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1949,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/ajs-7r3.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "AJS",
+    "name": "7R Boy Racer",
+    "startYear": 1950,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1950,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/ajs-7r-boy-racer.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "AJS",
+    "name": "7R Grand Prix",
+    "startYear": 1951,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1951,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/ajs-7r-grand-prix.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "AJS",
+    "name": "7R Works",
+    "startYear": 1952,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1952,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/ajs-7r-works.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "AJS",
+    "name": "7R Replica",
+    "startYear": 1953,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1953,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/ajs-7r-replica.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "AJS",
+    "name": "7R 350",
+    "startYear": 1954,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1954,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/ajs-7r-350.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "AJS",
+    "name": "7R 500",
+    "startYear": 1955,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1955,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/ajs-7r-500.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "AJS",
+    "name": "7R 350cc",
+    "startYear": 1956,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1956,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/ajs-7r-350cc.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "AJS",
+    "name": "7R 500cc",
+    "startYear": 1957,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1957,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/ajs-7r-500cc.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "AJS",
+    "name": "7R 350 TT",
+    "startYear": 1958,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1958,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/ajs-7r-350-tt.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "AJS",
+    "name": "7R 500 TT",
+    "startYear": 1959,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1959,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/ajs-7r-500-tt.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "AJS",
+    "name": "7R 350 Manx",
+    "startYear": 1960,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1960,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/ajs-7r-350-manx.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "AJS",
+    "name": "7R 500 Manx",
+    "startYear": 1961,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1961,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/ajs-7r-500-manx.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "AJS",
+    "name": "7R 350cc TT",
+    "startYear": 1962,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1962,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/ajs-7r-350cc-tt.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "AJS",
+    "name": "7R 500cc TT",
+    "startYear": 1963,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1963,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/ajs-7r-500cc-tt.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "AJS",
+    "name": "Stormer",
+    "startYear": 1970,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1970,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/ajs-stormer.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "AJS",
+    "name": "Stormer 125",
+    "startYear": 1970,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1970,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/ajs-stormer-125.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "AJS",
+    "name": "Stormer 250",
+    "startYear": 1971,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1971,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/ajs-stormer-250.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "AJS",
+    "name": "Stormer 370",
+    "startYear": 1972,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1972,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/ajs-stormer-370.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "AJS",
+    "name": "Stormer 125 Enduro",
+    "startYear": 1973,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1973,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/ajs-stormer-125-enduro.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "AJS",
+    "name": "Stormer 250 Enduro",
+    "startYear": 1974,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1974,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/ajs-stormer-250-enduro.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "AJS",
+    "name": "Stormer 370 Enduro",
+    "startYear": 1975,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1975,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/ajs-stormer-370-enduro.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "AJS",
+    "name": "Stormer 125 MX",
+    "startYear": 1976,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1976,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/ajs-stormer-125-mx.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "AJS",
+    "name": "Stormer 250 MX",
+    "startYear": 1977,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1977,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/ajs-stormer-250-mx.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "AJS",
+    "name": "Stormer 370 MX",
+    "startYear": 1978,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1978,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/ajs-stormer-370-mx.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "AJS",
+    "name": "Stormer 125 Trials",
+    "startYear": 1979,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1979,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/ajs-stormer-125-trials.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "AJS",
+    "name": "Stormer 250 Trials",
+    "startYear": 1980,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1980,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/ajs-stormer-250-trials.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "AJS",
+    "name": "Stormer 370 Trials",
+    "startYear": 1981,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1981,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/ajs-stormer-370-trials.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "AJS",
+    "name": "CR3 125",
+    "startYear": 1965,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1965,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/ajs-cr3-125.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "AJS",
+    "name": "CR3 250",
+    "startYear": 1966,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1966,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/ajs-cr3-250.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "AJS",
+    "name": "CR3 370",
+    "startYear": 1967,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1967,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/ajs-cr3-370.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "AJS",
+    "name": "CR3 125 TT",
+    "startYear": 1968,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1968,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/ajs-cr3-125-tt.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "AJS",
+    "name": "CR3 250 TT",
+    "startYear": 1969,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1969,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/ajs-cr3-250-tt.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "AJS",
+    "name": "CR3 370 TT",
+    "startYear": 1970,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1970,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/ajs-cr3-370-tt.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "AJS",
+    "name": "Model 18",
+    "startYear": 1928,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1928,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/ajs-model-18.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "AJS",
+    "name": "Model 18 500cc",
+    "startYear": 1928,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1928,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/ajs-model-18-500cc.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "AJS",
+    "name": "Model 18 350cc",
+    "startYear": 1929,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1929,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/ajs-model-18-350cc.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "AJS",
+    "name": "Model 18 250cc",
+    "startYear": 1930,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1930,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/ajs-model-18-250cc.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "AJS",
+    "name": "Model 18 175cc",
+    "startYear": 1931,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1931,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/ajs-model-18-175cc.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "AJS",
+    "name": "Model 18 125cc",
+    "startYear": 1932,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1932,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/ajs-model-18-125cc.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "AJS",
+    "name": "Model 18 100cc",
+    "startYear": 1933,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1933,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/ajs-model-18-100cc.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "AJS",
+    "name": "Model 18 50cc",
+    "startYear": 1934,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1934,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/ajs-model-18-50cc.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "AJS",
+    "name": "Model 18 350cc TT",
+    "startYear": 1935,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1935,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/ajs-model-18-350cc-tt.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "AJS",
+    "name": "Model 18 500cc TT",
+    "startYear": 1936,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1936,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/ajs-model-18-500cc-tt.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "AJS",
+    "name": "Model 18 350cc Clubmans",
+    "startYear": 1937,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1937,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/ajs-model-18-350cc-clubmans.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "AJS",
+    "name": "Model 18 500cc Clubmans",
+    "startYear": 1938,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1938,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/ajs-model-18-500cc-clubmans.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "AJS",
+    "name": "Model 18 350cc Trials",
+    "startYear": 1939,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1939,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/ajs-model-18-350cc-trials.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "AJS",
+    "name": "Model 18 500cc Trials",
+    "startYear": 1940,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1940,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/ajs-model-18-500cc-trials.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "AJS",
+    "name": "Model 18 350cc Scrambler",
+    "startYear": 1941,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1941,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/ajs-model-18-350cc-scrambler.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "AJS",
+    "name": "Model 18 500cc Scrambler",
+    "startYear": 1942,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1942,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/ajs-model-18-500cc-scrambler.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "AJS",
+    "name": "Model 18 350cc Road Racer",
+    "startYear": 1943,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1943,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/ajs-model-18-350cc-road-racer.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "AJS",
+    "name": "Model 18 500cc Road Racer",
+    "startYear": 1944,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1944,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/ajs-model-18-500cc-road-racer.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "AJS",
+    "name": "Model 18 350cc Speed Twin",
+    "startYear": 1945,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1945,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/ajs-model-18-350cc-speed-twin.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "AJS",
+    "name": "Model 18 500cc Speed Twin",
+    "startYear": 1946,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1946,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/ajs-model-18-500cc-speed-twin.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "AJS",
+    "name": "Model 18 350cc Competition",
+    "startYear": 1947,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1947,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/ajs-model-18-350cc-competition.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "AJS",
+    "name": "Model 18 500cc Competition",
+    "startYear": 1948,
+    "endYear": null,
+    "vehicleType": "Motorcycle",
+    "productionStartYear": 1948,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/ajs-model-18-500cc-competition.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  }
+]

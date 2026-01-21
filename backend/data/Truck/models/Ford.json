@@ -1,0 +1,65 @@
+[
+  {
+    "make": "Ford",
+    "name": "F-650",
+    "startYear": 1999,
+    "endYear": null,
+    "vehicleType": "Truck",
+    "productionStartYear": 1999,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/ford-f650.jpg",
+    "engineOptions": [
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Ford",
+    "name": "F-750",
+    "startYear": 1999,
+    "endYear": null,
+    "vehicleType": "Truck",
+    "productionStartYear": 1999,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/ford-f750.jpg",
+    "engineOptions": [
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Ford",
+    "name": "Cargo",
+    "startYear": 1981,
+    "endYear": null,
+    "vehicleType": "Truck",
+    "productionStartYear": 1981,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/ford-cargo.jpg",
+    "engineOptions": [
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  }
+]

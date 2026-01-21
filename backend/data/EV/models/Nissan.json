@@ -1,0 +1,44 @@
+[
+  {
+    "make": "Nissan",
+    "name": "Leaf",
+    "startYear": 2010,
+    "endYear": null,
+    "vehicleType": "EV",
+    "productionStartYear": 2010,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/nissan-leaf.jpg",
+    "engineOptions": [
+      {
+        "type": "electric"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Nissan",
+    "name": "Ariya",
+    "startYear": 2021,
+    "endYear": null,
+    "vehicleType": "EV",
+    "productionStartYear": 2021,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/nissan-ariya.jpg",
+    "engineOptions": [
+      {
+        "type": "electric"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  }
+]

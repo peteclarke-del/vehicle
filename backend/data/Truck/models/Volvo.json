@@ -1,0 +1,170 @@
+[
+  {
+    "make": "Volvo",
+    "name": "FH",
+    "startYear": 1993,
+    "endYear": null,
+    "vehicleType": "Truck",
+    "productionStartYear": 1993,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/volvo-fh.jpg",
+    "engineOptions": [
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Volvo",
+    "name": "FM",
+    "startYear": 1998,
+    "endYear": null,
+    "vehicleType": "Truck",
+    "productionStartYear": 1998,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/volvo-fm.jpg",
+    "engineOptions": [
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Volvo",
+    "name": "FE",
+    "startYear": 2006,
+    "endYear": null,
+    "vehicleType": "Truck",
+    "productionStartYear": 2006,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/volvo-fe.jpg",
+    "engineOptions": [
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Volvo",
+    "name": "FL",
+    "startYear": 1985,
+    "endYear": null,
+    "vehicleType": "Truck",
+    "productionStartYear": 1985,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/volvo-fl.jpg",
+    "engineOptions": [
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Volvo",
+    "name": "VHD",
+    "startYear": 2001,
+    "endYear": null,
+    "vehicleType": "Truck",
+    "productionStartYear": 2001,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/volvo-vhd.jpg",
+    "engineOptions": [
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Volvo",
+    "name": "VN",
+    "startYear": 1996,
+    "endYear": null,
+    "vehicleType": "Truck",
+    "productionStartYear": 1996,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/volvo-vn.jpg",
+    "engineOptions": [
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Volvo",
+    "name": "VNM",
+    "startYear": 2001,
+    "endYear": null,
+    "vehicleType": "Truck",
+    "productionStartYear": 2001,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/volvo-vnm.jpg",
+    "engineOptions": [
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Volvo",
+    "name": "VNX",
+    "startYear": 2016,
+    "endYear": null,
+    "vehicleType": "Truck",
+    "productionStartYear": 2016,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/volvo-vnx.jpg",
+    "engineOptions": [
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  }
+]

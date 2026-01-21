@@ -1,0 +1,12 @@
+[
+  {
+    "type": "Van",
+    "name": "Ford",
+    "logoUrl": "https://example.com/ford-logo.png",
+    "countryOfOrigin": "United States",
+    "foundedYear": 1903,
+    "headquarters": "Dearborn, Michigan, USA",
+    "isActive": true,
+    "popularity": 0
+  }
+]

@@ -1,0 +1,12 @@
+[
+  {
+    "type": "Motorcycle",
+    "name": "Benelli",
+    "logoUrl": "https://example.com/benelli-logo.png",
+    "countryOfOrigin": "Italy",
+    "foundedYear": 1911,
+    "headquarters": "Pesaro, Italy",
+    "isActive": true,
+    "popularity": 0
+  }
+]

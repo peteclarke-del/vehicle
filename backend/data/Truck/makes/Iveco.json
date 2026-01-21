@@ -1,0 +1,12 @@
+[
+  {
+    "type": "Truck",
+    "name": "Iveco",
+    "logoUrl": "https://example.com/iveco-logo.png",
+    "countryOfOrigin": "Italy",
+    "foundedYear": 1975,
+    "headquarters": "Turin, Italy",
+    "isActive": true,
+    "popularity": 0
+  }
+]

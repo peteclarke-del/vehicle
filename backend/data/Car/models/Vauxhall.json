@@ -1,0 +1,98 @@
+[
+  {
+    "make": "Vauxhall",
+    "name": "Corsa",
+    "startYear": 1982,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 1982,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/vauxhall-corsa.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Vauxhall",
+    "name": "Astra",
+    "startYear": 1979,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 1979,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/vauxhall-astra.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Vauxhall",
+    "name": "Insignia",
+    "startYear": 2008,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 2008,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/vauxhall-insignia.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Vauxhall",
+    "name": "Combo",
+    "startYear": 1986,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 1986,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/vauxhall-combo.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  }
+]

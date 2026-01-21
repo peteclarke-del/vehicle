@@ -1,0 +1,98 @@
+[
+  {
+    "make": "Lotus",
+    "name": "Elise",
+    "startYear": 1996,
+    "endYear": 2021,
+    "vehicleType": "Car",
+    "productionStartYear": 1996,
+    "productionEndYear": 2021,
+    "imageUrl": "https://example.com/lotus-elise.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Lotus",
+    "name": "Exige",
+    "startYear": 2000,
+    "endYear": 2021,
+    "vehicleType": "Car",
+    "productionStartYear": 2000,
+    "productionEndYear": 2021,
+    "imageUrl": "https://example.com/lotus-exige.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Lotus",
+    "name": "Evora",
+    "startYear": 2009,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 2009,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/lotus-evora.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Lotus",
+    "name": "Emira",
+    "startYear": 2021,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 2021,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/lotus-emira.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  }
+]

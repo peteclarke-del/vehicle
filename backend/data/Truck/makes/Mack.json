@@ -1,0 +1,12 @@
+[
+  {
+    "type": "Truck",
+    "name": "Mack",
+    "logoUrl": "https://example.com/mack-logo.png",
+    "countryOfOrigin": "United States",
+    "foundedYear": 1900,
+    "headquarters": "Greensboro, North Carolina, USA",
+    "isActive": true,
+    "popularity": 0
+  }
+]

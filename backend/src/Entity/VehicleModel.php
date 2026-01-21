@@ -34,12 +34,6 @@ class VehicleModel
     #[ORM\Column(type: 'integer', nullable: true)]
     private ?int $endYear = null;
 
-    #[ORM\Column(type: 'integer', nullable: true)]
-    private ?int $productionStartYear = null;
-
-    #[ORM\Column(type: 'integer', nullable: true)]
-    private ?int $productionEndYear = null;
-
     #[ORM\Column(type: 'string', length: 255, nullable: true)]
     private ?string $imageUrl = null;
 
@@ -122,29 +116,7 @@ class VehicleModel
         return $this;
     }
 
-    public function getProductionStartYear(): ?int
-    {
-        return $this->productionStartYear ?? $this->startYear;
-    }
-
-    public function setProductionStartYear(?int $productionStartYear): self
-    {
-        $this->productionStartYear = $productionStartYear;
-        return $this;
-    }
-
-    public function getProductionEndYear(): ?int
-    {
-        return $this->productionEndYear ?? $this->endYear;
-    }
-
-    public function setProductionEndYear(?int $productionEndYear): self
-    {
-        $this->productionEndYear = $productionEndYear;
-        return $this;
-    }
-
-    public function getImageUrl(): ?string
+     public function getImageUrl(): ?string
     {
         return $this->imageUrl;
     }
@@ -223,8 +195,7 @@ class VehicleModel
      */
     public function isStillInProduction(): bool
     {
-        $endYear = $this->productionEndYear ?? $this->endYear;
-        return $endYear === null;
+        return $this->endYear === null;
     }
 
     /**

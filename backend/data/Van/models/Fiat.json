@@ -1,0 +1,122 @@
+[
+  {
+    "make": "Fiat",
+    "name": "Ducato",
+    "startYear": 1981,
+    "endYear": null,
+    "vehicleType": "Van",
+    "productionStartYear": 1981,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/fiat-ducato.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Fiat",
+    "name": "Scudo",
+    "startYear": 1995,
+    "endYear": null,
+    "vehicleType": "Van",
+    "productionStartYear": 1995,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/fiat-scudo.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Fiat",
+    "name": "Talento",
+    "startYear": 1981,
+    "endYear": null,
+    "vehicleType": "Van",
+    "productionStartYear": 1981,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/fiat-talento.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Fiat",
+    "name": "Doblo",
+    "startYear": 2000,
+    "endYear": null,
+    "vehicleType": "Van",
+    "productionStartYear": 2000,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/fiat-doblo.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Fiat",
+    "name": "Fiorino",
+    "startYear": 1977,
+    "endYear": null,
+    "vehicleType": "Van",
+    "productionStartYear": 1977,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/fiat-fiorino.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  }
+]

@@ -1,0 +1,12 @@
+[
+  {
+    "type": "Car",
+    "name": "Aston Martin",
+    "logoUrl": "https://example.com/aston-martin-logo.png",
+    "countryOfOrigin": "United Kingdom",
+    "foundedYear": 1913,
+    "headquarters": "Gaydon, United Kingdom",
+    "isActive": true,
+    "popularity": 0
+  }
+]

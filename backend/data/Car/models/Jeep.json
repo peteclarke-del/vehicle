@@ -1,0 +1,98 @@
+[
+  {
+    "make": "Jeep",
+    "name": "Wrangler",
+    "startYear": 1986,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 1986,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/jeep-wrangler.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Jeep",
+    "name": "Cherokee",
+    "startYear": 1974,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 1974,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/jeep-cherokee.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Jeep",
+    "name": "Grand Cherokee",
+    "startYear": 1992,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 1992,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/jeep-grand-cherokee.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Jeep",
+    "name": "Renegade",
+    "startYear": 2014,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 2014,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/jeep-renegade.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  }
+]

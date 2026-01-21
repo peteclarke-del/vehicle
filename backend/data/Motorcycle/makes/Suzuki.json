@@ -1,0 +1,12 @@
+[
+  {
+    "type": "Motorcycle",
+    "name": "Suzuki",
+    "logoUrl": "https://example.com/suzuki-logo.png",
+    "countryOfOrigin": "Japan",
+    "foundedYear": 1909,
+    "headquarters": "Hamamatsu, Japan",
+    "isActive": true,
+    "popularity": 0
+  }
+]

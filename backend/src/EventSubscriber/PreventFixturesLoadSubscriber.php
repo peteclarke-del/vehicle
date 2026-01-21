@@ -59,7 +59,7 @@ class PreventFixturesLoadSubscriber implements EventSubscriberInterface
         // Allow when explicitly configured
         $appEnv = getenv('APP_ENV') ?: ($_SERVER['APP_ENV'] ?? null);
         $force = getenv('FORCE_FIXTURES') ?: ($_SERVER['FORCE_FIXTURES'] ?? null);
-        if ($appEnv === 'test' || $force === '1') {
+        if ($appEnv !== 'prod' || $force === '1') {
             return;
         }
 
@@ -75,7 +75,7 @@ class PreventFixturesLoadSubscriber implements EventSubscriberInterface
         throw new \RuntimeException(
             "Refusing to run 'doctrine:fixtures:load' in a non-test environment.\n"
             . "To proceed do one of:\n"
-            . " - set APP_ENV=test\n"
+            . " - set APP_ENV=test|dev\n"
             . " - export FORCE_FIXTURES=1\n"
             . " - set FIXTURES_WHITELIST to allowed flags (comma separated)\n"
             . "This guard prevents accidental purging of your development DB."

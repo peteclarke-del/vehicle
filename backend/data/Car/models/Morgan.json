@@ -1,0 +1,74 @@
+[
+  {
+    "make": "Morgan",
+    "name": "Plus 4",
+    "startYear": 1950,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 1950,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/morgan-plus-4.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Morgan",
+    "name": "4/4",
+    "startYear": 1936,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 1936,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/morgan-4/4.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Morgan",
+    "name": "Aero 8",
+    "startYear": 2000,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 2000,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/morgan-aero-8.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  }
+]

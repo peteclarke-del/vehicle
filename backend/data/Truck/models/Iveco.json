@@ -1,0 +1,107 @@
+[
+  {
+    "make": "Iveco",
+    "name": "Stralis",
+    "startYear": 2002,
+    "endYear": null,
+    "vehicleType": "Truck",
+    "productionStartYear": 2002,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/iveco-stralis.jpg",
+    "engineOptions": [
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Iveco",
+    "name": "Eurocargo",
+    "startYear": 1991,
+    "endYear": null,
+    "vehicleType": "Truck",
+    "productionStartYear": 1991,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/iveco-eurocargo.jpg",
+    "engineOptions": [
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Iveco",
+    "name": "Eurostar",
+    "startYear": 1992,
+    "endYear": null,
+    "vehicleType": "Truck",
+    "productionStartYear": 1992,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/iveco-eurostar.jpg",
+    "engineOptions": [
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Iveco",
+    "name": "Trakker",
+    "startYear": 2004,
+    "endYear": null,
+    "vehicleType": "Truck",
+    "productionStartYear": 2004,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/iveco-trakker.jpg",
+    "engineOptions": [
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Iveco",
+    "name": "Daily",
+    "startYear": 1978,
+    "endYear": null,
+    "vehicleType": "Truck",
+    "productionStartYear": 1978,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/iveco-daily.jpg",
+    "engineOptions": [
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  }
+]

@@ -1,0 +1,12 @@
+[
+  {
+    "type": "Car",
+    "name": "BMW",
+    "logoUrl": "https://example.com/bmw-logo.png",
+    "countryOfOrigin": "Germany",
+    "foundedYear": 1916,
+    "headquarters": "Munich, Germany",
+    "isActive": true,
+    "popularity": 0
+  }
+]

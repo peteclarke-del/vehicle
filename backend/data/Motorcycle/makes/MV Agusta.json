@@ -1,0 +1,12 @@
+[
+  {
+    "type": "Motorcycle",
+    "name": "MV Agusta",
+    "logoUrl": "https://example.com/mv-agusta-logo.png",
+    "countryOfOrigin": "Italy",
+    "foundedYear": 1945,
+    "headquarters": "Varese, Italy",
+    "isActive": true,
+    "popularity": 0
+  }
+]

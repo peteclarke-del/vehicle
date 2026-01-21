@@ -8,8 +8,14 @@ import {
   TextField,
   Alert,
   Box,
-  Typography
+  Typography,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
 } from '@mui/material';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -23,6 +29,15 @@ export default function PasswordChangeDialog({ open, onClose, required = false }
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const password = formData.newPassword || '';
+  const criteria = {
+    length: password.length >= 8,
+    upper: /[A-Z]/.test(password),
+    lower: /[a-z]/.test(password),
+    digit: /[0-9]/.test(password),
+    special: /[^A-Za-z0-9]/.test(password),
+  };
 
   useEffect(() => {
     if (open) {
@@ -115,8 +130,62 @@ export default function PasswordChangeDialog({ open, onClose, required = false }
               onChange={handleChange}
               required
               fullWidth
-              helperText={t('password.passwordRequirements')}
             />
+            <Box>
+              <Typography variant="caption">{t('password.passwordRequirements')}</Typography>
+              <List dense>
+                <ListItem>
+                  <ListItemIcon>
+                    {criteria.length ? (
+                      <CheckCircleIcon color="success" fontSize="small" />
+                    ) : (
+                      <RadioButtonUncheckedIcon fontSize="small" />
+                    )}
+                  </ListItemIcon>
+                  <ListItemText primary={t('password.requireLength', { count: 8 })} />
+                </ListItem>
+                <ListItem>
+                  <ListItemIcon>
+                    {criteria.upper ? (
+                      <CheckCircleIcon color="success" fontSize="small" />
+                    ) : (
+                      <RadioButtonUncheckedIcon fontSize="small" />
+                    )}
+                  </ListItemIcon>
+                  <ListItemText primary={t('password.requireUpper')} />
+                </ListItem>
+                <ListItem>
+                  <ListItemIcon>
+                    {criteria.lower ? (
+                      <CheckCircleIcon color="success" fontSize="small" />
+                    ) : (
+                      <RadioButtonUncheckedIcon fontSize="small" />
+                    )}
+                  </ListItemIcon>
+                  <ListItemText primary={t('password.requireLower')} />
+                </ListItem>
+                <ListItem>
+                  <ListItemIcon>
+                    {criteria.digit ? (
+                      <CheckCircleIcon color="success" fontSize="small" />
+                    ) : (
+                      <RadioButtonUncheckedIcon fontSize="small" />
+                    )}
+                  </ListItemIcon>
+                  <ListItemText primary={t('password.requireDigit')} />
+                </ListItem>
+                <ListItem>
+                  <ListItemIcon>
+                    {criteria.special ? (
+                      <CheckCircleIcon color="success" fontSize="small" />
+                    ) : (
+                      <RadioButtonUncheckedIcon fontSize="small" />
+                    )}
+                  </ListItemIcon>
+                  <ListItemText primary={t('password.requireSpecial')} />
+                </ListItem>
+              </List>
+            </Box>
             <TextField
               label={t('password.confirmPassword')}
               type="password"

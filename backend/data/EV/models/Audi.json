@@ -1,0 +1,104 @@
+[
+  {
+    "make": "Audi",
+    "name": "e-tron",
+    "startYear": 2018,
+    "endYear": null,
+    "vehicleType": "EV",
+    "productionStartYear": 2018,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/audi-e-tron.jpg",
+    "engineOptions": [
+      {
+        "type": "electric"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Audi",
+    "name": "Q4 e-tron",
+    "startYear": 2021,
+    "endYear": null,
+    "vehicleType": "EV",
+    "productionStartYear": 2021,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/audi-q4-e-tron.jpg",
+    "engineOptions": [
+      {
+        "type": "electric"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Audi",
+    "name": "e-tron GT",
+    "startYear": 2021,
+    "endYear": null,
+    "vehicleType": "EV",
+    "productionStartYear": 2021,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/audi-e-tron-gt.jpg",
+    "engineOptions": [
+      {
+        "type": "electric"
+      }
+    ],
+    "transmissionOptions": [
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Audi",
+    "name": "Q8 e-tron",
+    "startYear": 2023,
+    "endYear": null,
+    "vehicleType": "EV",
+    "productionStartYear": 2023,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/audi-q8-e-tron.jpg",
+    "engineOptions": [
+      {
+        "type": "electric"
+      }
+    ],
+    "transmissionOptions": [
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Audi",
+    "name": "e-tron S",
+    "startYear": 2020,
+    "endYear": null,
+    "vehicleType": "EV",
+    "productionStartYear": 2020,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/audi-e-tron-s.jpg",
+    "engineOptions": [
+      {
+        "type": "electric"
+      }
+    ],
+    "transmissionOptions": [
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  }
+]

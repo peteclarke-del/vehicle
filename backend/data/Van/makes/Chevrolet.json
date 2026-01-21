@@ -1,0 +1,12 @@
+[
+  {
+    "type": "Van",
+    "name": "Chevrolet",
+    "logoUrl": "https://example.com/chevrolet-logo.png",
+    "countryOfOrigin": "United States",
+    "foundedYear": 1911,
+    "headquarters": "Detroit, Michigan, USA",
+    "isActive": true,
+    "popularity": 0
+  }
+]

@@ -53,18 +53,18 @@ class VehicleModelTest extends TestCase
         $this->assertSame($type, $this->model->getVehicleType());
     }
 
-    public function testGetSetProductionStartYear(): void
+    public function testGetSetStartYear(): void
     {
-        $this->model->setProductionStartYear(1966);
+        $this->model->setStartYear(1966);
         
-        $this->assertSame(1966, $this->model->getProductionStartYear());
+        $this->assertSame(1966, $this->model->getStartYear());
     }
 
-    public function testGetSetProductionEndYear(): void
+    public function testGetSetEndYear(): void
     {
-        $this->model->setProductionEndYear(2024);
+        $this->model->setEndYear(2024);
         
-        $this->assertSame(2024, $this->model->getProductionEndYear());
+        $this->assertSame(2024, $this->model->getEndYear());
     }
 
     public function testAddVehicle(): void
@@ -98,16 +98,16 @@ class VehicleModelTest extends TestCase
 
     public function testIsStillInProduction(): void
     {
-        $this->model->setProductionStartYear(1966);
-        $this->model->setProductionEndYear(null);
+        $this->model->setStartYear(1966);
+        $this->model->setEndYear(null);
 
         $this->assertTrue($this->model->isStillInProduction());
     }
 
     public function testIsNotStillInProduction(): void
     {
-        $this->model->setProductionStartYear(1966);
-        $this->model->setProductionEndYear(2020);
+        $this->model->setStartYear(1966);
+        $this->model->setEndYear(2020);
 
         $this->assertFalse($this->model->isStillInProduction());
     }

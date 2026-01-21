@@ -1,0 +1,170 @@
+[
+  {
+    "make": "Mazda",
+    "name": "Mazda2",
+    "startYear": 1996,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 1996,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/mazda-mazda2.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Mazda",
+    "name": "Mazda3",
+    "startYear": 2003,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 2003,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/mazda-mazda3.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Mazda",
+    "name": "Mazda6",
+    "startYear": 2002,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 2002,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/mazda-mazda6.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Mazda",
+    "name": "MX-5",
+    "startYear": 1989,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 1989,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/mazda-mx-5.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Mazda",
+    "name": "CX-3",
+    "startYear": 2015,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 2015,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/mazda-cx-3.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Mazda",
+    "name": "CX-5",
+    "startYear": 2012,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 2012,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/mazda-cx-5.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Mazda",
+    "name": "CX-30",
+    "startYear": 2019,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 2019,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/mazda-cx-30.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  }
+]

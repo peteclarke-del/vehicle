@@ -1,0 +1,74 @@
+[
+  {
+    "make": "Bentley",
+    "name": "Continental GT",
+    "startYear": 2003,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 2003,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/bentley-continental-gt.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Bentley",
+    "name": "Flying Spur",
+    "startYear": 2005,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 2005,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/bentley-flying-spur.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Bentley",
+    "name": "Bentayga",
+    "startYear": 2015,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 2015,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/bentley-bentayga.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  }
+]

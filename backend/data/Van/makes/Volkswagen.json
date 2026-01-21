@@ -1,0 +1,12 @@
+[
+  {
+    "type": "Van",
+    "name": "Volkswagen",
+    "logoUrl": "https://example.com/vw-logo.png",
+    "countryOfOrigin": "Germany",
+    "foundedYear": 1937,
+    "headquarters": "Wolfsburg, Germany",
+    "isActive": true,
+    "popularity": 0
+  }
+]

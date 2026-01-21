@@ -1,0 +1,12 @@
+[
+  {
+    "type": "Car",
+    "name": "Porsche",
+    "logoUrl": "https://example.com/porsche-logo.png",
+    "countryOfOrigin": "Germany",
+    "foundedYear": 1931,
+    "headquarters": "Stuttgart, Germany",
+    "isActive": true,
+    "popularity": 0
+  }
+]
