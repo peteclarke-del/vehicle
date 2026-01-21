@@ -319,13 +319,11 @@ const Dashboard = () => {
     vehicles.forEach(vehicle => {
       // Count expired items
         // Treat missing expiry dates as expired (no records yet) but only when country requires them
-        if (user?.country === 'GB') {
-          if (!vehicle.motExpiryDate || new Date(vehicle.motExpiryDate) < now) {
-            stats.expiredMot++;
-          }
-          if (!vehicle.roadTaxExpiryDate || new Date(vehicle.roadTaxExpiryDate) < now) {
-            stats.expiredTax++;
-          }
+        if (!vehicle.motExpiryDate || new Date(vehicle.motExpiryDate) < now) {
+          stats.expiredMot++;
+        }
+        if (!vehicle.roadTaxExpiryDate || new Date(vehicle.roadTaxExpiryDate) < now) {
+          stats.expiredTax++;
         }
         if (!vehicle.insuranceExpiryDate || new Date(vehicle.insuranceExpiryDate) < now) {
           stats.expiredInsurance++;

@@ -44,13 +44,6 @@ class AuthController extends AbstractController
         ]);
     }
 
-    // Legacy route support for tests expecting /api/auth/login
-    #[Route('/auth/login', name: 'api_auth_login', methods: ['POST'])]
-    public function authLogin(): JsonResponse
-    {
-        return $this->login();
-    }
-
     #[Route('/register', name: 'api_register', methods: ['POST'])]
     public function register(Request $request): JsonResponse
     {
@@ -58,6 +51,22 @@ class AuthController extends AbstractController
 
         if (!isset($data['email']) || !isset($data['password'])) {
             return $this->json(['error' => 'Email and password required'], 400);
+        }
+
+        // Validate password
+        $passwordPolicy = $_ENV['REACT_APP_PASSWORD_POLICY'] ?? null;
+        if ($passwordPolicy) {
+            // Add delimiters if not present (for PHP preg_match compatibility)
+            if (!preg_match('/^\/.*\/[a-z]*$/', $passwordPolicy)) {
+                $passwordPolicy = '/' . $passwordPolicy . '/';
+            }
+            if (!preg_match($passwordPolicy, $data['password'])) {
+                return $this->json(['error' => 'Invalid password format'], 400);
+            }
+        } else {
+            if (strlen($data['password']) < 8) {
+                return $this->json(['error' => 'Password too short'], 400);
+            }
         }
 
         $existingUser = $this->entityManager->getRepository(User::class)
@@ -106,7 +115,6 @@ class AuthController extends AbstractController
             'theme' => $user->getTheme(),
             'sessionTimeout' => $user->getSessionTimeout(),
             'distanceUnit' => $user->getDistanceUnit(),
-            'country' => $user->getCountry(),
             'roles' => $user->getRoles(),
             'passwordChangeRequired' => $user->isPasswordChangeRequired()
         ]);
@@ -161,11 +169,6 @@ class AuthController extends AbstractController
             }
         }
 
-        if (isset($data['country'])) {
-            // Expect ISO 2-letter country code
-            $user->setCountry(substr((string) $data['country'], 0, 2));
-        }
-
         $this->entityManager->flush();
 
         return $this->json(['message' => 'Profile updated successfully']);
@@ -216,8 +219,19 @@ class AuthController extends AbstractController
         }
 
         // Validate new password
-        if (strlen($data['newPassword']) < 8) {
-            return $this->json(['error' => 'New password must be at least 8 characters'], 400);
+        $passwordPolicy = $_ENV['REACT_APP_PASSWORD_POLICY'] ?? null;
+        if ($passwordPolicy) {
+            // Add delimiters if not present (for PHP preg_match compatibility)
+            if (!preg_match('/^\/.*\/[a-z]*$/', $passwordPolicy)) {
+                $passwordPolicy = '/' . $passwordPolicy . '/';
+            }
+            if (!preg_match($passwordPolicy, $data['newPassword'])) {
+                return $this->json(['error' => 'Invalid password format'], 400);
+            }
+        } else {
+            if (strlen($data['newPassword']) < 8) {
+                return $this->json(['error' => 'Password too short'], 400);
+            }
         }
 
         // Update password and clear the change requirement flag

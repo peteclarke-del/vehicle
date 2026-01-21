@@ -13,5 +13,8 @@ services:
   frontend:
     environment:
       - WATCHPACK_POLLING=true
+      - REACT_APP_PASSWORD_POLICY=${REACT_APP_PASSWORD_POLICY}
+      - REACT_APP_API_URL=${REACT_APP_API_URL}
+    env_file: .env
     stdin_open: true
     tty: true

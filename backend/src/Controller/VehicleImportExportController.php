@@ -113,6 +113,7 @@ class VehicleImportExportController extends AbstractController
             foreach ($motRecords as $motRecord) {
                 $motRecordsData[] = [
                     'testDate' => $motRecord->getTestDate()?->format('Y-m-d'),
+                    'expiryDate' => $motRecord->getExpiryDate()?->format('Y-m-d'),
                     'result' => $motRecord->getResult(),
                     'testCost' => $motRecord->getTestCost(),
                     'repairCost' => $motRecord->getRepairCost(),
@@ -141,8 +142,11 @@ class VehicleImportExportController extends AbstractController
                             'annualCost' => $policy->getAnnualCost(),
                             'startDate' => $policy->getStartDate()?->format('Y-m-d'),
                             'expiryDate' => $policy->getExpiryDate()?->format('Y-m-d'),
+                            'excess' => $policy->getExcess(),
+                            'mileageLimit' => $policy->getMileageLimit(),
+                            'ncdYears' => $policy->getNcdYears(),
                             'notes' => $policy->getNotes(),
-                            'vehicleIds' => $vehicleIds,
+                            'vehicleRegistrations' => array_map(fn($v) => $v->getRegistrationNumber(), $policy->getVehicles()->toArray()),
                         ];
                     }
                 }
@@ -175,11 +179,6 @@ class VehicleImportExportController extends AbstractController
                 'purchaseCost' => $vehicle->getPurchaseCost(),
                 'purchaseDate' => $vehicle->getPurchaseDate()?->format('Y-m-d'),
                 'purchaseMileage' => $vehicle->getPurchaseMileage(),
-                'currentMileage' => $vehicle->getCurrentMileage(),
-                'lastServiceDate' => $vehicle->getLastServiceDate()?->format('Y-m-d'),
-                'motExpiryDate' => $vehicle->getMotExpiryDate()?->format('Y-m-d'),
-                'roadTaxExpiryDate' => $vehicle->getRoadTaxExpiryDate()?->format('Y-m-d'),
-                'insuranceExpiryDate' => $vehicle->getInsuranceExpiryDate()?->format('Y-m-d'),
                 'roadTaxExempt' => $vehicle->getRoadTaxExempt(),
                 'motExempt' => $vehicle->getMotExempt(),
                 'securityFeatures' => $vehicle->getSecurityFeatures(),
@@ -216,9 +215,10 @@ class VehicleImportExportController extends AbstractController
             return new JsonResponse(['error' => 'Invalid JSON format'], Response::HTTP_BAD_REQUEST);
         }
 
-        $imported = 0;
         $errors = [];
+        $vehicleMap = [];
 
+        // First pass: create all vehicles
         foreach ($data as $index => $vehicleData) {
             try {
                 // Validate required fields
@@ -236,6 +236,17 @@ class VehicleImportExportController extends AbstractController
                 }
                 if (empty($vehicleData['purchaseDate'])) {
                     $errors[] = "Vehicle at index $index: purchaseDate is required";
+                    continue;
+                }
+                if (empty($vehicleData['registrationNumber'])) {
+                    $errors[] = "Vehicle at index $index: registrationNumber is required for import";
+                    continue;
+                }
+
+                // Check if vehicle already exists
+                $existing = $entityManager->getRepository(Vehicle::class)->findOneBy(['registrationNumber' => $vehicleData['registrationNumber'], 'owner' => $user]);
+                if ($existing) {
+                    $errors[] = "Vehicle at index $index: registrationNumber '{$vehicleData['registrationNumber']}' already exists";
                     continue;
                 }
 
@@ -316,18 +327,6 @@ class VehicleImportExportController extends AbstractController
                 if (isset($vehicleData['purchaseMileage'])) {
                     $vehicle->setPurchaseMileage($vehicleData['purchaseMileage']);
                 }
-                if (isset($vehicleData['currentMileage'])) {
-                    $vehicle->setCurrentMileage($vehicleData['currentMileage']);
-                }
-                if (!empty($vehicleData['lastServiceDate'])) {
-                    $vehicle->setLastServiceDate(new \DateTime($vehicleData['lastServiceDate']));
-                }
-                if (!empty($vehicleData['motExpiryDate'])) {
-                    $vehicle->setMotExpiryDate(new \DateTime($vehicleData['motExpiryDate']));
-                }
-                if (!empty($vehicleData['roadTaxExpiryDate'])) {
-                    $vehicle->setRoadTaxExpiryDate(new \DateTime($vehicleData['roadTaxExpiryDate']));
-                }
                 if (isset($vehicleData['roadTaxExempt'])) {
                     $vehicle->setRoadTaxExempt($vehicleData['roadTaxExempt']);
                 }
@@ -346,11 +345,6 @@ class VehicleImportExportController extends AbstractController
                 if (isset($vehicleData['serviceIntervalMiles'])) {
                     $vehicle->setServiceIntervalMiles($vehicleData['serviceIntervalMiles']);
                 }
-                if (!empty($vehicleData['insuranceExpiryDate'])) {
-                    $vehicle->setInsuranceExpiryDate(
-                        new \DateTime($vehicleData['insuranceExpiryDate'])
-                    );
-                }
                 if (!empty($vehicleData['depreciationMethod'])) {
                     $vehicle->setDepreciationMethod($vehicleData['depreciationMethod']);
                 }
@@ -362,9 +356,22 @@ class VehicleImportExportController extends AbstractController
                 }
 
                 $entityManager->persist($vehicle);
-                $entityManager->flush(); // Flush to get vehicle ID
+                $vehicleMap[$vehicleData['registrationNumber']] = $vehicle;
+            } catch (\Exception $e) {
+                $errors[] = "Vehicle at index $index: " . $e->getMessage();
+            }
+        }
 
-                // Import fuel records
+        $entityManager->flush();
+
+        // Second pass: import related data
+        foreach ($data as $index => $vehicleData) {
+            if (empty($vehicleData['registrationNumber']) || !isset($vehicleMap[$vehicleData['registrationNumber']])) {
+                continue;
+            }
+            $vehicle = $vehicleMap[$vehicleData['registrationNumber']];
+
+            try {
                 if (!empty($vehicleData['fuelRecords'])) {
                     foreach ($vehicleData['fuelRecords'] as $fuelData) {
                         $fuelRecord = new FuelRecord();
@@ -523,6 +530,9 @@ class VehicleImportExportController extends AbstractController
                         if (!empty($motData['testDate'])) {
                             $motRecord->setTestDate(new \DateTime($motData['testDate']));
                         }
+                        if (!empty($motData['expiryDate'])) {
+                            $motRecord->setExpiryDate(new \DateTime($motData['expiryDate']));
+                        }
                         if (!empty($motData['result'])) {
                             $motRecord->setResult($motData['result']);
                         }
@@ -579,15 +589,24 @@ class VehicleImportExportController extends AbstractController
                         if (!empty($insuranceData['expiryDate'])) {
                             $policy->setExpiryDate(new \DateTime($insuranceData['expiryDate']));
                         }
+                        if (!empty($insuranceData['excess'])) {
+                            $policy->setExcess($insuranceData['excess']);
+                        }
+                        if (!empty($insuranceData['mileageLimit'])) {
+                            $policy->setMileageLimit($insuranceData['mileageLimit']);
+                        }
+                        if (!empty($insuranceData['ncdYears'])) {
+                            $policy->setNcdYears($insuranceData['ncdYears']);
+                        }
                         if (!empty($insuranceData['notes'])) {
                             $policy->setNotes($insuranceData['notes']);
                         }
 
-                        // If vehicleIds are provided, add all those vehicles
-                        if (!empty($insuranceData['vehicleIds'])) {
-                            foreach ($insuranceData['vehicleIds'] as $vid) {
-                                $v = $entityManager->getRepository(Vehicle::class)->find($vid);
-                                if ($v && $v->getOwner()->getId() === $user->getId()) {
+                        // If vehicleRegistrations are provided, add all those vehicles
+                        if (!empty($insuranceData['vehicleRegistrations'])) {
+                            foreach ($insuranceData['vehicleRegistrations'] as $reg) {
+                                $v = $entityManager->getRepository(Vehicle::class)->findOneBy(['registrationNumber' => $reg, 'owner' => $user]);
+                                if ($v) {
                                     $policy->addVehicle($v);
                                 }
                             }
@@ -626,7 +645,6 @@ class VehicleImportExportController extends AbstractController
                     }
                 }
 
-                $imported++;
             } catch (\Exception $e) {
                 $errors[] = "Vehicle at index $index: " . $e->getMessage();
             }
@@ -635,8 +653,9 @@ class VehicleImportExportController extends AbstractController
         $entityManager->flush();
 
         $response = [
-            'imported' => $imported,
+            'imported' => count($vehicleMap),
             'total' => count($data),
+            'message' => 'Vehicles and related data imported successfully',
         ];
 
         if (!empty($errors)) {

@@ -9,6 +9,12 @@ use Symfony\Component\Routing\Annotation\Route;
 
 class SystemCheckController extends AbstractController
 {
+    #[Route('/health', name: 'health', methods: ['GET'])]
+    public function health(): Response
+    {
+        return new Response('OK', Response::HTTP_OK);
+    }
+
     #[Route('/api/system-check', name: 'api_system_check', methods: ['GET'])]
     public function check(EntityManagerInterface $em): JsonResponse
     {
