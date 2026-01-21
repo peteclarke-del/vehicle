@@ -33,3 +33,5 @@ Thumbs.db
 
 # Docker
 /mysql_data/
+.env
+backend/.env
