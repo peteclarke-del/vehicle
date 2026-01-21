@@ -447,6 +447,7 @@
     "newPassword": "New Password",
     "confirmPassword": "Confirm New Password",
     "passwordMinLength": "Password must be at least 8 characters",
+    "passwordDoesNotMatchPolicy": "Password does not match the required format",
     "passwordChangeRequiredMessage": "You must change your password before continuing. Please choose a strong password.",
     "passwordRequirements": "Minimum 8 characters",
     "requireLength": "At least {{count}} characters",
