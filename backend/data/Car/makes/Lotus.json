@@ -1,0 +1,12 @@
+[
+  {
+    "type": "Car",
+    "name": "Lotus",
+    "logoUrl": "https://example.com/lotus-logo.png",
+    "countryOfOrigin": "United Kingdom",
+    "foundedYear": 1952,
+    "headquarters": "Hethel, United Kingdom",
+    "isActive": true,
+    "popularity": 0
+  }
+]

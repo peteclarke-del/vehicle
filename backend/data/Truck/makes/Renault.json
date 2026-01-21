@@ -1,0 +1,12 @@
+[
+  {
+    "type": "Truck",
+    "name": "Renault",
+    "logoUrl": "https://example.com/renault-logo.png",
+    "countryOfOrigin": "France",
+    "foundedYear": 1899,
+    "headquarters": "Boulogne-Billancourt, France",
+    "isActive": true,
+    "popularity": 0
+  }
+]

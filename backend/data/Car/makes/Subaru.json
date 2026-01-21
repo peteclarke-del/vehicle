@@ -1,0 +1,12 @@
+[
+  {
+    "type": "Car",
+    "name": "Subaru",
+    "logoUrl": "https://example.com/subaru-logo.png",
+    "countryOfOrigin": "Japan",
+    "foundedYear": 1953,
+    "headquarters": "Tokyo, Japan",
+    "isActive": true,
+    "popularity": 0
+  }
+]

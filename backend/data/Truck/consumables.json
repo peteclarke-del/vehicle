@@ -1,0 +1,50 @@
+[
+    {
+        "vehicleType": "Truck",
+        "name": "Engine Oil",
+        "unit": "litres",
+        "description": "Heavy-duty engine oil for truck diesel engines."
+    },
+    {
+        "vehicleType": "Truck",
+        "name": "Gear Oil/Differential Oil",
+        "unit": "litres",
+        "description": "High-viscosity gear oil for differentials and axles."
+    },
+    {
+        "vehicleType": "Truck",
+        "name": "Brake Fluid",
+        "unit": "ml",
+        "description": "Hydraulic brake fluid; air brake systems use different components."
+    },
+    {
+        "vehicleType": "Truck",
+        "name": "Tyres/Tires",
+        "unit": "psi / bar",
+        "description": "Commercial truck tyre specifications and pressures."
+    },
+    {
+        "vehicleType": "Truck",
+        "name": "Fuel Filter",
+        "unit": "unit",
+        "description": "Heavy-duty fuel filter for diesel engines."
+    },
+    {
+        "vehicleType": "Truck",
+        "name": "Air Filter",
+        "unit": "unit",
+        "description": "Large-format engine air filter."
+    },
+    {
+        "vehicleType": "Truck",
+        "name": "AdBlue/DEF",
+        "unit": "litres",
+        "description": "Diesel Exhaust Fluid for SCR systems."
+    },
+    {
+        "vehicleType": "Truck",
+        "name": "Battery",
+        "unit": "unit",
+        "description": "Heavy-duty 12V battery with high CCA and Ah ratings."
+    }
+]

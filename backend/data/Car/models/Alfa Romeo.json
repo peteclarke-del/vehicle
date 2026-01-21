@@ -1,0 +1,98 @@
+[
+  {
+    "make": "Alfa Romeo",
+    "name": "Giulia",
+    "startYear": 2015,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 2015,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/alfa-romeo-giulia.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Alfa Romeo",
+    "name": "Stelvio",
+    "startYear": 2016,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 2016,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/alfa-romeo-stelvio.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Alfa Romeo",
+    "name": "Giulietta",
+    "startYear": 2010,
+    "endYear": 2020,
+    "vehicleType": "Car",
+    "productionStartYear": 2010,
+    "productionEndYear": 2020,
+    "imageUrl": "https://example.com/alfa-romeo-giulietta.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Alfa Romeo",
+    "name": "MiTo",
+    "startYear": 2008,
+    "endYear": 2018,
+    "vehicleType": "Car",
+    "productionStartYear": 2008,
+    "productionEndYear": 2018,
+    "imageUrl": "https://example.com/alfa-romeo-mito.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  }
+]

@@ -1,0 +1,12 @@
+[
+  {
+    "type": "Motorcycle",
+    "name": "Kawasaki",
+    "logoUrl": "https://example.com/kawasaki-logo.png",
+    "countryOfOrigin": "Japan",
+    "foundedYear": 1896,
+    "headquarters": "Kobe, Japan",
+    "isActive": true,
+    "popularity": 0
+  }
+]

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Controller;
 
-use App\Entity\Insurance;
+use App\Entity\InsurancePolicy;
 use App\Entity\User;
 use App\Entity\Vehicle;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
@@ -23,7 +23,8 @@ class InsuranceControllerTest extends WebTestCase
 
     protected function setUp(): void
     {
-        $this->markTestSkipped('Insurance controller tests are deprecated after model changes.');
+        $this->client = static::createClient();
+        $this->token = $this->getAuthToken();
     }
 
     /**

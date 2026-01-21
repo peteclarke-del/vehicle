@@ -1,0 +1,12 @@
+[
+  {
+    "type": "Truck",
+    "name": "DAF",
+    "logoUrl": "https://example.com/daf-logo.png",
+    "countryOfOrigin": "Netherlands",
+    "foundedYear": 1928,
+    "headquarters": "Eindhoven, Netherlands",
+    "isActive": true,
+    "popularity": 0
+  }
+]

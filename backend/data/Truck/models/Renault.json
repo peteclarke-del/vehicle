@@ -1,0 +1,149 @@
+[
+  {
+    "make": "Renault",
+    "name": "T",
+    "startYear": 2013,
+    "endYear": null,
+    "vehicleType": "Truck",
+    "productionStartYear": 2013,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/renault-t.jpg",
+    "engineOptions": [
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Renault",
+    "name": "C",
+    "startYear": 2013,
+    "endYear": null,
+    "vehicleType": "Truck",
+    "productionStartYear": 2013,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/renault-c.jpg",
+    "engineOptions": [
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Renault",
+    "name": "K",
+    "startYear": 2013,
+    "endYear": null,
+    "vehicleType": "Truck",
+    "productionStartYear": 2013,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/renault-k.jpg",
+    "engineOptions": [
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Renault",
+    "name": "D",
+    "startYear": 2013,
+    "endYear": null,
+    "vehicleType": "Truck",
+    "productionStartYear": 2013,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/renault-d.jpg",
+    "engineOptions": [
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Renault",
+    "name": "Premium",
+    "startYear": 1996,
+    "endYear": null,
+    "vehicleType": "Truck",
+    "productionStartYear": 1996,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/renault-premium.jpg",
+    "engineOptions": [
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Renault",
+    "name": "Magnum",
+    "startYear": 1998,
+    "endYear": null,
+    "vehicleType": "Truck",
+    "productionStartYear": 1998,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/renault-magnum.jpg",
+    "engineOptions": [
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Renault",
+    "name": "Kerax",
+    "startYear": 1997,
+    "endYear": null,
+    "vehicleType": "Truck",
+    "productionStartYear": 1997,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/renault-kerax.jpg",
+    "engineOptions": [
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  }
+]

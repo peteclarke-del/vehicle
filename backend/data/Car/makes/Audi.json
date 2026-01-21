@@ -1,0 +1,12 @@
+[
+  {
+    "type": "Car",
+    "name": "Audi",
+    "logoUrl": "https://example.com/audi-logo.png",
+    "countryOfOrigin": "Germany",
+    "foundedYear": 1909,
+    "headquarters": "Ingolstadt, Germany",
+    "isActive": true,
+    "popularity": 0
+  }
+]

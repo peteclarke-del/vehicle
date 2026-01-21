@@ -1,0 +1,12 @@
+[
+  {
+    "type": "Car",
+    "name": "Mitsubishi",
+    "logoUrl": "https://example.com/mitsubishi-logo.png",
+    "countryOfOrigin": "Japan",
+    "foundedYear": 1870,
+    "headquarters": "Tokyo, Japan",
+    "isActive": true,
+    "popularity": 0
+  }
+]

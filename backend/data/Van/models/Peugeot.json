@@ -1,0 +1,98 @@
+[
+  {
+    "make": "Peugeot",
+    "name": "Boxer",
+    "startYear": 1994,
+    "endYear": null,
+    "vehicleType": "Van",
+    "productionStartYear": 1994,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/peugeot-boxer.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Peugeot",
+    "name": "Partner",
+    "startYear": 1996,
+    "endYear": null,
+    "vehicleType": "Van",
+    "productionStartYear": 1996,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/peugeot-partner.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Peugeot",
+    "name": "Expert",
+    "startYear": 1995,
+    "endYear": null,
+    "vehicleType": "Van",
+    "productionStartYear": 1995,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/peugeot-expert.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Peugeot",
+    "name": "Traveller",
+    "startYear": 2016,
+    "endYear": null,
+    "vehicleType": "Van",
+    "productionStartYear": 2016,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/peugeot-traveller.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  }
+]

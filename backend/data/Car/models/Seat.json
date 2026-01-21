@@ -1,0 +1,98 @@
+[
+  {
+    "make": "Seat",
+    "name": "Ibiza",
+    "startYear": 1984,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 1984,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/seat-ibiza.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Seat",
+    "name": "Leon",
+    "startYear": 1999,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 1999,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/seat-leon.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Seat",
+    "name": "Ateca",
+    "startYear": 2016,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 2016,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/seat-ateca.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Seat",
+    "name": "Arona",
+    "startYear": 2017,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 2017,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/seat-arona.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  }
+]

@@ -1,0 +1,74 @@
+[
+  {
+    "make": "TVR",
+    "name": "Chimaera",
+    "startYear": 1992,
+    "endYear": 2003,
+    "vehicleType": "Car",
+    "productionStartYear": 1992,
+    "productionEndYear": 2003,
+    "imageUrl": "https://example.com/tvr-chimaera.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "TVR",
+    "name": "Tuscan",
+    "startYear": 1999,
+    "endYear": 2006,
+    "vehicleType": "Car",
+    "productionStartYear": 1999,
+    "productionEndYear": 2006,
+    "imageUrl": "https://example.com/tvr-tuscan.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "TVR",
+    "name": "Griffith",
+    "startYear": 1990,
+    "endYear": 2002,
+    "vehicleType": "Car",
+    "productionStartYear": 1990,
+    "productionEndYear": 2002,
+    "imageUrl": "https://example.com/tvr-griffith.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  }
+]

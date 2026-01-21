@@ -1,0 +1,50 @@
+[
+    {
+        "vehicleType": "Van",
+        "name": "Engine Oil",
+        "unit": "litres",
+        "description": "Engine oil for light commercial vehicles; check heavy-duty specifications."
+    },
+    {
+        "vehicleType": "Van",
+        "name": "Transmission Fluid",
+        "unit": "litres",
+        "description": "Manual or automatic transmission fluid as specified."
+    },
+    {
+        "vehicleType": "Van",
+        "name": "Brake Fluid",
+        "unit": "ml",
+        "description": "Brake fluid for hydraulic systems (DOT 4 common)."
+    },
+    {
+        "vehicleType": "Van",
+        "name": "Tyres/Tires",
+        "unit": "psi / bar",
+        "description": "Commercial tyre sizes and recommended pressures."
+    },
+    {
+        "vehicleType": "Van",
+        "name": "Air Filter",
+        "unit": "unit",
+        "description": "Engine intake air filter."
+    },
+    {
+        "vehicleType": "Van",
+        "name": "Cabin/Pollen Filter",
+        "unit": "unit",
+        "description": "Cabin filter for passenger area."
+    },
+    {
+        "vehicleType": "Van",
+        "name": "Windscreen Washer Fluid",
+        "unit": "litres",
+        "description": "Washer fluid for windscreen/windshield."
+    },
+    {
+        "vehicleType": "Van",
+        "name": "Battery",
+        "unit": "unit",
+        "description": "12V vehicle battery; larger capacity for heavy use."
+    }
+]

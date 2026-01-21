@@ -1,0 +1,26 @@
+[
+  {
+    "make": "GMC",
+    "name": "Savana",
+    "startYear": 1996,
+    "endYear": null,
+    "vehicleType": "Van",
+    "productionStartYear": 1996,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/gmc-savana.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  }
+]

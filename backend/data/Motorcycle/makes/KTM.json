@@ -1,0 +1,12 @@
+[
+  {
+    "type": "Motorcycle",
+    "name": "KTM",
+    "logoUrl": "https://example.com/ktm-logo.png",
+    "countryOfOrigin": "Austria",
+    "foundedYear": 1934,
+    "headquarters": "Mattighofen, Austria",
+    "isActive": true,
+    "popularity": 0
+  }
+]

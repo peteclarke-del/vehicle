@@ -42,4 +42,31 @@ if [[ "${1:-}" == -* ]]; then
   set -- php-fpm "$@"
 fi
 
+# Run migrations and fixtures automatically unless opted out.
+# SKIP_MIGRATIONS=1 will skip migrations.
+# SKIP_FIXTURES=1 will skip fixtures.
+if [ -f "$TARGET_DIR/bin/console" ]; then
+  echo "[entrypoint] detected Symfony console"
+
+  if [ "${SKIP_MIGRATIONS:-0}" != "1" ]; then
+    echo "[entrypoint] running doctrine migrations (may take a moment)"
+    (cd "$TARGET_DIR" && php bin/console doctrine:migrations:migrate --no-interaction --allow-no-migration) || echo "[entrypoint] migrations failed or no migrations to run"
+  else
+    echo "[entrypoint] SKIP_MIGRATIONS=1 set; skipping migrations"
+  fi
+
+  if [ "${APP_ENV:-dev}" != "prod" ] && [ "${SKIP_FIXTURES:-0}" != "1" ]; then
+    echo "[entrypoint] loading data fixtures (non-production only)"
+    (cd "$TARGET_DIR" && php bin/console doctrine:fixtures:load --no-interaction) || echo "[entrypoint] fixtures load failed or already loaded"
+  else
+    echo "[entrypoint] skipping fixtures (production or SKIP_FIXTURES set)"
+  fi
+
+  # Ensure runtime permissions again after any work that may have created files
+  if [ -d "$TARGET_DIR/var" ]; then
+    fix_perms "$TARGET_DIR/var"
+  fi
+  fix_perms "$UPLOAD_DIR"
+fi
+
 exec "$@"

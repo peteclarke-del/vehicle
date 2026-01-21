@@ -1,0 +1,12 @@
+[
+  {
+    "type": "EV",
+    "name": "Tesla",
+    "logoUrl": "https://example.com/tesla-logo.png",
+    "countryOfOrigin": "United States",
+    "foundedYear": 2003,
+    "headquarters": "Austin, Texas, USA",
+    "isActive": true,
+    "popularity": 0
+  }
+]

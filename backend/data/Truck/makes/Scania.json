@@ -1,0 +1,12 @@
+[
+  {
+    "type": "Truck",
+    "name": "Scania",
+    "logoUrl": "https://example.com/scania-logo.png",
+    "countryOfOrigin": "Sweden",
+    "foundedYear": 1891,
+    "headquarters": "Södertälje, Sweden",
+    "isActive": true,
+    "popularity": 0
+  }
+]

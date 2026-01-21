@@ -1,0 +1,194 @@
+[
+  {
+    "make": "Honda",
+    "name": "Civic",
+    "startYear": 1972,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 1972,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/honda-civic.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Honda",
+    "name": "Accord",
+    "startYear": 1976,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 1976,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/honda-accord.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Honda",
+    "name": "Jazz",
+    "startYear": 2001,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 2001,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/honda-jazz.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Honda",
+    "name": "Fit",
+    "startYear": 2001,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 2001,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/honda-fit.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Honda",
+    "name": "CR-V",
+    "startYear": 1995,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 1995,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/honda-cr-v.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Honda",
+    "name": "HR-V",
+    "startYear": 1998,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 1998,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/honda-hr-v.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Honda",
+    "name": "Insight",
+    "startYear": 1999,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 1999,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/honda-insight.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Honda",
+    "name": "NSX",
+    "startYear": 1990,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 1990,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/honda-nsx.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  }
+]

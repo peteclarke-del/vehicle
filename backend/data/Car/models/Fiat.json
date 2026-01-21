@@ -1,0 +1,122 @@
+[
+  {
+    "make": "Fiat",
+    "name": "500",
+    "startYear": 1957,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 1957,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/fiat-500.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Fiat",
+    "name": "Panda",
+    "startYear": 1980,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 1980,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/fiat-panda.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Fiat",
+    "name": "Punto",
+    "startYear": 1993,
+    "endYear": 2018,
+    "vehicleType": "Car",
+    "productionStartYear": 1993,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/fiat-punto.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Fiat",
+    "name": "Tipo",
+    "startYear": 1988,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 1988,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/fiat-tipo.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Fiat",
+    "name": "124 Spider",
+    "startYear": 2016,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 2016,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/fiat-124-spider.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  }
+]

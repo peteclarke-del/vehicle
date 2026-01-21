@@ -1,0 +1,12 @@
+[
+  {
+    "type": "Car",
+    "name": "Morgan",
+    "logoUrl": "https://example.com/morgan-logo.png",
+    "countryOfOrigin": "United Kingdom",
+    "foundedYear": 1910,
+    "headquarters": "Malvern Link, United Kingdom",
+    "isActive": true,
+    "popularity": 0
+  }
+]

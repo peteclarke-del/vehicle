@@ -1,0 +1,12 @@
+[
+  {
+    "type": "Truck",
+    "name": "MAN",
+    "logoUrl": "https://example.com/man-logo.png",
+    "countryOfOrigin": "Germany",
+    "foundedYear": 1758,
+    "headquarters": "Munich, Germany",
+    "isActive": true,
+    "popularity": 0
+  }
+]

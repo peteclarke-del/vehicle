@@ -1,0 +1,12 @@
+[
+  {
+    "type": "Car",
+    "name": "Honda",
+    "logoUrl": "https://example.com/honda-logo.png",
+    "countryOfOrigin": "Japan",
+    "foundedYear": 1948,
+    "headquarters": "Tokyo, Japan",
+    "isActive": true,
+    "popularity": 0
+  }
+]

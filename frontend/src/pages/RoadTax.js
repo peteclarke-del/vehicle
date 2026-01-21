@@ -138,8 +138,8 @@ const RoadTax = () => {
                   <TableCell align="right">{r.amount != null ? r.amount : '-'}</TableCell>
                   <TableCell>{r.notes || '-'}</TableCell>
                   <TableCell align="center">
-                    <Tooltip title={t('common.edit')}><IconButton size="small" onClick={() => handleEdit(r)}><EditIcon /></IconButton></Tooltip>
-                    <Tooltip title={t('common.delete')}><IconButton size="small" onClick={() => handleDelete(r.id)}><DeleteIcon /></IconButton></Tooltip>
+                    <Tooltip title={t('edit')}><IconButton size="small" onClick={() => handleEdit(r)}><EditIcon /></IconButton></Tooltip>
+                    <Tooltip title={t('delete')}><IconButton size="small" onClick={() => handleDelete(r.id)}><DeleteIcon /></IconButton></Tooltip>
                   </TableCell>
                 </TableRow>
               ))

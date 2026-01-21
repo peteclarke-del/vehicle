@@ -1,0 +1,12 @@
+[
+  {
+    "type": "Car",
+    "name": "Mercedes-Benz",
+    "logoUrl": "https://example.com/mercedes-logo.png",
+    "countryOfOrigin": "Germany",
+    "foundedYear": 1926,
+    "headquarters": "Stuttgart, Germany",
+    "isActive": true,
+    "popularity": 0
+  }
+]

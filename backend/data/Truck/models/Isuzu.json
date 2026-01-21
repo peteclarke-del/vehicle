@@ -1,0 +1,155 @@
+[
+  {
+    "make": "Isuzu",
+    "name": "N-Series",
+    "startYear": 1959,
+    "endYear": null,
+    "vehicleType": "Truck",
+    "productionStartYear": 1959,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/isuzu-n-series.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Isuzu",
+    "name": "D-Max",
+    "startYear": 2002,
+    "endYear": null,
+    "vehicleType": "Truck",
+    "productionStartYear": 2002,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/isuzu-d-max.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Isuzu",
+    "name": "NPR",
+    "startYear": 1990,
+    "endYear": null,
+    "vehicleType": "Truck",
+    "productionStartYear": 1990,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/isuzu-npr.jpg",
+    "engineOptions": [
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Isuzu",
+    "name": "NRR",
+    "startYear": 1990,
+    "endYear": null,
+    "vehicleType": "Truck",
+    "productionStartYear": 1990,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/isuzu-nrr.jpg",
+    "engineOptions": [
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Isuzu",
+    "name": "NQR",
+    "startYear": 1990,
+    "endYear": null,
+    "vehicleType": "Truck",
+    "productionStartYear": 1990,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/isuzu-nqr.jpg",
+    "engineOptions": [
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Isuzu",
+    "name": "FSR",
+    "startYear": 1980,
+    "endYear": null,
+    "vehicleType": "Truck",
+    "productionStartYear": 1980,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/isuzu-fsr.jpg",
+    "engineOptions": [
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Isuzu",
+    "name": "FXR",
+    "startYear": 1980,
+    "endYear": null,
+    "vehicleType": "Truck",
+    "productionStartYear": 1980,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/isuzu-fxr.jpg",
+    "engineOptions": [
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  }
+]

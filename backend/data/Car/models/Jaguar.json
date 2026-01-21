@@ -1,0 +1,194 @@
+[
+  {
+    "make": "Jaguar",
+    "name": "XJ",
+    "startYear": 1968,
+    "endYear": 2019,
+    "vehicleType": "Car",
+    "productionStartYear": 1968,
+    "productionEndYear": 2019,
+    "imageUrl": "https://example.com/jaguar-xj.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Jaguar",
+    "name": "XK",
+    "startYear": 1996,
+    "endYear": 2014,
+    "vehicleType": "Car",
+    "productionStartYear": 1996,
+    "productionEndYear": 2014,
+    "imageUrl": "https://example.com/jaguar-xk.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Jaguar",
+    "name": "S-Type",
+    "startYear": 1999,
+    "endYear": 2008,
+    "vehicleType": "Car",
+    "productionStartYear": 1999,
+    "productionEndYear": 2008,
+    "imageUrl": "https://example.com/jaguar-s-type.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Jaguar",
+    "name": "Mark 2",
+    "startYear": 1959,
+    "endYear": 1967,
+    "vehicleType": "Car",
+    "productionStartYear": 1959,
+    "productionEndYear": 1967,
+    "imageUrl": "https://example.com/jaguar-mark-2.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Jaguar",
+    "name": "XE",
+    "startYear": 2015,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 2015,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/jaguar-xe.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Jaguar",
+    "name": "XF",
+    "startYear": 2007,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 2007,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/jaguar-xf.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Jaguar",
+    "name": "F-Type",
+    "startYear": 2013,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 2013,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/jaguar-f-type.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Jaguar",
+    "name": "I-Pace",
+    "startYear": 2018,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 2018,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/jaguar-i-pace.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  }
+]

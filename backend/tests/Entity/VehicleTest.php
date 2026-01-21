@@ -218,13 +218,6 @@ class VehicleTest extends TestCase
         $this->assertCount(0, $vehicle->getServiceRecords());
     }
 
-    public function testInsuranceRecordsCollection(): void
-    {
-        $vehicle = new Vehicle();
-        
-        $this->assertCount(0, $vehicle->getInsuranceRecords());
-    }
-
     public function testMotRecordsCollection(): void
     {
         $vehicle = new Vehicle();

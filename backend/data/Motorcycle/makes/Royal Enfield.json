@@ -1,0 +1,12 @@
+[
+  {
+    "type": "Motorcycle",
+    "name": "Royal Enfield",
+    "logoUrl": "https://example.com/royal-enfield-logo.png",
+    "countryOfOrigin": "United Kingdom",
+    "foundedYear": 1901,
+    "headquarters": "Chennai, India",
+    "isActive": true,
+    "popularity": 0
+  }
+]

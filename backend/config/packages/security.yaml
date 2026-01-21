@@ -35,11 +35,7 @@ security:
     access_control:
         - { path: ^/api/login, roles: PUBLIC_ACCESS }
         - { path: ^/api/register, roles: PUBLIC_ACCESS }
-        - { path: ^/api/vehicle-types, roles: PUBLIC_ACCESS }
-        - { path: ^/api/vehicle-makes, roles: PUBLIC_ACCESS }
-        - { path: ^/api/vehicle-models, roles: PUBLIC_ACCESS }
-        - { path: ^/api/dvsa, roles: PUBLIC_ACCESS }
-        - { path: ^/api/dvla, roles: PUBLIC_ACCESS }
+        - { path: ^/api/system-check, roles: PUBLIC_ACCESS }
         - { path: ^/api, roles: IS_AUTHENTICATED_FULLY }
 
 when@test: ~

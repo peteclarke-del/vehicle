@@ -1,0 +1,122 @@
+[
+  {
+    "make": "Mitsubishi",
+    "name": "Lancer",
+    "startYear": 1973,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 1973,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/mitsubishi-lancer.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Mitsubishi",
+    "name": "Outlander",
+    "startYear": 2001,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 2001,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/mitsubishi-outlander.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Mitsubishi",
+    "name": "ASX",
+    "startYear": 2010,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 2010,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/mitsubishi-asx.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Mitsubishi",
+    "name": "Eclipse",
+    "startYear": 1989,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 1989,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/mitsubishi-eclipse.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Mitsubishi",
+    "name": "Pajero",
+    "startYear": 1982,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 1982,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/mitsubishi-pajero.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  }
+]

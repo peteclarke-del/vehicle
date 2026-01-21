@@ -1,0 +1,12 @@
+[
+  {
+    "type": "Car",
+    "name": "Peugeot",
+    "logoUrl": "https://example.com/peugeot-logo.png",
+    "countryOfOrigin": "France",
+    "foundedYear": 1810,
+    "headquarters": "Paris, France",
+    "isActive": true,
+    "popularity": 0
+  }
+]

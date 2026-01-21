@@ -1,0 +1,134 @@
+[
+  {
+    "make": "Mack",
+    "name": "Anthem",
+    "startYear": 2017,
+    "endYear": null,
+    "vehicleType": "Truck",
+    "productionStartYear": 2017,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/mack-anthem.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Mack",
+    "name": "Granite",
+    "startYear": 2001,
+    "endYear": null,
+    "vehicleType": "Truck",
+    "productionStartYear": 2001,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/mack-granite.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Mack",
+    "name": "Pinnacle",
+    "startYear": 2006,
+    "endYear": null,
+    "vehicleType": "Truck",
+    "productionStartYear": 2006,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/mack-pinnacle.jpg",
+    "engineOptions": [
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Mack",
+    "name": "Titan",
+    "startYear": 2014,
+    "endYear": null,
+    "vehicleType": "Truck",
+    "productionStartYear": 2014,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/mack-titan.jpg",
+    "engineOptions": [
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Mack",
+    "name": "MD",
+    "startYear": 1981,
+    "endYear": null,
+    "vehicleType": "Truck",
+    "productionStartYear": 1981,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/mack-md.jpg",
+    "engineOptions": [
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Mack",
+    "name": "RD",
+    "startYear": 1981,
+    "endYear": null,
+    "vehicleType": "Truck",
+    "productionStartYear": 1981,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/mack-rd.jpg",
+    "engineOptions": [
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  }
+]

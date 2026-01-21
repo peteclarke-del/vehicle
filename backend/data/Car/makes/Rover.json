@@ -1,0 +1,12 @@
+[
+  {
+    "type": "Car",
+    "name": "Rover",
+    "logoUrl": "https://example.com/rover-logo.png",
+    "countryOfOrigin": "United Kingdom",
+    "foundedYear": 1878,
+    "headquarters": "Solihull, United Kingdom",
+    "isActive": true,
+    "popularity": 0
+  }
+]

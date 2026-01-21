@@ -1,0 +1,122 @@
+[
+  {
+    "make": "Land Rover",
+    "name": "Defender",
+    "startYear": 1983,
+    "endYear": 2016,
+    "vehicleType": "Car",
+    "productionStartYear": 1983,
+    "productionEndYear": 2016,
+    "imageUrl": "https://example.com/land-rover-defender.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Land Rover",
+    "name": "Defender",
+    "startYear": 2020,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 2020,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/land-rover-defender.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Land Rover",
+    "name": "Discovery",
+    "startYear": 1989,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 1989,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/land-rover-discovery.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Land Rover",
+    "name": "Range Rover",
+    "startYear": 1970,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 1970,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/land-rover-range-rover.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Land Rover",
+    "name": "Range Rover Sport",
+    "startYear": 2005,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 2005,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/land-rover-range-rover-sport.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  }
+]

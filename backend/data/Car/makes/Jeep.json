@@ -1,0 +1,12 @@
+[
+  {
+    "type": "Car",
+    "name": "Jeep",
+    "logoUrl": "https://example.com/jeep-logo.png",
+    "countryOfOrigin": "United States",
+    "foundedYear": 1941,
+    "headquarters": "Toledo, Ohio, USA",
+    "isActive": true,
+    "popularity": 0
+  }
+]

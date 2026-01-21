@@ -1,0 +1,12 @@
+[
+  {
+    "type": "Van",
+    "name": "Toyota",
+    "logoUrl": "https://example.com/toyota-logo.png",
+    "countryOfOrigin": "Japan",
+    "foundedYear": 1937,
+    "headquarters": "Toyota City, Japan",
+    "isActive": true,
+    "popularity": 0
+  }
+]

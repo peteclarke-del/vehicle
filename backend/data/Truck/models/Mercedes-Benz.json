@@ -1,0 +1,128 @@
+[
+  {
+    "make": "Mercedes-Benz",
+    "name": "Actros",
+    "startYear": 1996,
+    "endYear": null,
+    "vehicleType": "Truck",
+    "productionStartYear": 1996,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/mercedes-benz-actros.jpg",
+    "engineOptions": [
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Mercedes-Benz",
+    "name": "Arocs",
+    "startYear": 2013,
+    "endYear": null,
+    "vehicleType": "Truck",
+    "productionStartYear": 2013,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/mercedes-benz-arocs.jpg",
+    "engineOptions": [
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Mercedes-Benz",
+    "name": "Atego",
+    "startYear": 1998,
+    "endYear": null,
+    "vehicleType": "Truck",
+    "productionStartYear": 1998,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/mercedes-benz-atego.jpg",
+    "engineOptions": [
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Mercedes-Benz",
+    "name": "Axor",
+    "startYear": 2001,
+    "endYear": null,
+    "vehicleType": "Truck",
+    "productionStartYear": 2001,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/mercedes-benz-axor.jpg",
+    "engineOptions": [
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Mercedes-Benz",
+    "name": "Zetros",
+    "startYear": 2008,
+    "endYear": null,
+    "vehicleType": "Truck",
+    "productionStartYear": 2008,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/mercedes-benz-zetros.jpg",
+    "engineOptions": [
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Mercedes-Benz",
+    "name": "Unimog",
+    "startYear": 1946,
+    "endYear": null,
+    "vehicleType": "Truck",
+    "productionStartYear": 1946,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/mercedes-benz-unimog.jpg",
+    "engineOptions": [
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  }
+]

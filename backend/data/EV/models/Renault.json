@@ -1,0 +1,84 @@
+[
+  {
+    "make": "Renault",
+    "name": "Zoe",
+    "startYear": 2012,
+    "endYear": null,
+    "vehicleType": "EV",
+    "productionStartYear": 2012,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/renault-zoe.jpg",
+    "engineOptions": [
+      {
+        "type": "electric"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Renault",
+    "name": "Twizy",
+    "startYear": 2012,
+    "endYear": null,
+    "vehicleType": "EV",
+    "productionStartYear": 2012,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/renault-twizy.jpg",
+    "engineOptions": [
+      {
+        "type": "electric"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Renault",
+    "name": "Kangoo ZE",
+    "startYear": 2011,
+    "endYear": null,
+    "vehicleType": "EV",
+    "productionStartYear": 2011,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/renault-kangoo-ze.jpg",
+    "engineOptions": [
+      {
+        "type": "electric"
+      }
+    ],
+    "transmissionOptions": [
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Renault",
+    "name": "Master ZE",
+    "startYear": 2018,
+    "endYear": null,
+    "vehicleType": "EV",
+    "productionStartYear": 2018,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/renault-master-ze.jpg",
+    "engineOptions": [
+      {
+        "type": "electric"
+      }
+    ],
+    "transmissionOptions": [
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  }
+]

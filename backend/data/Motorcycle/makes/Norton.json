@@ -1,0 +1,12 @@
+[
+  {
+    "type": "Motorcycle",
+    "name": "Norton",
+    "logoUrl": "https://example.com/norton-logo.png",
+    "countryOfOrigin": "United Kingdom",
+    "foundedYear": 1898,
+    "headquarters": "Solihull, United Kingdom",
+    "isActive": true,
+    "popularity": 0
+  }
+]

@@ -13,9 +13,8 @@ import Parts from './pages/Parts';
 import Consumables from './pages/Consumables';
 import Insurance from './pages/Insurance';
 import MotRecords from './pages/MotRecords';
-import RoadTax from './pages/RoadTax';
 import ServiceRecords from './pages/ServiceRecords';
-import Reports from './pages/Reports';
+import RoadTax from './pages/RoadTax';
 import Profile from './pages/Profile';
 import PasswordChangeDialog from './components/PasswordChangeDialog';
 import SessionTimeoutWarning from './components/SessionTimeoutWarning';
@@ -37,7 +36,28 @@ const PrivateRoute = ({ children }) => {
 
 function AppRoutes() {
   const { user } = useAuth();
+  const { api } = useAuth();
   const [showPasswordChange, setShowPasswordChange] = useState(false);
+  const [systemStatus, setSystemStatus] = useState(null);
+  const [checkingSystem, setCheckingSystem] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    const runCheck = async () => {
+      try {
+        const resp = await api.get('/system-check');
+        if (!mounted) return;
+        setSystemStatus(resp.data);
+      } catch (err) {
+        if (!mounted) return;
+        setSystemStatus(err.response?.data || { error: 'System check failed' });
+      } finally {
+        if (mounted) setCheckingSystem(false);
+      }
+    };
+    runCheck();
+    return () => { mounted = false; };
+  }, [api]);
 
   useEffect(() => {
     if (user && user.passwordChangeRequired) {
@@ -46,6 +66,15 @@ function AppRoutes() {
       setShowPasswordChange(false);
     }
   }, [user]);
+
+  if (checkingSystem) {
+    return (
+      <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" minHeight="100vh">
+        <CircularProgress />
+        <Box mt={2}>Performing system checks...</Box>
+      </Box>
+    );
+  }
 
   return (
     <>
@@ -68,9 +97,8 @@ function AppRoutes() {
           <Route path="consumables" element={<Consumables />} />
           <Route path="insurance" element={<Insurance />} />
           <Route path="mot-records" element={<MotRecords />} />
-          <Route path="road-tax" element={<RoadTax />} />
           <Route path="service-records" element={<ServiceRecords />} />
-          <Route path="reports" element={<Reports />} />
+          <Route path="road-tax" element={<RoadTax />} />
           <Route path="profile" element={<Profile />} />
         </Route>
       </Routes>

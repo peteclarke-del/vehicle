@@ -179,8 +179,8 @@ POST /api/force-password-change/{userId}
 - GET `/api/me` - Get current user info (includes passwordChangeRequired flag)
 - PUT `/api/profile` - Update user profile
 - POST `/api/change-password` - Change user password
-  - Body: `{ "currentPassword": "old", "newPassword": "new" }`
-  - Clears `passwordChangeRequired` flag on success
+- Body: `{ "currentPassword": "old", "newPassword": "new" }`
+- Clears `passwordChangeRequired` flag on success
 - POST `/api/force-password-change/{id}` - Force password change for user (Admin only)
 
 ### Vehicles

@@ -38,12 +38,6 @@ class VehicleType
     #[ORM\Column(type: 'boolean', options: ['default' => false])]
     private bool $isPopular = false;
 
-    #[ORM\Column(type: 'integer', nullable: true)]
-    private ?int $avgInsuranceGroup = null;
-
-    #[ORM\Column(type: 'string', length: 10, nullable: true)]
-    private ?string $fuelEfficiencyRating = null;
-
     #[ORM\OneToMany(mappedBy: 'vehicleType', targetEntity: Vehicle::class)]
     private Collection $vehicles;
 
@@ -145,32 +139,6 @@ class VehicleType
     public function setIsPopular(bool $isPopular): self
     {
         $this->isPopular = $isPopular;
-        return $this;
-    }
-
-    public function getAvgInsuranceGroup(): ?int
-    {
-        return $this->avgInsuranceGroup;
-    }
-
-    public function setAvgInsuranceGroup(?int $avgInsuranceGroup): self
-    {
-        $this->avgInsuranceGroup = $avgInsuranceGroup;
-        return $this;
-    }
-
-    public function getFuelEfficiencyRating(): ?string
-    {
-        return $this->fuelEfficiencyRating;
-    }
-
-    public function setFuelEfficiencyRating($fuelEfficiencyRating): self
-    {
-        if ($fuelEfficiencyRating !== null) {
-            $this->fuelEfficiencyRating = (string) $fuelEfficiencyRating;
-        } else {
-            $this->fuelEfficiencyRating = null;
-        }
         return $this;
     }
 

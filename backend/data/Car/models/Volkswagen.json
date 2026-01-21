@@ -1,0 +1,242 @@
+[
+  {
+    "make": "Volkswagen",
+    "name": "Polo",
+    "startYear": 1975,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 1975,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/volkswagen-polo.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Volkswagen",
+    "name": "Golf",
+    "startYear": 1974,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 1974,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/volkswagen-golf.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Volkswagen",
+    "name": "Passat",
+    "startYear": 1973,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 1973,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/volkswagen-passat.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Volkswagen",
+    "name": "Beetle",
+    "startYear": 1938,
+    "endYear": 2019,
+    "vehicleType": "Car",
+    "productionStartYear": 1938,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/volkswagen-beetle.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Volkswagen",
+    "name": "Jetta",
+    "startYear": 1979,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 1979,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/volkswagen-jetta.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Volkswagen",
+    "name": "Tiguan",
+    "startYear": 2007,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 2007,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/volkswagen-tiguan.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Volkswagen",
+    "name": "Touareg",
+    "startYear": 2002,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 2002,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/volkswagen-touareg.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Volkswagen",
+    "name": "Arteon",
+    "startYear": 2017,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 2017,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/volkswagen-arteon.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Volkswagen",
+    "name": "ID.3",
+    "startYear": 2019,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 2019,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/volkswagen-id.3.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "Volkswagen",
+    "name": "ID.4",
+    "startYear": 2020,
+    "endYear": null,
+    "vehicleType": "Car",
+    "productionStartYear": 2020,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/volkswagen-id.4.jpg",
+    "engineOptions": [
+      {
+        "type": "petrol"
+      },
+      {
+        "type": "diesel"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  }
+]

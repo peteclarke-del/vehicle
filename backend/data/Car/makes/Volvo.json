@@ -1,0 +1,12 @@
+[
+  {
+    "type": "Car",
+    "name": "Volvo",
+    "logoUrl": "https://example.com/volvo-logo.png",
+    "countryOfOrigin": "Sweden",
+    "foundedYear": 1927,
+    "headquarters": "Gothenburg, Sweden",
+    "isActive": true,
+    "popularity": 0
+  }
+]

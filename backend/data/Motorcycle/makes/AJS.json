@@ -1,0 +1,12 @@
+[
+  {
+    "type": "Motorcycle",
+    "name": "AJS",
+    "logoUrl": "https://example.com/ajs-logo.png",
+    "countryOfOrigin": "United Kingdom",
+    "foundedYear": 1909,
+    "headquarters": "Wolverhampton, United Kingdom",
+    "isActive": true,
+    "popularity": 0
+  }
+]

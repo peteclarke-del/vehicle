@@ -404,6 +404,152 @@ class InsuranceController extends AbstractController
         return new JsonResponse($this->_serializePolicy($policy));
     }
 
+    #[Route('/insurance', methods: ['GET'])]
+    public function list(Request $request): JsonResponse
+    {
+        $vehicleId = $request->query->get('vehicleId');
+
+        if (!$vehicleId) {
+            return new JsonResponse(['error' => 'vehicleId is required'], 400);
+        }
+
+        $vehicle = $this->entityManager->getRepository(Vehicle::class)->find($vehicleId);
+        $user = $this->getUserEntity();
+        if (!$vehicle || !$user || $vehicle->getOwner()->getId() !== $user->getId()) {
+            return new JsonResponse(['error' => 'Vehicle not found'], 404);
+        }
+
+        $policies = $this->entityManager->getRepository(InsurancePolicy::class)
+            ->findBy(['holderId' => $user->getId()]);
+
+        // Filter to only policies that include this vehicle
+        $vehiclePolicies = array_filter($policies, fn($policy) => $policy->getVehicles()->contains($vehicle));
+
+        return new JsonResponse(array_map(fn($policy) => $this->serializeInsurance($policy), $vehiclePolicies));
+    }
+
+    #[Route('/insurance', methods: ['POST'])]
+    public function create(Request $request): JsonResponse
+    {
+        $data = json_decode($request->getContent(), true);
+
+        $vehicle = $this->entityManager->getRepository(Vehicle::class)->find($data['vehicleId']);
+        $user = $this->getUserEntity();
+        if (!$vehicle || !$user || $vehicle->getOwner()->getId() !== $user->getId()) {
+            return new JsonResponse(['error' => 'Vehicle not found'], 404);
+        }
+
+        $policy = new InsurancePolicy();
+        $policy->setHolderId($user->getId());
+        $policy->addVehicle($vehicle);
+        $this->updatePolicyFromData($policy, $data);
+
+        $this->entityManager->persist($policy);
+        $this->entityManager->flush();
+
+        return new JsonResponse($this->serializeInsurance($policy), 201);
+    }
+
+    #[Route('/insurance/{id}', methods: ['PUT'])]
+    public function update(int $id, Request $request): JsonResponse
+    {
+        $policy = $this->entityManager->getRepository(InsurancePolicy::class)->find($id);
+        $user = $this->getUserEntity();
+        if (!$policy || !$user || $policy->getHolderId() !== $user->getId()) {
+            return new JsonResponse(['error' => 'Insurance policy not found'], 404);
+        }
+
+        $data = json_decode($request->getContent(), true);
+        $this->updatePolicyFromData($policy, $data);
+
+        $this->entityManager->flush();
+
+        return new JsonResponse($this->serializeInsurance($policy));
+    }
+
+    #[Route('/insurance/{id}', methods: ['DELETE'])]
+    public function delete(int $id): JsonResponse
+    {
+        $policy = $this->entityManager->getRepository(InsurancePolicy::class)->find($id);
+        $user = $this->getUserEntity();
+        if (!$policy || !$user || $policy->getHolderId() !== $user->getId()) {
+            return new JsonResponse(['error' => 'Insurance policy not found'], 404);
+        }
+
+        $this->entityManager->remove($policy);
+        $this->entityManager->flush();
+
+        return new JsonResponse(['message' => 'Insurance policy deleted']);
+    }
+
+    /**
+     * Serialize an insurance policy to an array (for compatibility with frontend expecting insurance records)
+     *
+     * @param InsurancePolicy $policy The insurance policy entity
+     *
+     * @return array<string, mixed> The serialized insurance data
+     */
+    private function serializeInsurance(InsurancePolicy $policy): array
+    {
+        return [
+            'id' => $policy->getId(),
+            'vehicleId' => $policy->getVehicles()->first()?->getId(), // For compatibility, use first vehicle
+            'provider' => $policy->getProvider(),
+            'policyNumber' => $policy->getPolicyNumber(),
+            'coverageType' => $policy->getCoverageType(),
+            'annualCost' => $policy->getAnnualCost(),
+            'startDate' => $policy->getStartDate()?->format('Y-m-d'),
+            'expiryDate' => $policy->getExpiryDate()?->format('Y-m-d'),
+            'notes' => $policy->getNotes(),
+            'createdAt' => $policy->getCreatedAt()?->format('c'),
+        ];
+    }
+
+    /**
+     * Update policy entity from request data
+     *
+     * @param InsurancePolicy $policy The policy entity
+     * @param array<string, mixed> $data The request data
+     *
+     * @return void
+     */
+    private function updatePolicyFromData(InsurancePolicy $policy, array $data): void
+    {
+        if (isset($data['provider'])) {
+            $policy->setProvider($data['provider']);
+        }
+        if (isset($data['policyNumber'])) {
+            $policy->setPolicyNumber($data['policyNumber']);
+        }
+        if (isset($data['coverageType'])) {
+            $policy->setCoverageType($data['coverageType']);
+        }
+        if (isset($data['annualCost'])) {
+            $policy->setAnnualCost($data['annualCost']);
+        }
+        if (isset($data['startDate'])) {
+            $policy->setStartDate(new \DateTime($data['startDate']));
+        }
+        if (isset($data['expiryDate'])) {
+            $policy->setExpiryDate(new \DateTime($data['expiryDate']));
+        }
+        if (isset($data['notes'])) {
+            $policy->setNotes($data['notes']);
+        }
+        if (isset($data['ncdYears'])) {
+            $policy->setNcdYears($data['ncdYears']);
+        }
+        if (isset($data['excess'])) {
+            $policy->setExcess($data['excess']);
+        }
+        if (isset($data['mileageLimit'])) {
+            $policy->setMileageLimit($data['mileageLimit']);
+        }
+        if (isset($data['autoRenewal'])) {
+            $policy->setAutoRenewal($data['autoRenewal']);
+        }
+    }
+
     /**
      * Serialize policy to array for JSON responses.
      *

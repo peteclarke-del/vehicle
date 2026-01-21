@@ -1,0 +1,12 @@
+[
+  {
+    "type": "Van",
+    "name": "Ram",
+    "logoUrl": "https://example.com/ram-logo.png",
+    "countryOfOrigin": "United States",
+    "foundedYear": 2009,
+    "headquarters": "Auburn Hills, Michigan, USA",
+    "isActive": true,
+    "popularity": 0
+  }
+]

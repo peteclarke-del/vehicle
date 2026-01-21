@@ -1,0 +1,12 @@
+[
+  {
+    "type": "Van",
+    "name": "GMC",
+    "logoUrl": "https://example.com/gmc-logo.png",
+    "countryOfOrigin": "United States",
+    "foundedYear": 1911,
+    "headquarters": "Detroit, Michigan, USA",
+    "isActive": true,
+    "popularity": 0
+  }
+]

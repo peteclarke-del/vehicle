@@ -1,0 +1,12 @@
+[
+  {
+    "type": "Car",
+    "name": "Mini",
+    "logoUrl": "https://example.com/mini-logo.png",
+    "countryOfOrigin": "United Kingdom",
+    "foundedYear": 1959,
+    "headquarters": "Oxford, United Kingdom",
+    "isActive": true,
+    "popularity": 0
+  }
+]

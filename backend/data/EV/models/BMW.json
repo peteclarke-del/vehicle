@@ -1,0 +1,126 @@
+[
+  {
+    "make": "BMW",
+    "name": "i3",
+    "startYear": 2013,
+    "endYear": 2024,
+    "vehicleType": "EV",
+    "productionStartYear": 2013,
+    "productionEndYear": 2022,
+    "imageUrl": "https://example.com/bmw-i3.jpg",
+    "engineOptions": [
+      {
+        "type": "electric"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "BMW",
+    "name": "i4",
+    "startYear": 2021,
+    "endYear": null,
+    "vehicleType": "EV",
+    "productionStartYear": 2021,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/bmw-i4.jpg",
+    "engineOptions": [
+      {
+        "type": "electric"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "BMW",
+    "name": "iX",
+    "startYear": 2021,
+    "endYear": null,
+    "vehicleType": "EV",
+    "productionStartYear": 2021,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/bmw-ix.jpg",
+    "engineOptions": [
+      {
+        "type": "electric"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "BMW",
+    "name": "i7",
+    "startYear": 2022,
+    "endYear": null,
+    "vehicleType": "EV",
+    "productionStartYear": 2022,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/bmw-i7.jpg",
+    "engineOptions": [
+      {
+        "type": "electric"
+      }
+    ],
+    "transmissionOptions": [
+      "Manual",
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "BMW",
+    "name": "i8",
+    "startYear": 2014,
+    "endYear": null,
+    "vehicleType": "EV",
+    "productionStartYear": 2014,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/bmw-i8.jpg",
+    "engineOptions": [
+      {
+        "type": "electric"
+      }
+    ],
+    "transmissionOptions": [
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  },
+  {
+    "make": "BMW",
+    "name": "iX3",
+    "startYear": 2020,
+    "endYear": null,
+    "vehicleType": "EV",
+    "productionStartYear": 2020,
+    "productionEndYear": null,
+    "imageUrl": "https://example.com/bmw-ix3.jpg",
+    "engineOptions": [
+      {
+        "type": "electric"
+      }
+    ],
+    "transmissionOptions": [
+      "Automatic"
+    ],
+    "generationCount": 1,
+    "isActive": true
+  }
+]

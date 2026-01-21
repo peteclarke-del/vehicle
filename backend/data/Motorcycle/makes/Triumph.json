@@ -1,0 +1,12 @@
+[
+  {
+    "type": "Motorcycle",
+    "name": "Triumph",
+    "logoUrl": "https://example.com/triumph-logo.png",
+    "countryOfOrigin": "United Kingdom",
+    "foundedYear": 1902,
+    "headquarters": "Hinckley, United Kingdom",
+    "isActive": true,
+    "popularity": 0
+  }
+]

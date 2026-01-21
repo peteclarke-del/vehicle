@@ -1,0 +1,12 @@
+[
+  {
+    "type": "Car",
+    "name": "Citroen",
+    "logoUrl": "https://example.com/citroen-logo.png",
+    "countryOfOrigin": "France",
+    "foundedYear": 1919,
+    "headquarters": "Poissy, France",
+    "isActive": true,
+    "popularity": 0
+  }
+]
