@@ -67,6 +67,9 @@ class ServiceRecord
     #[ORM\Column(type: 'integer', nullable: true)]
     private ?int $receiptAttachmentId = null;
 
+    #[ORM\ManyToOne(targetEntity: \App\Entity\MotRecord::class)]
+    private ?\App\Entity\MotRecord $motRecord = null;
+
     /**
      * @var Collection<int, ServiceItem>
      */
@@ -105,7 +108,7 @@ class ServiceRecord
         return $this;
     }
 
-    private function sumItemsByType(string $type): string
+    public function sumItemsByType(string $type): string
     {
         $total = '0.00';
         foreach ($this->items as $it) {
@@ -245,6 +248,17 @@ class ServiceRecord
     public function getCreatedAt(): ?\DateTimeInterface
     {
         return $this->createdAt;
+    }
+
+    public function getMotRecord(): ?\App\Entity\MotRecord
+    {
+        return $this->motRecord;
+    }
+
+    public function setMotRecord(?\App\Entity\MotRecord $motRecord): self
+    {
+        $this->motRecord = $motRecord;
+        return $this;
     }
 
     public function getReceiptAttachmentId(): ?int

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { formatDateISO } from '../utils/formatDate';
 import {
   Box,
   Button,
@@ -235,7 +236,7 @@ const AttachmentUpload = ({ entityType, entityId, onChange, compact = false }) =
                 primary={attachment.originalName}
                 secondary={
                   <>
-                    {formatFileSize(attachment.fileSize)} • {new Date(attachment.uploadedAt).toLocaleDateString()}
+                    {formatFileSize(attachment.fileSize)} • {formatDateISO(attachment.uploadedAt)}
                   </>
                 }
                 sx={{ ml: 2 }}

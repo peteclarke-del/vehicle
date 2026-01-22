@@ -62,22 +62,34 @@ class VehicleImportExportController extends AbstractController
             // Export parts
             $parts = [];
             foreach ($vehicle->getParts() as $part) {
+                // Skip parts already linked to an MOT — they will be exported under that MOT
+                if ($part->getMotRecord()) {
+                    continue;
+                }
                 $parts[] = [
                     'purchaseDate' => $part->getPurchaseDate()?->format('Y-m-d'),
                     'description' => $part->getDescription(),
                     'partNumber' => $part->getPartNumber(),
                     'manufacturer' => $part->getManufacturer(),
+                    'supplier' => $part->getSupplier(),
                     'cost' => $part->getCost(),
                     'category' => $part->getCategory(),
                     'installationDate' => $part->getInstallationDate()?->format('Y-m-d'),
                     'mileageAtInstallation' => $part->getMileageAtInstallation(),
                     'notes' => $part->getNotes(),
+                    'receiptAttachmentId' => $part->getReceiptAttachmentId(),
+                    'productUrl' => $part->getProductUrl(),
+                    'createdAt' => $part->getCreatedAt()?->format('c'),
                 ];
             }
 
             // Export consumables
             $consumables = [];
             foreach ($vehicle->getConsumables() as $consumable) {
+                // Skip consumables already linked to an MOT — they will be exported under that MOT
+                if ($consumable->getMotRecord()) {
+                    continue;
+                }
                 $consumables[] = [
                     'consumableType' => $consumable->getConsumableType()->getName(),
                     'specification' => $consumable->getSpecification(),
@@ -86,6 +98,9 @@ class VehicleImportExportController extends AbstractController
                     'mileageAtChange' => $consumable->getMileageAtChange(),
                     'cost' => $consumable->getCost(),
                     'notes' => $consumable->getNotes(),
+                    'receiptAttachmentId' => $consumable->getReceiptAttachmentId(),
+                    'productUrl' => $consumable->getProductUrl(),
+                    'createdAt' => $consumable->getCreatedAt()?->format('c'),
                 ];
             }
 
@@ -94,6 +109,10 @@ class VehicleImportExportController extends AbstractController
                 ->findBy(['vehicle' => $vehicle], ['serviceDate' => 'ASC']);
             $serviceRecordsData = [];
             foreach ($serviceRecords as $serviceRecord) {
+                // Skip service records linked to an MOT — they will be exported under that MOT
+                if ($serviceRecord->getMotRecord()) {
+                    continue;
+                }
                 $serviceRecordsData[] = [
                     'serviceDate' => $serviceRecord->getServiceDate()?->format('Y-m-d'),
                     'serviceType' => $serviceRecord->getServiceType(),
@@ -103,6 +122,14 @@ class VehicleImportExportController extends AbstractController
                     'serviceProvider' => $serviceRecord->getServiceProvider(),
                     'workPerformed' => $serviceRecord->getWorkPerformed(),
                     'notes' => $serviceRecord->getNotes(),
+                    'items' => array_map(fn($it) => [
+                        'type' => $it->getType(),
+                        'description' => $it->getDescription(),
+                        'cost' => $it->getCost(),
+                        'quantity' => $it->getQuantity(),
+                    ], $serviceRecord->getItems()),
+                    'receiptAttachmentId' => $serviceRecord->getReceiptAttachmentId(),
+                    'createdAt' => $serviceRecord->getCreatedAt()?->format('c'),
                 ];
             }
 
@@ -111,6 +138,71 @@ class VehicleImportExportController extends AbstractController
                 ->findBy(['vehicle' => $vehicle], ['testDate' => 'ASC']);
             $motRecordsData = [];
             foreach ($motRecords as $motRecord) {
+                // gather parts/consumables/service records linked to this mot record
+                $motParts = [];
+                foreach ($vehicle->getParts() as $part) {
+                    if ($part->getMotRecord() && $part->getMotRecord()->getId() === $motRecord->getId()) {
+                        $motParts[] = [
+                            'purchaseDate' => $part->getPurchaseDate()?->format('Y-m-d'),
+                            'description' => $part->getDescription(),
+                            'partNumber' => $part->getPartNumber(),
+                            'manufacturer' => $part->getManufacturer(),
+                            'supplier' => $part->getSupplier(),
+                            'cost' => $part->getCost(),
+                            'category' => $part->getCategory(),
+                            'installationDate' => $part->getInstallationDate()?->format('Y-m-d'),
+                            'mileageAtInstallation' => $part->getMileageAtInstallation(),
+                            'notes' => $part->getNotes(),
+                            'receiptAttachmentId' => $part->getReceiptAttachmentId(),
+                            'productUrl' => $part->getProductUrl(),
+                            'createdAt' => $part->getCreatedAt()?->format('c'),
+                        ];
+                    }
+                }
+
+                $motConsumables = [];
+                foreach ($vehicle->getConsumables() as $consumable) {
+                    if ($consumable->getMotRecord() && $consumable->getMotRecord()->getId() === $motRecord->getId()) {
+                        $motConsumables[] = [
+                            'consumableType' => $consumable->getConsumableType()->getName(),
+                            'specification' => $consumable->getSpecification(),
+                            'quantity' => $consumable->getQuantity(),
+                            'lastChanged' => $consumable->getLastChanged()?->format('Y-m-d'),
+                            'mileageAtChange' => $consumable->getMileageAtChange(),
+                            'cost' => $consumable->getCost(),
+                            'notes' => $consumable->getNotes(),
+                            'receiptAttachmentId' => $consumable->getReceiptAttachmentId(),
+                            'productUrl' => $consumable->getProductUrl(),
+                            'createdAt' => $consumable->getCreatedAt()?->format('c'),
+                        ];
+                    }
+                }
+
+                $motServiceRecords = [];
+                $allServiceRecords = $entityManager->getRepository(ServiceRecord::class)->findBy(['vehicle' => $vehicle]);
+                foreach ($allServiceRecords as $svc) {
+                    if ($svc->getMotRecord() && $svc->getMotRecord()->getId() === $motRecord->getId()) {
+                        $motServiceRecords[] = [
+                            'serviceDate' => $svc->getServiceDate()?->format('Y-m-d'),
+                            'serviceType' => $svc->getServiceType(),
+                            'laborCost' => $svc->getLaborCost(),
+                            'partsCost' => $svc->getPartsCost(),
+                            'mileage' => $svc->getMileage(),
+                            'serviceProvider' => $svc->getServiceProvider(),
+                            'workPerformed' => $svc->getWorkPerformed(),
+                            'items' => array_map(fn($it) => [
+                                'type' => $it->getType(),
+                                'description' => $it->getDescription(),
+                                'cost' => $it->getCost(),
+                                'quantity' => $it->getQuantity(),
+                            ], $svc->getItems()),
+                            'notes' => $svc->getNotes(),
+                            'receiptAttachmentId' => $svc->getReceiptAttachmentId(),
+                            'createdAt' => $svc->getCreatedAt()?->format('c'),
+                        ];
+                    }
+                }
+
                 $motRecordsData[] = [
                     'testDate' => $motRecord->getTestDate()?->format('Y-m-d'),
                     'expiryDate' => $motRecord->getExpiryDate()?->format('Y-m-d'),
@@ -123,6 +215,9 @@ class VehicleImportExportController extends AbstractController
                     'failures' => $motRecord->getFailures(),
                     'repairDetails' => $motRecord->getRepairDetails(),
                     'notes' => $motRecord->getNotes(),
+                    'parts' => $motParts,
+                    'consumables' => $motConsumables,
+                    'serviceRecords' => $motServiceRecords,
                 ];
             }
 
@@ -437,6 +532,23 @@ class VehicleImportExportController extends AbstractController
                             $part->setNotes($partData['notes']);
                         }
 
+                        if (!empty($partData['supplier'])) {
+                            $part->setSupplier($partData['supplier']);
+                        }
+                        if (isset($partData['receiptAttachmentId'])) {
+                            $part->setReceiptAttachmentId($partData['receiptAttachmentId']);
+                        }
+                        if (!empty($partData['productUrl'])) {
+                            $part->setProductUrl($partData['productUrl']);
+                        }
+                        if (!empty($partData['createdAt'])) {
+                            try {
+                                $part->setCreatedAt(new \DateTime($partData['createdAt']));
+                            } catch (\Exception $e) {
+                                // ignore invalid createdAt
+                            }
+                        }
+
                         $entityManager->persist($part);
                     }
                 }
@@ -482,6 +594,23 @@ class VehicleImportExportController extends AbstractController
                             $consumable->setNotes($consumableData['notes']);
                         }
 
+                        if (!empty($consumableData['supplier'])) {
+                            $consumable->setSupplier($consumableData['supplier']);
+                        }
+                        if (isset($consumableData['receiptAttachmentId'])) {
+                            $consumable->setReceiptAttachmentId($consumableData['receiptAttachmentId']);
+                        }
+                        if (!empty($consumableData['productUrl'])) {
+                            $consumable->setProductUrl($consumableData['productUrl']);
+                        }
+                        if (!empty($consumableData['createdAt'])) {
+                            try {
+                                $consumable->setCreatedAt(new \DateTime($consumableData['createdAt']));
+                            } catch (\Exception $e) {
+                                // ignore invalid createdAt
+                            }
+                        }
+
                         $entityManager->persist($consumable);
                     }
                 }
@@ -515,6 +644,37 @@ class VehicleImportExportController extends AbstractController
                         }
                         if (!empty($serviceData['notes'])) {
                             $serviceRecord->setNotes($serviceData['notes']);
+                        }
+
+                        if (isset($serviceData['receiptAttachmentId'])) {
+                            $serviceRecord->setReceiptAttachmentId($serviceData['receiptAttachmentId']);
+                        }
+                        if (!empty($serviceData['createdAt'])) {
+                            try {
+                                $serviceRecord->setCreatedAt(new \DateTime($serviceData['createdAt']));
+                            } catch (\Exception $e) {
+                                // ignore invalid createdAt
+                            }
+                        }
+
+                        // Import service items if any
+                        if (!empty($serviceData['items']) && is_array($serviceData['items'])) {
+                            foreach ($serviceData['items'] as $itemData) {
+                                $item = new \App\Entity\ServiceItem();
+                                if (!empty($itemData['type'])) {
+                                    $item->setType($itemData['type']);
+                                }
+                                if (!empty($itemData['description'])) {
+                                    $item->setDescription($itemData['description']);
+                                }
+                                if (isset($itemData['cost'])) {
+                                    $item->setCost($itemData['cost']);
+                                }
+                                if (isset($itemData['quantity'])) {
+                                    $item->setQuantity($itemData['quantity']);
+                                }
+                                $serviceRecord->addItem($item);
+                            }
                         }
 
                         $entityManager->persist($serviceRecord);
@@ -562,6 +722,313 @@ class VehicleImportExportController extends AbstractController
                         }
 
                         $entityManager->persist($motRecord);
+
+                        // If the MOT payload contains nested parts/consumables/serviceRecords,
+                        // prefer associating existing records where possible to avoid duplicates.
+                        if (!empty($motData['parts'])) {
+                            foreach ($motData['parts'] as $partData) {
+                                $existingPart = null;
+                                $instDate = null;
+                                if (!empty($partData['installationDate'])) {
+                                    try {
+                                        $instDate = new \DateTime($partData['installationDate']);
+                                    } catch (\Exception $e) {
+                                        $instDate = null;
+                                    }
+                                }
+
+                                if (!empty($partData['partNumber']) && $instDate) {
+                                    $existingPart = $entityManager->getRepository(Part::class)->findOneBy([
+                                        'vehicle' => $vehicle,
+                                        'partNumber' => $partData['partNumber'],
+                                        'installationDate' => $instDate,
+                                    ]);
+                                }
+
+                                if (!$existingPart && !empty($partData['description']) && $instDate) {
+                                    $existingPart = $entityManager->getRepository(Part::class)->findOneBy([
+                                        'vehicle' => $vehicle,
+                                        'description' => $partData['description'],
+                                        'installationDate' => $instDate,
+                                    ]);
+                                }
+
+                                if ($existingPart) {
+                                    $existingPart->setMotRecord($motRecord);
+                                        if (!empty($partData['supplier'])) {
+                                            $existingPart->setSupplier($partData['supplier']);
+                                        }
+                                        if (isset($partData['receiptAttachmentId'])) {
+                                            $existingPart->setReceiptAttachmentId($partData['receiptAttachmentId']);
+                                        }
+                                        if (!empty($partData['productUrl'])) {
+                                            $existingPart->setProductUrl($partData['productUrl']);
+                                        }
+                                        if (!empty($partData['createdAt'])) {
+                                            try {
+                                                $existingPart->setCreatedAt(new \DateTime($partData['createdAt']));
+                                            } catch (\Exception $e) {
+                                                // ignore
+                                            }
+                                        }
+                                        $entityManager->persist($existingPart);
+                                    continue;
+                                }
+
+                                $part = new Part();
+                                $part->setVehicle($vehicle);
+                                $part->setMotRecord($motRecord);
+
+                                if (!empty($partData['purchaseDate'])) {
+                                    $part->setPurchaseDate(new \DateTime($partData['purchaseDate']));
+                                }
+                                if (!empty($partData['description'])) {
+                                    $part->setDescription($partData['description']);
+                                }
+                                if (!empty($partData['partNumber'])) {
+                                    $part->setPartNumber($partData['partNumber']);
+                                }
+                                if (!empty($partData['manufacturer'])) {
+                                    $part->setManufacturer($partData['manufacturer']);
+                                }
+                                if (isset($partData['cost'])) {
+                                    $part->setCost($partData['cost']);
+                                }
+                                if (!empty($partData['category'])) {
+                                    $part->setCategory($partData['category']);
+                                }
+                                if (!empty($partData['installationDate'])) {
+                                    $part->setInstallationDate(new \DateTime($partData['installationDate']));
+                                }
+                                if (isset($partData['mileageAtInstallation'])) {
+                                    $part->setMileageAtInstallation($partData['mileageAtInstallation']);
+                                }
+                                if (!empty($partData['notes'])) {
+                                    $part->setNotes($partData['notes']);
+                                }
+
+                                if (!empty($partData['supplier'])) {
+                                    $part->setSupplier($partData['supplier']);
+                                }
+                                if (isset($partData['receiptAttachmentId'])) {
+                                    $part->setReceiptAttachmentId($partData['receiptAttachmentId']);
+                                }
+                                if (!empty($partData['productUrl'])) {
+                                    $part->setProductUrl($partData['productUrl']);
+                                }
+                                if (!empty($partData['createdAt'])) {
+                                    try {
+                                        $part->setCreatedAt(new \DateTime($partData['createdAt']));
+                                    } catch (\Exception $e) {
+                                        // ignore invalid createdAt
+                                    }
+                                }
+
+                                $entityManager->persist($part);
+                            }
+                        }
+
+                        if (!empty($motData['consumables'])) {
+                            foreach ($motData['consumables'] as $consumableData) {
+                                if (empty($consumableData['consumableType'])) {
+                                    continue;
+                                }
+
+                                $consumableType = $entityManager->getRepository(ConsumableType::class)
+                                    ->findOneBy(['name' => $consumableData['consumableType']]);
+
+                                if (!$consumableType) {
+                                    $consumableType = new ConsumableType();
+                                    $consumableType->setName($consumableData['consumableType']);
+                                    $entityManager->persist($consumableType);
+                                    $entityManager->flush();
+                                }
+
+                                $existingConsumable = null;
+                                $lastChanged = null;
+                                if (!empty($consumableData['lastChanged'])) {
+                                    try {
+                                        $lastChanged = new \DateTime($consumableData['lastChanged']);
+                                    } catch (\Exception $e) {
+                                        $lastChanged = null;
+                                    }
+                                }
+
+                                if ($lastChanged) {
+                                    $existingConsumable = $entityManager->getRepository(Consumable::class)->findOneBy([
+                                        'vehicle' => $vehicle,
+                                        'consumableType' => $consumableType,
+                                        'lastChanged' => $lastChanged,
+                                    ]);
+                                }
+
+                                if ($existingConsumable) {
+                                    $existingConsumable->setMotRecord($motRecord);
+                                    if (!empty($consumableData['supplier'])) {
+                                        $existingConsumable->setSupplier($consumableData['supplier']);
+                                    }
+                                    if (isset($consumableData['receiptAttachmentId'])) {
+                                        $existingConsumable->setReceiptAttachmentId($consumableData['receiptAttachmentId']);
+                                    }
+                                    if (!empty($consumableData['productUrl'])) {
+                                        $existingConsumable->setProductUrl($consumableData['productUrl']);
+                                    }
+                                    if (!empty($consumableData['createdAt'])) {
+                                        try {
+                                            $existingConsumable->setCreatedAt(new \DateTime($consumableData['createdAt']));
+                                        } catch (\Exception $e) {
+                                            // ignore
+                                        }
+                                    }
+                                    $entityManager->persist($existingConsumable);
+                                    continue;
+                                }
+
+                                $consumable = new Consumable();
+                                $consumable->setVehicle($vehicle);
+                                $consumable->setConsumableType($consumableType);
+                                $consumable->setMotRecord($motRecord);
+
+                                if (!empty($consumableData['specification'])) {
+                                    $consumable->setSpecification($consumableData['specification']);
+                                }
+                                if (isset($consumableData['quantity'])) {
+                                    $consumable->setQuantity($consumableData['quantity']);
+                                }
+                                if (!empty($consumableData['lastChanged'])) {
+                                    $consumable->setLastChanged(new \DateTime($consumableData['lastChanged']));
+                                }
+                                if (isset($consumableData['mileageAtChange'])) {
+                                    $consumable->setMileageAtChange($consumableData['mileageAtChange']);
+                                }
+                                if (isset($consumableData['cost'])) {
+                                    $consumable->setCost($consumableData['cost']);
+                                }
+                                if (!empty($consumableData['notes'])) {
+                                    $consumable->setNotes($consumableData['notes']);
+                                }
+
+                                if (!empty($consumableData['supplier'])) {
+                                    $consumable->setSupplier($consumableData['supplier']);
+                                }
+                                if (isset($consumableData['receiptAttachmentId'])) {
+                                    $consumable->setReceiptAttachmentId($consumableData['receiptAttachmentId']);
+                                }
+                                if (!empty($consumableData['productUrl'])) {
+                                    $consumable->setProductUrl($consumableData['productUrl']);
+                                }
+                                if (!empty($consumableData['createdAt'])) {
+                                    try {
+                                        $consumable->setCreatedAt(new \DateTime($consumableData['createdAt']));
+                                    } catch (\Exception $e) {
+                                        // ignore invalid createdAt
+                                    }
+                                }
+
+                                $entityManager->persist($consumable);
+                            }
+                        }
+
+                        if (!empty($motData['serviceRecords'])) {
+                            foreach ($motData['serviceRecords'] as $svcData) {
+                                $existingSvc = null;
+                                $svcDate = null;
+                                if (!empty($svcData['serviceDate'])) {
+                                    try {
+                                        $svcDate = new \DateTime($svcData['serviceDate']);
+                                    } catch (\Exception $e) {
+                                        $svcDate = null;
+                                    }
+                                }
+
+                                if ($svcDate && isset($svcData['mileage']) && !empty($svcData['serviceProvider'])) {
+                                    $existingSvc = $entityManager->getRepository(ServiceRecord::class)->findOneBy([
+                                        'vehicle' => $vehicle,
+                                        'serviceDate' => $svcDate,
+                                        'mileage' => $svcData['mileage'],
+                                        'serviceProvider' => $svcData['serviceProvider'],
+                                    ]);
+                                }
+
+                                if ($existingSvc) {
+                                    $existingSvc->setMotRecord($motRecord);
+                                        if (isset($svcData['receiptAttachmentId'])) {
+                                            $existingSvc->setReceiptAttachmentId($svcData['receiptAttachmentId']);
+                                        }
+                                        if (!empty($svcData['createdAt'])) {
+                                            try {
+                                                $existingSvc->setCreatedAt(new \DateTime($svcData['createdAt']));
+                                            } catch (\Exception $e) {
+                                                // ignore
+                                            }
+                                        }
+                                        $entityManager->persist($existingSvc);
+                                    continue;
+                                }
+
+                                $svc = new ServiceRecord();
+                                $svc->setVehicle($vehicle);
+                                $svc->setMotRecord($motRecord);
+
+                                if ($svcDate) {
+                                    $svc->setServiceDate($svcDate);
+                                }
+                                if (!empty($svcData['serviceType'])) {
+                                    $svc->setServiceType($svcData['serviceType']);
+                                }
+                                if (isset($svcData['laborCost'])) {
+                                    $svc->setLaborCost($svcData['laborCost']);
+                                }
+                                if (isset($svcData['partsCost'])) {
+                                    $svc->setPartsCost($svcData['partsCost']);
+                                }
+                                if (isset($svcData['mileage'])) {
+                                    $svc->setMileage($svcData['mileage']);
+                                }
+                                if (!empty($svcData['serviceProvider'])) {
+                                    $svc->setServiceProvider($svcData['serviceProvider']);
+                                }
+                                if (!empty($svcData['workPerformed'])) {
+                                    $svc->setWorkPerformed($svcData['workPerformed']);
+                                }
+                                if (!empty($svcData['notes'])) {
+                                    $svc->setNotes($svcData['notes']);
+                                }
+
+                                // Import service items if any
+                                if (!empty($svcData['items']) && is_array($svcData['items'])) {
+                                    foreach ($svcData['items'] as $itemData) {
+                                        $item = new \App\Entity\ServiceItem();
+                                        if (!empty($itemData['type'])) {
+                                            $item->setType($itemData['type']);
+                                        }
+                                        if (!empty($itemData['description'])) {
+                                            $item->setDescription($itemData['description']);
+                                        }
+                                        if (isset($itemData['cost'])) {
+                                            $item->setCost($itemData['cost']);
+                                        }
+                                        if (isset($itemData['quantity'])) {
+                                            $item->setQuantity($itemData['quantity']);
+                                        }
+                                        $svc->addItem($item);
+                                    }
+                                }
+
+                                    if (isset($svcData['receiptAttachmentId'])) {
+                                        $svc->setReceiptAttachmentId($svcData['receiptAttachmentId']);
+                                    }
+                                    if (!empty($svcData['createdAt'])) {
+                                        try {
+                                            $svc->setCreatedAt(new \DateTime($svcData['createdAt']));
+                                        } catch (\Exception $e) {
+                                            // ignore
+                                        }
+                                    }
+
+                                $entityManager->persist($svc);
+                            }
+                        }
                     }
                 }
 

@@ -52,7 +52,7 @@ class CostCalculator
     }
 
     public function calculateTotalCostToDate(Vehicle $vehicle): float
-    {
+    {       
         $purchaseCost = (float) $vehicle->getPurchaseCost();
         $runningCost = $this->calculateTotalRunningCost($vehicle);
 
@@ -174,6 +174,7 @@ class CostCalculator
             'totalDepreciation' => round($totalDepreciation, 2),
             'totalFuelCost' => round($this->calculateTotalFuelCost($vehicle), 2),
             'totalPartsCost' => round($this->calculateTotalPartsCost($vehicle), 2),
+            'totalServiceCost' => round($this->calculateTotalServiceCost($vehicle), 2),
             'totalConsumablesCost' => round($this->calculateTotalConsumablesCost($vehicle), 2),
             'totalRunningCost' => round($this->calculateTotalRunningCost($vehicle), 2),
             'totalCostToDate' => round($this->calculateTotalCostToDate($vehicle), 2),
@@ -186,6 +187,19 @@ class CostCalculator
             'currentMileage' => $vehicle->getCurrentMileage(),
             'milesSincePurchase' => $this->determineMilesSincePurchase($vehicle)
         ];
+    }
+
+    public function calculateTotalServiceCost(Vehicle $vehicle): float
+    {
+        $total = 0.0;
+        foreach ($vehicle->getServiceRecords() as $sr) {
+            // labourCost may be null
+            $labor = $sr->getLaborCost() !== null ? (float) $sr->getLaborCost() : 0.0;
+            $parts = $sr->getPartsCost() !== null ? (float) $sr->getPartsCost() : 0.0;
+            $additional = $sr->getAdditionalCosts() !== null ? (float) $sr->getAdditionalCosts() : 0.0;
+            $total += $labor + $parts + $additional;
+        }
+        return $total;
     }
 
     private function determineMilesSincePurchase(Vehicle $vehicle): ?int

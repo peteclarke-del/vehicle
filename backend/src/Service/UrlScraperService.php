@@ -70,6 +70,17 @@ class UrlScraperService
         $html = $response->getContent(false);
         $finalUrlInfo = $response->getInfo('url');
         $finalUrl = is_string($finalUrlInfo) ? $finalUrlInfo : $url;
+
+        // Detect eBay anti-bot/challenge redirects — surface a clear error instead of attempting fragile HTML parsing.
+        if (
+            str_contains($finalUrl, 'splashui/challenge') ||
+            str_contains($finalUrl, 'pages.ebay.com/messages') ||
+            str_contains($finalUrl, 'page_not_responding') ||
+            str_contains($finalUrl, '/n/error')
+        ) {
+            $this->logger->warning('Blocked by eBay anti-bot challenge', ['final_url' => $finalUrl]);
+            throw new \RuntimeException('Blocked by eBay anti-bot challenge. Browse API returned no result and HTML fetch was blocked by eBay.');
+        }
         $parsedFinal = parse_url($finalUrl);
         $host = is_array($parsedFinal) && isset($parsedFinal['host']) ? $parsedFinal['host'] : '';
 

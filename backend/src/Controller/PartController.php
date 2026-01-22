@@ -9,6 +9,8 @@ use App\Entity\User;
 use App\Entity\Vehicle;
 use App\Service\ReceiptOcrService;
 use App\Service\UrlScraperService;
+use Psr\Log\LoggerInterface;
+use App\Service\RepairCostCalculator;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -21,7 +23,9 @@ class PartController extends AbstractController
     public function __construct(
         private EntityManagerInterface $entityManager,
         private ReceiptOcrService $ocrService,
-        private UrlScraperService $scraperService
+        private UrlScraperService $scraperService,
+        private LoggerInterface $logger,
+        private RepairCostCalculator $repairCostCalculator
     ) {
     }
 
@@ -89,6 +93,14 @@ class PartController extends AbstractController
         $part->setVehicle($vehicle);
         $this->updatePartFromData($part, $data);
 
+        // Ensure required dates are set to now when not provided to avoid DB NOT NULL errors
+        if (null === $part->getPurchaseDate()) {
+            $part->setPurchaseDate(new \DateTime());
+        }
+        if (null === $part->getInstallationDate()) {
+            $part->setInstallationDate(new \DateTime());
+        }
+
         $this->entityManager->persist($part);
         $this->entityManager->flush();
 
@@ -110,9 +122,36 @@ class PartController extends AbstractController
         }
 
         $data = json_decode($request->getContent(), true);
+        $this->logger->info('Part update payload', ['id' => $id, 'data' => $data]);
+
+        $prevMotId = $part->getMotRecord()?->getId();
         $this->updatePartFromData($part, $data);
 
-        $this->entityManager->flush();
+        try {
+            $this->entityManager->flush();
+        } catch (\Throwable $e) {
+            $this->logger->error('Error flushing Part update', ['exception' => $e->getMessage()]);
+            return $this->json(['error' => 'Failed to update part: ' . $e->getMessage()], 500);
+        }
+
+        // Recalculate repair costs for affected MOT records (previous and/or current)
+        $newMotId = $part->getMotRecord()?->getId();
+        try {
+            if ($prevMotId && $prevMotId !== $newMotId) {
+                $prevMot = $this->entityManager->getRepository(\App\Entity\MotRecord::class)->find($prevMotId);
+                if ($prevMot) {
+                    $this->repairCostCalculator->recalculateAndPersist($prevMot);
+                }
+            }
+            if ($newMotId) {
+                $newMot = $this->entityManager->getRepository(\App\Entity\MotRecord::class)->find($newMotId);
+                if ($newMot) {
+                    $this->repairCostCalculator->recalculateAndPersist($newMot);
+                }
+            }
+        } catch (\Throwable $e) {
+            $this->logger->error('Error recalculating repair cost after Part update', ['exception' => $e->getMessage()]);
+        }
 
         return $this->json($this->serializePart($part));
     }
@@ -131,8 +170,21 @@ class PartController extends AbstractController
             return $this->json(['error' => 'Part not found'], 404);
         }
 
+        $motId = $part->getMotRecord()?->getId();
+
         $this->entityManager->remove($part);
         $this->entityManager->flush();
+
+        if ($motId) {
+            try {
+                $mot = $this->entityManager->getRepository(\App\Entity\MotRecord::class)->find($motId);
+                if ($mot) {
+                    $this->repairCostCalculator->recalculateAndPersist($mot);
+                }
+            } catch (\Throwable $e) {
+                $this->logger->error('Error recalculating repair cost after Part delete', ['exception' => $e->getMessage()]);
+            }
+        }
 
         return $this->json(['message' => 'Part deleted successfully']);
     }
@@ -152,6 +204,9 @@ class PartController extends AbstractController
             'installationDate' => $part->getInstallationDate()?->format('Y-m-d'),
             'mileageAtInstallation' => $part->getMileageAtInstallation(),
             'notes' => $part->getNotes(),
+            'motRecordId' => $part->getMotRecord()?->getId(),
+            'motTestNumber' => $part->getMotRecord()?->getMotTestNumber(),
+            'motTestDate' => $part->getMotRecord()?->getTestDate()?->format('Y-m-d'),
             'warranty' => $part->getWarranty(),
             'receiptAttachmentId' => $part->getReceiptAttachmentId(),
             'productUrl' => $part->getProductUrl(),
@@ -195,6 +250,17 @@ class PartController extends AbstractController
         }
         if (isset($data['notes'])) {
             $part->setNotes($data['notes']);
+        }
+        if (array_key_exists('motRecordId', $data)) {
+            $this->logger->info('Part motRecordId present in payload', ['id' => $part->getId(), 'motRecordId' => $data['motRecordId']]);
+            $mot = $this->entityManager->getRepository(\App\Entity\MotRecord::class)->find($data['motRecordId']);
+            if ($mot) {
+                $part->setMotRecord($mot);
+                $this->logger->info('Part associated with MOT', ['partId' => $part->getId(), 'motId' => $mot->getId()]);
+            } else {
+                $part->setMotRecord(null);
+                $this->logger->info('Part disassociated from MOT', ['partId' => $part->getId()]);
+            }
         }
         if (isset($data['receiptAttachmentId'])) {
             $part->setReceiptAttachmentId($data['receiptAttachmentId']);

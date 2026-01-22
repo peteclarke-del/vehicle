@@ -1,8 +1,13 @@
 {
   "common": {
     "loading": "Loading...",
+    "name": "Name",
+    "description": "Description",
+    "quantity": "Quantity",
+    "cost": "Cost",
     "save": "Save",
     "cancel": "Cancel",
+    "none": "None",
     "back": "Back",
     "undo": "Undo",
     "unknown": "Unknown",
@@ -201,11 +206,14 @@
     "specifications": "Specifications",
     "title": "Vehicle Details",
     "valuesTableTitle": "Depreciation Values",
+    "costBreakdown": "Cost Breakdown",
+    "serviceCosts": "Service Costs",
     "tooltip": {
       "avgFuelConsumption": "Average fuel consumption",
       "costPerDistance": "Cost per distance unit",
       "currentValue": "Current estimated value",
       "purchaseCost": "Original purchase cost",
+      "totalServiceCost": "Sum of service costs for this vehicle",
       "totalCostToDate": "Total costs incurred to date",
       "totalFuelCost": "Total fuel costs",
       "totalPartsCost": "Total parts costs",
@@ -259,6 +267,10 @@
     "selectVehicle": "Select Vehicle",
     "sortBy": "Sort By",
     "url": "URL"
+    ,
+    "part": "Part",
+    "motRecord": "M.O.T. Record",
+    "selectMot": "Select M.O.T. Record"
   },
   "consumables": {
     "title": "Consumables",
@@ -275,6 +287,14 @@
     "mileageAtChange": "Mileage at Change",
     "notes": "Notes",
     "totalCost": "Total Consumables Cost"
+    ,
+    "consumable": "Consumable",
+    "motRecord": "M.O.T. Record",
+    "selectMot": "Select M.O.T. Record"
+    ,
+    "selectTypeRequired": "Please select a consumable type",
+    "serviceRecord": "Service Record",
+    "selectService": "Select Service"
   },
   "insurance": {
     "title": "Insurance",
@@ -336,6 +356,18 @@
     "isRetest": "Is a Re-test",
     "motTestNumber": "M.O.T. Test Number",
     "testerName": "Tester Name"
+    ,
+    "addAdvisory": "Add advisory",
+    "associateWithMot": "Associate with M.O.T.",
+    "addFailure": "Add failure",
+    "addRepairItem": "Add Repair Item",
+    "repairItems": "Repair Items",
+    "noRepairItems": "No repair items",
+    "linkExisting": "Link existing item",
+    "selectExisting": "Select existing item",
+    "confirmRemoveTitle": "Remove repair item",
+    "confirmRemoveMessage": "Do you want to delete this item or only disassociate it from this M.O.T.: {{name}}?",
+    "disassociate": "Disassociate"
   },
   "motRecords": {
     "addRecord": "Add Record",
@@ -349,6 +381,9 @@
   },
   "service": {
     "title": "Service Records",
+    "service": "Service",
+    "serviceRecord": "Service Record",
+    "createService": "Create Service",
     "addService": "Add Service",
     "editService": "Edit Service",
     "serviceDate": "Service Date",
@@ -393,6 +428,7 @@
   "stats": {
     "currentValue": "Current Value",
     "depreciation": "Depreciation",
+    "totalServiceCost": "Total Service Cost",
     "totalFuelCost": "Total Fuel Cost",
     "totalPartsCost": "Total Parts Cost",
     "totalRunningCost": "Total Running Cost",

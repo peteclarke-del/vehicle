@@ -11,6 +11,7 @@ use App\Entity\Consumable;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use App\Service\DvsaApiService;
+use App\Service\RepairCostCalculator;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -22,7 +23,8 @@ class MotRecordController extends AbstractController
     public function __construct(
         private EntityManagerInterface $entityManager,
         private DvsaApiService $dvsaService,
-        private LoggerInterface $logger
+        private LoggerInterface $logger,
+        private RepairCostCalculator $repairCostCalculator
     ) {
     }
 
@@ -66,6 +68,12 @@ class MotRecordController extends AbstractController
 
         $this->entityManager->flush();
 
+        try {
+            $this->repairCostCalculator->recalculateAndPersist($motRecord);
+        } catch (\Throwable $e) {
+            $this->logger->error('Error recalculating repair cost after MOT update', ['exception' => $e->getMessage()]);
+        }
+
         return new JsonResponse($this->serializeMotRecord($motRecord));
     }
 
@@ -99,10 +107,20 @@ class MotRecordController extends AbstractController
         $consumables = $this->entityManager->getRepository(Consumable::class)
             ->findBy(['motRecord' => $motRecord]);
 
+        $serviceRecords = $this->entityManager->getRepository(\App\Entity\ServiceRecord::class)
+            ->findBy(['motRecord' => $motRecord]);
+
         return new JsonResponse([
             'motRecord' => $this->serializeMotRecord($motRecord),
             'parts' => array_map(fn($p) => $this->serializePart($p), $parts),
             'consumables' => array_map(fn($c) => $this->serializeConsumable($c), $consumables),
+            'serviceRecords' => array_map(fn($s) => [
+                'id' => $s->getId(),
+                'laborCost' => $s->getLaborCost(),
+                'partsCost' => $s->getPartsCost(),
+                'totalCost' => $s->getTotalCost(),
+                'mileage' => $s->getMileage(),
+            ], $serviceRecords),
         ]);
     }
 
@@ -219,7 +237,19 @@ class MotRecordController extends AbstractController
             }
             // odometer may be miles - store numeric value
             if (!empty($test['odometerValue'])) {
-                $newData['mileage'] = (int)$test['odometerValue'];
+                $rawOdo = $test['odometerValue'];
+                $unit = $test['odometerUnit'] ?? null;
+
+                // The database stores MOT mileage in kilometres. If DVSA
+                // returned miles, convert to kilometres before storing.
+                if ($unit && is_string($unit) && preg_match('/mi|mile/i', $unit)) {
+                    // Convert miles to kilometres (1 mile = 1.609344 km)
+                    $kms = (float)$rawOdo * 1.609344;
+                    $newData['mileage'] = (int) round($kms);
+                } else {
+                    // Assume the value is already in kilometres
+                    $newData['mileage'] = (int)$rawOdo;
+                }
             }
             if (!empty($motTestNumber)) {
                 $newData['motTestNumber'] = $motTestNumber;
@@ -360,6 +390,9 @@ class MotRecordController extends AbstractController
             'testCenter' => $mot->getTestCenter() ?? 'Unknown',
             'advisories' => $advisoriesText,
             'failures' => $failuresText,
+            'advisoryItems' => $advisoryItems,
+            'failureItems' => $failureItems,
+            'receiptAttachmentId' => $mot->getReceiptAttachmentId(),
             'repairDetails' => $mot->getRepairDetails(),
             'notes' => $mot->getNotes(),
             'createdAt' => $mot->getCreatedAt()?->format('c'),
@@ -372,8 +405,24 @@ class MotRecordController extends AbstractController
     {
         return [
             'id' => $part->getId(),
+            'vehicleId' => $part->getVehicle()?->getId(),
+            'purchaseDate' => $part->getPurchaseDate()?->format('Y-m-d'),
             'description' => $part->getDescription(),
+            'partNumber' => $part->getPartNumber(),
+            'manufacturer' => $part->getManufacturer(),
+            'supplier' => $part->getSupplier(),
             'cost' => $part->getCost(),
+            'category' => $part->getCategory(),
+            'installationDate' => $part->getInstallationDate()?->format('Y-m-d'),
+            'mileageAtInstallation' => $part->getMileageAtInstallation(),
+            'notes' => $part->getNotes(),
+            'motRecordId' => $part->getMotRecord()?->getId(),
+            'motTestNumber' => $part->getMotRecord()?->getMotTestNumber(),
+            'motTestDate' => $part->getMotRecord()?->getTestDate()?->format('Y-m-d'),
+            'warranty' => $part->getWarranty(),
+            'receiptAttachmentId' => $part->getReceiptAttachmentId(),
+            'productUrl' => $part->getProductUrl(),
+            'createdAt' => $part->getCreatedAt()?->format('c')
         ];
     }
 
@@ -381,8 +430,24 @@ class MotRecordController extends AbstractController
     {
         return [
             'id' => $consumable->getId(),
+            'vehicleId' => $consumable->getVehicle()?->getId(),
+            'consumableType' => $consumable->getConsumableType() ? [
+                'id' => $consumable->getConsumableType()->getId(),
+                'name' => $consumable->getConsumableType()->getName(),
+                'unit' => $consumable->getConsumableType()->getUnit()
+            ] : null,
             'specification' => $consumable->getSpecification(),
+            'quantity' => $consumable->getQuantity(),
+            'lastChanged' => $consumable->getLastChanged()?->format('Y-m-d'),
+            'mileageAtChange' => $consumable->getMileageAtChange(),
             'cost' => $consumable->getCost(),
+            'notes' => $consumable->getNotes(),
+            'receiptAttachmentId' => $consumable->getReceiptAttachmentId(),
+            'productUrl' => $consumable->getProductUrl(),
+            'motRecordId' => $consumable->getMotRecord()?->getId(),
+            'motTestNumber' => $consumable->getMotRecord()?->getMotTestNumber(),
+            'motTestDate' => $consumable->getMotRecord()?->getTestDate()?->format('Y-m-d'),
+            'createdAt' => $consumable->getCreatedAt()?->format('c')
         ];
     }
 
@@ -417,6 +482,9 @@ class MotRecordController extends AbstractController
         }
         if (isset($data['testCenter'])) {
             $mot->setTestCenter($data['testCenter']);
+        }
+        if (isset($data['receiptAttachmentId'])) {
+            $mot->setReceiptAttachmentId($data['receiptAttachmentId']);
         }
         if (isset($data['advisories'])) {
             if (is_array($data['advisories'])) {

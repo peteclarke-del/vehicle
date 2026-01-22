@@ -201,9 +201,12 @@
     "specifications": "Specifications",
     "title": "Vehicle Details",
     "valuesTableTitle": "Depreciation Values",
+    "costBreakdown": "Répartition des coûts",
+    "serviceCosts": "Coûts de service",
     "tooltip": {
       "avgFuelConsumption": "Average fuel consumption",
       "costPerDistance": "Cost per distance unit",
+      "totalServiceCost": "Somme des coûts de service pour ce véhicule",
       "currentValue": "Current estimated value",
       "purchaseCost": "Original purchase cost",
       "totalCostToDate": "Total costs incurred to date",
@@ -274,7 +277,10 @@
     "lastChanged": "Last Changed",
     "mileageAtChange": "Mileage at Change",
     "notes": "Notes",
-    "totalCost": "Total Consumables Cost"
+    "totalCost": "Total Consumables Cost",
+    "selectTypeRequired": "Veuillez sélectionner un type de consommable",
+    "serviceRecord": "Fiche de service",
+    "selectService": "Sélectionner un service"
   },
   "insurance": {
     "title": "Assurance",
@@ -338,6 +344,7 @@
     "testerName": "Tester Name"
   },
   "motRecords": {
+    "associateWithMot": "Associer au M.O.T.",
     "addRecord": "Add Record",
     "delete": "Supprimer",
     "import": "Import",
@@ -349,6 +356,9 @@
   },
   "service": {
     "title": "Registres de Service",
+    "service": "Service",
+    "serviceRecord": "Enregistrement de service",
+    "createService": "Créer un service",
     "addService": "Add Service",
     "editService": "Edit Service",
     "serviceDate": "Service Date",
@@ -393,6 +403,7 @@
   "stats": {
     "currentValue": "Current Value",
     "depreciation": "Depreciation",
+    "totalServiceCost": "Coût total des services",
     "totalFuelCost": "Total Fuel Cost",
     "totalPartsCost": "Total Parts Cost",
     "totalRunningCost": "Total Running Cost",

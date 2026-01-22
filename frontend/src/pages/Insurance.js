@@ -17,6 +17,7 @@ import {
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
+import { formatDateISO } from '../utils/formatDate';
 import { fetchArrayData } from '../hooks/useApiData';
 import PolicyDialog from '../components/PolicyDialog';
 
@@ -98,8 +99,8 @@ const Insurance = () => {
                 <TableRow key={p.id} sx={{ '&:nth-of-type(odd)': { backgroundColor: 'action.hover' } }}>
                   <TableCell>{p.provider}</TableCell>
                   <TableCell>{p.policyNumber || '-'}</TableCell>
-                  <TableCell>{p.startDate ? new Date(p.startDate).toLocaleDateString() : '-'}</TableCell>
-                  <TableCell>{p.expiryDate ? new Date(p.expiryDate).toLocaleDateString() : '-'}</TableCell>
+                  <TableCell>{p.startDate ? formatDateISO(p.startDate) : '-'}</TableCell>
+                  <TableCell>{p.expiryDate ? formatDateISO(p.expiryDate) : '-'}</TableCell>
                   <TableCell>{p.ncdYears ?? '-'} Years</TableCell>
                   <TableCell>{(p.vehicles || []).map(v => v.registration).join(', ')}</TableCell>
                   <TableCell align="center">

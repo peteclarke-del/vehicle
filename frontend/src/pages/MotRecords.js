@@ -23,8 +23,10 @@ import {
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, Visibility as VisibilityIcon } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
+import formatCurrency from '../utils/formatCurrency';
 import { fetchArrayData } from '../hooks/useApiData';
 import { useDistance } from '../hooks/useDistance';
+import { formatDateISO } from '../utils/formatDate';
 import MotDialog from '../components/MotDialog';
 
 const MotRecords = () => {
@@ -36,7 +38,7 @@ const MotRecords = () => {
   const [orderBy, setOrderBy] = useState(() => localStorage.getItem('motRecordsSortBy') || 'testDate');
   const [order, setOrder] = useState(() => localStorage.getItem('motRecordsSortOrder') || 'desc');
   const { api } = useAuth();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { convert, format, getLabel } = useDistance();
 
   useEffect(() => {
@@ -314,12 +316,12 @@ const MotRecords = () => {
             ) : (
               sortedMotRecords.map((mot) => (
                 <TableRow key={mot.id} sx={{ '&:nth-of-type(odd)': { backgroundColor: 'action.hover' } }}>
-                  <TableCell>{new Date(mot.testDate).toLocaleDateString()}</TableCell>
+                  <TableCell>{formatDateISO(mot.testDate)}</TableCell>
                   <TableCell>{getResultChip(mot.result)}</TableCell>
-                  <TableCell>{mot.expiryDate ? new Date(mot.expiryDate).toLocaleDateString() : '-'}</TableCell>
-                  <TableCell align="right">{formatCurrency(mot.testCost)}</TableCell>
-                  <TableCell align="right">{formatCurrency(mot.repairCost)}</TableCell>
-                  <TableCell align="right">{formatCurrency(mot.totalCost)}</TableCell>
+                  <TableCell>{mot.expiryDate ? formatDateISO(mot.expiryDate) : '-'}</TableCell>
+                  <TableCell align="right">{formatCurrency(mot.testCost, 'GBP', i18n.language)}</TableCell>
+                  <TableCell align="right">{formatCurrency(mot.repairCost, 'GBP', i18n.language)}</TableCell>
+                  <TableCell align="right">{formatCurrency(mot.totalCost, 'GBP', i18n.language)}</TableCell>
                   <TableCell>{mot.mileage ? format(convert(mot.mileage)) : '-'}</TableCell>
                   <TableCell>{mot.testCenter || '-'}</TableCell>
                   <TableCell align="center">
@@ -355,13 +357,13 @@ const MotRecords = () => {
 
       <Box mt={2} display="flex" gap={4}>
         <Typography variant="h6">
-          {t('mot.testCost')} {t('common.total')}: {formatCurrency(totalTestCost)}
+          {t('mot.testCost')} {t('common.total')}: {formatCurrency(totalTestCost, 'GBP', i18n.language)}
         </Typography>
         <Typography variant="h6">
-          {t('mot.repairCost')} {t('common.total')}: {formatCurrency(totalRepairCost)}
+          {t('mot.repairCost')} {t('common.total')}: {formatCurrency(totalRepairCost, 'GBP', i18n.language)}
         </Typography>
         <Typography variant="h6" color="primary">
-          {t('mot.totalCost')}: {formatCurrency(totalTestCost + totalRepairCost)}
+          {t('mot.totalCost')}: {formatCurrency(totalTestCost + totalRepairCost, 'GBP', i18n.language)}
         </Typography>
       </Box>
 
