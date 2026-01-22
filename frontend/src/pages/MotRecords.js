@@ -23,6 +23,7 @@ import {
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, Visibility as VisibilityIcon } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
+import { useUserPreferences } from '../contexts/UserPreferencesContext';
 import formatCurrency from '../utils/formatCurrency';
 import { fetchArrayData } from '../hooks/useApiData';
 import { useDistance } from '../hooks/useDistance';
@@ -40,10 +41,22 @@ const MotRecords = () => {
   const { api } = useAuth();
   const { t, i18n } = useTranslation();
   const { convert, format, getLabel } = useDistance();
+  const { defaultVehicleId, setDefaultVehicle } = useUserPreferences();
+  const [hasManualSelection, setHasManualSelection] = useState(false);
 
   useEffect(() => {
     loadVehicles();
   }, []);
+
+  useEffect(() => {
+    if (!defaultVehicleId) return;
+    if (hasManualSelection) return;
+    if (!vehicles || vehicles.length === 0) return;
+    const found = vehicles.find((v) => String(v.id) === String(defaultVehicleId));
+    if (found && String(selectedVehicle) !== String(defaultVehicleId)) {
+      setSelectedVehicle(defaultVehicleId);
+    }
+  }, [defaultVehicleId, vehicles, hasManualSelection]);
 
   useEffect(() => {
     if (selectedVehicle) {
@@ -55,7 +68,11 @@ const MotRecords = () => {
     const data = await fetchArrayData(api, '/vehicles');
     setVehicles(data);
     if (data.length > 0 && !selectedVehicle) {
-      setSelectedVehicle(data[0].id);
+      if (defaultVehicleId && data.find((v) => String(v.id) === String(defaultVehicleId))) {
+        setSelectedVehicle(defaultVehicleId);
+      } else {
+        setSelectedVehicle(data[0].id);
+      }
     }
   };
 
@@ -138,9 +155,7 @@ const MotRecords = () => {
     return <Chip label={result} color={colors[result] || 'default'} size="small" />;
   };
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP' }).format(amount);
-  };
+  
 
   if (vehicles.length === 0) {
     return (
@@ -161,16 +176,17 @@ const MotRecords = () => {
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Typography variant="h4">{t('mot.title')}</Typography>
         <Box display="flex" gap={2}>
-          <FormControl size="small" sx={{ width: 240 }}>
+          <FormControl size="small" sx={{ width: 360, maxWidth: '100%' }}>
             <InputLabel>{t('common.selectVehicle')}</InputLabel>
             <Select
               value={selectedVehicle}
               label={t('common.selectVehicle')}
-              onChange={(e) => setSelectedVehicle(e.target.value)}
+              onChange={(e) => { setHasManualSelection(true); setSelectedVehicle(e.target.value); setDefaultVehicle(e.target.value); }}
+              MenuProps={{ PaperProps: { sx: { minWidth: 360 } } }}
             >
                 {vehicles.map((vehicle) => (
                   <MenuItem key={vehicle.id} value={vehicle.id}>
-                    {vehicle.registrationNumber ? `${vehicle.registrationNumber} — ${vehicle.name}` : vehicle.name}
+                    {vehicle.name}{vehicle.registrationNumber ? ` (${vehicle.registrationNumber})` : ''}
                   </MenuItem>
                 ))}
             </Select>

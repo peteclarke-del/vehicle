@@ -43,6 +43,7 @@ import {
   DeleteSweep as PurgeIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
+import { useUserPreferences } from '../contexts/UserPreferencesContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { fetchArrayData } from '../hooks/useApiData';
@@ -67,6 +68,7 @@ const Vehicles = () => {
   const [selectedTabValue, setSelectedTabValue] = useState(0);
   const fileInputRef = React.useRef(null);
   const navigate = useNavigate();
+  const { setDefaultVehicle } = useUserPreferences();
   const { api } = useAuth();
   const { t } = useTranslation();
 
@@ -224,6 +226,8 @@ const Vehicles = () => {
   };
 
   const handleViewDetails = (vehicle) => {
+    // remember this vehicle as the default
+    try { setDefaultVehicle(vehicle.id); } catch (e) {}
     setSelectedVehicle(vehicle);
     setSelectedTabValue(0);
     setDetailsDialogOpen(true);
@@ -361,7 +365,7 @@ const Vehicles = () => {
         <Grid container spacing={3}>
           {sortedVehicles.map((vehicle) => (
             <Grid key={vehicle.id} item xs={12} sm={6} md={4}>
-              <Card sx={{ height: '100%', cursor: 'pointer' }} onClick={() => handleViewDetails(vehicle)}>
+                      <Card sx={{ height: '100%', cursor: 'pointer' }} onClick={() => handleViewDetails(vehicle)}>
                 <CardContent>
                   <Box display="flex" justifyContent="space-between" alignItems="start">
                     <Box display="flex" alignItems="center" gap={1} flex={1}>
@@ -399,7 +403,7 @@ const Vehicles = () => {
                       fullWidth
                       variant="outlined"
                       startIcon={<TrendingDown />}
-                      onClick={() => navigate(`/vehicles/${vehicle.id}`)}
+                      onClick={() => { setDefaultVehicle(vehicle.id); navigate(`/vehicles/${vehicle.id}`); }}
                     >
                       {t('vehicleCard.viewDetails')}
                     </Button>
@@ -491,7 +495,7 @@ const Vehicles = () => {
                       backgroundColor: 'action.hover',
                     },
                   }}
-                  onClick={() => navigate(`/vehicles/${vehicle.id}`)}
+                  onClick={() => { setDefaultVehicle(vehicle.id); navigate(`/vehicles/${vehicle.id}`); }}
                 >
                   <TableCell>
                     <Box display="flex" alignItems="center" gap={1}>

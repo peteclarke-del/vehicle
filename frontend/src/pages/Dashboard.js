@@ -33,6 +33,7 @@ import {
   VisibilityOff as VisibilityOffIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { useUserPreferences } from '../contexts/UserPreferencesContext';
 import formatCurrency from '../utils/formatCurrency';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -62,6 +63,7 @@ const Dashboard = () => {
   });
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const { setDefaultVehicle } = useUserPreferences();
 
   useEffect(() => {
     loadVehicles();
@@ -726,7 +728,7 @@ const Dashboard = () => {
                         }
                       },
                     }}
-                    onClick={() => navigate(`/vehicles/${vehicle.id}`)}
+                    onClick={() => { setDefaultVehicle(vehicle.id); navigate(`/vehicles/${vehicle.id}`); }}
                   >
                     <Card
                       className="vehicle-card"
