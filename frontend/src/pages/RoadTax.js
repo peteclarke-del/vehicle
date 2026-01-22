@@ -21,6 +21,7 @@ import {
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
+import { useUserPreferences } from '../contexts/UserPreferencesContext';
 import { fetchArrayData } from '../hooks/useApiData';
 import RoadTaxDialog from '../components/RoadTaxDialog';
 
@@ -32,10 +33,22 @@ const RoadTax = () => {
   const [editingRecord, setEditingRecord] = useState(null);
   const { api } = useAuth();
   const { t } = useTranslation();
+  const { defaultVehicleId, setDefaultVehicle } = useUserPreferences();
+  const [hasManualSelection, setHasManualSelection] = useState(false);
 
   useEffect(() => {
     loadVehicles();
   }, []);
+
+  useEffect(() => {
+    if (!defaultVehicleId) return;
+    if (hasManualSelection) return;
+    if (!vehicles || vehicles.length === 0) return;
+    const found = vehicles.find((v) => String(v.id) === String(defaultVehicleId));
+    if (found && String(selectedVehicle) !== String(defaultVehicleId)) {
+      setSelectedVehicle(defaultVehicleId);
+    }
+  }, [defaultVehicleId, vehicles, hasManualSelection]);
 
   useEffect(() => {
     if (selectedVehicle) loadRecords();
@@ -44,7 +57,13 @@ const RoadTax = () => {
   const loadVehicles = async () => {
     const data = await fetchArrayData(api, '/vehicles');
     setVehicles(data);
-    if (data.length > 0 && !selectedVehicle) setSelectedVehicle(data[0].id);
+    if (data.length > 0 && !selectedVehicle) {
+      if (defaultVehicleId && data.find((v) => String(v.id) === String(defaultVehicleId))) {
+        setSelectedVehicle(defaultVehicleId);
+      } else {
+        setSelectedVehicle(data[0].id);
+      }
+    }
   };
 
   const loadRecords = async () => {
@@ -56,7 +75,8 @@ const RoadTax = () => {
       console.error('Error loading road tax records:', error);
     }
   };
-
+  
+  
   const handleAdd = () => {
     setEditingRecord(null);
     setDialogOpen(true);
@@ -98,14 +118,19 @@ const RoadTax = () => {
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Typography variant="h4">{t('roadTax.title')}</Typography>
         <Box display="flex" gap={2}>
-          <FormControl size="small" sx={{ width: 240 }}>
+          <FormControl size="small" sx={{ width: 360, maxWidth: '100%' }}>
             <InputLabel>{t('common.selectVehicle')}</InputLabel>
             <Select
               value={selectedVehicle}
               label={t('common.selectVehicle')}
-              onChange={(e) => setSelectedVehicle(e.target.value)}
+              onChange={(e) => { setHasManualSelection(true); setSelectedVehicle(e.target.value); setDefaultVehicle(e.target.value); }}
+              MenuProps={{ PaperProps: { sx: { minWidth: 360 } } }}
             >
-              {vehicles.map(v => (<MenuItem key={v.id} value={v.id}>{v.name}</MenuItem>))}
+              {vehicles.map(v => (
+                <MenuItem key={v.id} value={v.id}>
+                  {v.name}{v.registrationNumber ? ` (${v.registrationNumber})` : ''}
+                </MenuItem>
+              ))}
             </Select>
           </FormControl>
           <Button variant="contained" color="primary" startIcon={<AddIcon />} onClick={handleAdd}>

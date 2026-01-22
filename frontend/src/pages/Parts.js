@@ -24,6 +24,7 @@ import {
 import { Add, Edit, Delete } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
+import { useUserPreferences } from '../contexts/UserPreferencesContext';
 import formatCurrency from '../utils/formatCurrency';
 import { fetchArrayData } from '../hooks/useApiData';
 import { useDistance } from '../hooks/useDistance';
@@ -40,6 +41,8 @@ const Parts = () => {
   const [order, setOrder] = useState(() => localStorage.getItem('partsSortOrder') || 'asc');
   const { api } = useAuth();
   const { t, i18n } = useTranslation();
+  const { defaultVehicleId, setDefaultVehicle } = useUserPreferences();
+  const [hasManualSelection, setHasManualSelection] = useState(false);
   const { convert, format, getLabel } = useDistance();
 
   useEffect(() => {
@@ -57,11 +60,25 @@ const Parts = () => {
   const loadVehicles = async () => {
     const data = await fetchArrayData(api, '/vehicles');
     setVehicles(data);
-    if (data.length > 0) {
-      setSelectedVehicle(data[0].id);
+    if (data.length > 0 && !selectedVehicle) {
+      if (defaultVehicleId && data.find((v) => String(v.id) === String(defaultVehicleId))) {
+        setSelectedVehicle(defaultVehicleId);
+      } else {
+        setSelectedVehicle(data[0].id);
+      }
     }
     setLoading(false);
   };
+
+  useEffect(() => {
+    if (!defaultVehicleId) return;
+    if (hasManualSelection) return;
+    if (!vehicles || vehicles.length === 0) return;
+    const found = vehicles.find((v) => String(v.id) === String(defaultVehicleId));
+    if (found && String(selectedVehicle) !== String(defaultVehicleId)) {
+      setSelectedVehicle(defaultVehicleId);
+    }
+  }, [defaultVehicleId, vehicles, hasManualSelection]);
 
   const loadParts = async () => {
     try {
@@ -166,16 +183,17 @@ const Parts = () => {
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Typography variant="h4">{t('parts.title')}</Typography>
         <Box display="flex" gap={2}>
-                <FormControl size="small" sx={{ width: 240 }}>
+                <FormControl size="small" sx={{ width: 360, maxWidth: '100%' }}>
                   <InputLabel>{t('common.selectVehicle')}</InputLabel>
                   <Select
                     value={selectedVehicle}
                     label={t('common.selectVehicle')}
-                    onChange={(e) => setSelectedVehicle(e.target.value)}
+                    onChange={(e) => { setHasManualSelection(true); setSelectedVehicle(e.target.value); setDefaultVehicle(e.target.value); }}
+                    MenuProps={{ PaperProps: { sx: { minWidth: 360 } } }}
                   >
               {vehicles.map((vehicle) => (
                 <MenuItem key={vehicle.id} value={vehicle.id}>
-                  {vehicle.name}
+                  {vehicle.name}{vehicle.registrationNumber ? ` (${vehicle.registrationNumber})` : ''}
                 </MenuItem>
               ))}
             </Select>
