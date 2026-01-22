@@ -24,6 +24,7 @@ import {
 import { Add, Edit, Delete } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
+import formatCurrency from '../utils/formatCurrency';
 import { fetchArrayData } from '../hooks/useApiData';
 import { useDistance } from '../hooks/useDistance';
 import PartDialog from '../components/PartDialog';
@@ -38,7 +39,7 @@ const Parts = () => {
   const [orderBy, setOrderBy] = useState(() => localStorage.getItem('partsSortBy') || 'description');
   const [order, setOrder] = useState(() => localStorage.getItem('partsSortOrder') || 'asc');
   const { api } = useAuth();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { convert, format, getLabel } = useDistance();
 
   useEffect(() => {
@@ -136,7 +137,7 @@ const Parts = () => {
   }, [parts, order, orderBy]);
 
   const calculateTotalCost = () => {
-    return parts.reduce((sum, part) => sum + (parseFloat(part.cost) || 0), 0).toFixed(2);
+    return parts.reduce((sum, part) => sum + (parseFloat(part.cost) || 0), 0);
   };
 
   if (loading) {
@@ -192,10 +193,10 @@ const Parts = () => {
 
       {parts.length > 0 && (
         <Box mb={2}>
-          <Typography variant="h6">
-            {t('parts.totalCost')}: £{calculateTotalCost()}
-          </Typography>
-        </Box>
+            <Typography variant="h6">
+              {t('parts.totalCost')}: {formatCurrency(calculateTotalCost(), 'GBP', i18n.language)}
+            </Typography>
+          </Box>
       )}
 
       <TableContainer component={Paper} sx={{ maxHeight: 'calc(100vh - 180px)', overflow: 'auto' }}>
@@ -265,6 +266,7 @@ const Parts = () => {
                   {t('parts.installationDate')}
                 </TableSortLabel>
               </TableCell>
+              <TableCell>{t('mot.title') || 'MOT'}</TableCell>
               <TableCell>{t('common.actions')}</TableCell>
             </TableRow>
           </TableHead>
@@ -288,9 +290,10 @@ const Parts = () => {
                     )}
                   </TableCell>
                   <TableCell>{part.manufacturer || '-'}</TableCell>
-                  <TableCell>£{parseFloat(part.cost).toFixed(2)}</TableCell>
+                  <TableCell>{formatCurrency(parseFloat(part.cost) || 0, 'GBP', i18n.language)}</TableCell>
                   <TableCell>{part.purchaseDate || '-'}</TableCell>
                   <TableCell>{part.installationDate || '-'}</TableCell>
+                  <TableCell>{part.motTestNumber ? `${part.motTestNumber}${part.motTestDate ? ' (' + part.motTestDate + ')' : ''}` : '-'}</TableCell>
                   <TableCell>
                         <Tooltip title={t('edit')}>
                       <IconButton size="small" onClick={() => handleEdit(part)}>

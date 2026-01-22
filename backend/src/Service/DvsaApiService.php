@@ -257,7 +257,7 @@ class DvsaApiService
                 'expiryDate' => $test['expiryDate'] ?? null,
                 'odometerValue' => $test['odometerValue'] ?? null,
                 'odometerUnit' => $test['odometerUnit'] ?? null,
-                'testNumber' => $test['motTestNumber'] ?? null,
+                'motTestNumber' => $test['motTestNumber'] ?? null,
                 'defects' => count($test['rfrAndComments'] ?? []),
             ];
         }

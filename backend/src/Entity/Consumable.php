@@ -128,9 +128,13 @@ class Consumable
         return $this->quantity;
     }
 
-    public function setQuantity(?string $quantity): self
+    public function setQuantity($quantity): self
     {
-        $this->quantity = $quantity;
+        if ($quantity !== null) {
+            $this->quantity = (string) $quantity;
+        } else {
+            $this->quantity = null;
+        }
         return $this;
     }
 

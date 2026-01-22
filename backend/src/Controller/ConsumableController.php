@@ -10,6 +10,8 @@ use App\Entity\User;
 use App\Entity\Vehicle;
 use App\Service\ReceiptOcrService;
 use App\Service\UrlScraperService;
+use Psr\Log\LoggerInterface;
+use App\Service\RepairCostCalculator;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -22,7 +24,9 @@ class ConsumableController extends AbstractController
     public function __construct(
         private EntityManagerInterface $entityManager,
         private ReceiptOcrService $ocrService,
-        private UrlScraperService $scraperService
+        private UrlScraperService $scraperService,
+        private LoggerInterface $logger,
+        private RepairCostCalculator $repairCostCalculator
     ) {
     }
 
@@ -96,6 +100,13 @@ class ConsumableController extends AbstractController
         $consumable = new Consumable();
         $consumable->setVehicle($vehicle);
         $consumable->setConsumableType($consumableType);
+        // Ensure required non-nullable fields have sensible defaults
+        $spec = $data['specification'] ?? $consumableType->getName() ?? '';
+        $consumable->setSpecification((string) $spec);
+        // lastChanged is NOT NULL in DB; default to now if not provided
+        if (empty($data['lastChanged'])) {
+            $consumable->setLastChanged(new \DateTime());
+        }
         $this->updateConsumableFromData($consumable, $data);
 
         $this->entityManager->persist($consumable);
@@ -119,10 +130,37 @@ class ConsumableController extends AbstractController
         }
 
         $data = json_decode($request->getContent(), true);
+        $this->logger->info('Consumable update payload', ['id' => $id, 'data' => $data]);
+
+        $prevMotId = $consumable->getMotRecord()?->getId();
         $this->updateConsumableFromData($consumable, $data);
         $consumable->setUpdatedAt(new \DateTime());
 
-        $this->entityManager->flush();
+        try {
+            $this->entityManager->flush();
+        } catch (\Throwable $e) {
+            $this->logger->error('Error flushing Consumable update', ['exception' => $e->getMessage()]);
+            return $this->json(['error' => 'Failed to update consumable: ' . $e->getMessage()], 500);
+        }
+
+        // Recalculate repairCost for affected MOTs
+        $newMotId = $consumable->getMotRecord()?->getId();
+        try {
+            if ($prevMotId && $prevMotId !== $newMotId) {
+                $prevMot = $this->entityManager->getRepository(\App\Entity\MotRecord::class)->find($prevMotId);
+                if ($prevMot) {
+                    $this->repairCostCalculator->recalculateAndPersist($prevMot);
+                }
+            }
+            if ($newMotId) {
+                $newMot = $this->entityManager->getRepository(\App\Entity\MotRecord::class)->find($newMotId);
+                if ($newMot) {
+                    $this->repairCostCalculator->recalculateAndPersist($newMot);
+                }
+            }
+        } catch (\Throwable $e) {
+            $this->logger->error('Error recalculating repair cost after Consumable update', ['exception' => $e->getMessage()]);
+        }
 
         return $this->json($this->serializeConsumable($consumable));
     }
@@ -141,8 +179,21 @@ class ConsumableController extends AbstractController
             return $this->json(['error' => 'Consumable not found'], 404);
         }
 
+        $motId = $consumable->getMotRecord()?->getId();
+
         $this->entityManager->remove($consumable);
         $this->entityManager->flush();
+
+        if ($motId) {
+            try {
+                $mot = $this->entityManager->getRepository(\App\Entity\MotRecord::class)->find($motId);
+                if ($mot) {
+                    $this->repairCostCalculator->recalculateAndPersist($mot);
+                }
+            } catch (\Throwable $e) {
+                $this->logger->error('Error recalculating repair cost after Consumable delete', ['exception' => $e->getMessage()]);
+            }
+        }
 
         return $this->json(['message' => 'Consumable deleted successfully']);
     }
@@ -165,6 +216,9 @@ class ConsumableController extends AbstractController
             'notes' => $consumable->getNotes(),
             'receiptAttachmentId' => $consumable->getReceiptAttachmentId(),
             'productUrl' => $consumable->getProductUrl(),
+            'motRecordId' => $consumable->getMotRecord()?->getId(),
+            'motTestNumber' => $consumable->getMotRecord()?->getMotTestNumber(),
+            'motTestDate' => $consumable->getMotRecord()?->getTestDate()?->format('Y-m-d'),
             'createdAt' => $consumable->getCreatedAt()?->format('c'),
             'updatedAt' => $consumable->getUpdatedAt()?->format('c')
         ];
@@ -195,6 +249,17 @@ class ConsumableController extends AbstractController
         }
         if (isset($data['productUrl'])) {
             $consumable->setProductUrl($data['productUrl']);
+        }
+        if (array_key_exists('motRecordId', $data)) {
+            $this->logger->info('Consumable motRecordId present in payload', ['id' => $consumable->getId(), 'motRecordId' => $data['motRecordId']]);
+            $mot = $this->entityManager->getRepository(\App\Entity\MotRecord::class)->find($data['motRecordId']);
+            if ($mot) {
+                $consumable->setMotRecord($mot);
+                $this->logger->info('Consumable associated with MOT', ['consumableId' => $consumable->getId(), 'motId' => $mot->getId()]);
+            } else {
+                $consumable->setMotRecord(null);
+                $this->logger->info('Consumable disassociated from MOT', ['consumableId' => $consumable->getId()]);
+            }
         }
     }
 

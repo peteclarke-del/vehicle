@@ -10,6 +10,13 @@
         "name": "Brake Fluid",
         "unit": "ml",
         "description": "DOT 3/4/5.1 hydraulic brake fluid for brake and clutch hydraulics."
+    ,
+    {
+        "vehicleType": "Motorcycle",
+        "name": "Indicator/Direction Lamp Bulb",
+        "unit": "unit",
+        "description": "Indicator / direction (turn signal) lamp bulb suitable for motorcycle fittings; LED or filament types." 
+    }
     },
     {
         "vehicleType": "Motorcycle",
@@ -46,5 +53,12 @@
         "name": "Battery",
         "unit": "unit",
         "description": "12V motorcycle battery (AGM or lead-acid)."
+    }
+    ,
+    {
+        "vehicleType": "Motorcycle",
+        "name": "Engine Flush/Catalytic Converter Cleaner",
+        "unit": "litres",
+        "description": "Engine flush and catalytic converter cleaner; specify product and application instructions."
     }
 ]

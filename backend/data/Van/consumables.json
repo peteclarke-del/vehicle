@@ -10,6 +10,13 @@
         "name": "Transmission Fluid",
         "unit": "litres",
         "description": "Manual or automatic transmission fluid as specified."
+    ,
+    {
+        "vehicleType": "Van",
+        "name": "Indicator/Direction Lamp Bulb",
+        "unit": "unit",
+        "description": "Indicator / direction (turn signal) lamp bulb; include common bulb types and LED replacements." 
+    }
     },
     {
         "vehicleType": "Van",
@@ -46,5 +53,12 @@
         "name": "Battery",
         "unit": "unit",
         "description": "12V vehicle battery; larger capacity for heavy use."
+    }
+    ,
+    {
+        "vehicleType": "Van",
+        "name": "Engine Flush/Catalytic Converter Cleaner",
+        "unit": "litres",
+        "description": "Engine flush and catalytic converter cleaner; specify product and application instructions."
     }
 ]

@@ -10,7 +10,9 @@ use App\Entity\Vehicle;
 use App\Entity\Part;
 use App\Entity\Consumable;
 use App\Service\ReceiptOcrService;
+use Psr\Log\LoggerInterface;
 use Doctrine\ORM\EntityManagerInterface;
+use App\Service\RepairCostCalculator;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -20,12 +22,18 @@ use Symfony\Component\Routing\Annotation\Route;
 class ServiceRecordController extends AbstractController
 {
     private EntityManagerInterface $entityManager;
+    private LoggerInterface $logger;
+    private RepairCostCalculator $repairCostCalculator;
 
     public function __construct(
         EntityManagerInterface $entityManager,
-        private ReceiptOcrService $ocrService
+        private ReceiptOcrService $ocrService,
+        LoggerInterface $logger,
+        RepairCostCalculator $repairCostCalculator
     ) {
         $this->entityManager = $entityManager;
+        $this->logger = $logger;
+        $this->repairCostCalculator = $repairCostCalculator;
     }
     private function getUserEntity(): ?\App\Entity\User
     {
@@ -96,9 +104,30 @@ class ServiceRecordController extends AbstractController
         }
 
         $data = json_decode($request->getContent(), true);
+        $this->logger->info('ServiceRecord update payload', ['id' => $id, 'data' => $data]);
+        $prevMotId = $serviceRecord->getMotRecord()?->getId();
         $this->updateServiceRecordFromData($serviceRecord, $data);
 
         $this->entityManager->flush();
+
+        // Recalculate repairCost for affected MOTs
+        $newMotId = $serviceRecord->getMotRecord()?->getId();
+        try {
+            if ($prevMotId && $prevMotId !== $newMotId) {
+                $prevMot = $this->entityManager->getRepository(\App\Entity\MotRecord::class)->find($prevMotId);
+                if ($prevMot) {
+                    $this->repairCostCalculator->recalculateAndPersist($prevMot);
+                }
+            }
+            if ($newMotId) {
+                $newMot = $this->entityManager->getRepository(\App\Entity\MotRecord::class)->find($newMotId);
+                if ($newMot) {
+                    $this->repairCostCalculator->recalculateAndPersist($newMot);
+                }
+            }
+        } catch (\Throwable $e) {
+            $this->logger->error('Error recalculating repair cost after ServiceRecord update', ['exception' => $e->getMessage()]);
+        }
 
         return new JsonResponse($this->serializeServiceRecord($serviceRecord));
     }
@@ -112,8 +141,21 @@ class ServiceRecordController extends AbstractController
             return new JsonResponse(['error' => 'Service record not found'], 404);
         }
 
+        $motId = $serviceRecord->getMotRecord()?->getId();
+
         $this->entityManager->remove($serviceRecord);
         $this->entityManager->flush();
+
+        if ($motId) {
+            try {
+                $mot = $this->entityManager->getRepository(\App\Entity\MotRecord::class)->find($motId);
+                if ($mot) {
+                    $this->repairCostCalculator->recalculateAndPersist($mot);
+                }
+            } catch (\Throwable $e) {
+                $this->logger->error('Error recalculating repair cost after ServiceRecord delete', ['exception' => $e->getMessage()]);
+            }
+        }
 
         return new JsonResponse(['message' => 'Service record deleted']);
     }
@@ -157,6 +199,9 @@ class ServiceRecordController extends AbstractController
             'vehicleId' => $service->getVehicle()->getId(),
             'serviceDate' => $service->getServiceDate()?->format('Y-m-d'),
             'serviceType' => $service->getServiceType(),
+            'motRecordId' => $service->getMotRecord()?->getId(),
+            'motTestNumber' => $service->getMotRecord()?->getMotTestNumber(),
+            'motTestDate' => $service->getMotRecord()?->getTestDate()?->format('Y-m-d'),
             'laborCost' => $laborCost,
             'partsCost' => $partsCost,
             'totalCost' => $service->getTotalCost(),
@@ -234,6 +279,26 @@ class ServiceRecordController extends AbstractController
         }
         if (isset($data['receiptAttachmentId'])) {
             $service->setReceiptAttachmentId($data['receiptAttachmentId']);
+        }
+
+        if (array_key_exists('motRecordId', $data)) {
+            $this->logger->info('ServiceRecord motRecordId present in payload', ['id' => $service->getId(), 'motRecordId' => $data['motRecordId']]);
+
+            // If frontend explicitly sent null (selecting "none"), disassociate without calling find(null)
+            if ($data['motRecordId'] === null || $data['motRecordId'] === '') {
+                $service->setMotRecord(null);
+                $this->logger->info('ServiceRecord disassociated from MOT (explicit null)', ['serviceId' => $service->getId()]);
+            } else {
+                $motId = is_numeric($data['motRecordId']) ? (int)$data['motRecordId'] : $data['motRecordId'];
+                $mot = $this->entityManager->getRepository(\App\Entity\MotRecord::class)->find($motId);
+                if ($mot) {
+                    $service->setMotRecord($mot);
+                    $this->logger->info('ServiceRecord associated with MOT', ['serviceId' => $service->getId(), 'motId' => $mot->getId()]);
+                } else {
+                    $service->setMotRecord(null);
+                    $this->logger->info('ServiceRecord disassociated from MOT (not found)', ['serviceId' => $service->getId(), 'motId' => $motId]);
+                }
+            }
         }
 
         // Handle itemised entries (parts / labour / consumables)

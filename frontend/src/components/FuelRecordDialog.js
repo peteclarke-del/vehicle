@@ -261,6 +261,17 @@ const FuelRecordDialog = ({ open, record, vehicleId, onClose }) => {
               />
             </Grid>
             <Grid item xs={12}>
+              <TextField
+                fullWidth
+                multiline
+                rows={3}
+                name="notes"
+                label={t('fuel.notes')}
+                value={formData.notes}
+                onChange={handleChange}
+              />
+            </Grid>
+            <Grid item xs={12}>
               <Box
                 sx={{
                   border: '1px solid',
@@ -327,17 +338,6 @@ const FuelRecordDialog = ({ open, record, vehicleId, onClose }) => {
                   </Box>
                 )}
               </Box>
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                multiline
-                rows={3}
-                name="notes"
-                label={t('fuel.notes')}
-                value={formData.notes}
-                onChange={handleChange}
-              />
             </Grid>
           </Grid>
         </DialogContent>

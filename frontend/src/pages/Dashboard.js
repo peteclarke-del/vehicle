@@ -33,10 +33,12 @@ import {
   VisibilityOff as VisibilityOffIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import formatCurrency from '../utils/formatCurrency';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useApiData } from '../hooks/useApiData';
 import { useDistance } from '../hooks/useDistance';
+import { formatDateISO } from '../utils/formatDate';
 import VehicleDialog from '../components/VehicleDialog';
 import PreferencesDialog from '../components/PreferencesDialog';
 
@@ -58,7 +60,7 @@ const Dashboard = () => {
   const [sortOrder, setSortOrder] = useState(() => {
     return localStorage.getItem('vehicleSortOrder') || 'name';
   });
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -259,7 +261,7 @@ const Dashboard = () => {
       chipLabel = `${label}: ${t('dashboard.daysRemaining', { count: daysUntil })}`;
       icon = <WarningIcon />;
     } else {
-      chipLabel = `${label}: ${new Date(date).toLocaleDateString()}`;
+      chipLabel = `${label}: ${formatDateISO(date)}`;
     }
     
     return (
@@ -281,7 +283,7 @@ const Dashboard = () => {
           <Chip
             size="small"
             label={vehicle.lastServiceDate
-              ? `${t('dashboard.serviceDue')}: ${new Date(vehicle.lastServiceDate).toLocaleDateString()}`
+              ? `${t('dashboard.serviceDue')}: ${formatDateISO(vehicle.lastServiceDate)}`
               : t('dashboard.serviceDue')}
             color="error"
             icon={<WarningIcon />}
@@ -293,7 +295,7 @@ const Dashboard = () => {
     return (
       <Chip
         size="small"
-        label={`${t('dashboard.lastService')}: ${new Date(vehicle.lastServiceDate).toLocaleDateString()}`}
+        label={`${t('dashboard.lastService')}: ${formatDateISO(vehicle.lastServiceDate)}`}
         color="success"
         icon={<CheckCircleIcon />}
         sx={{ mb: 0.5, mr: 0.5 }}
@@ -574,7 +576,7 @@ const Dashboard = () => {
                     justifyContent: 'center'
                   }}>
                     <Typography variant="h6" color="text.secondary" sx={{ mb: 1 }}>{t('dashboard.totalValue')}</Typography>
-                    <Typography variant="h4" color="primary">£{stats.totalValue.toLocaleString('en-GB', { maximumFractionDigits: 0 })}</Typography>
+                    <Typography variant="h4" color="primary">{formatCurrency(stats.totalValue, 'GBP', i18n.language)}</Typography>
                     <Typography variant="body2" color="text.secondary">{t('dashboard.purchaseCost')}</Typography>
                   </Paper>
                 </Box>
@@ -594,7 +596,7 @@ const Dashboard = () => {
                       {totalsLoading ? (
                         <CircularProgress size={24} />
                       ) : (
-                        `£${last12FuelTotal.toLocaleString('en-GB', { maximumFractionDigits: 2 })}`
+                        formatCurrency(last12FuelTotal, 'GBP', i18n.language)
                       )}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">{t('dashboard.fuel')}</Typography>

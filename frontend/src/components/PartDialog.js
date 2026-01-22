@@ -35,6 +35,8 @@ export default function PartDialog({ open, onClose, part, vehicleId }) {
   const [loading, setLoading] = useState(false);
   const [receiptAttachmentId, setReceiptAttachmentId] = useState(null);
   const [productUrl, setProductUrl] = useState('');
+  const [motRecords, setMotRecords] = useState([]);
+  const [motRecordId, setMotRecordId] = useState(null);
 
   useEffect(() => {
     if (part) {
@@ -53,6 +55,7 @@ export default function PartDialog({ open, onClose, part, vehicleId }) {
       });
       setReceiptAttachmentId(part.receiptAttachmentId || null);
       setProductUrl(part.productUrl || '');
+      setMotRecordId(part.motRecordId || null);
     } else {
       setFormData({
         description: '',
@@ -69,8 +72,22 @@ export default function PartDialog({ open, onClose, part, vehicleId }) {
       });
       setReceiptAttachmentId(null);
       setProductUrl('');
+      setMotRecordId(null);
     }
   }, [part, open]);
+
+  useEffect(() => {
+    const load = async () => {
+      if (!vehicleId) return;
+      try {
+        const resp = await api.get('/mot-records', { params: { vehicleId } });
+        setMotRecords(resp.data || []);
+      } catch (e) {
+        console.error('Failed to load MOT records', e);
+      }
+    };
+    if (open) load();
+  }, [open, vehicleId, api]);
 
   const handleChange = (e) => {
     setFormData({
@@ -118,6 +135,8 @@ export default function PartDialog({ open, onClose, part, vehicleId }) {
         mileageAtInstallation: formData.mileageAtInstallation ? Math.round(toKm(parseFloat(formData.mileageAtInstallation))) : null,
         receiptAttachmentId,
         productUrl
+      ,
+        motRecordId
       };
 
       if (part) {
@@ -234,16 +253,6 @@ export default function PartDialog({ open, onClose, part, vehicleId }) {
             <Grid item xs={12} sm={6}>
               <TextField
                 fullWidth
-                type="number"
-                name="mileageAtInstallation"
-                label={`${t('parts.mileageAtInstallation')} (${getLabel()})`}
-                value={formData.mileageAtInstallation}
-                onChange={handleChange}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
                 name="warranty"
                 label={t('parts.warranty')}
                 value={formData.warranty}
@@ -260,12 +269,29 @@ export default function PartDialog({ open, onClose, part, vehicleId }) {
                 onChange={handleChange}
               />
             </Grid>
-            <Grid item xs={12}>
-              <ReceiptUpload
-                entityType="part"
-                receiptAttachmentId={receiptAttachmentId}
-                onReceiptUploaded={handleReceiptUploaded}
-                onReceiptRemoved={() => setReceiptAttachmentId(null)}
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                select
+                name="motRecordId"
+                label={t('parts.motRecord')}
+                value={motRecordId || ''}
+                onChange={(e) => setMotRecordId(e.target.value)}
+              >
+                <MenuItem value="">{t('parts.selectMot')}</MenuItem>
+                {motRecords.map(m => (
+                  <MenuItem key={m.id} value={m.id}>{`${m.testDate || ''} ${m.motTestNumber ? '- ' + m.motTestNumber : ''}`}</MenuItem>
+                ))}
+              </TextField>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                type="number"
+                name="mileageAtInstallation"
+                label={`${t('parts.mileageAtInstallation')} (${getLabel()})`}
+                value={formData.mileageAtInstallation}
+                onChange={handleChange}
               />
             </Grid>
             <Grid item xs={12}>
@@ -277,6 +303,14 @@ export default function PartDialog({ open, onClose, part, vehicleId }) {
                 label={t('parts.notes')}
                 value={formData.notes}
                 onChange={handleChange}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <ReceiptUpload
+                entityType="part"
+                receiptAttachmentId={receiptAttachmentId}
+                onReceiptUploaded={handleReceiptUploaded}
+                onReceiptRemoved={() => setReceiptAttachmentId(null)}
               />
             </Grid>
           </Grid>

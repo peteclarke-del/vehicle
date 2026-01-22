@@ -54,7 +54,7 @@ class MotRecordControllerTest extends WebTestCase
             'expiryDate' => '2027-01-15',
             'testResult' => 'Pass',
             'mileage' => 50000,
-            'testNumber' => 'MOT123456789',
+            'motTestNumber' => 'MOT123456789',
             'testCenter' => 'Test MOT Center',
             'advisoryItems' => ['Brake pads worn', 'Tyre tread low'],
             'failureItems' => [],
@@ -78,7 +78,7 @@ class MotRecordControllerTest extends WebTestCase
         
         $this->assertArrayHasKey('id', $data);
         $this->assertSame('Pass', $data['testResult']);
-        $this->assertSame('MOT123456789', $data['testNumber']);
+        $this->assertSame('MOT123456789', $data['motTestNumber']);
     }
 
     public function testCreateFailedMotRecord(): void
@@ -88,7 +88,7 @@ class MotRecordControllerTest extends WebTestCase
             'testDate' => '2026-01-10',
             'testResult' => 'Fail',
             'mileage' => 48000,
-            'testNumber' => 'MOT987654321',
+            'motTestNumber' => 'MOT987654321',
             'failureItems' => ['Brake pads below minimum', 'Headlight alignment incorrect'],
             'cost' => 40.00,
         ];

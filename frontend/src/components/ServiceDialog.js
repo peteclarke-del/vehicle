@@ -28,6 +28,8 @@ const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose }) => {
   });
   const [loading, setLoading] = useState(false);
   const [receiptAttachmentId, setReceiptAttachmentId] = useState(null);
+  const [motRecords, setMotRecords] = useState([]);
+  const [motRecordId, setMotRecordId] = useState(null);
   const { api } = useAuth();
   const { t } = useTranslation();
   const { convert, toKm, getLabel } = useDistance();
@@ -47,6 +49,7 @@ const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose }) => {
           notes: serviceRecord.notes || '',
         });
         setReceiptAttachmentId(serviceRecord.receiptAttachmentId || null);
+        setMotRecordId(serviceRecord.motRecordId || null);
       } else {
         setFormData({
           serviceDate: new Date().toISOString().split('T')[0],
@@ -60,9 +63,22 @@ const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose }) => {
           notes: '',
         });
         setReceiptAttachmentId(null);
+        setMotRecordId(null);
       }
     }
   }, [open, serviceRecord]);
+
+  useEffect(() => {
+    if (!open || !vehicleId) return;
+    (async () => {
+      try {
+        const resp = await api.get(`/mot-records?vehicleId=${vehicleId}`);
+        setMotRecords(resp.data || []);
+      } catch (err) {
+        console.error('Error loading MOT records', err);
+      }
+    })();
+  }, [open, vehicleId, api]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -125,6 +141,7 @@ const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose }) => {
         items,
         laborCost: laborTotal.toFixed(2),
         partsCost: partsTotal.toFixed(2),
+        motRecordId: motRecordId || null,
       };
       if (serviceRecord) {
         await api.put(`/service-records/${serviceRecord.id}`, data);
@@ -230,14 +247,21 @@ const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose }) => {
               />
             </Grid>
             {/* workPerformed removed — use notes for freeform descriptions */}
-            <Grid item xs={12}>
-              <ReceiptUpload
-                entityType="service"
-                receiptAttachmentId={receiptAttachmentId}
-                onReceiptUploaded={handleReceiptUploaded}
-                onReceiptRemoved={() => setReceiptAttachmentId(null)}
-              />
-            </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  select
+                  name="motRecord"
+                  label={t('mot.associateWithMot')}
+                  value={motRecordId || ''}
+                  onChange={(e) => setMotRecordId(e.target.value || null)}
+                >
+                  <MenuItem value="">{t('common.none')}</MenuItem>
+                  {motRecords.map((m) => (
+                    <MenuItem key={m.id} value={m.id}>{`${m.testDate} - ${m.result || ''}`}</MenuItem>
+                  ))}
+                </TextField>
+              </Grid>
             <Grid item xs={12}>
               <TextField
                 fullWidth
@@ -247,6 +271,14 @@ const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose }) => {
                 label={t('service.notes')}
                 value={formData.notes}
                 onChange={handleChange}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <ReceiptUpload
+                entityType="service"
+                receiptAttachmentId={receiptAttachmentId}
+                onReceiptUploaded={handleReceiptUploaded}
+                onReceiptRemoved={() => setReceiptAttachmentId(null)}
               />
             </Grid>
           </Grid>

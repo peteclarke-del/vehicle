@@ -22,8 +22,10 @@ import {
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
+import formatCurrency from '../utils/formatCurrency';
 import { fetchArrayData } from '../hooks/useApiData';
 import { useDistance } from '../hooks/useDistance';
+import { formatDateISO } from '../utils/formatDate';
 import ServiceDialog from '../components/ServiceDialog';
 
 const ServiceRecords = () => {
@@ -35,7 +37,7 @@ const ServiceRecords = () => {
   const [orderBy, setOrderBy] = useState(() => localStorage.getItem('serviceRecordsSortBy') || 'serviceDate');
   const [order, setOrder] = useState(() => localStorage.getItem('serviceRecordsSortOrder') || 'desc');
   const { api } = useAuth();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { convert, format, getLabel } = useDistance();
 
   useEffect(() => {
@@ -230,6 +232,7 @@ const ServiceRecords = () => {
                   {t('service.mileage')} ({getLabel()})
                 </TableSortLabel>
               </TableCell>
+              <TableCell>{t('mot.title') || 'MOT'}</TableCell>
               <TableCell>
                 <TableSortLabel
                   active={orderBy === 'serviceProvider'}
@@ -252,12 +255,13 @@ const ServiceRecords = () => {
             ) : (
               sortedServiceRecords.map((service) => (
                 <TableRow key={service.id} sx={{ '&:nth-of-type(odd)': { backgroundColor: 'action.hover' } }}>
-                  <TableCell>{new Date(service.serviceDate).toLocaleDateString()}</TableCell>
+                  <TableCell>{formatDateISO(service.serviceDate)}</TableCell>
                   <TableCell>{service.serviceType}</TableCell>
-                  <TableCell align="right">{formatCurrency(service.laborCost)}</TableCell>
-                  <TableCell align="right">{formatCurrency(service.partsCost)}</TableCell>
-                  <TableCell align="right">{formatCurrency(service.totalCost)}</TableCell>
+                  <TableCell align="right">{formatCurrency(service.laborCost, 'GBP', i18n.language)}</TableCell>
+                  <TableCell align="right">{formatCurrency(service.partsCost, 'GBP', i18n.language)}</TableCell>
+                  <TableCell align="right">{formatCurrency(service.totalCost, 'GBP', i18n.language)}</TableCell>
                   <TableCell>{service.mileage ? format(convert(service.mileage)) : '-'}</TableCell>
+                    <TableCell>{service.motTestNumber ? `${service.motTestNumber}${service.motTestDate ? ' (' + service.motTestDate + ')' : ''}` : '-'}</TableCell>
                   <TableCell>{service.serviceProvider || '-'}</TableCell>
                   <TableCell align="center">
                     <Tooltip title={t('edit')}>
@@ -280,13 +284,13 @@ const ServiceRecords = () => {
 
       <Box mt={2} display="flex" gap={4}>
         <Typography variant="h6">
-          {t('service.laborCost')} {t('common.total')}: {formatCurrency(totalLaborCost)}
+          {t('service.laborCost')} {t('common.total')}: {formatCurrency(totalLaborCost, 'GBP', i18n.language)}
         </Typography>
         <Typography variant="h6">
-          {t('service.partsCost')} {t('common.total')}: {formatCurrency(totalPartsCost)}
+          {t('service.partsCost')} {t('common.total')}: {formatCurrency(totalPartsCost, 'GBP', i18n.language)}
         </Typography>
         <Typography variant="h6" color="primary">
-          {t('service.totalCost')}: {formatCurrency(totalLaborCost + totalPartsCost)}
+          {t('service.totalCost')}: {formatCurrency(totalLaborCost + totalPartsCost, 'GBP', i18n.language)}
         </Typography>
       </Box>
 

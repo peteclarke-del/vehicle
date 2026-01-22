@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -36,11 +36,13 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { useDistance } from '../hooks/useDistance';
+import formatCurrency from '../utils/formatCurrency';
 import VehicleSpecifications from '../components/VehicleSpecifications';
 import VehicleImages from '../components/VehicleImages';
 import VinDecoder from '../components/VinDecoder';
 import LicensePlate from '../components/LicensePlate';
 import { LineChart } from '@mui/x-charts/LineChart';
+import { PieChart } from '@mui/x-charts/PieChart';
 
 const VehicleDetails = () => {
   const { id } = useParams();
@@ -52,6 +54,37 @@ const VehicleDetails = () => {
   const { api, user } = useAuth();
   const { t, i18n } = useTranslation();
   const { convert, format, getLabel, convertFuelConsumption, getFuelConsumptionLabel, userUnit } = useDistance();
+
+  // responsive pie sizing: measure container and set pie size accordingly
+  const pieRef = useRef(null);
+  const [pieSize, setPieSize] = useState(280);
+  useEffect(() => {
+    const el = pieRef.current;
+    if (!el) return;
+
+    const calculate = (width) => {
+      // keep pie between 160 and 420 and roughly 60% of container width
+      const size = Math.max(160, Math.min(420, Math.floor(width * 0.6)));
+      setPieSize(size);
+    };
+
+    if (typeof ResizeObserver !== 'undefined') {
+      const ro = new ResizeObserver((entries) => {
+        for (const entry of entries) {
+          calculate(entry.contentRect.width);
+        }
+      });
+      ro.observe(el);
+      // initial
+      calculate(el.offsetWidth || 480);
+      return () => ro.disconnect();
+    }
+
+    const onResize = () => calculate(el.offsetWidth || 480);
+    window.addEventListener('resize', onResize);
+    onResize();
+    return () => window.removeEventListener('resize', onResize);
+  }, [pieRef]);
 
   console.log('VehicleDetails - userUnit:', userUnit);
   console.log('VehicleDetails - getFuelConsumptionLabel():', getFuelConsumptionLabel());
@@ -270,97 +303,176 @@ const VehicleDetails = () => {
       )}
 
       {tab === 1 && (
-        <Grid container spacing={3}>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card>
-              <CardContent>
-                <Tooltip title={t('vehicleDetails.tooltip.purchaseCost') || 'Original purchase cost of the vehicle'}>
-                  <Typography color="textSecondary" gutterBottom>{t('vehicle.purchaseCost')}</Typography>
-                </Tooltip>
-                <Typography variant="h5">£{stats.stats.purchaseCost}</Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card>
-              <CardContent>
-                <Tooltip title={t('vehicleDetails.tooltip.currentValue') || 'Estimated current market value'}>
-                  <Typography color="textSecondary" gutterBottom>{t('stats.currentValue')}</Typography>
-                </Tooltip>
-                <Typography variant="h5">£{stats.stats.currentValue}</Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card>
-              <CardContent>
-                <Tooltip title={t('vehicleDetails.tooltip.totalFuelCost') || 'Sum of fuel costs for this vehicle'}>
-                  <Typography color="textSecondary" gutterBottom>{t('stats.totalFuelCost')}</Typography>
-                </Tooltip>
-                <Typography variant="h5">£{stats.stats.totalFuelCost}</Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card>
-              <CardContent>
-                <Tooltip title={t('vehicleDetails.tooltip.totalPartsCost') || 'Sum of parts costs for this vehicle'}>
-                  <Typography color="textSecondary" gutterBottom>{t('stats.totalPartsCost')}</Typography>
-                </Tooltip>
-                <Typography variant="h5">£{stats.stats.totalPartsCost}</Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card>
-              <CardContent>
-                <Tooltip title={t('vehicleDetails.tooltip.totalRunningCost') || 'Fuel + parts + consumables costs'}>
-                  <Typography color="textSecondary" gutterBottom>{t('stats.totalRunningCost')}</Typography>
-                </Tooltip>
-                <Typography variant="h5">£{stats.stats.totalRunningCost}</Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card>
-              <CardContent>
-                <Tooltip title={t('vehicleDetails.tooltip.totalCostToDate') || 'Purchase cost + running costs to date'}>
-                  <Typography color="textSecondary" gutterBottom>{t('stats.totalCostToDate')}</Typography>
-                </Tooltip>
-                <Typography variant="h5">£{stats.stats.totalCostToDate}</Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card>
-              <CardContent>
-                <Tooltip title={t('vehicleDetails.tooltip.costPerDistance') || 'Total running cost divided by current mileage'}>
-                  <Typography color="textSecondary" gutterBottom>
-                    {t('vehicleDetails.costPerDistance')} ({getLabel()})
-                  </Typography>
-                </Tooltip>
-                <Typography variant="h5">
-                  {stats.stats.costPerMile !== null && stats.stats.costPerMile !== undefined
-                    ? `£${(stats.stats.costPerMile * (userUnit === 'mi' ? 1.60934 : 1)).toFixed(2)}`
-                    : 'N/A'}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          {stats.stats.averageFuelConsumption && (
-            <Grid item xs={12} sm={6} md={3}>
-              <Card>
-                <CardContent>
-                  <Tooltip title={t('vehicleDetails.tooltip.avgFuelConsumption') || 'Average fuel consumption (litres/100km) calculated from fuel records'}>
-                    <Typography color="textSecondary" gutterBottom>{t('vehicleDetails.avgFuelConsumption')}</Typography>
-                  </Tooltip>
-                  <Typography variant="h5">
-                    {convertFuelConsumption(stats.stats.averageFuelConsumption).toFixed(1)} {getFuelConsumptionLabel()}
-                  </Typography>
-                </CardContent>
-              </Card>
+        <Grid container spacing={3} alignItems="flex-start">
+          <Grid item xs={12} md={8}>
+            <Grid container spacing={3}>
+              {/* Row 1: Key totals */}
+              <Grid item xs={12} sm={6} md={3}>
+                <Card>
+                  <CardContent>
+                    <Tooltip title={t('vehicleDetails.tooltip.totalCostToDate') || 'Purchase cost + running costs to date'}>
+                      <Typography color="textSecondary" gutterBottom>{t('stats.totalCostToDate')}</Typography>
+                    </Tooltip>
+                    <Typography variant="h5">{formatCurrency(stats.stats.totalCostToDate, 'GBP', i18n.language)}</Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              <Grid item xs={12} sm={6} md={3}>
+                <Card>
+                  <CardContent>
+                    <Tooltip title={t('vehicleDetails.tooltip.purchaseCost') || 'Original purchase cost of the vehicle'}>
+                      <Typography color="textSecondary" gutterBottom>{t('vehicle.purchaseCost')}</Typography>
+                    </Tooltip>
+                    <Typography variant="h5">{formatCurrency(stats.stats.purchaseCost, 'GBP', i18n.language)}</Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              <Grid item xs={12} sm={6} md={3}>
+                <Card>
+                  <CardContent>
+                    <Tooltip title={t('vehicleDetails.tooltip.currentValue') || 'Estimated current market value'}>
+                      <Typography color="textSecondary" gutterBottom>{t('stats.currentValue')}</Typography>
+                    </Tooltip>
+                    <Typography variant="h5">{formatCurrency(stats.stats.currentValue, 'GBP', i18n.language)}</Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              <Grid item xs={12} sm={6} md={3}>
+                <Card>
+                  <CardContent>
+                    <Tooltip title={t('vehicleDetails.tooltip.totalRunningCost') || 'Fuel + parts + consumables costs'}>
+                      <Typography color="textSecondary" gutterBottom>{t('stats.totalRunningCost')}</Typography>
+                    </Tooltip>
+                    <Typography variant="h5">{formatCurrency(stats.stats.totalRunningCost, 'GBP', i18n.language)}</Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              {/* Row 2: fuel/parts/service */}
+              <Grid item xs={12} sm={6} md={3}>
+                <Card>
+                  <CardContent>
+                    <Tooltip title={t('vehicleDetails.tooltip.totalFuelCost') || 'Sum of fuel costs for this vehicle'}>
+                      <Typography color="textSecondary" gutterBottom>{t('stats.totalFuelCost')}</Typography>
+                    </Tooltip>
+                    <Typography variant="h5">{formatCurrency(stats.stats.totalFuelCost, 'GBP', i18n.language)}</Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              <Grid item xs={12} sm={6} md={3}>
+                <Card>
+                  <CardContent>
+                    <Tooltip title={t('vehicleDetails.tooltip.totalPartsCost') || 'Sum of parts costs for this vehicle'}>
+                      <Typography color="textSecondary" gutterBottom>{t('stats.totalPartsCost')}</Typography>
+                    </Tooltip>
+                    <Typography variant="h5">{formatCurrency(stats.stats.totalPartsCost, 'GBP', i18n.language)}</Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              <Grid item xs={12} sm={6} md={3}>
+                <Card>
+                  <CardContent>
+                    <Tooltip title={t('vehicleDetails.tooltip.totalServiceCost') || 'Sum of service costs for this vehicle'}>
+                      <Typography color="textSecondary" gutterBottom>{t('vehicleDetails.serviceCosts') || 'Service Costs'}</Typography>
+                    </Tooltip>
+                    <Typography variant="h5">{formatCurrency(stats.stats.totalServiceCost ?? 0, 'GBP', i18n.language)}</Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              <Grid item xs={12} sm={6} md={3}>
+                <Card>
+                  <CardContent>
+                    <Tooltip title={t('vehicleDetails.tooltip.costPerDistance') || 'Total running cost divided by current mileage'}>
+                      <Typography color="textSecondary" gutterBottom>
+                        {t('vehicleDetails.costPerDistance')} ({getLabel()})
+                      </Typography>
+                    </Tooltip>
+                    <Typography variant="h5">
+                      {stats.stats.costPerMile !== null && stats.stats.costPerMile !== undefined
+                        ? formatCurrency((stats.stats.costPerMile * (userUnit === 'mi' ? 1.60934 : 1)), 'GBP', i18n.language)
+                        : 'N/A'}
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              {stats.stats.averageFuelConsumption && (
+                <Grid item xs={12} sm={6} md={3}>
+                  <Card>
+                    <CardContent>
+                      <Tooltip title={t('vehicleDetails.tooltip.avgFuelConsumption') || 'Average fuel consumption (litres/100km) calculated from fuel records'}>
+                        <Typography color="textSecondary" gutterBottom>{t('vehicleDetails.avgFuelConsumption')}</Typography>
+                      </Tooltip>
+                      <Typography variant="h5">
+                        {convertFuelConsumption(stats.stats.averageFuelConsumption).toFixed(1)} {getFuelConsumptionLabel()}
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              )}
             </Grid>
-          )}
+          </Grid>
+
+          {/* Right column: pie chart */}
+          <Grid item xs={12} md={4}>
+            <Card sx={{ height: 'auto', overflow: 'visible' }}>
+              <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'stretch', justifyContent: 'flex-start', p: 1, position: 'relative', overflow: 'visible' }}>
+                <Typography variant="h6" sx={{ textAlign: 'center', mb: 1 }}>{t('vehicleDetails.costBreakdown') || 'Cost Breakdown'}</Typography>
+                <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, alignItems: 'flex-start', width: '100%', overflow: 'visible' }}>
+                  {(() => {
+                    const purchase = Number(stats.stats.purchaseCost || 0);
+                    const fuel = Number(stats.stats.totalFuelCost || 0);
+                    const parts = Number(stats.stats.totalPartsCost || 0);
+                    const service = Number(stats.stats.totalServiceCost ?? 0);
+                    const total = purchase + fuel + parts + service || 1;
+                    const pieData = [
+                      { id: 'purchase', label: t('vehicle.purchaseCost') || 'Purchase Cost', value: purchase, color: '#4caf50' },
+                      { id: 'fuel', label: t('stats.totalFuelCost') || 'Total Fuel Cost', value: fuel, color: '#2196f3' },
+                      { id: 'parts', label: t('stats.totalPartsCost') || 'Total Parts Cost', value: parts, color: '#ff9800' },
+                      { id: 'service', label: t('vehicleDetails.serviceCosts') || 'Service Costs', value: service, color: '#f44336' },
+                    ];
+
+                    const pieWithPct = pieData.map((p) => ({ value: p.value, label: p.label, color: p.color, pct: ((p.value / total) * 100).toFixed(1) }));
+
+                    return (
+                      <Box sx={{ width: '100%', display: 'flex', flexDirection: { xs: 'column', md: 'row' }, alignItems: 'flex-start', justifyContent: 'space-between', overflow: 'visible' }}>
+                        <Box sx={{ width: { xs: '100%', md: '40%' }, pr: { md: 2 }, boxSizing: 'border-box' }}>
+                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, pl: 1 }}>
+                            {pieWithPct.map((p) => (
+                              <Box key={p.id} sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 0.5 }}>
+                                <Box sx={{ width: 14, height: 14, backgroundColor: p.color, borderRadius: 2, flex: '0 0 auto' }} />
+                                <Typography variant="body2" sx={{ color: 'text.secondary', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.label}</Typography>
+                                <Box sx={{ ml: '6px', flex: '0 0 auto' }}>
+                                  <Typography variant="body2">{p.pct}%</Typography>
+                                </Box>
+                              </Box>
+                            ))}
+                          </Box>
+                        </Box>
+
+                        <Box sx={{ width: { xs: '100%', md: '58%' }, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', pt: 0 }}>
+                          <Box ref={pieRef} sx={{ width: '100%', maxWidth: 420, height: pieSize, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', mt: '-6px', '& .MuiChartLegend-root, & .MuiLegend-root, & .MuiPieLegend-root, & .recharts-legend-wrapper, & g[role="legend"], & .vx-legend, & .legend, & foreignObject, & .MuiPieArcLabel-root, & text, & svg rect': { display: 'none !important' } }}>
+                            <PieChart
+                              series={[{ data: pieWithPct.map(p => ({ value: p.value, label: p.label, color: p.color })), label: { visible: false } }]}
+                              width={pieSize}
+                              height={pieSize}
+                              slotProps={{ legend: { visible: false }, arc: { label: { visible: false } } }}
+                            />
+                          </Box>
+                        </Box>
+                      </Box>
+                    );
+                  })()}
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
         </Grid>
       )}
 

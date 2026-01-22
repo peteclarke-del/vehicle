@@ -10,6 +10,12 @@
         "name": "Transmission Fluid",
         "unit": "litres",
         "description": "Automatic Transmission Fluid (ATF) or manual gear oil. Specify Dexron, Mercon, or manufacturer-specific type."
+    {
+        "vehicleType": "Car",
+        "name": "Indicator/Direction Lamp Bulb",
+        "unit": "unit",
+        "description": "Indicator / direction (turn signal) lamp bulb (e.g., PY21W, 1157). Include polarity/LED type where applicable."
+    }
     },
     {
         "vehicleType": "Car",
@@ -286,5 +292,12 @@
         "name": "Horn",
         "unit": "unit",
         "description": "Electric horn (single or dual tone)."
+    }
+    ,
+    {
+        "vehicleType": "Car",
+        "name": "Engine Flush/Catalytic Converter Cleaner",
+        "unit": "litres",
+        "description": "Engine flush and catalytic converter cleaner; specify product and application instructions."
     }
 ]

@@ -61,6 +61,9 @@ class MotRecord
     #[ORM\Column(type: 'text', nullable: true)]
     private ?string $notes = null;
 
+    #[ORM\Column(type: 'integer', nullable: true)]
+    private ?int $receiptAttachmentId = null;
+
     #[ORM\Column(type: 'datetime')]
     private ?\DateTimeInterface $createdAt = null;
 
@@ -197,6 +200,17 @@ class MotRecord
     public function setNotes(?string $notes): self
     {
         $this->notes = $notes;
+        return $this;
+    }
+
+    public function getReceiptAttachmentId(): ?int
+    {
+        return $this->receiptAttachmentId;
+    }
+
+    public function setReceiptAttachmentId(?int $receiptAttachmentId): self
+    {
+        $this->receiptAttachmentId = $receiptAttachmentId;
         return $this;
     }
 

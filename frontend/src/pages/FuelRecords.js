@@ -23,6 +23,7 @@ import {
 import { Add, Edit, Delete } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
+import formatCurrency from '../utils/formatCurrency';
 import { fetchArrayData } from '../hooks/useApiData';
 import { useDistance } from '../hooks/useDistance';
 import FuelRecordDialog from '../components/FuelRecordDialog';
@@ -39,7 +40,7 @@ const FuelRecords = () => {
   const [orderBy, setOrderBy] = useState(() => localStorage.getItem('fuelRecordsSortBy') || 'date');
   const [order, setOrder] = useState(() => localStorage.getItem('fuelRecordsSortOrder') || 'desc');
   const { api } = useAuth();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { convert, format, getLabel } = useDistance();
 
   useEffect(() => {
@@ -300,7 +301,7 @@ const FuelRecords = () => {
                 <TableCell>{record.date}</TableCell>
                 <TableCell>{record.mileage ? format(convert(record.mileage)) : '-'}</TableCell>
                 <TableCell>{record.litres}</TableCell>
-                <TableCell>£{record.cost}</TableCell>
+                <TableCell>{formatCurrency(record.cost, 'GBP', i18n.language)}</TableCell>
                 <TableCell>{record.fuelType || 'N/A'}</TableCell>
                 <TableCell>{record.station || 'N/A'}</TableCell>
                 <TableCell>

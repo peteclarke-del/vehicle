@@ -24,6 +24,7 @@ import {
 import { Add, Edit, Delete } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
+import formatCurrency from '../utils/formatCurrency';
 import { fetchArrayData } from '../hooks/useApiData';
 import { useDistance } from '../hooks/useDistance';
 import ConsumableDialog from '../components/ConsumableDialog';
@@ -38,7 +39,7 @@ const Consumables = () => {
   const [orderBy, setOrderBy] = useState(() => localStorage.getItem('consumablesSortBy') || 'specification');
   const [order, setOrder] = useState(() => localStorage.getItem('consumablesSortOrder') || 'asc');
   const { api } = useAuth();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { convert, format, getLabel } = useDistance();
 
   useEffect(() => {
@@ -136,7 +137,7 @@ const Consumables = () => {
   }, [consumables, order, orderBy]);
 
   const calculateTotalCost = () => {
-    return consumables.reduce((sum, consumable) => sum + (parseFloat(consumable.cost) || 0), 0).toFixed(2);
+    return consumables.reduce((sum, consumable) => sum + (parseFloat(consumable.cost) || 0), 0);
   };
 
   if (loading) {
@@ -192,10 +193,10 @@ const Consumables = () => {
 
       {consumables.length > 0 && (
         <Box mb={2}>
-          <Typography variant="h6">
-            {t('consumables.totalCost')}: £{calculateTotalCost()}
-          </Typography>
-        </Box>
+            <Typography variant="h6">
+              {t('consumables.totalCost')}: {formatCurrency(calculateTotalCost(), 'GBP', i18n.language)}
+            </Typography>
+          </Box>
       )}
 
       <TableContainer component={Paper} sx={{ maxHeight: 'calc(100vh - 180px)', overflow: 'auto' }}>
@@ -265,6 +266,7 @@ const Consumables = () => {
                   {t('consumables.mileageAtChange')} ({getLabel()})
                 </TableSortLabel>
               </TableCell>
+              <TableCell>{t('mot.title') || 'MOT'}</TableCell>
               <TableCell>{t('common.actions')}</TableCell>
             </TableRow>
           </TableHead>
@@ -289,10 +291,11 @@ const Consumables = () => {
                     {consumable.quantity} {consumable.consumableType?.unit || ''}
                   </TableCell>
                   <TableCell>{consumable.brand || '-'}</TableCell>
-                  <TableCell>£{parseFloat(consumable.cost).toFixed(2)}</TableCell>
+                  <TableCell>{formatCurrency(parseFloat(consumable.cost) || 0, 'GBP', i18n.language)}</TableCell>
                   <TableCell>{consumable.lastChanged || '-'}</TableCell>
                   <TableCell>{consumable.mileageAtChange ? format(convert(consumable.mileageAtChange)) : '-'}</TableCell>
-                  <TableCell>
+                      <TableCell>{consumable.motTestNumber ? `${consumable.motTestNumber}${consumable.motTestDate ? ' (' + consumable.motTestDate + ')' : ''}` : '-'}</TableCell>
+                      <TableCell>
                       <Tooltip title={t('edit')}>
                         <IconButton size="small" onClick={() => handleEdit(consumable)}>
                           <Edit />

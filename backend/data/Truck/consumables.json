@@ -10,6 +10,13 @@
         "name": "Gear Oil/Differential Oil",
         "unit": "litres",
         "description": "High-viscosity gear oil for differentials and axles."
+    ,
+    {
+        "vehicleType": "Truck",
+        "name": "Indicator/Direction Lamp Bulb",
+        "unit": "unit",
+        "description": "Indicator / direction (turn signal) lamp bulb for truck lighting circuits; include LED or filament types and fitting specs." 
+    }
     },
     {
         "vehicleType": "Truck",
@@ -46,5 +53,12 @@
         "name": "Battery",
         "unit": "unit",
         "description": "Heavy-duty 12V battery with high CCA and Ah ratings."
+    }
+    ,
+    {
+        "vehicleType": "Truck",
+        "name": "Engine Flush/Catalytic Converter Cleaner",
+        "unit": "litres",
+        "description": "Engine flush and catalytic converter cleaner; specify product and application instructions."
     }
 ]
