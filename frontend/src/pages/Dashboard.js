@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useLayoutEffect, useCallback } from 'react';
 import {
   Container,
   Card,
@@ -15,8 +15,21 @@ import {
   Paper,
   IconButton,
   CircularProgress,
+  Tabs,
+  Tab,
+  Menu,
 } from '@mui/material';
 import { PieChart } from '@mui/x-charts/PieChart';
+import { useTranslation } from 'react-i18next';
+import { useUserPreferences } from '../contexts/UserPreferencesContext';
+import formatCurrency from '../utils/formatCurrency';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { useApiData } from '../hooks/useApiData';
+import { useDistance } from '../hooks/useDistance';
+import { formatDateISO } from '../utils/formatDate';
+import VehicleDialog from '../components/VehicleDialog';
+import StatusChangeDialog from '../components/StatusChangeDialog';
 import {
   Add as AddIcon,
   DirectionsCar,
@@ -28,66 +41,132 @@ import {
   DirectionsCar as CarIcon,
   Event as EventIcon,
   Build as BuildIcon,
-  Settings as SettingsIcon,
   Visibility as VisibilityIcon,
   VisibilityOff as VisibilityOffIcon,
+  MoreVert as MoreVertIcon,
 } from '@mui/icons-material';
-import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { useApiData } from '../hooks/useApiData';
-import { useDistance } from '../hooks/useDistance';
-import VehicleDialog from '../components/VehicleDialog';
-import PreferencesDialog from '../components/PreferencesDialog';
 
 const Dashboard = () => {
-  const { api } = useAuth();
-  const { user } = useAuth();
+  const { api, user } = useAuth();
   const { data: vehicles, loading, fetchData: loadVehicles } = useApiData('/vehicles');
   const { convert, format } = useDistance();
   const [last12FuelTotal, setLast12FuelTotal] = useState(0);
+  const [last12PartsTotal, setLast12PartsTotal] = useState(0);
+  const [last12ConsumablesTotal, setLast12ConsumablesTotal] = useState(0);
   const [avgServiceCost, setAvgServiceCost] = useState(0);
   const [totalsLoading, setTotalsLoading] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [preferencesOpen, setPreferencesOpen] = useState(false);
   const [orderedVehicles, setOrderedVehicles] = useState([]);
   const [activeFilter, setActiveFilter] = useState(null);
   const [showVehicleCards, setShowVehicleCards] = useState(() => {
     return localStorage.getItem('dashboardShowVehicles') !== 'false';
   });
+  const [selectedStatus, setSelectedStatus] = useState('Live');
+  const [menuAnchorEl, setMenuAnchorEl] = useState(null);
+  const [menuVehicleId, setMenuVehicleId] = useState(null);
   const [sortOrder, setSortOrder] = useState(() => {
     return localStorage.getItem('vehicleSortOrder') || 'name';
   });
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const { setDefaultVehicle } = useUserPreferences();
+  const [statusDialogOpen, setStatusDialogOpen] = useState(false);
+  const [statusDialogData, setStatusDialogData] = useState({ vehicleId: null, newStatus: null, date: '', notes: '' });
+  const CARD_HEIGHT = 163;
+
+  // Responsive stat card that scales typography based on card size and text length
+  const StatCard = ({ title, value, subtitle, loading, topRightIcon, onClick, children, isBottom = false }) => {
+    const ref = useRef(null);
+    const [dims, setDims] = useState({ width: 0, height: 0 });
+
+    useLayoutEffect(() => {
+      if (!ref.current) return;
+      const el = ref.current;
+      const ro = new ResizeObserver(entries => {
+        for (const entry of entries) {
+          const cr = entry.contentRect;
+          setDims({ width: cr.width, height: cr.height });
+        }
+      });
+      ro.observe(el);
+      return () => ro.disconnect();
+    }, [ref]);
+
+    const computeSizes = useCallback((w, h, t, v, s, bottom) => {
+      const pad = 16; // matches p:2 (theme spacing)
+      const availW = Math.max(50, w - pad * 2);
+      const availH = Math.max(50, h - pad * 2);
+
+      // title size scales with width and shortens with long text
+      const titleBase = Math.min(20, Math.max(14, availW / Math.max(12, (t || '').length * 0.8)));
+      // value is emphasized - scale with height; bottom cards slightly larger
+      const valueScale = bottom ? 0.40 : 0.36;
+      const valueBase = Math.min(64, Math.max(20, availH * valueScale));
+      // subtitle smaller
+      const subtitleBase = Math.min(14, Math.max(12, availH * 0.1));
+
+      // gap between elements computed to visually match spacing above and below value
+      const gap = Math.max(8, Math.round(availH * 0.06));
+
+      return {
+        titleSize: `${Math.round(titleBase)}px`,
+        valueSize: `${Math.round(valueBase)}px`,
+        subtitleSize: `${Math.round(subtitleBase)}px`,
+        gapPx: gap,
+      };
+    }, []);
+
+    const { titleSize, valueSize, subtitleSize, gapPx } = computeSizes(dims.width, dims.height, title, value, subtitle, isBottom);
+
+    return (
+      <Paper
+        ref={ref}
+        onClick={onClick}
+        sx={{ p: 2, textAlign: 'center', height: CARD_HEIGHT, display: 'flex', flexDirection: 'column', justifyContent: 'center', width: '100%', minWidth: 0, position: 'relative', gap: `${gapPx}px` }}
+      >
+        {topRightIcon && <Box sx={{ position: 'absolute', top: 8, right: 8 }}>{topRightIcon}</Box>}
+        {title ? (
+          <Typography variant="h6" color="text.secondary" sx={{ fontSize: titleSize, lineHeight: 1.1 }}>{title}</Typography>
+        ) : null}
+        {children ? (
+          <Box sx={{ fontSize: valueSize }}>{children}</Box>
+        ) : (
+          <Typography variant="h4" color="primary" sx={{ fontSize: valueSize }}>{loading ? <CircularProgress size={24} /> : value}</Typography>
+        )}
+        {subtitle ? <Typography variant="body2" color="text.secondary" sx={{ fontSize: subtitleSize }}>{subtitle}</Typography> : null}
+      </Paper>
+    );
+  };
 
   useEffect(() => {
     loadVehicles();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // If the first fetch returned an empty list due to a transient timing issue,
-  // retry once after a short delay. This prevents the UI from showing "no
-  // vehicles" briefly when a race or intermittent network issue occurs.
-  const didRetryRef = React.useRef(false);
-  useEffect(() => {
-    if (!loading && (!vehicles || vehicles.length === 0) && !didRetryRef.current) {
-      didRetryRef.current = true;
-      const timer = setTimeout(() => {
-        loadVehicles();
-      }, 500);
-      return () => clearTimeout(timer);
+  // Fetch and set dashboard totals (extracted as a named function)
+  const fetchDashboardTotals = async (periodMonths = 12) => {
+    setTotalsLoading(true);
+    try {
+      const resp = await api.get(`/vehicles/totals?period=${periodMonths}`);
+      setLast12FuelTotal(resp.data.fuel ?? 0);
+      setLast12PartsTotal(resp.data.parts ?? 0);
+      setLast12ConsumablesTotal(resp.data.consumables ?? 0);
+      setAvgServiceCost(resp.data.averageServiceCost ?? 0);
+    } catch (err) {
+      console.warn('Failed to load vehicle totals', err);
+    } finally {
+      setTotalsLoading(false);
     }
-    return undefined;
-    // Only depend on loading and vehicles reference
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, vehicles]);
+  };
 
-  // Load vehicles and apply sort order
+  useEffect(() => {
+    fetchDashboardTotals(12);
+  }, [api, user]);
+
+  // Apply sort order when vehicles are loaded or sortOrder changes
   useEffect(() => {
     if (vehicles && vehicles.length > 0) {
       let ordered = [...vehicles];
-      
       switch (sortOrder) {
         case 'name':
           ordered.sort((a, b) => a.name.localeCompare(b.name));
@@ -97,51 +176,21 @@ const Dashboard = () => {
           break;
         case 'make':
           ordered.sort((a, b) => {
-            const makeCompare = a.make.localeCompare(b.make);
+            const makeCompare = (a.make || '').localeCompare(b.make || '');
             if (makeCompare !== 0) return makeCompare;
-            return a.model.localeCompare(b.model);
+            return (a.model || '').localeCompare(b.model || '');
           });
           break;
         case 'year':
           ordered.sort((a, b) => (b.year || 0) - (a.year || 0));
           break;
         default:
-          // Default to name sort
           ordered.sort((a, b) => a.name.localeCompare(b.name));
           break;
       }
-      
       setOrderedVehicles(ordered);
     }
   }, [vehicles, sortOrder]);
-
-  // Fetch totals for the last 12 months (fuel + parts/consumables)
-  useEffect(() => {
-    const fetchTotals = async () => {
-      if (!vehicles || vehicles.length === 0) {
-        setLast12FuelTotal(0);
-        setAvgServiceCost(0);
-        return;
-      }
-
-      setTotalsLoading(true);
-      try {
-        const res = await api.get('/vehicles/totals?period=12');
-        const data = res.data || {};
-        setLast12FuelTotal(data.fuel || 0);
-        setAvgServiceCost(data.averageServiceCost || 0);
-      } catch (e) {
-        console.error('Error fetching aggregated totals:', e);
-        setLast12FuelTotal(0);
-        setAvgServiceCost(0);
-      } finally {
-        setTotalsLoading(false);
-      }
-    };
-
-    fetchTotals();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [vehicles]);
 
   const handleDialogClose = (reload) => {
     setDialogOpen(false);
@@ -150,10 +199,44 @@ const Dashboard = () => {
     }
   };
 
+  const openStatusDialog = (vehicleId, status) => {
+    // Prefill date with today
+    const today = new Date().toISOString().slice(0, 10);
+    setStatusDialogData({ vehicleId, newStatus: status, date: today, notes: '' });
+    setStatusDialogOpen(true);
+    handleCloseMenu();
+  };
+
+  const handleConfirmStatusChange = async () => {
+    const { vehicleId, newStatus, date, notes } = statusDialogData;
+    try {
+      const payload = { status: newStatus };
+      // include optional metadata; backend may ignore unknown fields if not supported
+      if (date) payload.statusChangeDate = date;
+      if (notes) payload.statusChangeNotes = notes;
+      await api.put(`/vehicles/${vehicleId}`, payload);
+      await loadVehicles();
+    } catch (e) {
+      console.error('Error updating vehicle status with metadata', e);
+    } finally {
+      setStatusDialogOpen(false);
+    }
+  };
+
   const handleSortChange = (event) => {
     const newSort = event.target.value;
     setSortOrder(newSort);
     localStorage.setItem('vehicleSortOrder', newSort);
+  };
+
+  const handleOpenMenu = (event, vehicleId) => {
+    setMenuAnchorEl(event.currentTarget);
+    setMenuVehicleId(vehicleId);
+  };
+
+  const handleCloseMenu = () => {
+    setMenuAnchorEl(null);
+    setMenuVehicleId(null);
   };
 
   const getVehicleIcon = (vehicleType) => {
@@ -211,6 +294,14 @@ const Dashboard = () => {
     return diff;
   };
 
+  // Helper to pick a status colour based on counts. Pass total explicitly.
+  const statusColor = (count, total) => {
+    if (!total) return 'success.main';
+    if (count === 0) return 'success.main';
+    if (count >= Math.ceil(total / 2)) return 'error.main';
+    return 'warning.main';
+  };
+
   const getCardStyle = (color) => {
     if (!color) {
       return {
@@ -259,9 +350,9 @@ const Dashboard = () => {
       chipLabel = `${label}: ${t('dashboard.daysRemaining', { count: daysUntil })}`;
       icon = <WarningIcon />;
     } else {
-      chipLabel = `${label}: ${new Date(date).toLocaleDateString()}`;
+      chipLabel = `${label}: ${formatDateISO(date)}`;
     }
-    
+
     return (
       <Chip
         size="small"
@@ -281,7 +372,7 @@ const Dashboard = () => {
           <Chip
             size="small"
             label={vehicle.lastServiceDate
-              ? `${t('dashboard.serviceDue')}: ${new Date(vehicle.lastServiceDate).toLocaleDateString()}`
+              ? `${t('dashboard.serviceDue')}: ${formatDateISO(vehicle.lastServiceDate)}`
               : t('dashboard.serviceDue')}
             color="error"
             icon={<WarningIcon />}
@@ -293,7 +384,7 @@ const Dashboard = () => {
     return (
       <Chip
         size="small"
-        label={`${t('dashboard.lastService')}: ${new Date(vehicle.lastServiceDate).toLocaleDateString()}`}
+        label={`${t('dashboard.lastService')}: ${formatDateISO(vehicle.lastServiceDate)}`}
         color="success"
         icon={<CheckCircleIcon />}
         sx={{ mb: 0.5, mr: 0.5 }}
@@ -386,31 +477,18 @@ const Dashboard = () => {
     );
   }
 
-  const filteredVehicles = getFilteredVehicles();
+  const allFiltered = getFilteredVehicles();
+  const statusCounts = (allFiltered || []).reduce((acc, v) => {
+    const s = v.status || 'Live';
+    acc[s] = (acc[s] || 0) + 1;
+    return acc;
+  }, {});
+  const filteredVehicles = (allFiltered || []).filter(v => (v.status || 'Live') === selectedStatus);
 
   return (
     <Container maxWidth="xl">
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3} mt={2}>
         <Typography variant="h4">{t('dashboard.welcome')}</Typography>
-        <Box display="flex" gap={1}>
-          <Tooltip title={showVehicleCards ? t('dashboard.hideVehicleCards') : t('dashboard.showVehicleCards')}>
-            <IconButton 
-              color="primary"
-              onClick={() => {
-                const newValue = !showVehicleCards;
-                setShowVehicleCards(newValue);
-                localStorage.setItem('dashboardShowVehicles', newValue.toString());
-              }}
-            >
-              {showVehicleCards ? <VisibilityIcon /> : <VisibilityOffIcon />}
-            </IconButton>
-          </Tooltip>
-          <Tooltip title={t('preferences.title')}>
-            <IconButton color="primary" onClick={() => setPreferencesOpen(true)}>
-              <SettingsIcon />
-            </IconButton>
-          </Tooltip>
-        </Box>
       </Box>
 
       {orderedVehicles.length === 0 ? (
@@ -436,6 +514,13 @@ const Dashboard = () => {
             const stats = calculateStatistics();
             if (!stats) return null;
 
+            const statusColor = (count) => {
+              if (!stats || !stats.total) return 'success.main';
+              if (count === 0) return 'success.main';
+              if (count >= Math.ceil(stats.total / 2)) return 'error.main';
+              return 'warning.main';
+            };
+
             const pieData = Object.entries(stats.byType).map(([type, count], index) => ({
               id: index,
               value: count,
@@ -453,167 +538,97 @@ const Dashboard = () => {
                   gap: 3
                 }}
               >
-                {/* Row 1, Col 1-2: Total Vehicles */}
-                <Box sx={{ gridColumn: { lg: '1 / 3' }, gridRow: { lg: '1' } }}>
-                  <Paper 
-                    sx={{ 
-                      p: 2, 
-                      textAlign: 'center', 
-                      cursor: 'pointer', 
-                      '&:hover': { boxShadow: 4 },
-                      opacity: activeFilter ? 0.6 : 1,
-                      height: 140,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      justifyContent: 'center'
-                    }}
-                    onClick={() => setActiveFilter(null)}
-                  >
-                    <CarIcon sx={{ fontSize: 40, color: 'primary.main', mb: 1 }} />
-                    <Typography variant="h4" color="primary">{stats.total}</Typography>
-                    <Typography variant="body2" color="text.secondary">{t('dashboard.totalVehicles')}</Typography>
-                  </Paper>
-                </Box>
+                {/* Left area: cards arranged into two rows (top: 4, bottom: 5) */}
+                <Box sx={{ gridColumn: { lg: '1 / 9' }, gridRow: { lg: '1 / 3' } }}>
+                  <Box sx={{ display: 'grid', gridTemplateColumns: { lg: 'repeat(5, 1fr)' }, gap: 3, mb: 3, alignItems: 'stretch' }}>
+                    {/* Top row: Total Value, Total Fuel Cost, Total Parts Cost, Total Consumables Cost, Average Service Cost */}
+                    <StatCard
+                      title={t('dashboard.totalValue')}
+                      value={new Intl.NumberFormat(i18n.language || undefined, { style: 'currency', currency: 'GBP', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(Math.ceil(parseFloat(stats.totalValue || 0)))}
+                      subtitle={t('dashboard.purchaseCost')}
+                    />
 
-                {/* Row 1, Col 3-4: Expired MOT */}
-                <Box sx={{ gridColumn: { lg: '3 / 5' }, gridRow: { lg: '1' } }}>
-                  <Paper 
-                    sx={{ 
-                      p: 2, 
-                      textAlign: 'center', 
-                      cursor: stats.expiredMot > 0 ? 'pointer' : 'default',
-                      '&:hover': stats.expiredMot > 0 ? { boxShadow: 4 } : {},
-                      opacity: activeFilter === 'expiredMot' ? 1 : (activeFilter ? 0.6 : 1),
-                      height: 140,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      justifyContent: 'center'
-                    }}
-                    onClick={() => stats.expiredMot > 0 && setActiveFilter(activeFilter === 'expiredMot' ? null : 'expiredMot')}
-                  >
-                    <EventIcon sx={{ fontSize: 40, color: stats.expiredMot > 0 ? 'error.main' : 'success.main', mb: 1 }} />
-                    <Typography variant="h4" color={stats.expiredMot > 0 ? 'error' : 'success'}>{stats.expiredMot}</Typography>
-                    <Typography variant="body2" color="text.secondary">{t('dashboard.expiredMot')}</Typography>
-                  </Paper>
-                </Box>
+                    <StatCard
+                      title={`${t('dashboard.totalFuelCost')} (12m)`}
+                      value={formatCurrency(last12FuelTotal, 'GBP', i18n.language)}
+                      loading={totalsLoading}
+                      subtitle={t('dashboard.fuel')}
+                    />
 
-                {/* Row 1, Col 5-6: Expired Tax */}
-                <Box sx={{ gridColumn: { lg: '5 / 7' }, gridRow: { lg: '1' } }}>
-                  <Paper 
-                    sx={{ 
-                      p: 2, 
-                      textAlign: 'center', 
-                      cursor: stats.expiredTax > 0 ? 'pointer' : 'default',
-                      '&:hover': stats.expiredTax > 0 ? { boxShadow: 4 } : {},
-                      opacity: activeFilter === 'expiredTax' ? 1 : (activeFilter ? 0.6 : 1),
-                      height: 140,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      justifyContent: 'center'
-                    }}
-                    onClick={() => stats.expiredTax > 0 && setActiveFilter(activeFilter === 'expiredTax' ? null : 'expiredTax')}
-                  >
-                    <EventIcon sx={{ fontSize: 40, color: stats.expiredTax > 0 ? 'error.main' : 'success.main', mb: 1 }} />
-                    <Typography variant="h4" color={stats.expiredTax > 0 ? 'error' : 'success'}>{stats.expiredTax}</Typography>
-                    <Typography variant="body2" color="text.secondary">{t('dashboard.expiredTax')}</Typography>
-                  </Paper>
-                </Box>
+                    <StatCard
+                      title={`${t('dashboard.totalPartsCost')} (12m)`}
+                      value={formatCurrency(last12PartsTotal, 'GBP', i18n.language)}
+                      loading={totalsLoading}
+                      subtitle={t('dashboard.parts')}
+                    />
 
-                {/* Row 1, Col 7-8: Expired Insurance */}
-                <Box sx={{ gridColumn: { lg: '7 / 9' }, gridRow: { lg: '1' } }}>
-                  <Paper 
-                    sx={{ 
-                      p: 2, 
-                      textAlign: 'center', 
-                      cursor: stats.expiredInsurance > 0 ? 'pointer' : 'default',
-                      '&:hover': stats.expiredInsurance > 0 ? { boxShadow: 4 } : {},
-                      opacity: activeFilter === 'expiredInsurance' ? 1 : (activeFilter ? 0.6 : 1),
-                      height: 140,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      justifyContent: 'center'
-                    }}
-                    onClick={() => stats.expiredInsurance > 0 && setActiveFilter(activeFilter === 'expiredInsurance' ? null : 'expiredInsurance')}
-                  >
-                    <WarningIcon sx={{ fontSize: 40, color: stats.expiredInsurance > 0 ? 'error.main' : 'success.main', mb: 1 }} />
-                    <Typography variant="h4" color={stats.expiredInsurance > 0 ? 'error' : 'success'}>{stats.expiredInsurance}</Typography>
-                    <Typography variant="body2" color="text.secondary">{t('dashboard.expiredInsurance')}</Typography>
-                  </Paper>
-                </Box>
+                    <StatCard
+                      title={`${t('dashboard.totalConsumablesCost') || 'Total Consumables Cost'} (12m)`}
+                      value={formatCurrency(last12ConsumablesTotal, 'GBP', i18n.language)}
+                      loading={totalsLoading}
+                      subtitle={t('dashboard.consumables')}
+                    />
 
-                {/* Row 2, Col 1-2: Service Due */}
-                <Box sx={{ gridColumn: { lg: '1 / 3' }, gridRow: { lg: '2' } }}>
-                  <Paper 
-                    sx={{ 
-                      p: 2, 
-                      textAlign: 'center', 
-                      cursor: stats.serviceDue > 0 ? 'pointer' : 'default',
-                      '&:hover': stats.serviceDue > 0 ? { boxShadow: 4 } : {},
-                      opacity: activeFilter === 'serviceDue' ? 1 : (activeFilter ? 0.6 : 1),
-                      height: 140,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      justifyContent: 'center'
-                    }}
-                    onClick={() => stats.serviceDue > 0 && setActiveFilter(activeFilter === 'serviceDue' ? null : 'serviceDue')}
-                  >
-                    <BuildIcon sx={{ fontSize: 40, color: stats.serviceDue > 0 ? 'warning.main' : 'success.main', mb: 1 }} />
-                    <Typography variant="h4" color={stats.serviceDue > 0 ? 'warning' : 'success'}>{stats.serviceDue}</Typography>
-                    <Typography variant="body2" color="text.secondary">{t('dashboard.serviceDue')}</Typography>
-                  </Paper>
-                </Box>
+                    <StatCard
+                      title={`${t('dashboard.averageServiceCost')} (12m)`}
+                      value={`£${avgServiceCost.toLocaleString('en-GB', { maximumFractionDigits: 2 })}`}
+                      loading={totalsLoading}
+                      subtitle={t('dashboard.averageServiceCostDesc')}
+                    />
+                  </Box>
 
-                {/* Row 2, Col 3-4: Total Value */}
-                <Box sx={{ gridColumn: { lg: '3 / 5' }, gridRow: { lg: '2' } }}>
-                  <Paper sx={{ 
-                    p: 2, 
-                    textAlign: 'center', 
-                    height: 140,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'center'
-                  }}>
-                    <Typography variant="h6" color="text.secondary" sx={{ mb: 1 }}>{t('dashboard.totalValue')}</Typography>
-                    <Typography variant="h4" color="primary">£{stats.totalValue.toLocaleString('en-GB', { maximumFractionDigits: 0 })}</Typography>
-                    <Typography variant="body2" color="text.secondary">{t('dashboard.purchaseCost')}</Typography>
-                  </Paper>
-                </Box>
+                  <Box sx={{ display: 'grid', gridTemplateColumns: { lg: 'repeat(5, 1fr)' }, gap: 3, alignItems: 'stretch' }}>
+                    {/* Bottom row: total vehicles filter, expired mot, expired tax, expired insurance, service due */}
+                    <StatCard
+                      value={stats.total}
+                      subtitle={t('dashboard.totalVehicles')}
+                      topRightIcon={<CarIcon sx={{ fontSize: 32, color: 'primary.main' }} />}
+                      onClick={() => setActiveFilter(null)}
+                      isBottom={true}
+                    >
+                      <Typography variant="h4" color="primary">{stats.total}</Typography>
+                    </StatCard>
 
-                {/* Row 2, Col 5-6: Fuel spent (last 12 months) */}
-                <Box sx={{ gridColumn: { lg: '5 / 7' }, gridRow: { lg: '2' } }}>
-                  <Paper sx={{ 
-                    p: 2, 
-                    textAlign: 'center', 
-                    height: 140,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'center'
-                  }}>
-                    <Typography variant="h6" color="text.secondary" sx={{ mb: 1 }}>{t('dashboard.totalFuelCost')} (12m)</Typography>
-                    <Typography variant="h4" color="primary">
-                      {totalsLoading ? (
-                        <CircularProgress size={24} />
-                      ) : (
-                        `£${last12FuelTotal.toLocaleString('en-GB', { maximumFractionDigits: 2 })}`
-                      )}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">{t('dashboard.fuel')}</Typography>
-                  </Paper>
-                </Box>
+                    <StatCard
+                      value={stats.expiredMot}
+                      subtitle={t('dashboard.expiredMot')}
+                      topRightIcon={<EventIcon sx={{ fontSize: 32, color: statusColor(stats.expiredMot, stats.total) }} />}
+                      onClick={() => stats.expiredMot > 0 && setActiveFilter(activeFilter === 'expiredMot' ? null : 'expiredMot')}
+                      isBottom={true}
+                    >
+                      <Typography variant="h4" color={stats.expiredMot > 0 ? 'error' : 'success'}>{stats.expiredMot}</Typography>
+                    </StatCard>
 
-                {/* Row 2, Col 7-8: Parts & Consumables spent (last 12 months) */}
-                <Box sx={{ gridColumn: { lg: '7 / 9' }, gridRow: { lg: '2' } }}>
-                  <Paper sx={{ p: 2, textAlign: 'center', height: 140, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                    <Typography variant="h6" color="text.secondary" sx={{ mb: 1 }}>{t('dashboard.averageServiceCost')} (12m)</Typography>
-                    <Typography variant="h4" color="primary">
-                      {totalsLoading ? (
-                        <CircularProgress size={24} />
-                      ) : (
-                        `£${avgServiceCost.toLocaleString('en-GB', { maximumFractionDigits: 2 })}`
-                      )}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">{t('dashboard.averageServiceCostDesc')}</Typography>
-                  </Paper>
+                    <StatCard
+                      value={stats.expiredTax}
+                      subtitle={t('dashboard.expiredTax')}
+                      topRightIcon={<EventIcon sx={{ fontSize: 32, color: statusColor(stats.expiredTax, stats.total) }} />}
+                      onClick={() => stats.expiredTax > 0 && setActiveFilter(activeFilter === 'expiredTax' ? null : 'expiredTax')}
+                      isBottom={true}
+                    >
+                      <Typography variant="h4" color={stats.expiredTax > 0 ? 'error' : 'success'}>{stats.expiredTax}</Typography>
+                    </StatCard>
+
+                    <StatCard
+                      value={stats.expiredInsurance}
+                      subtitle={t('dashboard.expiredInsurance')}
+                      topRightIcon={<WarningIcon sx={{ fontSize: 32, color: statusColor(stats.expiredInsurance, stats.total) }} />}
+                      onClick={() => stats.expiredInsurance > 0 && setActiveFilter(activeFilter === 'expiredInsurance' ? null : 'expiredInsurance')}
+                      isBottom={true}
+                    >
+                      <Typography variant="h4" color={stats.expiredInsurance > 0 ? 'error' : 'success'}>{stats.expiredInsurance}</Typography>
+                    </StatCard>
+
+                    <StatCard
+                      value={stats.serviceDue}
+                      subtitle={t('dashboard.serviceDue')}
+                      topRightIcon={<BuildIcon sx={{ fontSize: 32, color: statusColor(stats.serviceDue, stats.total) }} />}
+                      onClick={() => stats.serviceDue > 0 && setActiveFilter(activeFilter === 'serviceDue' ? null : 'serviceDue')}
+                      isBottom={true}
+                    >
+                      <Typography variant="h4" color={stats.serviceDue > 0 ? 'warning' : 'success'}>{stats.serviceDue}</Typography>
+                    </StatCard>
+                  </Box>
                 </Box>
 
                 {/* Pie Chart: Col 9-13, spans both rows */}
@@ -672,29 +687,51 @@ const Dashboard = () => {
             );
           })()}
 
-          {showVehicleCards && (
-            <Box sx={{ mb: 4 }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                <Typography variant="h6">
-                  {t('dashboard.vehicles')} ({filteredVehicles.length})
-                </Typography>
-                <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-                  <FormControl size="small" sx={{ minWidth: 120 }}>
-                    <InputLabel>{t('dashboard.sortBy')}</InputLabel>
-                    <Select
-                      value={sortOrder}
-                      label={t('dashboard.sortBy')}
-                      onChange={handleSortChange}
-                    >
-                      <MenuItem value="name">{t('dashboard.name')}</MenuItem>
-                      <MenuItem value="registration">{t('dashboard.registration')}</MenuItem>
-                      <MenuItem value="make">{t('dashboard.make')}</MenuItem>
-                      <MenuItem value="year">{t('dashboard.year')}</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Box>
+          <Box sx={{ mb: 4 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+              <Tabs
+                value={selectedStatus}
+                onChange={(e, value) => setSelectedStatus(value)}
+                textColor="primary"
+                indicatorColor="primary"
+              >
+                <Tab value="Live" label={`Live (${statusCounts['Live'] || 0})`} />
+                <Tab value="Sold" label={`Sold (${statusCounts['Sold'] || 0})`} />
+                <Tab value="Scrapped" label={`Scrapped (${statusCounts['Scrapped'] || 0})`} />
+                <Tab value="Exported" label={`Exported (${statusCounts['Exported'] || 0})`} />
+              </Tabs>
+              <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                <FormControl size="small" sx={{ minWidth: 120 }}>
+                  <InputLabel>{t('dashboard.sortBy')}</InputLabel>
+                  <Select
+                    value={sortOrder}
+                    label={t('dashboard.sortBy')}
+                    onChange={handleSortChange}
+                  >
+                    <MenuItem value="name">{t('dashboard.name')}</MenuItem>
+                    <MenuItem value="registration">{t('common.registrationNumber')}</MenuItem>
+                    <MenuItem value="make">{t('dashboard.make')}</MenuItem>
+                    <MenuItem value="year">{t('dashboard.year')}</MenuItem>
+                  </Select>
+                </FormControl>
+
+                <Tooltip title={showVehicleCards ? t('dashboard.hideVehicleCards') : t('dashboard.showVehicleCards')}>
+                  <IconButton
+                    color="primary"
+                    onClick={() => {
+                      const newValue = !showVehicleCards;
+                      setShowVehicleCards(newValue);
+                      localStorage.setItem('dashboardShowVehicles', newValue.toString());
+                    }}
+                    sx={{ ml: 1, color: 'text.primary' }}
+                  >
+                    {showVehicleCards ? <VisibilityIcon /> : <VisibilityOffIcon />}
+                  </IconButton>
+                </Tooltip>
               </Box>
-              
+            </Box>
+
+            {showVehicleCards && (
               <Box
                 sx={{
                   display: 'grid',
@@ -724,7 +761,7 @@ const Dashboard = () => {
                         }
                       },
                     }}
-                    onClick={() => navigate(`/vehicles/${vehicle.id}`)}
+                    onClick={() => { setDefaultVehicle(vehicle.id); navigate(`/vehicles/${vehicle.id}`); }}
                   >
                     <Card
                       className="vehicle-card"
@@ -737,21 +774,35 @@ const Dashboard = () => {
                       }}
                     >
                       <CardContent>
-                        <Box 
-                          display="flex" 
-                          justifyContent="space-between" 
-                          alignItems="start" 
-                          mb={2}
-                        >
-                          <Box flex={1}>
-                            <Typography variant="h5" component="div" fontWeight="bold">
+                        <Box mb={2} sx={{ position: 'relative' }}>
+                          {/* Icon positioned top-left */}
+                          <Box sx={{ position: 'absolute', top: 8, left: 8, zIndex: 3, display: 'flex', alignItems: 'center' }}>
+                            {getVehicleIcon(vehicle.vehicleType)}
+                          </Box>
+
+                          {/* Menu remains top-right */}
+                          <IconButton
+                            size="small"
+                            sx={{ position: 'absolute', top: 8, right: 8, zIndex: 3, color: 'rgba(255,255,255,0.95)' }}
+                            onClick={(e) => { e.stopPropagation(); handleOpenMenu(e, vehicle.id); }}
+                          >
+                            <MoreVertIcon />
+                          </IconButton>
+
+                          {/* Title and reg should reserve space for icon + menu so title can wrap */}
+                          <Box sx={{ pl: '64px', pr: '56px' }}>
+                            <Typography
+                              variant="h5"
+                              component="div"
+                              fontWeight="bold"
+                              sx={{ whiteSpace: 'normal', overflowWrap: 'anywhere', wordBreak: 'break-word' }}
+                            >
                               {vehicle.name}
                             </Typography>
                             <Typography variant="body2" sx={{ opacity: 0.9 }}>
                               {vehicle.registrationNumber || t('dashboard.noRegNumber')}
                             </Typography>
                           </Box>
-                          {getVehicleIcon(vehicle.vehicleType)}
                         </Box>
 
                         <Box>
@@ -794,8 +845,8 @@ const Dashboard = () => {
                   </Box>
                 ))}
               </Box>
-            </Box>
-          )}
+            )}
+          </Box>
         </>
       )}
 
@@ -804,11 +855,37 @@ const Dashboard = () => {
         vehicle={null}
         onClose={handleDialogClose}
       />
-      
-      <PreferencesDialog
-        open={preferencesOpen}
-        onClose={() => setPreferencesOpen(false)}
+      <Menu
+        anchorEl={menuAnchorEl}
+        open={Boolean(menuAnchorEl)}
+        onClose={handleCloseMenu}
+      >
+        {(() => {
+          const menuVehicle = (orderedVehicles || []).find(v => v.id === menuVehicleId) || (vehicles || []).find(v => v.id === menuVehicleId);
+          const allStatuses = ['Live', 'Sold', 'Scrapped', 'Exported'];
+          const currentStatus = menuVehicle?.status || 'Live';
+          const options = allStatuses.filter(s => s !== currentStatus);
+
+          if (!menuVehicle) {
+            return <MenuItem disabled>{t('common.loading')}</MenuItem>;
+          }
+
+          return options.map(s => (
+            <MenuItem key={s} onClick={() => openStatusDialog(menuVehicleId, s)}>
+              {t('vehicle.markStatus', { status: s })}
+            </MenuItem>
+          ));
+        })()}
+      </Menu>
+
+      <StatusChangeDialog
+        open={statusDialogOpen}
+        initialData={statusDialogData}
+        onClose={() => setStatusDialogOpen(false)}
+        onConfirm={handleConfirmStatusChange}
       />
+      
+      
     </Container>
   );
 };

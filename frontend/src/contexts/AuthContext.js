@@ -34,9 +34,22 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(localStorage.getItem('token'));
 
   const logout = () => {
-    localStorage.removeItem('token');
-    setToken(null);
-    setUser(null);
+    (async () => {
+      try {
+        const refreshToken = localStorage.getItem('refreshToken');
+        if (refreshToken) {
+          await api.post('/auth/revoke', { refreshToken });
+        } else {
+          await api.post('/auth/revoke');
+        }
+      } catch (e) {
+        // ignore network errors during logout
+      }
+      localStorage.removeItem('token');
+      localStorage.removeItem('refreshToken');
+      setToken(null);
+      setUser(null);
+    })();
   };
 
   // Add response interceptor to handle 401 errors
@@ -72,7 +85,7 @@ export const AuthProvider = ({ children }) => {
       setUser(response.data);
       // Apply saved user language preference if present
       try {
-        const lang = response.data?.language;
+        const lang = response.data?.preferredLanguage || response.data?.preferred_language || null;
         if (lang) {
           await i18n.changeLanguage(lang);
         }
@@ -101,6 +114,23 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('token', newToken);
     setToken(newToken);
     await fetchUser();
+    // Try to request a long-lived refresh token from the backend
+    try {
+      const resp = await api.post('/auth/issue-refresh');
+      if (resp?.data?.refreshToken) {
+        localStorage.setItem('refreshToken', resp.data.refreshToken);
+      }
+      // If server returned a token tailored to user's session TTL, adopt it
+      if (resp?.data?.token) {
+        localStorage.setItem('token', resp.data.token);
+        setToken(resp.data.token);
+      }
+    } catch (e) {
+      // non-fatal: continue without refresh token
+      // eslint-disable-next-line no-console
+      console.warn('Failed to obtain refresh token', e);
+    }
+
     return response.data;
   };
 
@@ -117,9 +147,10 @@ export const AuthProvider = ({ children }) => {
   const updateProfile = async (profileData) => {
     const response = await api.put('/profile', profileData);
     // If language was updated, apply immediately
-    if (profileData?.language) {
+    const lang = profileData?.preferredLanguage || profileData?.language;
+    if (lang) {
       try {
-        await i18n.changeLanguage(profileData.language);
+        await i18n.changeLanguage(lang);
       } catch (err) {
         // eslint-disable-next-line no-console
         console.warn('Failed to change language after profile update', err);

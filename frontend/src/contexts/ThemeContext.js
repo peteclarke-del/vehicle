@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { ThemeProvider as MuiThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
+import { useAuth } from './AuthContext';
 
 const ThemeContext = createContext();
 
@@ -13,18 +14,44 @@ export const useTheme = () => {
 };
 
 export const ThemeProvider = ({ children }) => {
+  const { user, api } = useAuth();
+  // initialize from localStorage, fallback to light
   const [mode, setMode] = useState(() => {
-    const saved = localStorage.getItem('theme');
-    return saved || 'light';
+    try {
+      const stored = window.localStorage.getItem('theme');
+      return stored === 'dark' ? 'dark' : 'light';
+    } catch (e) {
+      return 'light';
+    }
   });
 
+  // if user has a server preference, prefer that when available
   useEffect(() => {
-    localStorage.setItem('theme', mode);
-  }, [mode]);
+    if (user && user.theme && user.theme !== mode) {
+      setMode(user.theme);
+    }
+  }, [user]);
 
-  const toggleTheme = () => {
-    setMode(prevMode => prevMode === 'light' ? 'dark' : 'light');
-  };
+  // persist mode to server when it changes
+  useEffect(() => {
+    // persist to localStorage always so theme survives logout/reset
+    try {
+      window.localStorage.setItem('theme', mode);
+    } catch (e) {
+      // ignore
+    }
+
+    if (!api || !user) return;
+    (async () => {
+      try {
+        await api.post('/user/preferences', { key: 'theme', value: mode });
+      } catch (e) {
+        // ignore failures; UI already updated optimistically
+      }
+    })();
+  }, [mode, api, user]);
+
+  const toggleTheme = () => setMode(prevMode => prevMode === 'light' ? 'dark' : 'light');
 
   const theme = createTheme({
     palette: {

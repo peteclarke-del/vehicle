@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useApiData } from './useApiData';
+import { formatDateISO } from '../utils/formatDate';
 import { useAuth } from '../contexts/AuthContext';
 
 export const useNotifications = () => {
@@ -60,7 +61,7 @@ export const useNotifications = () => {
                 type: 'mot',
                 severity: 'error',
                 title: t('notifications.motExpired'),
-                message: t('notifications.motExpiredMessage', { date: motDate.toLocaleDateString() }),
+                message: t('notifications.motExpiredMessage', { date: formatDateISO(motDate) }),
                 date: vehicle.motExpiryDate,
               });
             } else if (motDate <= thirtyDaysFromNow) {
@@ -108,7 +109,7 @@ export const useNotifications = () => {
                 type: 'tax',
                 severity: 'error',
                 title: t('notifications.roadTaxExpired'),
-                message: t('notifications.roadTaxExpiredMessage', { date: taxDate.toLocaleDateString() }),
+                message: t('notifications.roadTaxExpiredMessage', { date: formatDateISO(taxDate) }),
                 date: vehicle.roadTaxExpiryDate,
               });
             } else if (taxDate <= thirtyDaysFromNow) {
@@ -154,7 +155,7 @@ export const useNotifications = () => {
                 type: 'insurance',
                 severity: 'error',
                 title: t('notifications.insuranceExpired'),
-                message: t('notifications.insuranceExpiredMessage', { date: insDate.toLocaleDateString() }),
+                message: t('notifications.insuranceExpiredMessage', { date: formatDateISO(insDate) }),
                 date: vehicle.insuranceExpiryDate,
               });
             } else if (insDate <= thirtyDaysFromNow) {

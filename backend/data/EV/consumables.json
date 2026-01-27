@@ -13,6 +13,12 @@
     },
     {
         "vehicleType": "EV",
+        "name": "Indicator/Direction Lamp Bulb",
+        "unit": "unit",
+        "description": "Indicator / direction (turn signal) lamp bulb (LED or filament types). Specify fitting and polarity where applicable."
+    },
+    {
+        "vehicleType": "EV",
         "name": "Brake Fluid",
         "unit": "ml",
         "description": "Hydraulic brake fluid (DOT 4/DOT 5.1) for regenerative braking systems."

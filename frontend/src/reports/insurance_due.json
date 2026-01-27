@@ -1,0 +1,11 @@
+{
+  "key": "insurance_due",
+  "name": "Insurance Due",
+  "description": "Insurance policies due to expire soon",
+  "periods": [ {"label":"Next 30 days","months":0,"days":30},{"label":"Next 90 days","months":0,"days":90} ],
+  "defaultPeriodIndex": 0,
+  "outputs": [{"mode":"screen"},{"mode":"file","fileType":"csv"}],
+  "elements": [
+    {"type":"table","source":"vehicles","filter":"insuranceDue","columns":[{"key":"registration","label":"Registration"},{"key":"insuranceExpiry","label":"Insurance Expiry"}]}
+  ]
+}

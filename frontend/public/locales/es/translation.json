@@ -29,12 +29,12 @@
     "downloadFailed": "Error al descargar archivo",
     "confirmDelete": "¿Está seguro de que desea eliminar este elemento?",
     "warrantyPlaceholder": "e.g., 12 months or 10,000 miles",
-    "specificationPlaceholder": "e.g., 5W-30 Full Synthetic"
+    "namePlaceholder": "e.g., 5W-30 Full Synthetic"
   },
   "nav": {
     "dashboard": "Panel",
     "vehicles": "Vehículos",
-    "fuel": "Registros de Combustible",
+      "registrationNumber": "Matrícula",
     "parts": "Piezas",
     "consumables": "Consumibles",
     "insurance": "Seguro",
@@ -42,6 +42,7 @@
     "serviceRecords": "Registros de Servicio",
     "roadTax": "Impuesto de Circulación",
     "reports": "Informes",
+    "importExport": "Importar/Exportar",
     "profile": "Perfil"
   },
   "auth": {
@@ -110,6 +111,8 @@
     "averageServiceCost": "Average Service Cost",
     "averageServiceCostDesc": "Average service cost over the last 12 months",
     "fuel": "Fuel",
+    "parts": "Piezas",
+    "totalPartsCost": "Costo Total de Piezas",
     "refresh": "Refresh",
     "selectVehicle": "Seleccionar Vehículo",
     "totalFuelCost": "Total Fuel Cost"
@@ -117,12 +120,14 @@
   "vehicle": {
     "title": "Vehículos",
     "addVehicle": "Add Vehicle",
+    "markAs": "Marcar como...",
     "name": "Vehicle Name",
     "make": "Make",
     "model": "Model",
     "year": "Year",
     "vin": "VIN",
     "registrationNumber": "Registration Number",
+    "colour": "Color",
     "engineNumber": "Engine Number",
     "v5DocumentNumber": "V5 Document Number",
     "purchaseCost": "Purchase Cost",
@@ -146,13 +151,29 @@
     "lookupFailed": "Failed to lookup vehicle details",
     "registrationHelper": "Enter registration to auto-fill vehicle details",
     "motExempt": "MOT Exempt",
-    "purchaseMileage": "Purchase Mileage"
+    "purchaseMileage": "Purchase Mileage",
+    "status": {
+      "live": "En uso",
+      "sold": "Vendido",
+      "scrapped": "Desguazado",
+      "exported": "Exportado"
+    }
+  },
+  "vehicleDialog": {
+    "editVehicle": "Edit Vehicle",
+    "changeStatus": "Cambiar estado",
+    "statusChangeDate": "Fecha",
+    "statusChangeNotes": "Notas",
+    "confirmStatus": "Confirmar estado: {{status}}",
+    "statusChangeHelp": "Esto marcará el vehículo con el estado seleccionado. Puede añadir una nota opcional y una fecha para el cambio de estado."
   },
   "vehicles": {
     "addVehicle": "Add Vehicle",
     "delete": "Eliminar",
     "edit": "Editar",
     "export": "Export",
+    "filterAll": "Todos",
+    "filterByStatus": "Filtrar por estado",
     "filterByMake": "Filter by Make",
     "groupBy": "Group By",
     "refresh": "Refresh",
@@ -201,9 +222,12 @@
     "specifications": "Specifications",
     "title": "Vehicle Details",
     "valuesTableTitle": "Depreciation Values",
+    "costBreakdown": "Desglose de Costes",
+    "serviceCosts": "Costes de Servicio",
     "tooltip": {
       "avgFuelConsumption": "Average fuel consumption",
       "costPerDistance": "Cost per distance unit",
+      "totalServiceCost": "Suma de los costes de servicio para este vehículo",
       "currentValue": "Current estimated value",
       "purchaseCost": "Original purchase cost",
       "totalCostToDate": "Total costs incurred to date",
@@ -227,7 +251,8 @@
   },
   "fuelRecords": {
     "addRecord": "Add Record",
-    "delete": "Eliminar",
+    "save": "Guardar",
+    "confirm": "Confirmar",
     "endDate": "End Date",
     "fullTank": "Full Tank",
     "selectVehicle": "Seleccionar Vehículo",
@@ -265,7 +290,7 @@
     "addConsumable": "Add Consumable",
     "editConsumable": "Edit Consumable",
     "type": "Type",
-    "specification": "Specification",
+    "name": "Name",
     "quantity": "Quantity",
     "brand": "Brand",
     "partNumber": "Part Number",
@@ -274,7 +299,10 @@
     "lastChanged": "Last Changed",
     "mileageAtChange": "Mileage at Change",
     "notes": "Notes",
-    "totalCost": "Total Consumables Cost"
+    "totalCost": "Total Consumables Cost",
+    "selectTypeRequired": "Por favor seleccione un tipo de consumible",
+    "serviceRecord": "Registro de servicio",
+    "selectService": "Seleccionar servicio"
   },
   "insurance": {
     "title": "Seguro",
@@ -338,6 +366,7 @@
     "testerName": "Tester Name"
   },
   "motRecords": {
+    "associateWithMot": "Asociar con M.O.T.",
     "addRecord": "Add Record",
     "delete": "Eliminar",
     "import": "Import",
@@ -349,6 +378,9 @@
   },
   "service": {
     "title": "Registros de Servicio",
+    "service": "Servicio",
+    "serviceRecord": "Registro de Servicio",
+    "createService": "Crear Servicio",
     "addService": "Add Service",
     "editService": "Edit Service",
     "serviceDate": "Service Date",
@@ -360,9 +392,13 @@
     "other": "Other",
     "laborCost": "Labor Cost",
     "partsCost": "Parts Cost",
+    "additionalCosts": "Additional Costs",
     "totalCost": "Total Cost",
     "mileage": "Mileage",
+    "nextServiceDate": "Next Service Date",
+    "nextServiceMileage": "Next Service Mileage",
     "serviceProvider": "Service Provider",
+    "workPerformed": "Work Performed",
     "notes": "Notes",
     "deleteConfirm": "Are you sure you want to delete this service record?",
     "addItem": "Add Item",
@@ -393,6 +429,7 @@
   "stats": {
     "currentValue": "Current Value",
     "depreciation": "Depreciation",
+    "totalServiceCost": "Coste total de servicio",
     "totalFuelCost": "Total Fuel Cost",
     "totalPartsCost": "Total Parts Cost",
     "totalRunningCost": "Total Running Cost",
@@ -553,5 +590,68 @@
     "amount": "Amount",
     "notes": "Notes",
     "confirmDelete": "Are you sure you want to delete this road tax record?"
+  }
+  ,"deleteAll": {
+    "title": "Eliminar Vehículos",
+    "message": "Eliminar todos los vehículos de su cuenta.",
+    "confirm": "Esta acción no se puede deshacer.",
+    "button": "Eliminar todo",
+    "chooseOption": "Elija el alcance de eliminación",
+    "vehiclesOnly": "Solo vehículos",
+    "vehiclesAndAllData": "Vehículos y TODOS los datos asociados"
+  },
+  "importExport": {
+    "download": "Descargar",
+    "upload": "Subir",
+    "downloadZip": "Descargar ZIP",
+    "downloadJson": "Descargar JSON",
+    "uploadZip": "Subir ZIP",
+    "uploadJson": "Subir JSON"
+    ,"zipHelper": "Sube un ZIP exportado desde la aplicación.",
+    "selectZip": "Elegir ZIP",
+    "zipOnUpload": "También puedes subir un archivo ZIP que contenga adjuntos.",
+    "jsonUploadHelp": "Arrastra y suelta o haz clic para subir JSON",
+    "zipUploadHelp": "Arrastra y suelta o haz clic para subir ZIP"
+    ,"uploadIntro": "Puede cargar un JSON exportado para importar vehículos. Se mostrará una vista previa antes de importar.",
+    "previewTitle": "Vista previa",
+    "vehiclesFound": "Vehículos encontrados: {{count}}",
+    "importJson": "Importar JSON ({{count}})",
+    "confirmTitle": "Confirmar importación JSON",
+    "vehiclesToImport": "Vehículos a importar: {{count}}",
+    "confirmBody": "Esto creará o actualizará vehículos a partir del JSON cargado. El estado/historial importado se restaurará cuando esté presente.",
+    "colName": "Nombre",
+    "colRegistration": "Matrícula",
+    "colMake": "Marca",
+    "colModel": "Modelo",
+    "noPreview": "No hay vista previa disponible.",
+    "import": "Importar"
+    ,"noZipSelected": "Ningún ZIP seleccionado"
+    ,"statusFilter": "Estado"
+    ,"statusAll": "Todos"
+    ,"selectVehicles": "Seleccionar vehículos"
+    ,"includeImages": "Incluir imágenes"
+    ,"includeReceipts": "Incluir recibos"
+    ,"selectAllVehicles": "Seleccionar todo"
+    ,"selectImages": "Seleccionar imágenes"
+    ,"imgPhotos": "Fotos del vehículo"
+    ,"imgReceipts": "Recibos"
+    ,"downloadImagesManifest": "Descargar manifiesto de imágenes"
+    ,"jsonExport": "JSON"
+    ,"imagesExport": "Imágenes / ZIP"
+  }
+  ,"todo": {
+    "title": "Vehicle TODOs",
+    "add": "Agregar TODO",
+    "edit": "Editar TODO",
+    "titleLabel": "Título",
+    "description": "Descripción",
+    "links": "Elementos vinculados",
+    "parts": "Piezas",
+    "consumables": "Consumibles",
+    "due": "Vencimiento",
+    "completedBy": "Completado por",
+    "done": "Completado",
+    "addPlaceholder": "Agregue una descripción corta...",
+    "toggleDone": "Marcar como completado"
   }
 }

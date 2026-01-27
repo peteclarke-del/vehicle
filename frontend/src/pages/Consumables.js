@@ -1,32 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import {
-  Box,
-  Button,
-  Typography,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  IconButton,
-  MenuItem,
-  TextField,
-  CircularProgress,
-  Chip,
-  FormControl,
-  InputLabel,
-  Select,
-  Tooltip,
-  TableSortLabel,
-} from '@mui/material';
+import { Box, Button, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, IconButton, CircularProgress, Tooltip, TableSortLabel } from '@mui/material';
 import { Add, Edit, Delete } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
+import { useUserPreferences } from '../contexts/UserPreferencesContext';
+import formatCurrency from '../utils/formatCurrency';
 import { fetchArrayData } from '../hooks/useApiData';
 import { useDistance } from '../hooks/useDistance';
 import ConsumableDialog from '../components/ConsumableDialog';
+import VehicleSelector from '../components/VehicleSelector';
 
 const Consumables = () => {
   const [consumables, setConsumables] = useState([]);
@@ -35,15 +17,37 @@ const Consumables = () => {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedConsumable, setSelectedConsumable] = useState(null);
-  const [orderBy, setOrderBy] = useState(() => localStorage.getItem('consumablesSortBy') || 'specification');
+  const [orderBy, setOrderBy] = useState(() => localStorage.getItem('consumablesSortBy') || 'description');
   const [order, setOrder] = useState(() => localStorage.getItem('consumablesSortOrder') || 'asc');
   const { api } = useAuth();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const registrationLabelText = t('common.registrationNumber');
+  const regWords = (registrationLabelText || '').split(/\s+/).filter(Boolean);
+  const regLast = regWords.length > 0 ? regWords[regWords.length - 1] : '';
+  const regFirst = regWords.length > 1 ? regWords.slice(0, regWords.length - 1).join(' ') : (regWords[0] || 'Registration');
   const { convert, format, getLabel } = useDistance();
+  const mileageLabelText = t('consumables.mileageAtChange');
+  const mileageWords = (mileageLabelText || '').split(/\s+/).filter(Boolean);
+  // Put the last word on the second line and everything else on the first line
+  const mileageLast = mileageWords.length > 0 ? mileageWords[mileageWords.length - 1] : '';
+  const mileageFirst = mileageWords.length > 1 ? mileageWords.slice(0, mileageWords.length - 1).join(' ') : (mileageWords[0] || 'Mileage at');
+  let mileageRest = mileageLast || 'Change';
+    const { defaultVehicleId, setDefaultVehicle } = useUserPreferences();
+    const [hasManualSelection, setHasManualSelection] = useState(false);
 
   useEffect(() => {
     loadVehicles();
   }, []);
+
+  useEffect(() => {
+    if (!defaultVehicleId) return;
+    if (hasManualSelection) return;
+    if (!vehicles || vehicles.length === 0) return;
+    const found = vehicles.find((v) => String(v.id) === String(defaultVehicleId));
+    if (found && String(selectedVehicle) !== String(defaultVehicleId)) {
+      setSelectedVehicle(defaultVehicleId);
+    }
+  }, [defaultVehicleId, vehicles, hasManualSelection]);
 
   useEffect(() => {
     if (selectedVehicle) {
@@ -56,15 +60,20 @@ const Consumables = () => {
   const loadVehicles = async () => {
     const data = await fetchArrayData(api, '/vehicles');
     setVehicles(data);
-    if (data.length > 0) {
-      setSelectedVehicle(data[0].id);
+    if (data.length > 0 && !selectedVehicle) {
+      if (defaultVehicleId && data.find((v) => String(v.id) === String(defaultVehicleId))) {
+        setSelectedVehicle(defaultVehicleId);
+      } else {
+        setSelectedVehicle(data[0].id);
+      }
     }
     setLoading(false);
   };
 
   const loadConsumables = async () => {
     try {
-      const response = await api.get(`/consumables?vehicleId=${selectedVehicle}`);
+      const url = (!selectedVehicle || selectedVehicle === '__all__') ? '/consumables' : `/consumables?vehicleId=${selectedVehicle}`;
+      const response = await api.get(url);
       setConsumables(response.data);
     } catch (error) {
       console.error('Error loading consumables:', error);
@@ -82,7 +91,7 @@ const Consumables = () => {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm(t('common.confirmDelete') || 'Are you sure you want to delete this consumable?')) {
+    if (window.confirm(t('consumables.deleteConfirm') || t('common.confirmDelete'))) {
       try {
         await api.delete(`/consumables/${id}`);
         loadConsumables();
@@ -111,6 +120,12 @@ const Consumables = () => {
 
   const sortedConsumables = React.useMemo(() => {
     const comparator = (a, b) => {
+      if (orderBy === 'registration') {
+        const aReg = vehicles.find(v => String(v.id) === String(a.vehicleId))?.registrationNumber || '';
+        const bReg = vehicles.find(v => String(v.id) === String(b.vehicleId))?.registrationNumber || '';
+        if (aReg === bReg) return 0;
+        return order === 'asc' ? (aReg > bReg ? 1 : -1) : (aReg < bReg ? 1 : -1);
+      }
       let aValue = a[orderBy];
       let bValue = b[orderBy];
 
@@ -136,7 +151,7 @@ const Consumables = () => {
   }, [consumables, order, orderBy]);
 
   const calculateTotalCost = () => {
-    return consumables.reduce((sum, consumable) => sum + (parseFloat(consumable.cost) || 0), 0).toFixed(2);
+    return consumables.reduce((sum, consumable) => sum + (parseFloat(consumable.cost) || 0), 0);
   };
 
   if (loading) {
@@ -165,25 +180,18 @@ const Consumables = () => {
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Typography variant="h4">{t('consumables.title')}</Typography>
         <Box display="flex" gap={2}>
-          <FormControl size="small" sx={{ width: 240 }}>
-            <InputLabel>{t('common.selectVehicle')}</InputLabel>
-            <Select
-              value={selectedVehicle}
-              label={t('common.selectVehicle')}
-              onChange={(e) => setSelectedVehicle(e.target.value)}
-            >
-              {vehicles.map((vehicle) => (
-                <MenuItem key={vehicle.id} value={vehicle.id}>
-                  {vehicle.name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          <VehicleSelector
+            vehicles={vehicles}
+            value={selectedVehicle}
+            onChange={(v) => { setHasManualSelection(true); setSelectedVehicle(v); setDefaultVehicle(v); }}
+            includeViewAll={true}
+            minWidth={360}
+          />
           <Button
             variant="contained"
             startIcon={<Add />}
             onClick={handleAdd}
-            disabled={!selectedVehicle}
+            disabled={!selectedVehicle || selectedVehicle === '__all__'}
           >
             {t('consumables.addConsumable')}
           </Button>
@@ -192,32 +200,44 @@ const Consumables = () => {
 
       {consumables.length > 0 && (
         <Box mb={2}>
-          <Typography variant="h6">
-            {t('consumables.totalCost')}: £{calculateTotalCost()}
-          </Typography>
-        </Box>
+            <Typography variant="h6">
+              {t('consumables.totalCost')}: {formatCurrency(calculateTotalCost(), 'GBP', i18n.language)}
+            </Typography>
+          </Box>
       )}
 
       <TableContainer component={Paper} sx={{ maxHeight: 'calc(100vh - 180px)', overflow: 'auto' }}>
         <Table stickyHeader>
           <TableHead>
             <TableRow>
+                <TableCell>
+                  <TableSortLabel
+                    active={orderBy === 'registration'}
+                    direction={orderBy === 'registration' ? order : 'asc'}
+                    onClick={() => handleRequestSort('registration')}
+                  >
+                    <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
+                      <span>{regFirst}</span>
+                      <span>{regLast}</span>
+                    </div>
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell sx={{ width: '22%' }}>
+                      <TableSortLabel
+                        active={orderBy === 'consumableType'}
+                        direction={orderBy === 'consumableType' ? order : 'asc'}
+                        onClick={() => handleRequestSort('consumableType')}
+                      >
+                        {t('consumables.type')}
+                      </TableSortLabel>
+                    </TableCell>
               <TableCell>
                 <TableSortLabel
-                  active={orderBy === 'consumableType'}
-                  direction={orderBy === 'consumableType' ? order : 'asc'}
-                  onClick={() => handleRequestSort('consumableType')}
+                  active={orderBy === 'description'}
+                  direction={orderBy === 'description' ? order : 'asc'}
+                  onClick={() => handleRequestSort('description')}
                 >
-                  {t('consumables.type')}
-                </TableSortLabel>
-              </TableCell>
-              <TableCell>
-                <TableSortLabel
-                  active={orderBy === 'specification'}
-                  direction={orderBy === 'specification' ? order : 'asc'}
-                  onClick={() => handleRequestSort('specification')}
-                >
-                  {t('consumables.specification')}
+                  {t('consumables.name')}
                 </TableSortLabel>
               </TableCell>
               <TableCell>
@@ -262,9 +282,13 @@ const Consumables = () => {
                   direction={orderBy === 'mileageAtChange' ? order : 'asc'}
                   onClick={() => handleRequestSort('mileageAtChange')}
                 >
-                  {t('consumables.mileageAtChange')} ({getLabel()})
+                  <div style={{ display: 'flex', flexDirection: 'column', whiteSpace: 'normal', lineHeight: 1 }}>
+                    <span>{mileageFirst}</span>
+                    <span style={{ color: 'inherit' }}>{mileageRest ? `${mileageRest} (${getLabel()})` : `(${getLabel()})`}</span>
+                  </div>
                 </TableSortLabel>
               </TableCell>
+              <TableCell>{t('mot.title') || 'MOT'}</TableCell>
               <TableCell>{t('common.actions')}</TableCell>
             </TableRow>
           </TableHead>
@@ -278,27 +302,26 @@ const Consumables = () => {
             ) : (
               sortedConsumables.map((consumable) => (
                 <TableRow key={consumable.id} sx={{ '&:nth-of-type(odd)': { backgroundColor: 'action.hover' } }}>
+                  <TableCell>{vehicles.find(v => String(v.id) === String(consumable.vehicleId))?.registrationNumber || '-'}</TableCell>
                   <TableCell>
-                    <Chip 
-                      label={consumable.consumableType?.name || '-'} 
-                      size="small" 
-                    />
+                    {consumable.consumableType?.name || '-'}
                   </TableCell>
-                  <TableCell>{consumable.specification}</TableCell>
+                  <TableCell>{consumable.description || '-'}</TableCell>
                   <TableCell>
                     {consumable.quantity} {consumable.consumableType?.unit || ''}
                   </TableCell>
                   <TableCell>{consumable.brand || '-'}</TableCell>
-                  <TableCell>£{parseFloat(consumable.cost).toFixed(2)}</TableCell>
+                  <TableCell>{formatCurrency(parseFloat(consumable.cost) || 0, 'GBP', i18n.language)}</TableCell>
                   <TableCell>{consumable.lastChanged || '-'}</TableCell>
                   <TableCell>{consumable.mileageAtChange ? format(convert(consumable.mileageAtChange)) : '-'}</TableCell>
-                  <TableCell>
-                      <Tooltip title={t('edit')}>
+                      <TableCell>{consumable.motTestNumber ? `${consumable.motTestNumber}${consumable.motTestDate ? ' (' + consumable.motTestDate + ')' : ''}` : '-'}</TableCell>
+                      <TableCell>
+                      <Tooltip title={t('vehicles.edit')}>
                         <IconButton size="small" onClick={() => handleEdit(consumable)}>
                           <Edit />
                         </IconButton>
                       </Tooltip>
-                      <Tooltip title={t('delete')}>
+                      <Tooltip title={t('common.delete')}>
                         <IconButton size="small" onClick={() => handleDelete(consumable.id)}>
                           <Delete />
                         </IconButton>

@@ -22,6 +22,13 @@ class SpecificationController extends AbstractController
     ) {
     }
 
+    private function isAdminForUser(?\App\Entity\User $user): bool
+    {
+        if (!$user) return false;
+        $roles = $user->getRoles() ?: [];
+        return in_array('ROLE_ADMIN', $roles, true);
+    }
+
     #[Route('/{id}/specifications', name: 'api_vehicle_specifications', methods: ['GET'])]
     public function getSpecifications(int $id): JsonResponse
     {
@@ -31,8 +38,8 @@ class SpecificationController extends AbstractController
             return $this->json(['error' => 'Vehicle not found'], 404);
         }
 
-        // Check if user owns this vehicle
-        if ($vehicle->getOwner() !== $this->getUser()) {
+        // Check if user owns this vehicle (admins bypass)
+        if (!$this->isAdminForUser($this->getUser()) && $vehicle->getOwner() !== $this->getUser()) {
             return $this->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -56,8 +63,8 @@ class SpecificationController extends AbstractController
             return $this->json(['error' => 'Vehicle not found'], 404);
         }
 
-        // Check if user owns this vehicle
-        if ($vehicle->getOwner() !== $this->getUser()) {
+        // Check if user owns this vehicle (admins bypass)
+        if (!$this->isAdminForUser($this->getUser()) && $vehicle->getOwner() !== $this->getUser()) {
             return $this->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -101,8 +108,8 @@ class SpecificationController extends AbstractController
             return $this->json(['error' => 'Vehicle not found'], 404);
         }
 
-        // Check if user owns this vehicle
-        if ($vehicle->getOwner() !== $this->getUser()) {
+        // Check if user owns this vehicle (admins bypass)
+        if (!$this->isAdminForUser($this->getUser()) && $vehicle->getOwner() !== $this->getUser()) {
             return $this->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -138,8 +145,8 @@ class SpecificationController extends AbstractController
             return $this->json(['error' => 'Vehicle not found'], 404);
         }
 
-        // Check if user owns this vehicle
-        if ($vehicle->getOwner() !== $this->getUser()) {
+        // Check if user owns this vehicle (admins bypass)
+        if (!$this->isAdminForUser($this->getUser()) && $vehicle->getOwner() !== $this->getUser()) {
             return $this->json(['error' => 'Unauthorized'], 403);
         }
 

@@ -27,9 +27,11 @@ import {
   StarBorder as StarBorderIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 const VehicleImages = ({ vehicle }) => {
   const { api } = useAuth();
+  const { t } = useTranslation();
   const [images, setImages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -46,7 +48,7 @@ const VehicleImages = ({ vehicle }) => {
       setImages(response.data.images);
       setLoading(false);
     } catch (err) {
-      setError('Failed to load images');
+      setError(t('vehicleImages.failedLoad'));
       setLoading(false);
     }
   }, [vehicle.id]);
@@ -77,7 +79,7 @@ const VehicleImages = ({ vehicle }) => {
     }
 
     setUploading(false);
-    setSuccess(`Successfully uploaded ${files.length} image(s)`);
+    setSuccess(t('vehicleImages.uploadSuccess', { count: files.length }));
     loadImages();
     
     // Clear the file input
@@ -85,24 +87,24 @@ const VehicleImages = ({ vehicle }) => {
   };
 
   const handleDelete = async (imageId) => {
-    if (!window.confirm('Are you sure you want to delete this image?')) return;
+    if (!window.confirm(t('vehicleImages.confirmDelete'))) return;
 
     try {
       await api.delete(`/vehicles/${vehicle.id}/images/${imageId}`);
-      setSuccess('Image deleted successfully');
+      setSuccess(t('vehicleImages.deletedSuccess'));
       loadImages();
     } catch (err) {
-      setError('Failed to delete image');
+      setError(t('vehicleImages.failedDelete'));
     }
   };
 
   const handleSetPrimary = async (imageId) => {
     try {
       await api.put(`/vehicles/${vehicle.id}/images/${imageId}/primary`);
-      setSuccess('Primary image updated');
+      setSuccess(t('vehicleImages.primaryUpdated'));
       loadImages();
     } catch (err) {
-      setError('Failed to set primary image');
+      setError(t('vehicleImages.failedPrimary'));
     }
   };
 
@@ -115,7 +117,7 @@ const VehicleImages = ({ vehicle }) => {
       setCaptionText('');
       loadImages();
     } catch (err) {
-      setError('Failed to update caption');
+      setError(t('vehicleImages.failedUpdateCaption'));
     }
   };
 
@@ -165,14 +167,14 @@ const VehicleImages = ({ vehicle }) => {
     <Card>
       <CardContent>
         <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-          <Typography variant="h6">Vehicle Pictures</Typography>
+          <Typography variant="h6">{t('vehicleImages.title')}</Typography>
           <Button
             variant="contained"
             component="label"
             startIcon={uploading ? <CircularProgress size={20} /> : <UploadIcon />}
             disabled={uploading}
           >
-            Upload Images
+            {t('vehicleImages.upload')}
             <input
               type="file"
               hidden
@@ -197,8 +199,8 @@ const VehicleImages = ({ vehicle }) => {
 
         {images.length === 0 ? (
           <Box textAlign="center" py={4}>
-            <Typography variant="body1" color="textSecondary">
-              No images uploaded yet. Click "Upload Images" to add pictures of your vehicle.
+              <Typography variant="body1" color="textSecondary">
+              {t('vehicleImages.noImages')}
             </Typography>
           </Box>
         ) : (
@@ -216,7 +218,7 @@ const VehicleImages = ({ vehicle }) => {
                   title={
                     <Box display="flex" alignItems="center" gap={1}>
                       {image.isPrimary && <StarIcon fontSize="small" />}
-                      {editingCaption === image.id ? (
+                          {editingCaption === image.id ? (
                         <TextField
                           size="small"
                           value={captionText}
@@ -236,7 +238,7 @@ const VehicleImages = ({ vehicle }) => {
                             setCaptionText(image.caption || '');
                           }}
                         >
-                          {image.caption || 'Click to add caption'}
+                          {image.caption || t('vehicleImages.clickToAddCaption')}
                         </span>
                       )}
                     </Box>

@@ -22,7 +22,7 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
   const { convert, toKm, getLabel } = useDistance();
   const [formData, setFormData] = useState({
     consumableTypeId: '',
-    specification: '',
+    description: '',
     quantity: '',
     lastChanged: '',
     mileageAtChange: '',
@@ -37,6 +37,10 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
   const [loadingTypes, setLoadingTypes] = useState(false);
   const [receiptAttachmentId, setReceiptAttachmentId] = useState(null);
   const [productUrl, setProductUrl] = useState('');
+  const [motRecords, setMotRecords] = useState([]);
+  const [motRecordId, setMotRecordId] = useState(null);
+  const [serviceRecords, setServiceRecords] = useState([]);
+  const [serviceRecordId, setServiceRecordId] = useState(null);
 
   useEffect(() => {
     if (open && vehicleId) {
@@ -48,7 +52,7 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
     if (consumable) {
       setFormData({
         consumableTypeId: consumable.consumableType?.id || '',
-        specification: consumable.specification || '',
+        description: consumable.description || '',
         quantity: consumable.quantity || '',
         lastChanged: consumable.lastChanged || '',
         mileageAtChange: consumable.mileageAtChange ? Math.round(convert(consumable.mileageAtChange)) : '',
@@ -60,10 +64,12 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
       });
       setReceiptAttachmentId(consumable.receiptAttachmentId || null);
       setProductUrl(consumable.productUrl || '');
+      setMotRecordId(consumable.motRecordId || null);
+      setServiceRecordId(consumable.serviceRecordId || null);
     } else {
       setFormData({
         consumableTypeId: '',
-        specification: '',
+        description: '',
         quantity: '',
         lastChanged: '',
         mileageAtChange: '',
@@ -75,8 +81,25 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
       });
       setReceiptAttachmentId(null);
       setProductUrl('');
+      setMotRecordId(null);
+      setServiceRecordId(null);
     }
   }, [consumable, open]);
+
+  useEffect(() => {
+    const load = async () => {
+      if (!vehicleId) return;
+      try {
+        const resp = await api.get('/mot-records', { params: { vehicleId } });
+        setMotRecords(resp.data || []);
+        const serv = await api.get('/service-records', { params: { vehicleId } });
+        setServiceRecords(serv.data || []);
+      } catch (e) {
+        console.error('Failed to load MOT or service records', e);
+      }
+    };
+    if (open) load();
+  }, [open, vehicleId, api]);
 
   const loadConsumableTypes = async () => {
     setLoadingTypes(true);
@@ -105,7 +128,7 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
   const handleReceiptUploaded = (attachmentId, ocrData) => {
     setReceiptAttachmentId(attachmentId);
     const updates = {};
-    if (ocrData.name) updates.specification = ocrData.name;
+    if (ocrData.name) updates.description = ocrData.name;
     if (ocrData.price) updates.cost = ocrData.price;
     if (ocrData.quantity) updates.quantity = ocrData.quantity;
     if (ocrData.manufacturer) updates.brand = ocrData.manufacturer;
@@ -118,7 +141,7 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
   const handleDataScraped = (scrapedData, url) => {
     setProductUrl(url);
     const updates = {};
-    if (scrapedData.name) updates.specification = scrapedData.name;
+    if (scrapedData.name) updates.description = scrapedData.name;
     if (scrapedData.price) updates.cost = scrapedData.price;
     if (scrapedData.partNumber) updates.partNumber = scrapedData.partNumber;
     if (scrapedData.manufacturer) updates.brand = scrapedData.manufacturer;
@@ -140,15 +163,19 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
         quantity: parseFloat(formData.quantity) || 0,
         mileageAtChange: formData.mileageAtChange ? Math.round(toKm(parseFloat(formData.mileageAtChange))) : null,
         receiptAttachmentId,
-        productUrl
+        productUrl,
+        motRecordId,
+        serviceRecordId
       };
+      // send `description` only
 
-      if (consumable) {
-        await api.put(`/consumables/${consumable.id}`, data);
+      let resp;
+      if (consumable && consumable.id) {
+        resp = await api.put(`/consumables/${consumable.id}`, data);
       } else {
-        await api.post('/consumables', data);
+        resp = await api.post('/consumables', data);
       }
-      onClose(true);
+      onClose(resp.data);
     } catch (error) {
       console.error('Error saving consumable:', error);
     } finally {
@@ -177,11 +204,11 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
                 <TextField
                   fullWidth
                   required
-                  name="specification"
-                  label={t('consumables.specification')}
-                  value={formData.specification}
+                  name="description"
+                  label={t('consumables.name')}
+                  value={formData.description}
                   onChange={handleChange}
-                  placeholder={t('common.specificationPlaceholder')}
+                  placeholder={t('common.namePlaceholder')}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -212,13 +239,22 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
                   value={formData.consumableTypeId}
                   onChange={handleChange}
                 >
-                  <MenuItem value="">Select Type</MenuItem>
+                  <MenuItem value="">{t('consumables.selectType')}</MenuItem>
                   {consumableTypes.map((type) => (
                     <MenuItem key={type.id} value={type.id}>
                       {type.name} ({type.unit})
                     </MenuItem>
                   ))}
                 </TextField>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  name="supplier"
+                  label={t('consumables.supplier')}
+                  value={formData.supplier}
+                  onChange={handleChange}
+                />
               </Grid>
               <Grid item xs={12} sm={6}>
                 <TextField
@@ -232,6 +268,20 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
                   inputProps={{ step: '0.01', min: '0' }}
                 />
               </Grid>
+
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  required
+                  type="number"
+                  name="quantity"
+                  label={t('consumables.quantity')}
+                  value={formData.quantity}
+                  onChange={handleChange}
+                  inputProps={{ step: '0.01', min: '0' }}
+                />
+              </Grid>
+
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
@@ -253,34 +303,36 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
                   onChange={handleChange}
                 />
               </Grid>
+
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
-                  required
-                  type="number"
-                  name="quantity"
-                  label={t('consumables.quantity')}
-                  value={formData.quantity}
-                  onChange={handleChange}
-                  inputProps={{ step: '0.1', min: '0' }}
-                />
+                  select
+                  name="motRecordId"
+                  label={t('consumables.motRecord')}
+                  value={motRecordId || ''}
+                  onChange={(e) => setMotRecordId(e.target.value)}
+                >
+                  <MenuItem value="">{t('consumables.selectMot')}</MenuItem>
+                  {motRecords.map(m => (
+                    <MenuItem key={m.id} value={m.id}>{`${m.testDate || ''} ${m.motTestNumber ? '- ' + m.motTestNumber : ''}`}</MenuItem>
+                  ))}
+                </TextField>
               </Grid>
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
-                  name="supplier"
-                  label={t('consumables.supplier')}
-                  value={formData.supplier}
-                  onChange={handleChange}
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <ReceiptUpload
-                  entityType="consumable"
-                  receiptAttachmentId={receiptAttachmentId}
-                  onReceiptUploaded={handleReceiptUploaded}
-                  onReceiptRemoved={() => setReceiptAttachmentId(null)}
-                />
+                  select
+                  name="serviceRecordId"
+                  label={t('consumables.serviceRecord')}
+                  value={serviceRecordId || ''}
+                  onChange={(e) => setServiceRecordId(e.target.value)}
+                >
+                  <MenuItem value="">{t('consumables.selectService')}</MenuItem>
+                  {serviceRecords.map(s => (
+                    <MenuItem key={s.id} value={s.id}>{`${s.serviceDate || ''} ${s.serviceProvider ? '- ' + s.serviceProvider : ''}`}</MenuItem>
+                  ))}
+                </TextField>
               </Grid>
               <Grid item xs={12}>
                 <TextField
@@ -291,6 +343,14 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
                   label={t('consumables.notes')}
                   value={formData.notes}
                   onChange={handleChange}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <ReceiptUpload
+                  entityType="consumable"
+                  receiptAttachmentId={receiptAttachmentId}
+                  onReceiptUploaded={handleReceiptUploaded}
+                  onReceiptRemoved={() => setReceiptAttachmentId(null)}
                 />
               </Grid>
             </Grid>

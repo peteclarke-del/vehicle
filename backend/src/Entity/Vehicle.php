@@ -66,6 +66,8 @@ class Vehicle
     private ?int $purchaseMileage = null;
 
     // current mileage is computed from fuel records; do not persist
+    // Non-persisted transient current mileage for tests and API updates
+    private ?int $transientCurrentMileage = null;
 
     #[ORM\Column(type: 'text', nullable: true)]
     private ?string $securityFeatures = null;
@@ -79,12 +81,15 @@ class Vehicle
     #[ORM\Column(type: 'integer', options: ['default' => 4000])]
     private int $serviceIntervalMiles = 4000;
 
+    #[ORM\Column(type: 'string', length: 20, options: ['default' => 'Live'])]
+    private string $status = 'Live';
+
     #[ORM\Column(
         type: 'string',
         length: 20,
-        options: ['default' => 'declining_balance']
+        options: ['default' => 'automotive_standard']
     )]
-    private string $depreciationMethod = 'declining_balance';
+    private string $depreciationMethod = 'automotive_standard';
 
     #[ORM\Column(type: 'integer', options: ['default' => 10])]
     private int $depreciationYears = 10;
@@ -93,9 +98,9 @@ class Vehicle
         type: 'decimal',
         precision: 5,
         scale: 2,
-        options: ['default' => '5.00']
+        options: ['default' => '20.00']
     )]
-    private string $depreciationRate = '5.00';
+    private string $depreciationRate = '20.00';
 
     #[ORM\Column(type: 'datetime')]
     private ?\DateTimeInterface $createdAt = null;
@@ -118,6 +123,9 @@ class Vehicle
     #[ORM\OneToMany(mappedBy: 'vehicle', targetEntity: Consumable::class, cascade: ['remove'])]
     private Collection $consumables;
 
+    #[ORM\OneToMany(mappedBy: 'vehicle', targetEntity: Todo::class, cascade: ['remove'])]
+    private Collection $todos;
+
     #[ORM\OneToMany(mappedBy: 'vehicle', targetEntity: ServiceRecord::class, cascade: ['remove'])]
     private Collection $serviceRecords;
 
@@ -134,6 +142,9 @@ class Vehicle
     #[ORM\OrderBy(['displayOrder' => 'ASC', 'id' => 'ASC'])]
     private Collection $images;
 
+    #[ORM\OneToMany(mappedBy: 'vehicle', targetEntity: VehicleStatusHistory::class, cascade: ['persist', 'remove'])]
+    private Collection $statusHistory;
+
     public function __construct()
     {
         $this->fuelRecords = new ArrayCollection();
@@ -144,8 +155,17 @@ class Vehicle
         $this->motRecords = new ArrayCollection();
         $this->roadTaxRecords = new ArrayCollection();
         $this->images = new ArrayCollection();
+        $this->statusHistory = new ArrayCollection();
         $this->createdAt = new \DateTime();
         $this->updatedAt = new \DateTime();
+    }
+
+    /**
+     * @return Collection<int, VehicleStatusHistory>
+     */
+    public function getStatusHistory(): Collection
+    {
+        return $this->statusHistory;
     }
 
     public function getId(): ?int
@@ -334,12 +354,16 @@ class Vehicle
 
     public function getCurrentMileage(): ?int
     {
+        if ($this->transientCurrentMileage !== null) {
+            return $this->transientCurrentMileage;
+        }
+
         return $this->getComputedCurrentMileage();
     }
 
     public function setCurrentMileage(?int $currentMileage): self
     {
-        // persisted current mileage was removed; setting is a no-op
+        $this->transientCurrentMileage = $currentMileage;
         return $this;
     }
 
@@ -610,6 +634,17 @@ class Vehicle
     public function setServiceIntervalMiles(int $serviceIntervalMiles): self
     {
         $this->serviceIntervalMiles = $serviceIntervalMiles;
+        return $this;
+    }
+
+    public function getStatus(): string
+    {
+        return $this->status;
+    }
+
+    public function setStatus(string $status): self
+    {
+        $this->status = $status;
         return $this;
     }
 

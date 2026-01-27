@@ -27,19 +27,38 @@ const PreferencesDialog = ({ open, onClose }) => {
   const [success, setSuccess] = useState(false);
 
   useEffect(() => {
-    if (user) {
-      setSessionTimeout(user.sessionTimeout || 3600);
-      // Use user's saved preference, or default based on their locale if not set
-      if (user.distanceUnit) {
-        setDistanceUnit(user.distanceUnit);
-      } else {
-        // Import dynamically to avoid circular dependencies
-        import('../utils/countryUtils').then(({ getUserDefaultDistanceUnit }) => {
-          setDistanceUnit(getUserDefaultDistanceUnit());
-        });
+    let mounted = true;
+    (async () => {
+      if (!api) return;
+      try {
+        // load session timeout preference
+        const sess = await api.get('/user/preferences?key=sessionTimeout');
+        if (mounted) setSessionTimeout(sess?.data?.value ?? 3600);
+      } catch (e) {
+        // ignore and keep default
       }
-    }
-  }, [user]);
+
+      try {
+        const resp = await api.get('/user/preferences?key=distanceUnit');
+        const raw = resp?.data?.value;
+        if (mounted && raw) {
+          setDistanceUnit(raw);
+          return;
+        }
+      } catch (e) {
+        // ignore
+      }
+
+      // fallback to locale-based default
+      try {
+        const mod = await import('../utils/countryUtils');
+        if (mounted) setDistanceUnit(mod.getUserDefaultDistanceUnit());
+      } catch (e) {
+        // ignore
+      }
+    })();
+    return () => { mounted = false; };
+  }, [user, api]);
 
   const handleSave = async () => {
     setSaving(true);

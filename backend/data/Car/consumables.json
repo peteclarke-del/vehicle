@@ -13,6 +13,12 @@
     },
     {
         "vehicleType": "Car",
+        "name": "Indicator/Direction Lamp Bulb",
+        "unit": "unit",
+        "description": "Indicator / direction (turn signal) lamp bulb (e.g., PY21W, 1157). Include polarity/LED type where applicable."
+    },
+    {
+        "vehicleType": "Car",
         "name": "Front Tyres/Tires",
         "unit": "psi / bar",
         "description": "Front tyre/tire size, load/speed rating, and cold pressure. Metric (e.g., 225/45R17) or imperial sizing."
@@ -286,5 +292,12 @@
         "name": "Horn",
         "unit": "unit",
         "description": "Electric horn (single or dual tone)."
+    }
+    ,
+    {
+        "vehicleType": "Car",
+        "name": "Engine Flush/Catalytic Converter Cleaner",
+        "unit": "litres",
+        "description": "Engine flush and catalytic converter cleaner; specify product and application instructions."
     }
 ]

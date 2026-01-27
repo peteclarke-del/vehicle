@@ -7,6 +7,7 @@ namespace App\Controller;
 use App\Entity\FuelRecord;
 use App\Entity\User;
 use App\Entity\Vehicle;
+use App\Entity\Attachment;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -55,13 +56,27 @@ class FuelRecordController extends AbstractController
 
         if ($vehicleId) {
             $vehicle = $this->entityManager->getRepository(Vehicle::class)->find($vehicleId);
-            if (!$vehicle || $vehicle->getOwner()->getId() !== $user->getId()) {
+            if (!$vehicle || (!$this->isAdminForUser($user) && $vehicle->getOwner()->getId() !== $user->getId())) {
                 return $this->json(['error' => 'Vehicle not found'], 404);
             }
             $records = $this->entityManager->getRepository(FuelRecord::class)
                 ->findBy(['vehicle' => $vehicle], ['date' => 'DESC']);
         } else {
-            $records = [];
+            // Fetch fuel records for all vehicles the user can see
+            $vehicleRepo = $this->entityManager->getRepository(Vehicle::class);
+            $vehicles = $this->isAdminForUser($user) ? $vehicleRepo->findAll() : $vehicleRepo->findBy(['owner' => $user]);
+            if (empty($vehicles)) {
+                $records = [];
+            } else {
+                $qb = $this->entityManager->createQueryBuilder()
+                    ->select('f')
+                    ->from(FuelRecord::class, 'f')
+                    ->where('f.vehicle IN (:vehicles)')
+                    ->setParameter('vehicles', $vehicles)
+                    ->orderBy('f.date', 'DESC');
+
+                $records = $qb->getQuery()->getResult();
+            }
         }
 
         $data = array_map(fn($r) => $this->serializeFuelRecord($r), $records);
@@ -79,7 +94,7 @@ class FuelRecordController extends AbstractController
 
         $record = $this->entityManager->getRepository(FuelRecord::class)->find($id);
 
-        if (!$record || $record->getVehicle()->getOwner()->getId() !== $user->getId()) {
+        if (!$record || (!$this->isAdminForUser($user) && $record->getVehicle()->getOwner()->getId() !== $user->getId())) {
             return $this->json(['error' => 'Fuel record not found'], 404);
         }
 
@@ -99,7 +114,7 @@ class FuelRecordController extends AbstractController
         $vehicle = $this->entityManager->getRepository(Vehicle::class)
             ->find($data['vehicleId']);
 
-        if (!$vehicle || $vehicle->getOwner()->getId() !== $user->getId()) {
+        if (!$vehicle || (!$this->isAdminForUser($user) && $vehicle->getOwner()->getId() !== $user->getId())) {
             return $this->json(['error' => 'Vehicle not found'], 404);
         }
 
@@ -128,7 +143,7 @@ class FuelRecordController extends AbstractController
 
         $record = $this->entityManager->getRepository(FuelRecord::class)->find($id);
 
-        if (!$record || $record->getVehicle()->getOwner()->getId() !== $user->getId()) {
+        if (!$record || (!$this->isAdminForUser($user) && $record->getVehicle()->getOwner()->getId() !== $user->getId())) {
             return $this->json(['error' => 'Fuel record not found'], 404);
         }
 
@@ -150,9 +165,17 @@ class FuelRecordController extends AbstractController
 
         $record = $this->entityManager->getRepository(FuelRecord::class)->find($id);
 
-        if (!$record || $record->getVehicle()->getOwner()->getId() !== $user->getId()) {
+        if (!$record || (!$this->isAdminForUser($user) && $record->getVehicle()->getOwner()->getId() !== $user->getId())) {
             return $this->json(['error' => 'Fuel record not found'], 404);
         }
+
+    }
+
+    private function isAdminForUser(?User $user): bool
+    {
+        if (!$user) return false;
+        $roles = $user->getRoles() ?: [];
+        return in_array('ROLE_ADMIN', $roles, true);
 
         $this->entityManager->remove($record);
         $this->entityManager->flush();
@@ -172,7 +195,7 @@ class FuelRecordController extends AbstractController
             'fuelType' => $record->getFuelType(),
             'station' => $record->getStation(),
             'notes' => $record->getNotes(),
-            'receiptAttachmentId' => $record->getReceiptAttachmentId(),
+            'receiptAttachmentId' => $record->getReceiptAttachment()?->getId(),
             'createdAt' => $record->getCreatedAt()?->format('c')
         ];
     }
@@ -201,7 +224,10 @@ class FuelRecordController extends AbstractController
             $record->setNotes($data['notes']);
         }
         if (isset($data['receiptAttachmentId'])) {
-            $record->setReceiptAttachmentId($data['receiptAttachmentId']);
+            $att = $this->entityManager->getRepository(Attachment::class)->find($data['receiptAttachmentId']);
+            if ($att) {
+                $record->setReceiptAttachment($att);
+            }
         }
     }
 }

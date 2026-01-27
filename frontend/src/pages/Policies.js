@@ -20,6 +20,7 @@ import {
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
+import { formatDateISO } from '../utils/formatDate';
 import { fetchArrayData } from '../hooks/useApiData';
 import PolicyDialog from '../components/PolicyDialog';
 
@@ -153,7 +154,7 @@ const Policies = () => {
                   </TableCell>
                   <TableCell>{p.policyNumber || '-'}</TableCell>
                   <TableCell>{p.ncdYears ?? '-'}</TableCell>
-                  <TableCell>{p.expiryDate ? new Date(p.expiryDate).toLocaleDateString() : '-'}</TableCell>
+                  <TableCell>{p.expiryDate ? formatDateISO(p.expiryDate) : '-'}</TableCell>
                   <TableCell>{(p.vehicles || []).map(v => v.registration).join(', ')}</TableCell>
                   <TableCell align="center">
                     <Tooltip title={t('edit')}>
