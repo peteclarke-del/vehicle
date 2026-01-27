@@ -22,7 +22,7 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
   const { convert, toKm, getLabel } = useDistance();
   const [formData, setFormData] = useState({
     consumableTypeId: '',
-    specification: '',
+    description: '',
     quantity: '',
     lastChanged: '',
     mileageAtChange: '',
@@ -52,7 +52,7 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
     if (consumable) {
       setFormData({
         consumableTypeId: consumable.consumableType?.id || '',
-        specification: consumable.specification || '',
+        description: consumable.description || '',
         quantity: consumable.quantity || '',
         lastChanged: consumable.lastChanged || '',
         mileageAtChange: consumable.mileageAtChange ? Math.round(convert(consumable.mileageAtChange)) : '',
@@ -69,7 +69,7 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
     } else {
       setFormData({
         consumableTypeId: '',
-        specification: '',
+        description: '',
         quantity: '',
         lastChanged: '',
         mileageAtChange: '',
@@ -128,7 +128,7 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
   const handleReceiptUploaded = (attachmentId, ocrData) => {
     setReceiptAttachmentId(attachmentId);
     const updates = {};
-    if (ocrData.name) updates.specification = ocrData.name;
+    if (ocrData.name) updates.description = ocrData.name;
     if (ocrData.price) updates.cost = ocrData.price;
     if (ocrData.quantity) updates.quantity = ocrData.quantity;
     if (ocrData.manufacturer) updates.brand = ocrData.manufacturer;
@@ -141,7 +141,7 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
   const handleDataScraped = (scrapedData, url) => {
     setProductUrl(url);
     const updates = {};
-    if (scrapedData.name) updates.specification = scrapedData.name;
+    if (scrapedData.name) updates.description = scrapedData.name;
     if (scrapedData.price) updates.cost = scrapedData.price;
     if (scrapedData.partNumber) updates.partNumber = scrapedData.partNumber;
     if (scrapedData.manufacturer) updates.brand = scrapedData.manufacturer;
@@ -167,13 +167,15 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
         motRecordId,
         serviceRecordId
       };
+      // send `description` only
 
-      if (consumable) {
-        await api.put(`/consumables/${consumable.id}`, data);
+      let resp;
+      if (consumable && consumable.id) {
+        resp = await api.put(`/consumables/${consumable.id}`, data);
       } else {
-        await api.post('/consumables', data);
+        resp = await api.post('/consumables', data);
       }
-      onClose(true);
+      onClose(resp.data);
     } catch (error) {
       console.error('Error saving consumable:', error);
     } finally {
@@ -202,11 +204,11 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
                 <TextField
                   fullWidth
                   required
-                  name="specification"
-                  label={t('consumables.specification')}
-                  value={formData.specification}
+                  name="description"
+                  label={t('consumables.name')}
+                  value={formData.description}
                   onChange={handleChange}
-                  placeholder={t('common.specificationPlaceholder')}
+                  placeholder={t('common.namePlaceholder')}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -237,7 +239,7 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
                   value={formData.consumableTypeId}
                   onChange={handleChange}
                 >
-                  <MenuItem value="">Select Type</MenuItem>
+                  <MenuItem value="">{t('consumables.selectType')}</MenuItem>
                   {consumableTypes.map((type) => (
                     <MenuItem key={type.id} value={type.id}>
                       {type.name} ({type.unit})
@@ -283,6 +285,28 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
+                  type="date"
+                  name="lastChanged"
+                  label={t('consumables.lastChanged')}
+                  value={formData.lastChanged}
+                  onChange={handleChange}
+                  InputLabelProps={{ shrink: true }}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  type="number"
+                  name="mileageAtChange"
+                  label={`${t('consumables.mileageAtChange')} (${getLabel()})`}
+                  value={formData.mileageAtChange}
+                  onChange={handleChange}
+                />
+              </Grid>
+
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
                   select
                   name="motRecordId"
                   label={t('consumables.motRecord')}
@@ -309,28 +333,6 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
                     <MenuItem key={s.id} value={s.id}>{`${s.serviceDate || ''} ${s.serviceProvider ? '- ' + s.serviceProvider : ''}`}</MenuItem>
                   ))}
                 </TextField>
-              </Grid>
-
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  type="date"
-                  name="lastChanged"
-                  label={t('consumables.lastChanged')}
-                  value={formData.lastChanged}
-                  onChange={handleChange}
-                  InputLabelProps={{ shrink: true }}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  type="number"
-                  name="mileageAtChange"
-                  label={`${t('consumables.mileageAtChange')} (${getLabel()})`}
-                  value={formData.mileageAtChange}
-                  onChange={handleChange}
-                />
               </Grid>
               <Grid item xs={12}>
                 <TextField

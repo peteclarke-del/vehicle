@@ -10,12 +10,12 @@
         "name": "Transmission Fluid",
         "unit": "litres",
         "description": "Automatic Transmission Fluid (ATF) or manual gear oil. Specify Dexron, Mercon, or manufacturer-specific type."
+    },
     {
         "vehicleType": "Car",
         "name": "Indicator/Direction Lamp Bulb",
         "unit": "unit",
         "description": "Indicator / direction (turn signal) lamp bulb (e.g., PY21W, 1157). Include polarity/LED type where applicable."
-    }
     },
     {
         "vehicleType": "Car",

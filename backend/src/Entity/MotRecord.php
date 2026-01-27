@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
+use App\Entity\Attachment;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'mot_records')]
@@ -61,8 +62,9 @@ class MotRecord
     #[ORM\Column(type: 'text', nullable: true)]
     private ?string $notes = null;
 
-    #[ORM\Column(type: 'integer', nullable: true)]
-    private ?int $receiptAttachmentId = null;
+    #[ORM\ManyToOne(targetEntity: Attachment::class)]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
+    private ?Attachment $receiptAttachment = null;
 
     #[ORM\Column(type: 'datetime')]
     private ?\DateTimeInterface $createdAt = null;
@@ -203,14 +205,16 @@ class MotRecord
         return $this;
     }
 
-    public function getReceiptAttachmentId(): ?int
+
+
+    public function getReceiptAttachment(): ?Attachment
     {
-        return $this->receiptAttachmentId;
+        return $this->receiptAttachment;
     }
 
-    public function setReceiptAttachmentId(?int $receiptAttachmentId): self
+    public function setReceiptAttachment(?Attachment $receiptAttachment): self
     {
-        $this->receiptAttachmentId = $receiptAttachmentId;
+        $this->receiptAttachment = $receiptAttachment;
         return $this;
     }
 

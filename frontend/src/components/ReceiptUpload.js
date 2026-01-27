@@ -38,7 +38,7 @@ export default function ReceiptUpload({
       formData.append('file', file);
       formData.append('entityType', entityType);
       
-      const response = await api.post('/api/attachments', formData, {
+      const response = await api.post('/attachments', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
 
@@ -47,12 +47,12 @@ export default function ReceiptUpload({
       // Call OCR to extract data
       setProcessing(true);
       try {
-        const ocrResponse = await api.get(`/api/attachments/${attachmentId}/ocr`, {
+        const ocrResponse = await api.get(`/attachments/${attachmentId}/ocr`, {
           params: { type: entityType }
         });
         onReceiptUploaded(attachmentId, ocrResponse.data);
       } catch (ocrError) {
-        console.log('OCR failed, receipt attached without data extraction:', ocrError);
+        console.warn('OCR failed, receipt attached without data extraction:', ocrError);
         onReceiptUploaded(attachmentId, {});
       }
     } catch (error) {
@@ -66,7 +66,7 @@ export default function ReceiptUpload({
   const handleRemove = async () => {
     if (receiptAttachmentId) {
       try {
-        await api.delete(`/api/attachments/${receiptAttachmentId}`);
+        await api.delete(`/attachments/${receiptAttachmentId}`);
         onReceiptRemoved();
       } catch (error) {
         console.error('Failed to delete receipt:', error);
@@ -76,7 +76,7 @@ export default function ReceiptUpload({
 
   const handleView = () => {
     if (receiptAttachmentId) {
-      window.open(`${api.defaults.baseURL}/api/attachments/${receiptAttachmentId}?token=${token}`, '_blank');
+      window.open(`${api.defaults.baseURL}/attachments/${receiptAttachmentId}?token=${token}`, '_blank');
     }
   };
 

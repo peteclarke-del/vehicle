@@ -40,7 +40,7 @@ class MotRecordController extends AbstractController
 
         $vehicle = $this->entityManager->getRepository(Vehicle::class)->find($data['vehicleId']);
         $user = $this->getUserEntity();
-        if (!$vehicle || !$user || $vehicle->getOwner()->getId() !== $user->getId()) {
+        if (!$vehicle || !$user || (!$this->isAdminForUser($user) && $vehicle->getOwner()->getId() !== $user->getId())) {
             return new JsonResponse(['error' => 'Vehicle not found'], 404);
         }
 
@@ -59,7 +59,7 @@ class MotRecordController extends AbstractController
     {
         $motRecord = $this->entityManager->getRepository(MotRecord::class)->find($id);
         $user = $this->getUserEntity();
-        if (!$motRecord || !$user || $motRecord->getVehicle()->getOwner()->getId() !== $user->getId()) {
+        if (!$motRecord || !$user || (!$this->isAdminForUser($user) && $motRecord->getVehicle()->getOwner()->getId() !== $user->getId())) {
             return new JsonResponse(['error' => 'MOT record not found'], 404);
         }
 
@@ -82,7 +82,7 @@ class MotRecordController extends AbstractController
     {
         $motRecord = $this->entityManager->getRepository(MotRecord::class)->find($id);
         $user = $this->getUserEntity();
-        if (!$motRecord || !$user || $motRecord->getVehicle()->getOwner()->getId() !== $user->getId()) {
+        if (!$motRecord || !$user || (!$this->isAdminForUser($user) && $motRecord->getVehicle()->getOwner()->getId() !== $user->getId())) {
             return new JsonResponse(['error' => 'MOT record not found'], 404);
         }
 
@@ -97,7 +97,7 @@ class MotRecordController extends AbstractController
     {
         $motRecord = $this->entityManager->getRepository(MotRecord::class)->find($id);
         $user = $this->getUserEntity();
-        if (!$motRecord || !$user || $motRecord->getVehicle()->getOwner()->getId() !== $user->getId()) {
+        if (!$motRecord || !$user || (!$this->isAdminForUser($user) && $motRecord->getVehicle()->getOwner()->getId() !== $user->getId())) {
             return new JsonResponse(['error' => 'MOT record not found'], 404);
         }
 
@@ -120,6 +120,16 @@ class MotRecordController extends AbstractController
                 'partsCost' => $s->getPartsCost(),
                 'totalCost' => $s->getTotalCost(),
                 'mileage' => $s->getMileage(),
+                'serviceProvider' => $s->getServiceProvider(),
+                'workPerformed' => $s->getWorkPerformed(),
+                'items' => array_map(fn($it) => [
+                    'id' => $it->getId(),
+                    'type' => $it->getType(),
+                    'description' => $it->getDescription(),
+                    'cost' => $it->getCost(),
+                    'quantity' => $it->getQuantity(),
+                    'total' => $it->getTotal(),
+                ], $s->getItems()),
             ], $serviceRecords),
         ]);
     }
@@ -140,18 +150,35 @@ class MotRecordController extends AbstractController
     public function list(Request $request): JsonResponse
     {
         $vehicleId = $request->query->get('vehicleId');
-        if (empty($vehicleId)) {
-            return new JsonResponse(['error' => 'vehicleId is required'], 400);
-        }
-
-        $vehicle = $this->entityManager->getRepository(Vehicle::class)->find((int)$vehicleId);
         $user = $this->getUserEntity();
-        if (!$vehicle || !$user || $vehicle->getOwner()->getId() !== $user->getId()) {
-            return new JsonResponse(['error' => 'Vehicle not found'], 404);
+        if (!$user) {
+            return new JsonResponse(['error' => 'Unauthorized'], 401);
         }
 
-        $records = $this->entityManager->getRepository(MotRecord::class)
-            ->findBy(['vehicle' => $vehicle], ['testDate' => 'DESC']);
+        if (!empty($vehicleId)) {
+            $vehicle = $this->entityManager->getRepository(Vehicle::class)->find((int)$vehicleId);
+            if (!$vehicle || (!$this->isAdminForUser($user) && $vehicle->getOwner()->getId() !== $user->getId())) {
+                return new JsonResponse(['error' => 'Vehicle not found'], 404);
+            }
+
+            $records = $this->entityManager->getRepository(MotRecord::class)
+                ->findBy(['vehicle' => $vehicle], ['testDate' => 'DESC']);
+        } else {
+            $vehicleRepo = $this->entityManager->getRepository(Vehicle::class);
+            $vehicles = $this->isAdminForUser($user) ? $vehicleRepo->findAll() : $vehicleRepo->findBy(['owner' => $user]);
+            if (empty($vehicles)) {
+                return new JsonResponse([]);
+            }
+
+            $qb = $this->entityManager->createQueryBuilder()
+                ->select('m')
+                ->from(MotRecord::class, 'm')
+                ->where('m.vehicle IN (:vehicles)')
+                ->setParameter('vehicles', $vehicles)
+                ->orderBy('m.testDate', 'DESC');
+
+            $records = $qb->getQuery()->getResult();
+        }
 
         $out = array_map(fn($r) => $this->serializeMotRecord($r), $records);
         return new JsonResponse($out);
@@ -175,7 +202,7 @@ class MotRecordController extends AbstractController
 
         $vehicle = $this->entityManager->getRepository(Vehicle::class)->find((int)$vehicleId);
         $user = $this->getUserEntity();
-        if (!$vehicle || !$user || $vehicle->getOwner()->getId() !== $user->getId()) {
+        if (!$vehicle || !$user || (!$this->isAdminForUser($user) && $vehicle->getOwner()->getId() !== $user->getId())) {
             return new JsonResponse(['error' => 'Vehicle not found'], 404);
         }
 
@@ -392,7 +419,7 @@ class MotRecordController extends AbstractController
             'failures' => $failuresText,
             'advisoryItems' => $advisoryItems,
             'failureItems' => $failureItems,
-            'receiptAttachmentId' => $mot->getReceiptAttachmentId(),
+            'receiptAttachmentId' => $mot->getReceiptAttachment()?->getId(),
             'repairDetails' => $mot->getRepairDetails(),
             'notes' => $mot->getNotes(),
             'createdAt' => $mot->getCreatedAt()?->format('c'),
@@ -420,7 +447,7 @@ class MotRecordController extends AbstractController
             'motTestNumber' => $part->getMotRecord()?->getMotTestNumber(),
             'motTestDate' => $part->getMotRecord()?->getTestDate()?->format('Y-m-d'),
             'warranty' => $part->getWarranty(),
-            'receiptAttachmentId' => $part->getReceiptAttachmentId(),
+            'receiptAttachmentId' => $part->getReceiptAttachment()?->getId(),
             'productUrl' => $part->getProductUrl(),
             'createdAt' => $part->getCreatedAt()?->format('c')
         ];
@@ -436,13 +463,13 @@ class MotRecordController extends AbstractController
                 'name' => $consumable->getConsumableType()->getName(),
                 'unit' => $consumable->getConsumableType()->getUnit()
             ] : null,
-            'specification' => $consumable->getSpecification(),
+                'description' => $consumable->getDescription(),
             'quantity' => $consumable->getQuantity(),
             'lastChanged' => $consumable->getLastChanged()?->format('Y-m-d'),
             'mileageAtChange' => $consumable->getMileageAtChange(),
             'cost' => $consumable->getCost(),
             'notes' => $consumable->getNotes(),
-            'receiptAttachmentId' => $consumable->getReceiptAttachmentId(),
+            'receiptAttachmentId' => $consumable->getReceiptAttachment()?->getId(),
             'productUrl' => $consumable->getProductUrl(),
             'motRecordId' => $consumable->getMotRecord()?->getId(),
             'motTestNumber' => $consumable->getMotRecord()?->getMotTestNumber(),
@@ -484,7 +511,16 @@ class MotRecordController extends AbstractController
             $mot->setTestCenter($data['testCenter']);
         }
         if (isset($data['receiptAttachmentId'])) {
-            $mot->setReceiptAttachmentId($data['receiptAttachmentId']);
+            if ($data['receiptAttachmentId'] === null || $data['receiptAttachmentId'] === '') {
+                $mot->setReceiptAttachment(null);
+            } else {
+                $att = $this->entityManager->getRepository(\App\Entity\Attachment::class)->find($data['receiptAttachmentId']);
+                if ($att) {
+                    $mot->setReceiptAttachment($att);
+                } else {
+                    $mot->setReceiptAttachment(null);
+                }
+            }
         }
         if (isset($data['advisories'])) {
             if (is_array($data['advisories'])) {
@@ -506,5 +542,12 @@ class MotRecordController extends AbstractController
         if (isset($data['notes'])) {
             $mot->setNotes($data['notes']);
         }
+    }
+
+    private function isAdminForUser(?\App\Entity\User $user): bool
+    {
+        if (!$user) return false;
+        $roles = $user->getRoles() ?: [];
+        return in_array('ROLE_ADMIN', $roles, true);
     }
 }

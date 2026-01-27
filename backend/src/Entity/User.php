@@ -34,20 +34,8 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: 'string', length: 100)]
     private ?string $lastName = null;
 
-    #[ORM\Column(type: 'string', length: 10, options: ['default' => 'en'])]
-    private string $preferredLanguage = 'en';
-
     #[ORM\Column(type: 'string', length: 2, options: ['default' => 'GB'])]
     private string $country = 'GB';
-
-    #[ORM\Column(type: 'string', length: 20, options: ['default' => 'light'])]
-    private string $theme = 'light';
-
-    #[ORM\Column(type: 'integer', options: ['default' => 3600])]
-    private int $sessionTimeout = 3600;
-
-    #[ORM\Column(type: 'string', length: 10, options: ['default' => 'miles'])]
-    private string $distanceUnit = 'miles';
 
     #[ORM\Column(type: 'boolean', options: ['default' => false])]
     private bool $passwordChangeRequired = false;
@@ -147,44 +135,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    public function getPreferredLanguage(): string
-    {
-        return $this->preferredLanguage;
-    }
-
-    public function setPreferredLanguage(string $preferredLanguage): self
-    {
-        $this->preferredLanguage = $preferredLanguage;
-        return $this;
-    }
-
-    public function getTheme(): string
-    {
-        return $this->theme;
-    }
-
-    public function setTheme(string $theme): self
-    {
-        $this->theme = $theme;
-        return $this;
-    }
-
-    public function getSessionTimeout(): int
-    {
-        return $this->sessionTimeout;
-    }
-
-    public function setSessionTimeout(int $sessionTimeout): self
-    {
-        $this->sessionTimeout = $sessionTimeout;
-        return $this;
-    }
-
-    public function getDistanceUnit(): string
-    {
-        return $this->distanceUnit;
-    }
-
     public function getCountry(): string
     {
         return $this->country;
@@ -193,12 +143,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setCountry(string $country): self
     {
         $this->country = $country;
-        return $this;
-    }
-
-    public function setDistanceUnit(string $distanceUnit): self
-    {
-        $this->distanceUnit = $distanceUnit;
         return $this;
     }
 

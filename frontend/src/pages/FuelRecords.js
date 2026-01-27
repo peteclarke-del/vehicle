@@ -1,25 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import {
-  Box,
-  Button,
-  Typography,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  IconButton,
-  MenuItem,
-  TextField,
-  CircularProgress,
-  FormControl,
-  InputLabel,
-  Select,
-  Tooltip,
-  TableSortLabel,
-} from '@mui/material';
+import { Box, Button, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, IconButton, CircularProgress, Tooltip, TableSortLabel } from '@mui/material';
 import { Add, Edit, Delete } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { useUserPreferences } from '../contexts/UserPreferencesContext';
@@ -28,6 +8,7 @@ import formatCurrency from '../utils/formatCurrency';
 import { fetchArrayData } from '../hooks/useApiData';
 import { useDistance } from '../hooks/useDistance';
 import FuelRecordDialog from '../components/FuelRecordDialog';
+import VehicleSelector from '../components/VehicleSelector';
 
 const FuelRecords = () => {
   const [records, setRecords] = useState([]);
@@ -42,6 +23,10 @@ const FuelRecords = () => {
   const [order, setOrder] = useState(() => localStorage.getItem('fuelRecordsSortOrder') || 'desc');
   const { api } = useAuth();
   const { t, i18n } = useTranslation();
+  const registrationLabelText = t('common.registrationNumber');
+  const regWords = (registrationLabelText || '').split(/\s+/).filter(Boolean);
+  const regLast = regWords.length > 0 ? regWords[regWords.length - 1] : '';
+  const regFirst = regWords.length > 1 ? regWords.slice(0, regWords.length - 1).join(' ') : (regWords[0] || 'Registration');
   const { convert, format, getLabel } = useDistance();
   const { defaultVehicleId, setDefaultVehicle } = useUserPreferences();
   const [hasManualSelection, setHasManualSelection] = useState(false);
@@ -109,7 +94,8 @@ const FuelRecords = () => {
         sendClientLog('error', 'fuel_records_request_timeout', { vehicleId: selectedVehicle });
       }, 15000);
 
-      const response = await api.get(`/fuel-records?vehicleId=${selectedVehicle}`, { signal: controller.signal });
+      const url = (!selectedVehicle || selectedVehicle === '__all__') ? '/fuel-records' : `/fuel-records?vehicleId=${selectedVehicle}`;
+      const response = await api.get(url, { signal: controller.signal });
       setRecords(response.data);
     } catch (error) {
       const isCanceled = (error && (error.name === 'CanceledError' || error.name === 'AbortError' || error.code === 'ERR_CANCELED' || error.message === 'canceled'));
@@ -167,6 +153,12 @@ const FuelRecords = () => {
 
   const sortedRecords = React.useMemo(() => {
     const comparator = (a, b) => {
+      if (orderBy === 'registration') {
+        const aReg = vehicles.find(v => String(v.id) === String(a.vehicleId))?.registrationNumber || '';
+        const bReg = vehicles.find(v => String(v.id) === String(b.vehicleId))?.registrationNumber || '';
+        if (aReg === bReg) return 0;
+        return order === 'asc' ? (aReg > bReg ? 1 : -1) : (aReg < bReg ? 1 : -1);
+      }
       let aValue = a[orderBy];
       let bValue = b[orderBy];
 
@@ -207,7 +199,7 @@ const FuelRecords = () => {
   // For UX: show the Date column's sort arrow so that newest-first (internal 'desc') appears as an up arrow.
   const dateDisplayDirection = orderBy === 'date' ? (order === 'desc' ? 'asc' : 'desc') : order;
 
-  const headingText = (records && records.length > 0) ? `Fuel Records (${records.length})` : t('fuel.title');
+  const headingText = (records && records.length > 0) ? t('fuel.titleWithCount', { count: records.length }) : t('fuel.title');
 
   if (loading) {
     return (
@@ -222,26 +214,18 @@ const FuelRecords = () => {
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Typography variant="h4">{headingText}</Typography>
         <Box display="flex" gap={2}>
-          <FormControl size="small" sx={{ width: 360, maxWidth: '100%' }}>
-            <InputLabel>{t('common.selectVehicle')}</InputLabel>
-            <Select
-              value={selectedVehicle}
-              label={t('common.selectVehicle')}
-              onChange={(e) => { setHasManualSelection(true); setSelectedVehicle(e.target.value); setDefaultVehicle(e.target.value); }}
-              MenuProps={{ PaperProps: { sx: { minWidth: 360 } } }}
-            >
-              {vehicles.map((vehicle) => (
-                <MenuItem key={vehicle.id} value={vehicle.id}>
-                  {vehicle.name}{vehicle.registrationNumber ? ` (${vehicle.registrationNumber})` : ''}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          <VehicleSelector
+            vehicles={vehicles}
+            value={selectedVehicle}
+            onChange={(v) => { setHasManualSelection(true); setSelectedVehicle(v); setDefaultVehicle(v); }}
+            includeViewAll={true}
+            minWidth={360}
+          />
           <Button
             variant="contained"
             startIcon={<Add />}
             onClick={handleAdd}
-            disabled={!selectedVehicle}
+            disabled={!selectedVehicle || selectedVehicle === '__all__'}
           >
             {t('fuel.addRecord')}
           </Button>
@@ -257,6 +241,18 @@ const FuelRecords = () => {
           <Table stickyHeader>
           <TableHead>
             <TableRow>
+                <TableCell>
+                  <TableSortLabel
+                    active={orderBy === 'registration'}
+                    direction={orderBy === 'registration' ? order : 'asc'}
+                    onClick={() => handleRequestSort('registration')}
+                  >
+                    <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
+                      <span>{regFirst}</span>
+                      <span>{regLast}</span>
+                    </div>
+                  </TableSortLabel>
+                </TableCell>
               <TableCell>
                 <TableSortLabel
                   active={orderBy === 'date'}
@@ -317,19 +313,20 @@ const FuelRecords = () => {
           <TableBody>
             {sortedRecords.map((record) => (
               <TableRow key={record.id} sx={{ '&:nth-of-type(odd)': { backgroundColor: 'action.hover' } }}>
+                <TableCell>{vehicles.find(v => String(v.id) === String(record.vehicleId))?.registrationNumber || '-'}</TableCell>
                 <TableCell>{record.date}</TableCell>
                 <TableCell>{record.mileage ? format(convert(record.mileage)) : '-'}</TableCell>
                 <TableCell>{record.litres}</TableCell>
                 <TableCell>{formatCurrency(record.cost, 'GBP', i18n.language)}</TableCell>
-                <TableCell>{record.fuelType || 'N/A'}</TableCell>
-                <TableCell>{record.station || 'N/A'}</TableCell>
+                <TableCell>{record.fuelType || t('vehicleDetails.na')}</TableCell>
+                <TableCell>{record.station || t('vehicleDetails.na')}</TableCell>
                 <TableCell>
-                  <Tooltip title={t('edit')}>
+                  <Tooltip title={t('vehicles.edit')}>
                     <IconButton size="small" onClick={() => handleEdit(record)}>
                       <Edit fontSize="small" />
                     </IconButton>
                   </Tooltip>
-                  <Tooltip title={t('delete')}>
+                  <Tooltip title={t('common.delete')}>
                     <IconButton size="small" onClick={() => handleDelete(record.id)}>
                       <Delete fontSize="small" />
                     </IconButton>

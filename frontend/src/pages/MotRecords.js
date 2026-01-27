@@ -29,6 +29,7 @@ import { fetchArrayData } from '../hooks/useApiData';
 import { useDistance } from '../hooks/useDistance';
 import { formatDateISO } from '../utils/formatDate';
 import MotDialog from '../components/MotDialog';
+import VehicleSelector from '../components/VehicleSelector';
 
 const MotRecords = () => {
   const [motRecords, setMotRecords] = useState([]);
@@ -36,10 +37,14 @@ const MotRecords = () => {
   const [selectedVehicle, setSelectedVehicle] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingMot, setEditingMot] = useState(null);
-  const [orderBy, setOrderBy] = useState(() => localStorage.getItem('motRecordsSortBy') || 'testDate');
+  const [orderBy, setOrderBy] = useState(() => localStorage.getItem('motRecordsSortBy') || 'expiryDate');
   const [order, setOrder] = useState(() => localStorage.getItem('motRecordsSortOrder') || 'desc');
   const { api } = useAuth();
   const { t, i18n } = useTranslation();
+  const registrationLabelText = t('common.registrationNumber');
+  const regWords = (registrationLabelText || '').split(/\s+/).filter(Boolean);
+  const regLast = regWords.length > 0 ? regWords[regWords.length - 1] : '';
+  const regFirst = regWords.length > 1 ? regWords.slice(0, regWords.length - 1).join(' ') : (regWords[0] || 'Registration');
   const { convert, format, getLabel } = useDistance();
   const { defaultVehicleId, setDefaultVehicle } = useUserPreferences();
   const [hasManualSelection, setHasManualSelection] = useState(false);
@@ -59,9 +64,7 @@ const MotRecords = () => {
   }, [defaultVehicleId, vehicles, hasManualSelection]);
 
   useEffect(() => {
-    if (selectedVehicle) {
-      loadMotRecords();
-    }
+    loadMotRecords();
   }, [selectedVehicle]);
 
   const loadVehicles = async () => {
@@ -77,9 +80,9 @@ const MotRecords = () => {
   };
 
   const loadMotRecords = async () => {
-    if (!selectedVehicle) return;
     try {
-      const response = await api.get(`/mot-records?vehicleId=${selectedVehicle}`);
+      const url = !selectedVehicle || selectedVehicle === '__all__' ? '/mot-records' : `/mot-records?vehicleId=${selectedVehicle}`;
+      const response = await api.get(url);
       setMotRecords(response.data);
     } catch (error) {
       console.error('Error loading MOT records:', error);
@@ -126,6 +129,12 @@ const MotRecords = () => {
 
   const sortedMotRecords = React.useMemo(() => {
     const comparator = (a, b) => {
+      if (orderBy === 'registration') {
+        const aReg = vehicles.find(v => String(v.id) === String(a.vehicleId))?.registrationNumber || '';
+        const bReg = vehicles.find(v => String(v.id) === String(b.vehicleId))?.registrationNumber || '';
+        if (aReg === bReg) return 0;
+        return order === 'asc' ? (aReg > bReg ? 1 : -1) : (aReg < bReg ? 1 : -1);
+      }
       let aValue = a[orderBy];
       let bValue = b[orderBy];
 
@@ -176,21 +185,12 @@ const MotRecords = () => {
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Typography variant="h4">{t('mot.title')}</Typography>
         <Box display="flex" gap={2}>
-          <FormControl size="small" sx={{ width: 360, maxWidth: '100%' }}>
-            <InputLabel>{t('common.selectVehicle')}</InputLabel>
-            <Select
-              value={selectedVehicle}
-              label={t('common.selectVehicle')}
-              onChange={(e) => { setHasManualSelection(true); setSelectedVehicle(e.target.value); setDefaultVehicle(e.target.value); }}
-              MenuProps={{ PaperProps: { sx: { minWidth: 360 } } }}
-            >
-                {vehicles.map((vehicle) => (
-                  <MenuItem key={vehicle.id} value={vehicle.id}>
-                    {vehicle.name}{vehicle.registrationNumber ? ` (${vehicle.registrationNumber})` : ''}
-                  </MenuItem>
-                ))}
-            </Select>
-          </FormControl>
+          <VehicleSelector
+            vehicles={vehicles}
+            value={selectedVehicle}
+            onChange={(v) => { setHasManualSelection(true); setSelectedVehicle(v); setDefaultVehicle(v); }}
+            minWidth={360}
+          />
           {(() => {
             const sel = vehicles.find(v => v.id === selectedVehicle);
             const disabled = sel ? (sel.isMotExempt || sel.motExempt) : false;
@@ -246,16 +246,28 @@ const MotRecords = () => {
       <TableContainer component={Paper} sx={{ maxHeight: 'calc(100vh - 180px)', overflow: 'auto' }}>
         <Table stickyHeader>
           <TableHead>
-            <TableRow>
-              <TableCell>
-                <TableSortLabel
-                  active={orderBy === 'testDate'}
-                  direction={orderBy === 'testDate' ? order : 'asc'}
-                  onClick={() => handleRequestSort('testDate')}
-                >
-                  {t('mot.testDate')}
-                </TableSortLabel>
-              </TableCell>
+              <TableRow>
+                <TableCell>
+                  <TableSortLabel
+                    active={orderBy === 'registration'}
+                    direction={orderBy === 'registration' ? order : 'asc'}
+                    onClick={() => handleRequestSort('registration')}
+                  >
+                    <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
+                      <span>{regFirst}</span>
+                      <span>{regLast}</span>
+                    </div>
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell>
+                  <TableSortLabel
+                    active={orderBy === 'testDate'}
+                    direction={orderBy === 'testDate' ? order : 'asc'}
+                    onClick={() => handleRequestSort('testDate')}
+                  >
+                    {t('mot.testDate')}
+                  </TableSortLabel>
+                </TableCell>
               <TableCell>
                 <TableSortLabel
                   active={orderBy === 'result'}
@@ -268,7 +280,7 @@ const MotRecords = () => {
               <TableCell>
                 <TableSortLabel
                   active={orderBy === 'expiryDate'}
-                  direction={orderBy === 'expiryDate' ? order : 'asc'}
+                  direction={orderBy === 'expiryDate' ? order : 'desc'}
                   onClick={() => handleRequestSort('expiryDate')}
                 >
                   {t('mot.expiryDate')}
@@ -323,7 +335,7 @@ const MotRecords = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {sortedMotRecords.length === 0 ? (
+              {sortedMotRecords.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={9} align="center">
                   {t('common.noRecords')}
@@ -332,6 +344,7 @@ const MotRecords = () => {
             ) : (
               sortedMotRecords.map((mot) => (
                 <TableRow key={mot.id} sx={{ '&:nth-of-type(odd)': { backgroundColor: 'action.hover' } }}>
+                  <TableCell>{vehicles.find(v => String(v.id) === String(mot.vehicleId))?.registrationNumber || '-'}</TableCell>
                   <TableCell>{formatDateISO(mot.testDate)}</TableCell>
                   <TableCell>{getResultChip(mot.result)}</TableCell>
                   <TableCell>{mot.expiryDate ? formatDateISO(mot.expiryDate) : '-'}</TableCell>

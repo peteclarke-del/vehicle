@@ -24,8 +24,10 @@ import {
   DialogActions,
   Tooltip,
   TableSortLabel,
-  Tabs,
-  Tab,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material';
 import { 
   Add, 
@@ -38,8 +40,7 @@ import {
   TwoWheeler as MotorcycleIcon,
   LocalShipping as VanIcon,
   LocalShipping as TruckIcon,
-  FileDownload as ExportIcon,
-  FileUpload as ImportIcon,
+  
   DeleteSweep as PurgeIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
@@ -58,15 +59,15 @@ const Vehicles = () => {
   const { convert, format } = useDistance();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
+  const [statusFilter, setStatusFilter] = useState(() => localStorage.getItem('vehiclesStatusFilter') || 'all');
   const [viewMode, setViewMode] = useState(() => {
     return localStorage.getItem('vehiclesViewMode') || 'card';
   });
   const [orderBy, setOrderBy] = useState(() => localStorage.getItem('vehiclesSortBy') || 'name');
   const [order, setOrder] = useState(() => localStorage.getItem('vehiclesSortOrder') || 'asc');
   const [purgeDialogOpen, setPurgeDialogOpen] = useState(false);
+  const [purgeMode, setPurgeMode] = useState('vehicles-only');
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
-  const [selectedTabValue, setSelectedTabValue] = useState(0);
-  const fileInputRef = React.useRef(null);
   const navigate = useNavigate();
   const { setDefaultVehicle } = useUserPreferences();
   const { api } = useAuth();
@@ -75,8 +76,6 @@ const Vehicles = () => {
   useEffect(() => {
     loadVehicles();
   }, []);
-
-  // no local ordering state — cards are not draggable anymore
 
   const loadVehicles = async () => {
     setLoading(true);
@@ -92,62 +91,6 @@ const Vehicles = () => {
     }
   };
 
-  // drag & drop removed
-
-  const handleExport = async () => {
-    try {
-      const response = await api.get('/vehicles/export');
-      const json = JSON.stringify(response.data, null, 2);
-      const blob = new Blob([json], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `vehicles_export_${new Date().toISOString().split('T')[0]}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Export failed:', error);
-      alert(t('common.exportFailed'));
-    }
-  };
-
-  const handleImportClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleImportFile = async (event) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    try {
-      const text = await file.text();
-      const data = JSON.parse(text);
-      
-      const response = await api.post('/vehicles/import', data);
-      
-      if (response.data.errors && response.data.errors.length > 0) {
-        alert(t('common.importWarnings', { 
-          imported: response.data.imported, 
-          total: response.data.total, 
-          errors: response.data.errors.join('\n')
-        }));
-      } else {
-        alert(t('common.importSuccess', { count: response.data.imported }));
-      }
-      
-      // Reload vehicles
-      loadVehicles();
-    } catch (error) {
-      console.error('Import failed:', error);
-      alert(t('common.importFailed'));
-    } finally {
-      // Reset file input
-      event.target.value = '';
-    }
-  };
-
   const handlePurgeClick = () => {
     setPurgeDialogOpen(true);
   };
@@ -158,11 +101,12 @@ const Vehicles = () => {
 
   const handlePurgeConfirm = async () => {
     setPurgeDialogOpen(false);
-    
+
     try {
-      const response = await api.delete('/vehicles/purge-all');
+      const cascade = purgeMode === 'all' ? 'true' : 'false';
+      const response = await api.delete(`/vehicles/purge-all?cascade=${cascade}`);
       alert(response.data.message || t('common.deleteSuccess', { count: response.data.deleted }));
-      
+
       // Reload vehicles
       loadVehicles();
     } catch (error) {
@@ -190,6 +134,11 @@ const Vehicles = () => {
         bValue = parseFloat(b.currentMileage) || 0;
       }
 
+      if (orderBy === 'purchaseMileage') {
+        aValue = parseFloat(a.purchaseMileage) || 0;
+        bValue = parseFloat(b.purchaseMileage) || 0;
+      }
+
       if (orderBy === 'year') {
         aValue = parseInt(a.year) || 0;
         bValue = parseInt(b.year) || 0;
@@ -215,6 +164,10 @@ const Vehicles = () => {
     return [...vehicles].sort(comparator);
   }, [vehicles, order, orderBy]);
 
+  const displayedVehicles = React.useMemo(() => {
+    return sortedVehicles.filter(v => statusFilter === 'all' || (v.status || 'Live') === statusFilter);
+  }, [sortedVehicles, statusFilter]);
+
   const handleAdd = () => {
     setSelectedVehicle(null);
     setDialogOpen(true);
@@ -229,12 +182,13 @@ const Vehicles = () => {
     // remember this vehicle as the default
     try { setDefaultVehicle(vehicle.id); } catch (e) {}
     setSelectedVehicle(vehicle);
-    setSelectedTabValue(0);
     setDetailsDialogOpen(true);
   };
 
-  const handleTabChange = (event, newValue) => {
-    setSelectedTabValue(newValue);
+  const handleStatusFilterChange = (e) => {
+    const val = e.target.value;
+    setStatusFilter(val);
+    try { localStorage.setItem('vehiclesStatusFilter', val); } catch (e) {}
   };
 
   const handleDelete = async (id) => {
@@ -280,17 +234,38 @@ const Vehicles = () => {
     }
   };
 
+  const regLabelParts = t('common.registrationNumber').split(' ');
+  const purchaseLabelParts = t('vehicle.purchaseMileage').split(' ');
+  const currentLabelParts = t('vehicle.currentMileage').split(' ');
+
+  const statusOptions = [
+    { key: 'all', label: t('vehicles.filterAll') || 'All' },
+    { key: 'Live', label: t('vehicle.status.live') || 'Live' },
+    { key: 'Sold', label: t('vehicle.status.sold') || 'Sold' },
+    { key: 'Scrapped', label: t('vehicle.status.scrapped') || 'Scrapped' },
+    { key: 'Exported', label: t('vehicle.status.exported') || 'Exported' },
+  ];
+
   return (
     <Box>
-      <input
-        type="file"
-        ref={fileInputRef}
-        onChange={handleImportFile}
-        accept=".json"
-        style={{ display: 'none' }}
-      />
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h4">{t('vehicle.title')}</Typography>
+        <Box display="flex" alignItems="center" gap={2}>
+          <Typography variant="h4">{(vehicles && vehicles.length > 0) ? t('vehicles.titleWithCount', { count: vehicles.length }) : t('vehicle.title')}</Typography>
+          <FormControl size="small" sx={{ minWidth: 160 }}>
+            <InputLabel id="vehicle-status-filter-label">{t('vehicles.filterByStatus') || 'Status'}</InputLabel>
+            <Select
+              labelId="vehicle-status-filter-label"
+              value={statusFilter}
+              label={t('vehicles.filterByStatus') || 'Status'}
+              onChange={handleStatusFilterChange}
+              size="small"
+            >
+              {statusOptions.map(opt => (
+                <MenuItem key={opt.key} value={opt.key}>{opt.label}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Box>
         <Box display="flex" gap={2} alignItems="center">
           <ToggleButtonGroup
             value={viewMode}
@@ -305,23 +280,7 @@ const Vehicles = () => {
               <TableViewIcon />
             </ToggleButton>
           </ToggleButtonGroup>
-          
-          <Button
-            variant="outlined"
-            startIcon={<ImportIcon />}
-            onClick={handleImportClick}
-          >
-            Import
-          </Button>
-          
-          <Button
-            variant="outlined"
-            startIcon={<ExportIcon />}
-            onClick={handleExport}
-          >
-            Export
-          </Button>
-          
+
           <Button
             variant="contained"
             startIcon={<Add />}
@@ -349,9 +308,26 @@ const Vehicles = () => {
         <DialogContent>
           <DialogContentText>
             {t('deleteAll.message')}
-            <br /><br />
-            {t('deleteAll.confirm')}
           </DialogContentText>
+
+          <Box sx={{ mt: 2 }}>
+            <FormControl component="fieldset">
+              <Typography variant="subtitle1" sx={{ mb: 1 }}>{t('deleteAll.chooseOption') || 'Choose deletion scope'}</Typography>
+              <ToggleButtonGroup
+                value={purgeMode}
+                exclusive
+                onChange={(e, val) => { if (val) setPurgeMode(val); }}
+                size="small"
+              >
+                <ToggleButton value="vehicles-only">{t('deleteAll.vehiclesOnly') || 'Vehicles only'}</ToggleButton>
+                <ToggleButton value="all">{t('deleteAll.vehiclesAndAllData') || 'Vehicles and ALL associated data'}</ToggleButton>
+              </ToggleButtonGroup>
+            </FormControl>
+            <DialogContentText sx={{ mt: 2 }}>
+              {t('deleteAll.confirm')}
+            </DialogContentText>
+          </Box>
+
         </DialogContent>
         <DialogActions>
           <Button onClick={handlePurgeCancel}>{t('common.cancel')}</Button>
@@ -363,7 +339,7 @@ const Vehicles = () => {
 
       {viewMode === 'card' ? (
         <Grid container spacing={3}>
-          {sortedVehicles.map((vehicle) => (
+          {displayedVehicles.map((vehicle) => (
             <Grid key={vehicle.id} item xs={12} sm={6} md={4}>
                       <Card sx={{ height: '100%', cursor: 'pointer' }} onClick={() => handleViewDetails(vehicle)}>
                 <CardContent>
@@ -392,11 +368,27 @@ const Vehicles = () => {
                   <Typography color="textSecondary" gutterBottom>
                     {vehicle.make} {vehicle.model} ({vehicle.year})
                   </Typography>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                      {regLabelParts[0]}
+                    </Typography>
+                    {regLabelParts.length > 1 && (
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                        {regLabelParts.slice(1).join(' ')}
+                      </Typography>
+                    )}
+                    <Typography variant="body2">
+                      {vehicle.registrationNumber || t('na')}
+                    </Typography>
+                  </Box>
                   <Typography variant="body2">
-                    {t('vehicle.registrationNumber')}: {vehicle.registrationNumber || 'N/A'}
+                    {t('vehicle.colour')}: {vehicle.colour || t('na')}
                   </Typography>
                   <Typography variant="body2">
-                    {t('vehicle.currentMileage')}: {vehicle.currentMileage ? format(convert(vehicle.currentMileage)) : 'N/A'}
+                    {t('vehicle.purchaseMileage')}: {vehicle.purchaseMileage ? format(convert(vehicle.purchaseMileage)) : t('na')}
+                  </Typography>
+                  <Typography variant="body2">
+                    {t('vehicle.currentMileage')}: {vehicle.currentMileage ? format(convert(vehicle.currentMileage)) : t('na')}
                   </Typography>
                   <Box mt={2}>
                     <Button
@@ -469,7 +461,31 @@ const Vehicles = () => {
                     direction={orderBy === 'registrationNumber' ? order : 'asc'}
                     onClick={() => handleRequestSort('registrationNumber')}
                   >
-                    {t('vehicle.registrationNumber')}
+                    <Box sx={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
+                      <span>{regLabelParts[0]}</span>
+                      <span>{regLabelParts.length > 1 ? regLabelParts.slice(1).join(' ') : ''}</span>
+                    </Box>
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell sx={{ fontWeight: 'bold', fontSize: '1rem' }}>
+                  <TableSortLabel
+                    active={orderBy === 'colour'}
+                    direction={orderBy === 'colour' ? order : 'asc'}
+                    onClick={() => handleRequestSort('colour')}
+                  >
+                    {t('vehicle.colour')}
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell sx={{ fontWeight: 'bold', fontSize: '1rem' }}>
+                  <TableSortLabel
+                    active={orderBy === 'purchaseMileage'}
+                    direction={orderBy === 'purchaseMileage' ? order : 'asc'}
+                    onClick={() => handleRequestSort('purchaseMileage')}
+                  >
+                    <Box sx={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
+                      <span>{purchaseLabelParts[0]}</span>
+                      <span>{purchaseLabelParts.length > 1 ? purchaseLabelParts.slice(1).join(' ') : ''}</span>
+                    </Box>
                   </TableSortLabel>
                 </TableCell>
                 <TableCell sx={{ fontWeight: 'bold', fontSize: '1rem' }}>
@@ -478,14 +494,17 @@ const Vehicles = () => {
                     direction={orderBy === 'currentMileage' ? order : 'asc'}
                     onClick={() => handleRequestSort('currentMileage')}
                   >
-                    {t('vehicle.currentMileage')}
+                    <Box sx={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
+                      <span>{currentLabelParts[0]}</span>
+                      <span>{currentLabelParts.length > 1 ? currentLabelParts.slice(1).join(' ') : ''}</span>
+                    </Box>
                   </TableSortLabel>
                 </TableCell>
                 <TableCell align="right" sx={{ fontWeight: 'bold', fontSize: '1rem' }}>{t('common.actions')}</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {sortedVehicles.map((vehicle, index) => (
+              {displayedVehicles.map((vehicle, index) => (
                 <TableRow 
                   key={vehicle.id}
                   hover
@@ -507,6 +526,8 @@ const Vehicles = () => {
                   <TableCell>{vehicle.model}</TableCell>
                   <TableCell>{vehicle.year || t('vehicleDetails.na')}</TableCell>
                   <TableCell>{vehicle.registrationNumber || t('vehicleDetails.na')}</TableCell>
+                  <TableCell>{vehicle.colour || t('vehicleDetails.na')}</TableCell>
+                  <TableCell>{vehicle.purchaseMileage ? format(convert(vehicle.purchaseMileage)) : t('vehicleDetails.na')}</TableCell>
                   <TableCell>{vehicle.currentMileage ? format(convert(vehicle.currentMileage)) : t('vehicleDetails.na')}</TableCell>
                   <TableCell align="right">
                     <Tooltip title={t('edit')}>
@@ -558,28 +579,8 @@ const Vehicles = () => {
           </Typography>
         </DialogTitle>
         <DialogContent>
-          <Tabs value={selectedTabValue} onChange={handleTabChange} sx={{ borderBottom: 1, borderColor: 'divider' }}>
-            <Tab label={t('vehicleDetails.overview')} />
-            <Tab label={t('vehicleDetails.vehicleInformation')} />
-          </Tabs>
           <Box sx={{ mt: 2 }}>
-            {selectedTabValue === 0 && (
-              <Box>
-                <Typography variant="body1" paragraph>
-                  <strong>{t('vehicle.registrationNumber')}:</strong> {selectedVehicle?.registrationNumber || t('vehicleDetails.na')}
-                </Typography>
-                <Typography variant="body1" paragraph>
-                  <strong>{t('vehicle.vin')}:</strong> {selectedVehicle?.vin || t('vehicleDetails.na')}
-                </Typography>
-                <Typography variant="body1" paragraph>
-                  <strong>{t('vehicle.currentMileage')}:</strong> {selectedVehicle?.currentMileage ? format(convert(selectedVehicle.currentMileage)) : t('vehicleDetails.na')}
-                </Typography>
-                <Typography variant="body1" paragraph>
-                  <strong>{t('vehicle.vehicleType')}:</strong> {selectedVehicle?.vehicleType?.name || t('vehicleDetails.na')}
-                </Typography>
-              </Box>
-            )}
-            {selectedTabValue === 1 && selectedVehicle && (
+            {selectedVehicle && (
               <VehicleSpecifications vehicle={selectedVehicle} />
             )}
           </Box>

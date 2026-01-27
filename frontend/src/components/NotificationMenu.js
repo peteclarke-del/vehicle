@@ -87,10 +87,10 @@ const NotificationMenu = () => {
         }}
       >
         <Box sx={{ px: 2, py: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Typography variant="h6">Notifications</Typography>
+          <Typography variant="h6">{t('notifications.title')}</Typography>
           {notifications.length > 0 && (
             <Button size="small" onClick={clearAllNotifications}>
-              Clear All
+              {t('notifications.clearAll')}
             </Button>
           )}
         </Box>
@@ -100,7 +100,7 @@ const NotificationMenu = () => {
           <Box sx={{ p: 3, textAlign: 'center' }}>
             <CheckCircleIcon sx={{ fontSize: 48, color: 'success.main', mb: 1 }} />
             <Typography color="text.secondary">
-              No notifications
+              {t('notifications.noNotifications')}
             </Typography>
           </Box>
         ) : (

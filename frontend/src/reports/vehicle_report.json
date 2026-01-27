@@ -1,0 +1,66 @@
+{
+  "key": "vehicle_report",
+  "name": "Vehicle Report",
+  "description": "Comprehensive vehicle report: costs, fuel, and summary laid out in panes",
+  "outputs": [
+    { "mode": "screen" },
+    { "mode": "file", "fileType": "xlsx" },
+    { "mode": "file", "fileType": "csv" }
+  ],
+  "periods": [ { "label": "All time", "months": null } ],
+  "defaultPeriodIndex": 0,
+  "sheets": [
+    {
+      "name": "Parts",
+      "source": "parts",
+      "sort": { "field": "date", "order": "asc" },
+      "columns": [
+        { "key": "date", "label": "Date", "width": 15 },
+        { "key": "item", "label": "Item", "width": 50 },
+        { "key": "cost", "label": "Cost", "width": 12, "format": "currency", "alignment": "right", "aggregate": "sum" }
+      ]
+    },
+    {
+      "name": "Consumables",
+      "source": "consumables",
+      "sort": { "field": "date", "order": "asc" },
+      "columns": [
+        { "key": "date", "label": "Date", "width": 15 },
+        { "key": "item", "label": "Item", "width": 50 },
+        { "key": "cost", "label": "Cost", "width": 12, "format": "currency", "alignment": "right", "aggregate": "sum" }
+      ]
+    },
+    {
+      "name": "Service",
+      "source": "serviceRecords",
+      "sort": { "field": "date", "order": "asc" },
+      "columns": [
+        { "key": "date", "label": "Date", "width": 15 },
+        { "key": "item", "label": "Service", "width": 50 },
+        { "key": "cost", "label": "Cost", "width": 12, "format": "currency", "alignment": "right", "aggregate": "sum" }
+      ]
+    },
+    {
+      "name": "Fuel",
+      "source": "fuelRecords",
+      "sort": { "field": "date", "order": "asc" },
+      "columns": [
+        { "key": "date", "label": "Date", "width": 15 },
+        { "key": "mileage", "label": "Mileage", "width": 12, "alignment": "right" },
+        { "key": "litres", "label": "No. Litres", "width": 12, "alignment": "right" },
+        { "key": "cost", "label": "Cost", "width": 12, "format": "currency", "alignment": "right", "aggregate": "sum" },
+        { "key": "mpg", "label": "MPG", "width": 10, "alignment": "right", "derived": "mpg" }
+      ]
+    },
+    {
+      "name": "Summary",
+      "source": "vehicles",
+      "columns": [
+        { "key": "registration", "label": "Registration" },
+        { "key": "make", "label": "Make" },
+        { "key": "model", "label": "Model" },
+        { "key": "id", "label": "Vehicle ID" }
+      ]
+    }
+  ]
+}

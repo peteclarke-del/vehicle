@@ -21,6 +21,13 @@ class VinDecoderController extends AbstractController
     ) {
     }
 
+    private function isAdminForUser(?\App\Entity\User $user): bool
+    {
+        if (!$user) return false;
+        $roles = $user->getRoles() ?: [];
+        return in_array('ROLE_ADMIN', $roles, true);
+    }
+
     #[Route('/{id}/vin-decode', name: 'api_vehicle_vin_decode', methods: ['GET'])]
     public function decodeVin(int $id, Request $request): JsonResponse
     {
@@ -30,8 +37,8 @@ class VinDecoderController extends AbstractController
             return $this->json(['error' => 'Vehicle not found'], 404);
         }
 
-        // Check if user owns this vehicle
-        if ($vehicle->getOwner() !== $this->getUser()) {
+        // Check if user owns this vehicle (admins bypass)
+        if (!$this->isAdminForUser($this->getUser()) && $vehicle->getOwner() !== $this->getUser()) {
             return $this->json(['error' => 'Unauthorized'], 403);
         }
 

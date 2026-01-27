@@ -45,9 +45,9 @@ class ServiceRecordTest extends TestCase
     public function testSetAndGetDescription(): void
     {
         $record = new ServiceRecord();
-        $record->setDescription('Full service including oil change');
-        
-        $this->assertSame('Full service including oil change', $record->getDescription());
+        $record->setWorkPerformed('Full service including oil change');
+
+        $this->assertSame('Full service including oil change', $record->getWorkPerformed());
     }
 
     public function testSetAndGetLabourCost(): void
@@ -97,9 +97,9 @@ class ServiceRecordTest extends TestCase
     public function testSetAndGetWorkshop(): void
     {
         $record = new ServiceRecord();
-        $record->setWorkshop('Main Dealer');
-        
-        $this->assertSame('Main Dealer', $record->getWorkshop());
+        $record->setServiceProvider('Main Dealer');
+
+        $this->assertSame('Main Dealer', $record->getServiceProvider());
     }
 
     public function testVehicleRelationship(): void

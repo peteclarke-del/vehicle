@@ -19,7 +19,7 @@ import ReceiptUpload from './ReceiptUpload';
 import ServiceDialog from './ServiceDialog';
 import PartDialog from './PartDialog';
 import ConsumableDialog from './ConsumableDialog';
-import { IconButton, Typography } from '@mui/material';
+import { IconButton, Typography, Tooltip } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import LinkIcon from '@mui/icons-material/Link';
 import BuildIcon from '@mui/icons-material/Build';
@@ -455,25 +455,28 @@ const MotDialog = ({ open, motRecord, vehicleId, onClose }) => {
                 </Grid>
               </Grid>
               <div style={{ marginTop: 8 }}>
-                {motItems.parts.map((p) => (
+                {(motItems.parts || []).map((p) => (
                   <div key={`part-${p.id || p.name}`} style={{ padding: 6, borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <Typography component="button" onClick={async () => { setSelectedPart(p); setOpenPartDialog(true); }} sx={{ background: 'none', border: 'none', padding: 0, textDecoration: 'underline', cursor: 'pointer', color: 'primary.main' }}>
+                      <Typography component="button" onClick={async (e) => { e.preventDefault(); setSelectedPart(p); setOpenPartDialog(true); }} sx={{ background: 'none', border: 'none', padding: 0, textDecoration: 'underline', cursor: 'pointer', color: 'primary.main' }}>
                         <BuildIcon fontSize="small" sx={{ mr: 1, verticalAlign: 'middle' }} />{p.name || p.description}
                       </Typography>
                       <span>— {p.quantity || 1} @ {p.cost || ''}</span>
                     </div>
                     <div>
-                      <IconButton size="small" onClick={() => { setConfirmTarget({ type: 'part', id: p.id, name: p.name || p.description }); setConfirmOpen(true); }}>
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
+                      <Tooltip title={t('common.delete')}>
+                        <IconButton size="small" onClick={() => { setConfirmTarget({ type: 'part', id: p.id, name: p.name || p.description }); setConfirmOpen(true); }}>
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
                     </div>
                   </div>
                 ))}
                 {motItems.serviceRecords && motItems.serviceRecords.map((s) => (
                   <div key={`svc-${s.id}`} style={{ padding: 6, borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <Typography component="button" onClick={async () => {
+                      <Typography component="button" onClick={async (e) => {
+                        e.preventDefault();
                         try {
                           const resp = await api.get(`/service-records/${s.id}`);
                           setSelectedServiceRecord(resp.data);
@@ -482,33 +485,38 @@ const MotDialog = ({ open, motRecord, vehicleId, onClose }) => {
                           console.error('Error loading service record', err);
                         }
                       }} sx={{ background: 'none', border: 'none', padding: 0, textDecoration: 'underline', cursor: 'pointer', color: 'primary.main' }}>
-                        <MiscellaneousServicesIcon fontSize="small" sx={{ mr: 1, verticalAlign: 'middle' }} />{t('service.service') || 'Service'}
+                        <MiscellaneousServicesIcon fontSize="small" sx={{ mr: 1, verticalAlign: 'middle' }} />
+                        { (s.items && s.items.length > 0) ? (s.items.map(it => it.description || '').filter(Boolean).join(', ')) : (s.workPerformed || s.serviceProvider || (t('service.service') || 'Service')) }
                       </Typography>
                       <span>— {s.totalCost || s.total || ''} ({s.mileage || ''})</span>
                     </div>
                     <div>
-                      <IconButton size="small" onClick={() => { setConfirmTarget({ type: 'service', id: s.id, name: `${t('service.service')} ${s.id}` }); setConfirmOpen(true); }}>
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
+                      <Tooltip title={t('common.delete')}>
+                        <IconButton size="small" onClick={() => { setConfirmTarget({ type: 'service', id: s.id, name: s.items && s.items.length > 0 ? s.items.map(it => it.description).join(', ') : `${t('service.service')} ${s.id}` }); setConfirmOpen(true); }}>
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
                     </div>
                   </div>
                 ))}
-                {motItems.consumables.map((c) => (
+                {(motItems.consumables || []).map((c) => (
                   <div key={`cons-${c.id || c.name}`} style={{ padding: 6, borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <Typography component="button" onClick={async () => { setSelectedConsumable(c); setOpenConsumableDialog(true); }} sx={{ background: 'none', border: 'none', padding: 0, textDecoration: 'underline', cursor: 'pointer', color: 'primary.main' }}>
-                        <OpacityIcon fontSize="small" sx={{ mr: 1, verticalAlign: 'middle' }} />{c.name || c.specification}
+                      <Typography component="button" onClick={async (e) => { e.preventDefault(); setSelectedConsumable(c); setOpenConsumableDialog(true); }} sx={{ background: 'none', border: 'none', padding: 0, textDecoration: 'underline', cursor: 'pointer', color: 'primary.main' }}>
+                        <OpacityIcon fontSize="small" sx={{ mr: 1, verticalAlign: 'middle' }} />{c.name || c.description || ''}
                       </Typography>
                       <span>— {c.quantity || 1} @ {c.cost || ''}</span>
                     </div>
                     <div>
-                      <IconButton size="small" onClick={() => { setConfirmTarget({ type: 'consumable', id: c.id, name: c.name || c.specification }); setConfirmOpen(true); }}>
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
+                      <Tooltip title={t('common.delete')}>
+                        <IconButton size="small" onClick={() => { setConfirmTarget({ type: 'consumable', id: c.id, name: c.name || c.description || '' }); setConfirmOpen(true); }}>
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
                     </div>
                   </div>
                 ))}
-                {motItems.parts.length === 0 && motItems.consumables.length === 0 && (
+                {((motItems.parts || []).length === 0 && (motItems.consumables || []).length === 0) && (
                   <div style={{ color: '#666', padding: 6 }}>{t('mot.noRepairItems')}</div>
                 )}
               </div>

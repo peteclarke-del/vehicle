@@ -10,13 +10,12 @@
         "name": "Brake Fluid",
         "unit": "ml",
         "description": "DOT 3/4/5.1 hydraulic brake fluid for brake and clutch hydraulics."
-    ,
+    },
     {
         "vehicleType": "Motorcycle",
         "name": "Indicator/Direction Lamp Bulb",
         "unit": "unit",
         "description": "Indicator / direction (turn signal) lamp bulb suitable for motorcycle fittings; LED or filament types." 
-    }
     },
     {
         "vehicleType": "Motorcycle",

@@ -123,7 +123,7 @@ const FuelRecordDialog = ({ open, record, vehicleId, onClose }) => {
           setFormData({ ...formData, ...updates, receiptAttachmentId: attachmentId });
         }
       } catch (ocrError) {
-        console.log('OCR extraction failed or not applicable:', ocrError);
+        console.warn('OCR extraction failed or not applicable:', ocrError);
         // Continue without OCR data - attachment still uploaded
       }
     } catch (error) {
