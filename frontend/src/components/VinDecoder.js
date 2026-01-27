@@ -34,14 +34,14 @@ const VinDecoder = ({ vehicle }) => {
       setVinData(vehicle.vinDecodedData);
       setCached(true);
       if (vehicle.vinDecodedAt) {
-        setInfo('VIN data loaded from cache (decoded on ' + vehicle.vinDecodedAt + ')');
+        setInfo(t('vinDecoder.cachedLoaded', { date: vehicle.vinDecodedAt }));
       }
     }
   }, [vehicle?.vinDecodedData, vehicle?.vinDecodedAt]);
 
   const decodeVin = async (forceRefresh = false) => {
     if (!vehicle?.vin) {
-      setError('No VIN number available for this vehicle');
+      setError(t('vinDecoder.noVin'));
       return;
     }
 
@@ -60,17 +60,17 @@ const VinDecoder = ({ vehicle }) => {
         ? `/vehicles/${vehicle.id}/vin-decode?refresh=true`
         : `/vehicles/${vehicle.id}/vin-decode`;
       const response = await api.get(url);
-      if (response.data.success && response.data.data) {
+        if (response.data.success && response.data.data) {
         setVinData(response.data.data);
         setCached(response.data.cached || false);
         if (response.data.cached) {
-          setInfo('VIN data loaded from cache (decoded on ' + response.data.decoded_at + ')');
+          setInfo(t('vinDecoder.cachedLoaded', { date: response.data.decoded_at }));
         } else {
-          setInfo('VIN successfully decoded from API');
+          setInfo(t('vinDecoder.decodedSuccess'));
         }
       }
     } catch (err) {
-      const message = err.response?.data?.message || 'Failed to decode VIN';
+      const message = err.response?.data?.message || t('vinDecoder.failedDecode');
       setError(message);
     } finally {
       setLoading(false);
@@ -107,7 +107,7 @@ const VinDecoder = ({ vehicle }) => {
         <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
           <Box display="flex" alignItems="center" gap={1}>
             <QrCodeIcon color="primary" />
-            <Typography variant="h6">VIN Decoding</Typography>
+            <Typography variant="h6">{t('vinDecoder.title')}</Typography>
           </Box>
           <Button
             variant="outlined"

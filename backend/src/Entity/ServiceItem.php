@@ -19,6 +19,10 @@ class ServiceItem
     #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
     private ?ServiceRecord $serviceRecord = null;
 
+    #[ORM\ManyToOne(targetEntity: Consumable::class)]
+    #[ORM\JoinColumn(name: 'consumable_id', referencedColumnName: 'id', nullable: true, onDelete: 'SET NULL')]
+    private ?Consumable $consumable = null;
+
     #[ORM\Column(type: 'string', length: 20)]
     private string $type = 'part'; // 'part' or 'labour' or 'consumable'
 
@@ -94,5 +98,16 @@ class ServiceItem
     public function getTotal(): string
     {
         return bcmul($this->cost ?? '0.00', (string) $this->quantity, 2);
+    }
+
+    public function getConsumable(): ?Consumable
+    {
+        return $this->consumable;
+    }
+
+    public function setConsumable(?Consumable $consumable): self
+    {
+        $this->consumable = $consumable;
+        return $this;
     }
 }

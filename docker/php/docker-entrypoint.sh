@@ -63,7 +63,30 @@ if [ -f "$TARGET_DIR/bin/console" ]; then
   done
   echo '[entrypoint] database is ready'
 
-  if [ "${SKIP_MIGRATIONS:-0}" != "1" ]; then
+  # Install composer dependencies if `vendor` is missing or empty or missing autoload
+  VENDOR_DIR="$TARGET_DIR/vendor"
+  VENDOR_AUTOLOAD="$VENDOR_DIR/autoload.php"
+  vendor_empty=false
+  if [ -d "$VENDOR_DIR" ]; then
+    if [ -z "$(ls -A "$VENDOR_DIR")" ]; then
+      vendor_empty=true
+    fi
+  fi
+
+  if [ ! -d "$VENDOR_DIR" ] || [ ! -f "$VENDOR_AUTOLOAD" ] || [ "$vendor_empty" = true ]; then
+    if command -v composer >/dev/null 2>&1; then
+      echo "[entrypoint] vendor directory missing or empty — installing composer dependencies"
+      # Choose flags based on environment
+      if [ "${APP_ENV:-dev}" = "prod" ]; then
+        COMPOSER_FLAGS=(--no-interaction --prefer-dist --no-dev --optimize-autoloader)
+      else
+        COMPOSER_FLAGS=(--no-interaction --prefer-dist)
+      fi
+      (cd "$TARGET_DIR" && composer install "${COMPOSER_FLAGS[@]}") || echo "[entrypoint] composer install failed"
+    else
+      echo "[entrypoint] composer not available in image; skipping install"
+    fi
+  fi
 
   if [ "${SKIP_MIGRATIONS:-0}" != "1" ]; then
     echo "[entrypoint] running doctrine migrations (may take a moment)"

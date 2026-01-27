@@ -28,6 +28,13 @@ class InsuranceController extends AbstractController
         return $user instanceof \App\Entity\User ? $user : null;
     }
 
+    private function isAdminForUser(?\App\Entity\User $user): bool
+    {
+        if (!$user) return false;
+        $roles = $user->getRoles() ?: [];
+        return in_array('ROLE_ADMIN', $roles, true);
+    }
+
     #[Route('/insurance/policies', methods: ['GET'])]
     public function listPolicies(): JsonResponse
     {
@@ -39,6 +46,10 @@ class InsuranceController extends AbstractController
         $policies = $this->entityManager->getRepository(InsurancePolicy::class)->findAll();
         $visible = [];
         foreach ($policies as $p) {
+            if ($this->isAdminForUser($user)) {
+                $visible[] = $this->_serializePolicy($p);
+                continue;
+            }
             foreach ($p->getVehicles() as $v) {
                 if ($v->getOwner()?->getId() === $user->getId()) {
                     $visible[] = $this->_serializePolicy($p);
@@ -99,7 +110,7 @@ class InsuranceController extends AbstractController
         $vehicleIds = $data['vehicleIds'] ?? [];
         foreach ($vehicleIds as $vid) {
             $v = $this->entityManager->getRepository(Vehicle::class)->find($vid);
-            if ($v && $v->getOwner()?->getId() === $user->getId()) {
+            if ($v && ($this->isAdminForUser($user) || $v->getOwner()?->getId() === $user->getId())) {
                 $policy->addVehicle($v);
             }
         }
@@ -150,10 +161,14 @@ class InsuranceController extends AbstractController
         }
 
         $owns = false;
-        foreach ($policy->getVehicles() as $v) {
-            if ($v->getOwner()?->getId() === $user->getId()) {
-                $owns = true;
-                break;
+        if ($this->isAdminForUser($user)) {
+            $owns = true;
+        } else {
+            foreach ($policy->getVehicles() as $v) {
+                if ($v->getOwner()?->getId() === $user->getId()) {
+                    $owns = true;
+                    break;
+                }
             }
         }
 
@@ -177,10 +192,14 @@ class InsuranceController extends AbstractController
         }
 
         $owns = false;
-        foreach ($policy->getVehicles() as $v) {
-            if ($v->getOwner()?->getId() === $user->getId()) {
-                $owns = true;
-                break;
+        if ($this->isAdminForUser($user)) {
+            $owns = true;
+        } else {
+            foreach ($policy->getVehicles() as $v) {
+                if ($v->getOwner()?->getId() === $user->getId()) {
+                    $owns = true;
+                    break;
+                }
             }
         }
 
@@ -314,12 +333,16 @@ class InsuranceController extends AbstractController
             return new JsonResponse(['error' => 'Not found'], 404);
         }
 
-        // Ensure the user owns at least one vehicle on this policy
+        // Ensure the user owns at least one vehicle on this policy (admins bypass)
         $owns = false;
-        foreach ($policy->getVehicles() as $v) {
-            if ($v->getOwner()?->getId() === $user->getId()) {
-                $owns = true;
-                break;
+        if ($this->isAdminForUser($user)) {
+            $owns = true;
+        } else {
+            foreach ($policy->getVehicles() as $v) {
+                if ($v->getOwner()?->getId() === $user->getId()) {
+                    $owns = true;
+                    break;
+                }
             }
         }
 
@@ -359,7 +382,7 @@ class InsuranceController extends AbstractController
             ->getRepository(Vehicle::class)
             ->find($data['vehicleId'] ?? null);
 
-        if (!$vehicle || $vehicle->getOwner()?->getId() !== $user->getId()) {
+        if (!$vehicle || (!$this->isAdminForUser($user) && $vehicle->getOwner()?->getId() !== $user->getId())) {
             return new JsonResponse(['error' => 'Vehicle not found'], 404);
         }
 
@@ -394,7 +417,7 @@ class InsuranceController extends AbstractController
             ->getRepository(Vehicle::class)
             ->find($vehicleId);
 
-        if (!$vehicle || $vehicle->getOwner()?->getId() !== $user->getId()) {
+        if (!$vehicle || (!$this->isAdminForUser($user) && $vehicle->getOwner()?->getId() !== $user->getId())) {
             return new JsonResponse(['error' => 'Vehicle not found'], 404);
         }
 
@@ -415,7 +438,7 @@ class InsuranceController extends AbstractController
 
         $vehicle = $this->entityManager->getRepository(Vehicle::class)->find($vehicleId);
         $user = $this->getUserEntity();
-        if (!$vehicle || !$user || $vehicle->getOwner()->getId() !== $user->getId()) {
+        if (!$vehicle || !$user || (!$this->isAdminForUser($user) && $vehicle->getOwner()->getId() !== $user->getId())) {
             return new JsonResponse(['error' => 'Vehicle not found'], 404);
         }
 
@@ -435,7 +458,7 @@ class InsuranceController extends AbstractController
 
         $vehicle = $this->entityManager->getRepository(Vehicle::class)->find($data['vehicleId']);
         $user = $this->getUserEntity();
-        if (!$vehicle || !$user || $vehicle->getOwner()->getId() !== $user->getId()) {
+        if (!$vehicle || !$user || (!$this->isAdminForUser($user) && $vehicle->getOwner()->getId() !== $user->getId())) {
             return new JsonResponse(['error' => 'Vehicle not found'], 404);
         }
 
@@ -455,7 +478,7 @@ class InsuranceController extends AbstractController
     {
         $policy = $this->entityManager->getRepository(InsurancePolicy::class)->find($id);
         $user = $this->getUserEntity();
-        if (!$policy || !$user || $policy->getHolderId() !== $user->getId()) {
+        if (!$policy || !$user || (!$this->isAdminForUser($user) && $policy->getHolderId() !== $user->getId())) {
             return new JsonResponse(['error' => 'Insurance policy not found'], 404);
         }
 
@@ -472,7 +495,7 @@ class InsuranceController extends AbstractController
     {
         $policy = $this->entityManager->getRepository(InsurancePolicy::class)->find($id);
         $user = $this->getUserEntity();
-        if (!$policy || !$user || $policy->getHolderId() !== $user->getId()) {
+        if (!$policy || !$user || (!$this->isAdminForUser($user) && $policy->getHolderId() !== $user->getId())) {
             return new JsonResponse(['error' => 'Insurance policy not found'], 404);
         }
 

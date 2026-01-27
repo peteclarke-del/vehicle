@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
+use App\Entity\Attachment;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use App\Entity\ServiceItem;
@@ -34,20 +35,17 @@ class ServiceRecord
     #[ORM\Column(type: 'decimal', precision: 10, scale: 2, options: ['default' => '0.00'])]
     private string $partsCost = '0.00';
 
+    #[ORM\Column(type: 'decimal', precision: 10, scale: 2, nullable: true)]
+    private ?string $consumablesCost = null;
+
     #[ORM\Column(type: 'integer', nullable: true)]
     private ?int $mileage = null;
 
     #[ORM\Column(type: 'string', length: 100, nullable: true)]
     private ?string $serviceProvider = null;
 
-    #[ORM\Column(type: 'string', length: 100, nullable: true)]
-    private ?string $workshop = null;
-
     #[ORM\Column(type: 'text', nullable: true)]
     private ?string $workPerformed = null;
-
-    #[ORM\Column(type: 'text', nullable: true)]
-    private ?string $description = null;
 
     #[ORM\Column(type: 'decimal', precision: 10, scale: 2, options: ['default' => '0.00'])]
     private string $additionalCosts = '0.00';
@@ -64,8 +62,12 @@ class ServiceRecord
     #[ORM\Column(type: 'datetime')]
     private ?\DateTimeInterface $createdAt = null;
 
-    #[ORM\Column(type: 'integer', nullable: true)]
-    private ?int $receiptAttachmentId = null;
+    #[ORM\ManyToOne(targetEntity: Attachment::class)]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
+    private ?Attachment $receiptAttachment = null;
+
+    #[ORM\ManyToOne(targetEntity: \App\Entity\MotRecord::class)]
+    private ?\App\Entity\MotRecord $motRecord = null;
 
     /**
      * @var Collection<int, ServiceItem>
@@ -105,7 +107,7 @@ class ServiceRecord
         return $this;
     }
 
-    private function sumItemsByType(string $type): string
+    public function sumItemsByType(string $type): string
     {
         $total = '0.00';
         foreach ($this->items as $it) {
@@ -160,22 +162,25 @@ class ServiceRecord
         return $this->laborCost;
     }
 
-    public function getLabourCost(): ?string
+    public function getConsumablesCost(): ?string
     {
-        return $this->laborCost;
+        return $this->consumablesCost;
     }
 
-    /**
-     * Get labor cost
-     * @param string|float|int|null $laborCost
-     * @return self
-     */
+    public function setConsumablesCost($consumablesCost): self
+    {
+        if ($consumablesCost !== null) {
+            $this->consumablesCost = (string) $consumablesCost;
+        } else {
+            $this->consumablesCost = null;
+        }
+        return $this;
+    }
+
     public function setLaborCost($laborCost): self
     {
         if ($laborCost !== null) {
             $this->laborCost = (string) $laborCost;
-        } else {
-            $this->laborCost = null;
         }
         return $this;
     }
@@ -184,7 +189,7 @@ class ServiceRecord
     {
         return $this->partsCost;
     }
-
+    
     public function setPartsCost($partsCost): self
     {
         if ($partsCost !== null) {
@@ -195,7 +200,10 @@ class ServiceRecord
 
     public function getTotalCost(): string
     {
-        return bcadd($this->laborCost, $this->partsCost, 2);
+        $labor = $this->laborCost ?? '0.00';
+        $parts = $this->partsCost ?? '0.00';
+        $consumables = $this->consumablesCost ?? $this->sumItemsByType('consumable');
+        return bcadd(bcadd($labor, $parts, 2), $consumables, 2);
     }
 
     public function getMileage(): ?int
@@ -247,46 +255,28 @@ class ServiceRecord
         return $this->createdAt;
     }
 
-    public function getReceiptAttachmentId(): ?int
+    public function getMotRecord(): ?\App\Entity\MotRecord
     {
-        return $this->receiptAttachmentId;
+        return $this->motRecord;
     }
 
-    public function setReceiptAttachmentId(?int $receiptAttachmentId): self
+    public function setMotRecord(?\App\Entity\MotRecord $motRecord): self
     {
-        $this->receiptAttachmentId = $receiptAttachmentId;
+        $this->motRecord = $motRecord;
         return $this;
     }
 
-    public function getWorkshop(): ?string
+
+
+    public function getReceiptAttachment(): ?Attachment
     {
-        return $this->workshop ?? $this->serviceProvider;
+        return $this->receiptAttachment;
     }
 
-    public function setWorkshop(?string $workshop): self
+    public function setReceiptAttachment(?Attachment $receiptAttachment): self
     {
-        $this->workshop = $workshop;
+        $this->receiptAttachment = $receiptAttachment;
         return $this;
-    }
-
-    public function getDescription(): ?string
-    {
-        return $this->description ?? $this->workPerformed;
-    }
-
-    public function setDescription(?string $description): self
-    {
-        $this->description = $description;
-        return $this;
-    }
-
-    /**
-     * Alias for setLaborCost() - British spelling - accepts float or string
-     * @param string|float|int|null $labourCost
-     */
-    public function setLabourCost($labourCost): self
-    {
-        return $this->setLaborCost($labourCost);
     }
 
     public function getAdditionalCosts(): string

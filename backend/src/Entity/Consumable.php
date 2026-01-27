@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
+use App\Entity\Attachment;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'consumables')]
@@ -23,11 +24,8 @@ class Consumable
     #[ORM\JoinColumn(nullable: false)]
     private ?ConsumableType $consumableType = null;
 
-    #[ORM\Column(type: 'string', length: 200)]
-    private ?string $specification = null;
-
     #[ORM\Column(type: 'string', length: 200, nullable: true)]
-    private ?string $name = null;
+    private ?string $description = null;
 
     #[ORM\Column(type: 'string', length: 100, nullable: true)]
     private ?string $brand = null;
@@ -44,7 +42,7 @@ class Consumable
     #[ORM\Column(type: 'decimal', precision: 8, scale: 2, nullable: true)]
     private ?string $quantity = null;
 
-    #[ORM\Column(type: 'date')]
+    #[ORM\Column(type: 'date', nullable: true)]
     private ?\DateTimeInterface $lastChanged = null;
 
     #[ORM\Column(type: 'integer', nullable: true)]
@@ -60,6 +58,10 @@ class Consumable
     #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
     private ?ServiceRecord $serviceRecord = null;
 
+    #[ORM\ManyToOne(targetEntity: \App\Entity\Todo::class, inversedBy: 'consumables')]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
+    private ?\App\Entity\Todo $todo = null;
+
     #[ORM\ManyToOne(targetEntity: MotRecord::class)]
     #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
     private ?MotRecord $motRecord = null;
@@ -70,8 +72,9 @@ class Consumable
     #[ORM\Column(type: 'datetime')]
     private ?\DateTimeInterface $updatedAt = null;
 
-    #[ORM\Column(type: 'integer', nullable: true)]
-    private ?int $receiptAttachmentId = null;
+    #[ORM\ManyToOne(targetEntity: Attachment::class)]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
+    private ?Attachment $receiptAttachment = null;
 
     #[ORM\Column(type: 'string', length: 500, nullable: true)]
     private ?string $productUrl = null;
@@ -112,25 +115,19 @@ class Consumable
         return $this;
     }
 
-    public function getSpecification(): ?string
-    {
-        return $this->specification;
-    }
-
-    public function setSpecification(string $specification): self
-    {
-        $this->specification = $specification;
-        return $this;
-    }
-
+    
     public function getQuantity(): ?string
     {
         return $this->quantity;
     }
 
-    public function setQuantity(?string $quantity): self
+    public function setQuantity($quantity): self
     {
-        $this->quantity = $quantity;
+        if ($quantity !== null) {
+            $this->quantity = (string) $quantity;
+        } else {
+            $this->quantity = null;
+        }
         return $this;
     }
 
@@ -139,7 +136,7 @@ class Consumable
         return $this->lastChanged;
     }
 
-    public function setLastChanged(\DateTimeInterface $lastChanged): self
+    public function setLastChanged(?\DateTimeInterface $lastChanged): self
     {
         $this->lastChanged = $lastChanged;
         return $this;
@@ -171,16 +168,7 @@ class Consumable
         return $this;
     }
 
-    public function getNotes(): ?string
-    {
-        return $this->notes;
-    }
-
-    public function setNotes(?string $notes): self
-    {
-        $this->notes = $notes;
-        return $this;
-    }
+    // Legacy `getName`/`setName` removed — use getDescription()/setDescription()
 
     public function getServiceRecord(): ?ServiceRecord
     {
@@ -190,6 +178,17 @@ class Consumable
     public function setServiceRecord(?ServiceRecord $serviceRecord): self
     {
         $this->serviceRecord = $serviceRecord;
+        return $this;
+    }
+
+    public function getTodo(): ?\App\Entity\Todo
+    {
+        return $this->todo;
+    }
+
+    public function setTodo(?\App\Entity\Todo $todo): self
+    {
+        $this->todo = $todo;
         return $this;
     }
 
@@ -226,14 +225,14 @@ class Consumable
         return $this;
     }
 
-    public function getReceiptAttachmentId(): ?int
+    public function getReceiptAttachment(): ?Attachment
     {
-        return $this->receiptAttachmentId;
+        return $this->receiptAttachment;
     }
 
-    public function setReceiptAttachmentId(?int $receiptAttachmentId): self
+    public function setReceiptAttachment(?Attachment $receiptAttachment): self
     {
-        $this->receiptAttachmentId = $receiptAttachmentId;
+        $this->receiptAttachment = $receiptAttachment;
         return $this;
     }
 
@@ -261,20 +260,20 @@ class Consumable
     {
         if (is_string($type)) {
             // For now, when a string is provided, set to null
-            // In a real app, you'd look up the ConsumableType by name
+            // In a real app, you'd look up the ConsumableType by description
             return $this->setConsumableType(null);
         }
         return $this->setConsumableType($type);
     }
 
-    public function getName(): ?string
+    public function getDescription(): ?string
     {
-        return $this->name;
+        return $this->description;
     }
 
-    public function setName(?string $name): self
+    public function setDescription(?string $description): self
     {
-        $this->name = $name;
+        $this->description = $description;
         return $this;
     }
 

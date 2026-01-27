@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { UserPreferencesProvider } from './contexts/UserPreferencesContext';
 import Layout from './components/Layout';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -16,9 +17,13 @@ import MotRecords from './pages/MotRecords';
 import ServiceRecords from './pages/ServiceRecords';
 import RoadTax from './pages/RoadTax';
 import Profile from './pages/Profile';
+import Todo from './pages/Todo';
+import Reports from './pages/Reports';
 import PasswordChangeDialog from './components/PasswordChangeDialog';
 import SessionTimeoutWarning from './components/SessionTimeoutWarning';
+import ImportExport from './pages/ImportExport';
 import { CircularProgress, Box } from '@mui/material';
+import i18next from 'i18next';
 
 const PrivateRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -71,7 +76,7 @@ function AppRoutes() {
     return (
       <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" minHeight="100vh">
         <CircularProgress />
-        <Box mt={2}>Performing system checks...</Box>
+        <Box mt={2}>{i18next.t('app.systemChecks')}</Box>
       </Box>
     );
   }
@@ -99,7 +104,10 @@ function AppRoutes() {
           <Route path="mot-records" element={<MotRecords />} />
           <Route path="service-records" element={<ServiceRecords />} />
           <Route path="road-tax" element={<RoadTax />} />
+          <Route path="todo" element={<Todo />} />
+          <Route path="reports" element={<Reports />} />
           <Route path="profile" element={<Profile />} />
+          <Route path="tools/import-export" element={<ImportExport />} />
         </Route>
       </Routes>
       <PasswordChangeDialog 
@@ -115,11 +123,13 @@ function AppRoutes() {
 function App() {
   return (
     <BrowserRouter>
-      <ThemeProvider>
-        <AuthProvider>
-          <AppRoutes />
-        </AuthProvider>
-      </ThemeProvider>
+      <AuthProvider>
+        <ThemeProvider>
+          <UserPreferencesProvider>
+            <AppRoutes />
+          </UserPreferencesProvider>
+        </ThemeProvider>
+      </AuthProvider>
     </BrowserRouter>
   );
 }

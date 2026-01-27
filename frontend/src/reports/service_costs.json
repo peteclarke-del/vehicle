@@ -1,0 +1,15 @@
+{
+  "key": "service_costs",
+  "name": "Service Costs",
+  "description": "Costs associated with servicing vehicles",
+  "periods": [
+    {"label": "Last 3 months", "months": 3},
+    {"label": "Last 12 months", "months": 12},
+    {"label": "All time", "months": null}
+  ],
+  "defaultPeriodIndex": 1,
+  "outputs": [{"mode":"screen"},{"mode":"file","fileType":"csv"}],
+  "elements": [
+    {"type":"table","source":"serviceRecords","columns":[{"key":"date","label":"Date"},{"key":"vehicle","label":"Vehicle"},{"key":"cost","label":"Cost"}]}
+  ]
+}

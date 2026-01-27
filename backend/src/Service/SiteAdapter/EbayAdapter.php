@@ -108,11 +108,32 @@ class EbayAdapter implements SiteAdapterInterface
                 ],
             ]);
 
+            $status = $response->getStatusCode();
             $data = $response->toArray(false);
 
-            if (isset($data['errorId'])) {
-                $this->logger->error('eBay API error', ['error' => $data]);
-                return [];
+            // Explicitly surface 404 (item not found) so callers do not fall back to fragile HTML scraping
+            if ($status === 404) {
+                $this->logger->info('eBay API: item not found via Browse API', ['item_id' => $itemId, 'status' => $status, 'body' => $data]);
+                throw new \RuntimeException('eBay Browse API: item not found');
+            }
+
+            // Any other HTTP error -> surface as exception with helpful log
+            if ($status >= 400) {
+                $this->logger->error('eBay API HTTP error', ['status' => $status, 'body' => $data]);
+                $message = $data['errors'][0]['message'] ?? 'HTTP ' . $status;
+                throw new \RuntimeException('eBay Browse API error: ' . $message);
+            }
+
+            // Some responses include an `errors` array even with a 200-ish status — treat as error
+            if (!empty($data['errors'])) {
+                $this->logger->error('eBay API returned errors', ['errors' => $data['errors']]);
+                foreach ($data['errors'] as $err) {
+                    if (isset($err['errorId']) && (int)$err['errorId'] === 11001) {
+                        throw new \RuntimeException('eBay Browse API: item not found');
+                    }
+                }
+                $first = $data['errors'][0]['message'] ?? json_encode($data['errors']);
+                throw new \RuntimeException('eBay Browse API error: ' . $first);
             }
 
             // Calculate total price (item price + shipping cost)

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { formatDateISO } from '../utils/formatDate';
 import {
   Box,
   Button,
@@ -97,13 +98,11 @@ const AttachmentUpload = ({ entityType, entityId, onChange, compact = false }) =
       const response = await api.get(`/attachments/${attachment.id}`, {
         responseType: 'blob',
       });
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', attachment.originalName);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
+      // response.data is a Blob already (axios with responseType: 'blob')
+      const blob = response.data instanceof Blob ? response.data : new Blob([response.data]);
+      // lazy-import to avoid circular issues
+      const { saveBlob } = await import('../components/DownloadHelpers');
+      saveBlob(blob, attachment.originalName);
     } catch (error) {
       console.error('Error downloading attachment:', error);
       alert(t('common.downloadFailed'));
@@ -235,7 +234,7 @@ const AttachmentUpload = ({ entityType, entityId, onChange, compact = false }) =
                 primary={attachment.originalName}
                 secondary={
                   <>
-                    {formatFileSize(attachment.fileSize)} • {new Date(attachment.uploadedAt).toLocaleDateString()}
+                    {formatFileSize(attachment.fileSize)} • {formatDateISO(attachment.uploadedAt)}
                   </>
                 }
                 sx={{ ml: 2 }}

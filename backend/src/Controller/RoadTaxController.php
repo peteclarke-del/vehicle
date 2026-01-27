@@ -28,22 +28,47 @@ class RoadTaxController extends AbstractController
         return $user instanceof \App\Entity\User ? $user : null;
     }
 
+    private function isAdminForUser(?\App\Entity\User $user): bool
+    {
+        if (!$user) return false;
+        $roles = $user->getRoles() ?: [];
+        return in_array('ROLE_ADMIN', $roles, true);
+    }
+
     #[Route('/road-tax', methods: ['GET'])]
     public function list(Request $request): JsonResponse
     {
         $vehicleId = $request->query->get('vehicleId');
-        if (!$vehicleId) {
-            return new JsonResponse(['error' => 'vehicleId is required'], 400);
-        }
-
-        $vehicle = $this->entityManager->getRepository(Vehicle::class)->find($vehicleId);
         $user = $this->getUserEntity();
-        if (!$vehicle || !$user || $vehicle->getOwner()->getId() !== $user->getId()) {
-            return new JsonResponse(['error' => 'Vehicle not found'], 404);
+        if (!$user) {
+            return new JsonResponse(['error' => 'Unauthorized'], 401);
         }
 
-        $records = $this->entityManager->getRepository(RoadTax::class)
-            ->findBy(['vehicle' => $vehicle], ['startDate' => 'DESC']);
+        if ($vehicleId) {
+            $vehicle = $this->entityManager->getRepository(Vehicle::class)->find((int)$vehicleId);
+            if (!$vehicle || (!$this->isAdminForUser($user) && $vehicle->getOwner()->getId() !== $user->getId())) {
+                return new JsonResponse(['error' => 'Vehicle not found'], 404);
+            }
+
+            $records = $this->entityManager->getRepository(RoadTax::class)
+                ->findBy(['vehicle' => $vehicle], ['startDate' => 'DESC']);
+        } else {
+            // Fetch records for all vehicles the user can see
+            $vehicleRepo = $this->entityManager->getRepository(Vehicle::class);
+            $vehicles = $this->isAdminForUser($user) ? $vehicleRepo->findAll() : $vehicleRepo->findBy(['owner' => $user]);
+            if (empty($vehicles)) {
+                return new JsonResponse([]);
+            }
+
+            $qb = $this->entityManager->createQueryBuilder()
+                ->select('r')
+                ->from(RoadTax::class, 'r')
+                ->where('r.vehicle IN (:vehicles)')
+                ->setParameter('vehicles', $vehicles)
+                ->orderBy('r.startDate', 'DESC');
+
+            $records = $qb->getQuery()->getResult();
+        }
 
         return new JsonResponse(array_map(fn($r) => $this->serializeRoadTax($r), $records));
     }
@@ -55,7 +80,7 @@ class RoadTaxController extends AbstractController
 
         $vehicle = $this->entityManager->getRepository(Vehicle::class)->find($data['vehicleId'] ?? null);
         $user = $this->getUserEntity();
-        if (!$vehicle || !$user || $vehicle->getOwner()->getId() !== $user->getId()) {
+        if (!$vehicle || !$user || (!$this->isAdminForUser($user) && $vehicle->getOwner()->getId() !== $user->getId())) {
             return new JsonResponse(['error' => 'Vehicle not found'], 404);
         }
 
@@ -78,7 +103,7 @@ class RoadTaxController extends AbstractController
     {
         $rt = $this->entityManager->getRepository(RoadTax::class)->find($id);
         $user = $this->getUserEntity();
-        if (!$rt || !$user || $rt->getVehicle()->getOwner()->getId() !== $user->getId()) {
+        if (!$rt || !$user || (!$this->isAdminForUser($user) && $rt->getVehicle()->getOwner()->getId() !== $user->getId())) {
             return new JsonResponse(['error' => 'Road tax record not found'], 404);
         }
 
@@ -99,7 +124,7 @@ class RoadTaxController extends AbstractController
     {
         $rt = $this->entityManager->getRepository(RoadTax::class)->find($id);
         $user = $this->getUserEntity();
-        if (!$rt || !$user || $rt->getVehicle()->getOwner()->getId() !== $user->getId()) {
+        if (!$rt || !$user || (!$this->isAdminForUser($user) && $rt->getVehicle()->getOwner()->getId() !== $user->getId())) {
             return new JsonResponse(['error' => 'Road tax record not found'], 404);
         }
         // Allow deletion even if the vehicle is marked road-tax-exempt.

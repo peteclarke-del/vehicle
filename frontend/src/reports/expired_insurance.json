@@ -1,0 +1,11 @@
+{
+  "key": "expired_insurance",
+  "name": "Expired Insurance",
+  "description": "Vehicles with expired insurance",
+  "periods": [ {"label":"All time","months":null} ],
+  "defaultPeriodIndex": 0,
+  "outputs": [{"mode":"screen"},{"mode":"file","fileType":"csv"}],
+  "elements": [
+    {"type":"table","source":"vehicles","filter":"insuranceExpired","columns":[{"key":"registration","label":"Registration"},{"key":"insuranceExpiry","label":"Insurance Expiry"}]}
+  ]
+}

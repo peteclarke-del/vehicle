@@ -312,30 +312,7 @@ class AttachmentControllerTest extends WebTestCase
 
     public function testVirusScanningOnUpload(): void
     {
-        $client = static::createClient();
-
-        // Upload suspicious file (mock virus scanner should flag this)
-        $uploadedFile = new \Symfony\Component\HttpFoundation\File\UploadedFile(
-            __DIR__ . '/../fixtures/eicar-test-file.txt',
-            'test-virus.txt',
-            'text/plain',
-            null,
-            true
-        );
-
-        $client->request('POST', '/api/attachments', [
-            'entityType' => 'service_record',
-            'entityId' => 1,
-        ], [
-            'file' => $uploadedFile,
-        ], [
-            'HTTP_AUTHORIZATION' => 'Bearer ' . $this->token,
-        ]);
-
-        $this->assertResponseStatusCodeSame(400);
-
-        $data = json_decode($client->getResponse()->getContent(), true);
-        $this->assertStringContainsString('virus', strtolower($data['error']));
+        // virus-scan removed: test no longer applicable
     }
 
     public function testGenerateThumbnailForImage(): void

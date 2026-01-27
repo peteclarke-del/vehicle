@@ -10,10 +10,12 @@ import {
   MenuItem,
   CircularProgress,
   IconButton,
+  Tooltip,
   Checkbox,
   FormControlLabel,
   Autocomplete,
 } from '@mui/material';
+import StatusChangeDialog from './StatusChangeDialog';
 import SearchIcon from '@mui/icons-material/Search';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
@@ -54,6 +56,13 @@ const VehicleDialog = ({ open, vehicle, onClose }) => {
   const [lookingUpReg, setLookingUpReg] = useState(false);
   const { api } = useAuth();
   const { t } = useTranslation();
+  const [statusSelect, setStatusSelect] = useState('');
+  const [statusDialogOpen, setStatusDialogOpen] = useState(false);
+  const [statusDialogData, setStatusDialogData] = useState({ newStatus: '', date: new Date().toISOString().slice(0,10), notes: '' });
+
+  const _statusValues = ['Live', 'Sold', 'Scrapped', 'Exported'];
+  const currentStatus = (formData && formData.status) || (vehicle && vehicle.status) || 'Live';
+  const availableStatusOptions = _statusValues.filter(s => s !== currentStatus);
 
   // Generate year options once
   const yearOptions = React.useMemo(() => {
@@ -401,7 +410,7 @@ const VehicleDialog = ({ open, vehicle, onClose }) => {
         try {
           alert(t('dvla.lookupBusy'));
         } catch (e) {
-          alert('DVLA is busy; please try again later.');
+          alert(t('dvla.lookupBusy'));
         }
         return;
       }
@@ -420,7 +429,7 @@ const VehicleDialog = ({ open, vehicle, onClose }) => {
           alert(serverError);
         }
       } else {
-        console.log('Could not lookup registration:', error.response?.data?.error || error.message);
+        console.warn('Could not lookup registration:', error.response?.data?.error || error.message);
         alert(t('vehicle.lookupFailed'));
       }
     } finally {
@@ -436,7 +445,7 @@ const VehicleDialog = ({ open, vehicle, onClose }) => {
       if (formData.registrationNumber) {
         await lookupRegistration(formData.registrationNumber);
       } else {
-        console.log('VIN lookup skipped: no registration present and DVLA VIN lookup unavailable');
+        console.warn('VIN lookup skipped: no registration present and DVLA VIN lookup unavailable');
       }
     };
 
@@ -481,6 +490,23 @@ const VehicleDialog = ({ open, vehicle, onClose }) => {
     }
   };
 
+  const handleConfirmStatusChange = async () => {
+    if (!vehicle || !vehicle.id) return;
+    const { newStatus, date, notes } = statusDialogData;
+    try {
+      const payload = { status: newStatus };
+      if (date) payload.statusChangeDate = date;
+      if (notes) payload.statusChangeNotes = notes;
+      await api.put(`/vehicles/${vehicle.id}`, payload);
+      // update local form state to reflect new status
+      setFormData(prev => ({ ...prev, status: newStatus }));
+      setStatusDialogOpen(false);
+    } catch (err) {
+      console.error('Error changing status:', err);
+      alert(t('common.saveError', { type: 'status' }));
+    }
+  };
+
   return (
     <Dialog open={open} onClose={() => handleClose(false)} maxWidth="md" fullWidth>
       <DialogTitle>
@@ -488,8 +514,14 @@ const VehicleDialog = ({ open, vehicle, onClose }) => {
       </DialogTitle>
       <form onSubmit={handleSubmit}>
         <DialogContent>
+          <StatusChangeDialog
+            open={statusDialogOpen}
+            initialData={statusDialogData}
+            onClose={() => setStatusDialogOpen(false)}
+            onConfirm={handleConfirmStatusChange}
+          />
           <Grid container spacing={2}>
-            <Grid item xs={12} sm={12}>
+            <Grid item xs={12} sm={9}>
               <TextField
                 fullWidth
                 required
@@ -498,6 +530,28 @@ const VehicleDialog = ({ open, vehicle, onClose }) => {
                 value={formData.name}
                 onChange={handleChange}
               />
+            </Grid>
+            <Grid item xs={12} sm={3}>
+              {vehicle ? (
+                <TextField
+                  select
+                  fullWidth
+                  label={t('vehicle.markAs') || 'Mark as...'}
+                  value={statusSelect}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setStatusSelect('');
+                    if (!val) return;
+                    // open status change dialog prefilled
+                    setStatusDialogData({ newStatus: val, date: new Date().toISOString().slice(0,10), notes: '' });
+                    setStatusDialogOpen(true);
+                  }}
+                >
+                  {availableStatusOptions.map(s => (
+                    <MenuItem key={s} value={s}>{t(`vehicle.status.${s.toLowerCase()}`) || s}</MenuItem>
+                  ))}
+                </TextField>
+              ) : null}
             </Grid>
             <Grid item xs={12} sm={6}>
               <Autocomplete
@@ -562,6 +616,7 @@ const VehicleDialog = ({ open, vehicle, onClose }) => {
                 ))}
               </TextField>
             </Grid>
+            
             <Grid item xs={12} sm={6}>
               <Autocomplete
                 freeSolo
@@ -594,9 +649,11 @@ const VehicleDialog = ({ open, vehicle, onClose }) => {
                   endAdornment: (
                     <>
                       {lookingUpReg ? <CircularProgress size={20} /> : null}
-                      <IconButton size="small" onClick={() => lookupByVin(formData.vin)} aria-label="fetch-vin">
-                        <SearchIcon fontSize="small" />
-                      </IconButton>
+                      <Tooltip title={t('vehicle.fetchVin')}>
+                        <IconButton size="small" onClick={() => lookupByVin(formData.vin)} aria-label="fetch-vin">
+                          <SearchIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
                     </>
                   ),
                 }}
@@ -606,7 +663,7 @@ const VehicleDialog = ({ open, vehicle, onClose }) => {
               <TextField
                 fullWidth
                 name="registrationNumber"
-                label={t('vehicle.registrationNumber')}
+                label={t('common.registrationNumber')}
                 value={formData.registrationNumber}
                 onChange={handleChange}
                 onBlur={handleRegistrationBlur}
@@ -615,9 +672,11 @@ const VehicleDialog = ({ open, vehicle, onClose }) => {
                   endAdornment: (
                     <>
                       {lookingUpReg ? <CircularProgress size={20} /> : null}
-                      <IconButton size="small" onClick={() => lookupRegistration(formData.registrationNumber)} aria-label="fetch-reg">
-                        <SearchIcon fontSize="small" />
-                      </IconButton>
+                      <Tooltip title={t('vehicle.fetchRegistration')}>
+                        <IconButton size="small" onClick={() => lookupRegistration(formData.registrationNumber)} aria-label="fetch-reg">
+                          <SearchIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
                     </>
                   ),
                 }}

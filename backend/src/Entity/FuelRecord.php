@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
+use App\Entity\Attachment;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'fuel_records')]
@@ -34,23 +35,15 @@ class FuelRecord
     #[ORM\Column(type: 'string', length: 50, nullable: true)]
     private ?string $fuelType = null;
 
-    #[ORM\Column(type: 'boolean', options: ['default' => true])]
-    private bool $fullTank = true;
-
-    #[ORM\Column(type: 'string', length: 50, nullable: true)]
-    private ?string $paymentMethod = null;
-
-    #[ORM\Column(type: 'decimal', precision: 8, scale: 2, nullable: true)]
-    private ?string $tripComputerMpg = null;
-
     #[ORM\Column(type: 'string', length: 200, nullable: true)]
     private ?string $station = null;
 
     #[ORM\Column(type: 'text', nullable: true)]
     private ?string $notes = null;
 
-    #[ORM\Column(type: 'integer', nullable: true)]
-    private ?int $receiptAttachmentId = null;
+    #[ORM\ManyToOne(targetEntity: Attachment::class)]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
+    private ?Attachment $receiptAttachment = null;
 
     #[ORM\Column(type: 'datetime')]
     private ?\DateTimeInterface $createdAt = null;
@@ -172,58 +165,17 @@ class FuelRecord
         return $this;
     }
 
-    public function getReceiptAttachmentId(): ?int
+    public function getReceiptAttachment(): ?Attachment
     {
-        return $this->receiptAttachmentId;
+        return $this->receiptAttachment;
     }
 
-    public function setReceiptAttachmentId(?int $receiptAttachmentId): self
+    public function setReceiptAttachment(?Attachment $receiptAttachment): self
     {
-        $this->receiptAttachmentId = $receiptAttachmentId;
+        $this->receiptAttachment = $receiptAttachment;
         return $this;
     }
 
-    public function getFullTank(): bool
-    {
-        return $this->fullTank;
-    }
-
-    public function setFullTank(bool $fullTank): self
-    {
-        $this->fullTank = $fullTank;
-        return $this;
-    }
-
-    public function getPaymentMethod(): ?string
-    {
-        return $this->paymentMethod;
-    }
-
-    public function setPaymentMethod(?string $paymentMethod): self
-    {
-        $this->paymentMethod = $paymentMethod;
-        return $this;
-    }
-
-    public function getTripComputerMpg(): ?string
-    {
-        return $this->tripComputerMpg;
-    }
-
-    public function setTripComputerMpg($tripComputerMpg): self
-    {
-        if ($tripComputerMpg !== null) {
-            $this->tripComputerMpg = (string) $tripComputerMpg;
-        } else {
-            $this->tripComputerMpg = null;
-        }
-        return $this;
-    }
-
-    public function isFullTank(): bool
-    {
-        return $this->fullTank;
-    }
 
     public function calculateMpg(?FuelRecord $previousRecord = null): ?float
     {
