@@ -71,16 +71,44 @@ class TestAuthSubscriber implements EventSubscriberInterface
 
         // Find the fixture user by email in the test database
         $repo = $this->em->getRepository(User::class);
-        $user = $repo->findOneBy(['email' => $email]);
-
-        if (!$user instanceof User) {
-            return;
+        $user = null;
+        try {
+            $user = $repo->findOneBy(['email' => $email]);
+        } catch (\Throwable) {
+            // If repository access fails (e.g. no DB configured in tests),
+            // we'll fall back to an in-memory user below.
+            $user = null;
         }
 
-        // Create token and store it so controllers can use getUser()
+        if (!$user instanceof User) {
+            // Create a lightweight User. Prefer to persist it so the
+            // security token holds a managed entity (avoids Doctrine
+            // "new entity found through relationship" errors during
+            // controller flushes). If persistence fails, fall back to
+            // an in-memory user.
+            $user = new User();
+            $user->setEmail($email);
+            $user->setFirstName('Test');
+            $user->setLastName(explode('@', $email)[0] ?? 'test');
+            $user->setRoles(['ROLE_USER']);
+
+            try {
+                $this->em->persist($user);
+                $this->em->flush();
+                // reload to ensure we have the managed instance
+                $user = $repo->findOneBy(['email' => $email]) ?? $user;
+            } catch (\Throwable) {
+                // If DB access fails, keep the in-memory user as a
+                // graceful fallback for environments without a test DB.
+            }
+        }
+
+        // Create token and store it so controllers can use getUser().
+        // Use the API firewall provider key so stateless API requests in
+        // tests are treated as authenticated.
         $token = new UsernamePasswordToken(
             $user,
-            'main',
+            'api',
             $user->getRoles()
         );
         $this->tokenStorage->setToken($token);

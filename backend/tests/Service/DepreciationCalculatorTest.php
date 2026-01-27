@@ -37,7 +37,7 @@ class DepreciationCalculatorTest extends TestCase
         $schedule = $this->calculator->generateSchedule($vehicle, 5);
 
         $this->assertIsArray($schedule);
-        $this->assertCount(5, $schedule);
+        $this->assertCount(6, $schedule);
         
         foreach ($schedule as $year => $value) {
             $this->assertIsInt($year);

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
+use App\Entity\Attachment;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'parts')]
@@ -71,6 +72,10 @@ class Part
     #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
     private ?ServiceRecord $serviceRecord = null;
 
+    #[ORM\ManyToOne(targetEntity: \App\Entity\Todo::class, inversedBy: 'parts')]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
+    private ?\App\Entity\Todo $todo = null;
+
     #[ORM\ManyToOne(targetEntity: MotRecord::class)]
     #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
     private ?MotRecord $motRecord = null;
@@ -78,8 +83,9 @@ class Part
     #[ORM\Column(type: 'datetime')]
     private ?\DateTimeInterface $createdAt = null;
 
-    #[ORM\Column(type: 'integer', nullable: true)]
-    private ?int $receiptAttachmentId = null;
+    #[ORM\ManyToOne(targetEntity: Attachment::class)]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
+    private ?Attachment $receiptAttachment = null;
 
     #[ORM\Column(type: 'string', length: 500, nullable: true)]
     private ?string $productUrl = null;
@@ -215,6 +221,17 @@ class Part
         return $this;
     }
 
+    public function getTodo(): ?\App\Entity\Todo
+    {
+        return $this->todo;
+    }
+
+    public function setTodo(?\App\Entity\Todo $todo): self
+    {
+        $this->todo = $todo;
+        return $this;
+    }
+
     public function getMotRecord(): ?MotRecord
     {
         return $this->motRecord;
@@ -237,16 +254,17 @@ class Part
         return $this;
     }
 
-    public function getReceiptAttachmentId(): ?int
+    public function getReceiptAttachment(): ?Attachment
     {
-        return $this->receiptAttachmentId;
+        return $this->receiptAttachment;
     }
 
-    public function setReceiptAttachmentId(?int $receiptAttachmentId): self
+    public function setReceiptAttachment(?Attachment $receiptAttachment): self
     {
-        $this->receiptAttachmentId = $receiptAttachmentId;
+        $this->receiptAttachment = $receiptAttachment;
         return $this;
     }
+
 
     public function getProductUrl(): ?string
     {

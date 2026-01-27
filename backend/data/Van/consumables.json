@@ -10,13 +10,12 @@
         "name": "Transmission Fluid",
         "unit": "litres",
         "description": "Manual or automatic transmission fluid as specified."
-    ,
+    },
     {
         "vehicleType": "Van",
         "name": "Indicator/Direction Lamp Bulb",
         "unit": "unit",
         "description": "Indicator / direction (turn signal) lamp bulb; include common bulb types and LED replacements." 
-    }
     },
     {
         "vehicleType": "Van",

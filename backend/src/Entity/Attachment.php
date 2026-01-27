@@ -60,11 +60,7 @@ class Attachment
     #[ORM\Column(type: 'string', length: 50, nullable: true)]
     private ?string $category = null;
 
-    #[ORM\Column(type: 'string', length: 20, nullable: true, options: ['default' => 'pending'])]
-    private ?string $virusScanStatus = 'pending';
-
-    #[ORM\Column(type: 'datetime', nullable: true)]
-    private ?\DateTimeInterface $virusScanDate = null;
+    // virus scan fields removed
 
     public function __construct()
     {
@@ -213,27 +209,6 @@ class Attachment
         return $this->setUser($user);
     }
 
-    public function getVirusScanStatus(): ?string
-    {
-        return $this->virusScanStatus;
-    }
-
-    public function setVirusScanStatus(?string $virusScanStatus): self
-    {
-        $this->virusScanStatus = $virusScanStatus;
-        return $this;
-    }
-
-    public function getVirusScanDate(): ?\DateTimeInterface
-    {
-        return $this->virusScanDate;
-    }
-
-    public function setVirusScanDate(?\DateTimeInterface $virusScanDate): self
-    {
-        $this->virusScanDate = $virusScanDate;
-        return $this;
-    }
 
     /**
      * Check if file is an image
@@ -322,15 +297,9 @@ class Attachment
         }
         return null;
     }
-
     public function setThumbnailPath(?string $thumbnailPath): self
     {
         $this->thumbnailPath = $thumbnailPath;
         return $this;
-    }
-
-    public function isVirusFree(): bool
-    {
-        return $this->virusScanStatus === 'clean';
     }
 }

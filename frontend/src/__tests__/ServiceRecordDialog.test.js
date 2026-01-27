@@ -63,7 +63,8 @@ describe('ServiceRecordDialog Component', () => {
     
     expect(screen.getByLabelText(/service date/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/service type/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/description/i)).toBeInTheDocument();
+    expect(screen.getByLabelText('service.workPerformed')).toBeInTheDocument();
+    expect(screen.getByLabelText('service.serviceProvider')).toBeInTheDocument();
     expect(screen.getByLabelText(/labour cost/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/parts cost/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/mileage/i)).toBeInTheDocument();
@@ -135,7 +136,7 @@ describe('ServiceRecordDialog Component', () => {
       id: 1,
       serviceDate: '2024-01-15',
       serviceType: 'Annual Service',
-      description: 'Full service',
+      workPerformed: 'Full service',
       labourCost: 150,
       partsCost: 100,
       mileage: 50000,
@@ -255,7 +256,7 @@ describe('ServiceRecordDialog Component', () => {
 
   test('displays workshop field', () => {
     renderWithProviders(<ServiceRecordDialog {...defaultProps} />);
-    expect(screen.getByLabelText(/workshop/i)).toBeInTheDocument();
+    expect(screen.getByLabelText('service.serviceProvider')).toBeInTheDocument();
   });
 
   test('displays next service date field', () => {

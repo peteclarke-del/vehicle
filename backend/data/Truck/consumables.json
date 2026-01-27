@@ -10,13 +10,12 @@
         "name": "Gear Oil/Differential Oil",
         "unit": "litres",
         "description": "High-viscosity gear oil for differentials and axles."
-    ,
+    },
     {
         "vehicleType": "Truck",
         "name": "Indicator/Direction Lamp Bulb",
         "unit": "unit",
         "description": "Indicator / direction (turn signal) lamp bulb for truck lighting circuits; include LED or filament types and fitting specs." 
-    }
     },
     {
         "vehicleType": "Truck",

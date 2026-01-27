@@ -13,13 +13,16 @@ import {
   IconButton,
   Box,
   Tooltip,
+  TableSortLabel,
 } from '@mui/material';
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
+import { useUserPreferences } from '../contexts/UserPreferencesContext';
 import { useTranslation } from 'react-i18next';
 import { formatDateISO } from '../utils/formatDate';
 import { fetchArrayData } from '../hooks/useApiData';
 import PolicyDialog from '../components/PolicyDialog';
+import VehicleSelector from '../components/VehicleSelector';
 
 const Insurance = () => {
   const { api } = useAuth();
@@ -28,23 +31,85 @@ const Insurance = () => {
   // Policies state
   const [policies, setPolicies] = useState([]);
   const [vehicles, setVehicles] = useState([]);
+  const [selectedVehicle, setSelectedVehicle] = useState('');
   const [policyDialogOpen, setPolicyDialogOpen] = useState(false);
   const [editingPolicy, setEditingPolicy] = useState(null);
+  const [orderBy, setOrderBy] = useState(() => localStorage.getItem('insuranceSortBy') || 'expiryDate');
+  const [order, setOrder] = useState(() => localStorage.getItem('insuranceSortOrder') || 'desc');
 
   useEffect(() => {
     loadVehicles();
-    loadPolicies();
   }, []);
+
+  useEffect(() => {
+    loadPolicies();
+  }, [selectedVehicle]);
+
+  const { defaultVehicleId, setDefaultVehicle } = useUserPreferences();
 
   const loadVehicles = async () => {
     const data = await fetchArrayData(api, '/vehicles');
     setVehicles(data);
+    if (data.length > 0 && !selectedVehicle) {
+      if (defaultVehicleId && data.find((v) => String(v.id) === String(defaultVehicleId))) {
+        setSelectedVehicle(defaultVehicleId);
+      } else {
+        setSelectedVehicle(data[0].id);
+      }
+    }
   };
 
+  useEffect(() => {
+    if (!defaultVehicleId) return;
+    if (!vehicles || vehicles.length === 0) return;
+    const found = vehicles.find((v) => String(v.id) === String(defaultVehicleId));
+    if (found && String(selectedVehicle) !== String(defaultVehicleId)) {
+      setSelectedVehicle(defaultVehicleId);
+    }
+  }, [defaultVehicleId, vehicles]);
+
   const loadPolicies = async () => {
-    const data = await fetchArrayData(api, '/insurance/policies');
+    const url = !selectedVehicle || selectedVehicle === '__all__' ? '/insurance/policies' : `/insurance?vehicleId=${selectedVehicle}`;
+    const data = await fetchArrayData(api, url);
     setPolicies(data);
   };
+
+  const handleRequestSort = (property) => {
+    const isAsc = orderBy === property && order === 'asc';
+    const newOrder = isAsc ? 'desc' : 'asc';
+    setOrder(newOrder);
+    setOrderBy(property);
+    localStorage.setItem('insuranceSortBy', property);
+    localStorage.setItem('insuranceSortOrder', newOrder);
+  };
+
+  const sortedPolicies = React.useMemo(() => {
+    const comparator = (a, b) => {
+      let aValue = a[orderBy];
+      let bValue = b[orderBy];
+
+      if (orderBy === 'startDate' || orderBy === 'expiryDate') {
+        const aTime = aValue ? new Date(aValue).getTime() : 0;
+        const bTime = bValue ? new Date(bValue).getTime() : 0;
+        if (aTime === bTime) return 0;
+        return order === 'asc' ? (aTime - bTime) : (bTime - aTime);
+      }
+
+      if (orderBy === 'ncdYears') {
+        const aNum = parseFloat(aValue) || 0;
+        const bNum = parseFloat(bValue) || 0;
+        if (aNum === bNum) return 0;
+        return order === 'asc' ? (aNum - bNum) : (bNum - aNum);
+      }
+
+      aValue = aValue || '';
+      bValue = bValue || '';
+      if (aValue === bValue) return 0;
+      return order === 'asc' ? (aValue > bValue ? 1 : -1) : (aValue < bValue ? 1 : -1);
+    };
+
+    return [...policies].sort(comparator);
+  }, [policies, order, orderBy]);
 
   // Policy handlers
   const handleAddPolicy = () => {
@@ -58,7 +123,7 @@ const Insurance = () => {
   };
 
   const handleDeletePolicy = async (id) => {
-    if (!window.confirm(t('insurance.policies.deleteConfirm', 'Delete this policy?'))) return;
+    if (!window.confirm(t('insurance.policies.deleteConfirm'))) return;
     try {
       await api.delete(`/insurance/policies/${id}`);
       loadPolicies();
@@ -71,37 +136,85 @@ const Insurance = () => {
     <Container maxWidth="xl">
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Typography variant="h4">{t('insurance.policies.title')}</Typography>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={handleAddPolicy}>
-          {t('insurance.policies.addPolicy')}
-        </Button>
+        <Box display="flex" gap={2}>
+          <VehicleSelector
+            vehicles={vehicles}
+            value={selectedVehicle}
+            onChange={(v) => setSelectedVehicle(v)}
+            minWidth={300}
+          />
+          <Button variant="contained" startIcon={<AddIcon />} onClick={handleAddPolicy} disabled={!selectedVehicle || selectedVehicle === '__all__'}>
+            {t('insurance.policies.addPolicy')}
+          </Button>
+        </Box>
       </Box>
 
       <TableContainer component={Paper} sx={{ maxHeight: 'calc(100vh - 180px)', overflow: 'auto' }}>
         <Table stickyHeader>
           <TableHead>
             <TableRow>
-              <TableCell>{t('insurance.policies.provider')}</TableCell>
-              <TableCell>{t('insurance.policies.policyNumber')}</TableCell>
-              <TableCell>Start Date</TableCell>
-              <TableCell>{t('insurance.policies.expiryDate')}</TableCell>
-              <TableCell>NCB</TableCell>
+              <TableCell>
+                <TableSortLabel
+                  active={orderBy === 'provider'}
+                  direction={orderBy === 'provider' ? order : 'asc'}
+                  onClick={() => handleRequestSort('provider')}
+                >
+                  {t('insurance.policies.provider')}
+                </TableSortLabel>
+              </TableCell>
+              <TableCell>
+                <TableSortLabel
+                  active={orderBy === 'policyNumber'}
+                  direction={orderBy === 'policyNumber' ? order : 'asc'}
+                  onClick={() => handleRequestSort('policyNumber')}
+                >
+                  {t('insurance.policies.policyNumber')}
+                </TableSortLabel>
+              </TableCell>
+              <TableCell>
+                <TableSortLabel
+                  active={orderBy === 'startDate'}
+                  direction={orderBy === 'startDate' ? order : 'asc'}
+                  onClick={() => handleRequestSort('startDate')}
+                >
+                  {t('insurance.policies.startDate')}
+                </TableSortLabel>
+              </TableCell>
+              <TableCell>
+                <TableSortLabel
+                  active={orderBy === 'expiryDate'}
+                  direction={orderBy === 'expiryDate' ? order : 'desc'}
+                  onClick={() => handleRequestSort('expiryDate')}
+                >
+                  {t('insurance.policies.expiryDate')}
+                </TableSortLabel>
+              </TableCell>
+              <TableCell>
+                <TableSortLabel
+                  active={orderBy === 'ncdYears'}
+                  direction={orderBy === 'ncdYears' ? order : 'asc'}
+                  onClick={() => handleRequestSort('ncdYears')}
+                >
+                  {t('insurance.policies.ncdYears')}
+                </TableSortLabel>
+              </TableCell>
               <TableCell>{t('insurance.policies.vehicles')}</TableCell>
               <TableCell align="center">{t('common.actions')}</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {policies.length === 0 ? (
+            {sortedPolicies.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} align="center">{t('common.noRecords')}</TableCell>
               </TableRow>
             ) : (
-              policies.map((p) => (
+              sortedPolicies.map((p) => (
                 <TableRow key={p.id} sx={{ '&:nth-of-type(odd)': { backgroundColor: 'action.hover' } }}>
                   <TableCell>{p.provider}</TableCell>
                   <TableCell>{p.policyNumber || '-'}</TableCell>
                   <TableCell>{p.startDate ? formatDateISO(p.startDate) : '-'}</TableCell>
                   <TableCell>{p.expiryDate ? formatDateISO(p.expiryDate) : '-'}</TableCell>
-                  <TableCell>{p.ncdYears ?? '-'} Years</TableCell>
+                  <TableCell>{p.ncdYears ?? '-'} {t('insurance.policies.years')}</TableCell>
                   <TableCell>{(p.vehicles || []).map(v => v.registration).join(', ')}</TableCell>
                   <TableCell align="center">
                     <Tooltip title={t('edit')}>

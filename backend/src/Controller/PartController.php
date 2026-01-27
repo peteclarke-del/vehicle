@@ -7,6 +7,7 @@ namespace App\Controller;
 use App\Entity\Part;
 use App\Entity\User;
 use App\Entity\Vehicle;
+use App\Entity\Attachment;
 use App\Service\ReceiptOcrService;
 use App\Service\UrlScraperService;
 use Psr\Log\LoggerInterface;
@@ -37,17 +38,34 @@ class PartController extends AbstractController
             return $this->json(['error' => 'Not authenticated'], 401);
         }
 
-        $vehicleId = $request->query->get('vehicleId');
+        if ($this->isAdminForUser($user)) {
+            // Admins may request parts for any vehicle; keep existing behavior when vehicleId provided
+        }
 
+        $vehicleId = $request->query->get('vehicleId');
         if ($vehicleId) {
             $vehicle = $this->entityManager->getRepository(Vehicle::class)->find($vehicleId);
-            if (!$vehicle || $vehicle->getOwner()->getId() !== $user->getId()) {
+            if (!$vehicle || (!$this->isAdminForUser($user) && $vehicle->getOwner()->getId() !== $user->getId())) {
                 return $this->json(['error' => 'Vehicle not found'], 404);
             }
             $parts = $this->entityManager->getRepository(Part::class)
                 ->findBy(['vehicle' => $vehicle], ['purchaseDate' => 'DESC']);
         } else {
-            $parts = [];
+            // Fetch parts for all vehicles the user can see
+            $vehicleRepo = $this->entityManager->getRepository(Vehicle::class);
+            $vehicles = $this->isAdminForUser($user) ? $vehicleRepo->findAll() : $vehicleRepo->findBy(['owner' => $user]);
+            if (empty($vehicles)) {
+                $parts = [];
+            } else {
+                $qb = $this->entityManager->createQueryBuilder()
+                    ->select('p')
+                    ->from(Part::class, 'p')
+                    ->where('p.vehicle IN (:vehicles)')
+                    ->setParameter('vehicles', $vehicles)
+                    ->orderBy('p.purchaseDate', 'DESC');
+
+                $parts = $qb->getQuery()->getResult();
+            }
         }
 
         $data = array_map(fn($p) => $this->serializePart($p), $parts);
@@ -65,7 +83,7 @@ class PartController extends AbstractController
 
         $part = $this->entityManager->getRepository(Part::class)->find($id);
 
-        if (!$part || $part->getVehicle()->getOwner()->getId() !== $user->getId()) {
+        if (!$part || (!$this->isAdminForUser($user) && $part->getVehicle()->getOwner()->getId() !== $user->getId())) {
             return $this->json(['error' => 'Part not found'], 404);
         }
 
@@ -85,7 +103,7 @@ class PartController extends AbstractController
         $vehicle = $this->entityManager->getRepository(Vehicle::class)
             ->find($data['vehicleId']);
 
-        if (!$vehicle || $vehicle->getOwner()->getId() !== $user->getId()) {
+        if (!$vehicle || (!$this->isAdminForUser($user) && $vehicle->getOwner()->getId() !== $user->getId())) {
             return $this->json(['error' => 'Vehicle not found'], 404);
         }
 
@@ -97,9 +115,7 @@ class PartController extends AbstractController
         if (null === $part->getPurchaseDate()) {
             $part->setPurchaseDate(new \DateTime());
         }
-        if (null === $part->getInstallationDate()) {
-            $part->setInstallationDate(new \DateTime());
-        }
+        // Do not force-installationDate: leave as null unless explicitly provided
 
         $this->entityManager->persist($part);
         $this->entityManager->flush();
@@ -117,7 +133,7 @@ class PartController extends AbstractController
 
         $part = $this->entityManager->getRepository(Part::class)->find($id);
 
-        if (!$part || $part->getVehicle()->getOwner()->getId() !== $user->getId()) {
+        if (!$part || (!$this->isAdminForUser($user) && $part->getVehicle()->getOwner()->getId() !== $user->getId())) {
             return $this->json(['error' => 'Part not found'], 404);
         }
 
@@ -166,9 +182,17 @@ class PartController extends AbstractController
 
         $part = $this->entityManager->getRepository(Part::class)->find($id);
 
-        if (!$part || $part->getVehicle()->getOwner()->getId() !== $user->getId()) {
+        if (!$part || (!$this->isAdminForUser($user) && $part->getVehicle()->getOwner()->getId() !== $user->getId())) {
             return $this->json(['error' => 'Part not found'], 404);
         }
+
+    }
+
+    private function isAdminForUser(?User $user): bool
+    {
+        if (!$user) return false;
+        $roles = $user->getRoles() ?: [];
+        return in_array('ROLE_ADMIN', $roles, true);
 
         $motId = $part->getMotRecord()?->getId();
 
@@ -207,8 +231,13 @@ class PartController extends AbstractController
             'motRecordId' => $part->getMotRecord()?->getId(),
             'motTestNumber' => $part->getMotRecord()?->getMotTestNumber(),
             'motTestDate' => $part->getMotRecord()?->getTestDate()?->format('Y-m-d'),
+            'serviceRecordId' => $part->getServiceRecord()?->getId(),
+            'serviceRecordDate' => $part->getServiceRecord()?->getServiceDate()?->format('Y-m-d'),
+            'serviceRecordSummary' => $part->getServiceRecord() ? (
+                ($part->getServiceRecord()->getWorkPerformed() ?? $part->getServiceRecord()->getServiceProvider() ?? null)
+            ) : null,
             'warranty' => $part->getWarranty(),
-            'receiptAttachmentId' => $part->getReceiptAttachmentId(),
+            'receiptAttachmentId' => $part->getReceiptAttachment()?->getId(),
             'productUrl' => $part->getProductUrl(),
             'createdAt' => $part->getCreatedAt()?->format('c')
         ];
@@ -239,7 +268,9 @@ class PartController extends AbstractController
             $part->setCategory($data['category']);
         }
         if (isset($data['installationDate'])) {
-            $part->setInstallationDate(new \DateTime($data['installationDate']));
+            if (!empty($data['installationDate'])) {
+                $part->setInstallationDate(new \DateTime($data['installationDate']));
+            }
         }
         if (isset($data['mileageAtInstallation'])) {
             $part->setMileageAtInstallation($data['mileageAtInstallation']);
@@ -253,17 +284,55 @@ class PartController extends AbstractController
         }
         if (array_key_exists('motRecordId', $data)) {
             $this->logger->info('Part motRecordId present in payload', ['id' => $part->getId(), 'motRecordId' => $data['motRecordId']]);
-            $mot = $this->entityManager->getRepository(\App\Entity\MotRecord::class)->find($data['motRecordId']);
-            if ($mot) {
-                $part->setMotRecord($mot);
-                $this->logger->info('Part associated with MOT', ['partId' => $part->getId(), 'motId' => $mot->getId()]);
-            } else {
+
+            // Normalize potential shapes: scalar id, numeric string, or object/array containing an `id` key
+            $motId = $data['motRecordId'];
+            if (is_array($motId)) {
+                $motId = $motId['id'] ?? $motId['motRecordId'] ?? null;
+            }
+
+            // If frontend explicitly sent null/empty/0, treat as disassociate
+            if ($motId === null || $motId === '' || $motId === 0 || $motId === '0') {
                 $part->setMotRecord(null);
-                $this->logger->info('Part disassociated from MOT', ['partId' => $part->getId()]);
+                $this->logger->info('Part disassociated from MOT (explicit)', ['partId' => $part->getId()]);
+            } else {
+                $motId = is_numeric($motId) ? (int)$motId : $motId;
+                $mot = $this->entityManager->getRepository(\App\Entity\MotRecord::class)->find($motId);
+                if ($mot) {
+                    $part->setMotRecord($mot);
+                    $this->logger->info('Part associated with MOT', ['partId' => $part->getId(), 'motId' => $mot->getId()]);
+                } else {
+                    $part->setMotRecord(null);
+                    $this->logger->info('Part disassociated from MOT (not found)', ['partId' => $part->getId(), 'motId' => $motId]);
+                }
+            }
+        }
+        if (array_key_exists('serviceRecordId', $data)) {
+            $this->logger->info('Part serviceRecordId present in payload', ['id' => $part->getId(), 'serviceRecordId' => $data['serviceRecordId']]);
+            $svcId = $data['serviceRecordId'];
+            if (is_array($svcId)) {
+                $svcId = $svcId['id'] ?? $svcId['serviceRecordId'] ?? null;
+            }
+            if ($svcId === null || $svcId === '' || $svcId === 0 || $svcId === '0') {
+                $part->setServiceRecord(null);
+                $this->logger->info('Part disassociated from Service (explicit)', ['partId' => $part->getId()]);
+            } else {
+                $svcId = is_numeric($svcId) ? (int)$svcId : $svcId;
+                $svc = $this->entityManager->getRepository(\App\Entity\ServiceRecord::class)->find($svcId);
+                if ($svc) {
+                    $part->setServiceRecord($svc);
+                    $this->logger->info('Part associated with Service', ['partId' => $part->getId(), 'serviceId' => $svc->getId()]);
+                } else {
+                    $part->setServiceRecord(null);
+                    $this->logger->info('Part disassociated from Service (not found)', ['partId' => $part->getId(), 'serviceId' => $svcId]);
+                }
             }
         }
         if (isset($data['receiptAttachmentId'])) {
-            $part->setReceiptAttachmentId($data['receiptAttachmentId']);
+            $att = $this->entityManager->getRepository(Attachment::class)->find($data['receiptAttachmentId']);
+            if ($att) {
+                $part->setReceiptAttachment($att);
+            }
         }
         if (isset($data['productUrl'])) {
             $part->setProductUrl($data['productUrl']);

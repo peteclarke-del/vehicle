@@ -228,6 +228,12 @@ class InsurancePolicy
         return $this->createdAt;
     }
 
+    public function setCreatedAt(?\DateTimeInterface $createdAt): self
+    {
+        $this->createdAt = $createdAt ?? new \DateTime();
+        return $this;
+    }
+
     public function getAutoRenewal(): bool
     {
         return $this->autoRenewal;

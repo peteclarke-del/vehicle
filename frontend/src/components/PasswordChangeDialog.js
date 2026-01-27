@@ -52,7 +52,6 @@ export default function PasswordChangeDialog({ open, onClose, required = false }
   };
 
   const dynamicReqs = parseRequirementsFromRegex(passwordRegex);
-  console.log('dynamicReqs:', dynamicReqs);
   const criteria = dynamicReqs ? {
     length: formData.newPassword.length >= dynamicReqs.length,
     upper: dynamicReqs.upper ? /[A-Z]/.test(formData.newPassword) : true,

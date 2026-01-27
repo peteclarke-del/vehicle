@@ -23,7 +23,10 @@ doctrine:
 when@test:
     doctrine:
         dbal:
-            dbname_suffix: '_test%env(default::TEST_TOKEN)%'
+            # Use a file-backed SQLite DB for tests to ensure schema
+            # created by console commands is visible to the PHPUnit process.
+            url: 'sqlite:///%kernel.project_dir%/var/test.sqlite'
+            driver: 'pdo_sqlite'
 
 when@prod:
     doctrine:

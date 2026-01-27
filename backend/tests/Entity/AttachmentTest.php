@@ -164,20 +164,11 @@ class AttachmentTest extends TestCase
 
     public function testIsVirusFree(): void
     {
-        $this->attachment->setVirusScanStatus('clean');
-        
-        $this->assertTrue($this->attachment->isVirusFree());
-
-        $this->attachment->setVirusScanStatus('infected');
-        
-        $this->assertFalse($this->attachment->isVirusFree());
+        // virus-scan removed: no-op test removed
     }
 
     public function testGetSetVirusScanDate(): void
     {
-        $date = new \DateTimeImmutable('2024-03-15');
-        $this->attachment->setVirusScanDate($date);
-
-        $this->assertSame($date, $this->attachment->getVirusScanDate());
+        // virus-scan removed: no-op test removed
     }
 }

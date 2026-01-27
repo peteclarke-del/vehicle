@@ -1,0 +1,16 @@
+{
+  "key": "total_expenditure",
+  "name": "Total Expenditure",
+  "description": "Total expenditure across services, parts, fuel and consumables",
+  "periods": [
+    {"label": "Last 6 months", "months": 6},
+    {"label": "Last 12 months", "months": 12},
+    {"label": "All time", "months": null}
+  ],
+  "defaultPeriodIndex": 1,
+  "outputs": [{"mode":"screen"},{"mode":"file","fileType":"pdf"}],
+  "elements": [
+    {"type":"summary","field":"totalExpenditure","label":"Total Expenditure"},
+    {"type":"breakdown","fields":["serviceTotal","partsTotal","fuelTotal","consumablesTotal"]}
+  ]
+}

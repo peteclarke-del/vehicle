@@ -37,6 +37,8 @@ export default function PartDialog({ open, onClose, part, vehicleId }) {
   const [productUrl, setProductUrl] = useState('');
   const [motRecords, setMotRecords] = useState([]);
   const [motRecordId, setMotRecordId] = useState(null);
+  const [serviceRecords, setServiceRecords] = useState([]);
+  const [serviceRecordId, setServiceRecordId] = useState(null);
 
   useEffect(() => {
     if (part) {
@@ -56,6 +58,7 @@ export default function PartDialog({ open, onClose, part, vehicleId }) {
       setReceiptAttachmentId(part.receiptAttachmentId || null);
       setProductUrl(part.productUrl || '');
       setMotRecordId(part.motRecordId || null);
+      setServiceRecordId(part.serviceRecordId || null);
     } else {
       setFormData({
         description: '',
@@ -73,6 +76,7 @@ export default function PartDialog({ open, onClose, part, vehicleId }) {
       setReceiptAttachmentId(null);
       setProductUrl('');
       setMotRecordId(null);
+      setServiceRecordId(null);
     }
   }, [part, open]);
 
@@ -87,6 +91,19 @@ export default function PartDialog({ open, onClose, part, vehicleId }) {
       }
     };
     if (open) load();
+  }, [open, vehicleId, api]);
+
+  useEffect(() => {
+    const loadSvc = async () => {
+      if (!vehicleId) return;
+      try {
+        const resp = await api.get('/service-records', { params: { vehicleId } });
+        setServiceRecords(resp.data || []);
+      } catch (e) {
+        console.error('Failed to load service records', e);
+      }
+    };
+    if (open) loadSvc();
   }, [open, vehicleId, api]);
 
   const handleChange = (e) => {
@@ -136,15 +153,17 @@ export default function PartDialog({ open, onClose, part, vehicleId }) {
         receiptAttachmentId,
         productUrl
       ,
-        motRecordId
+        motRecordId,
+        serviceRecordId
       };
 
-      if (part) {
-        await api.put(`/parts/${part.id}`, data);
+      let resp;
+      if (part && part.id) {
+        resp = await api.put(`/parts/${part.id}`, data);
       } else {
-        await api.post('/parts', data);
+        resp = await api.post('/parts', data);
       }
-      onClose(true);
+      onClose(resp.data);
     } catch (error) {
       console.error('Error saving part:', error);
     } finally {
@@ -204,16 +223,16 @@ export default function PartDialog({ open, onClose, part, vehicleId }) {
                 onChange={handleChange}
               >
                 <MenuItem value="">{t('partCategories.selectCategory')}</MenuItem>
-                <MenuItem value="Engine">Engine</MenuItem>
-                <MenuItem value="Transmission">Transmission</MenuItem>
-                <MenuItem value="Brakes">Brakes</MenuItem>
-                <MenuItem value="Suspension">Suspension</MenuItem>
-                <MenuItem value="Electrical">Electrical</MenuItem>
-                <MenuItem value="Body">Body</MenuItem>
-                <MenuItem value="Interior">Interior</MenuItem>
-                <MenuItem value="Exhaust">Exhaust</MenuItem>
-                <MenuItem value="Cooling">Cooling</MenuItem>
-                <MenuItem value="Other">Other</MenuItem>
+                <MenuItem value="Engine">{t('partCategories.Engine')}</MenuItem>
+                <MenuItem value="Transmission">{t('partCategories.Transmission')}</MenuItem>
+                <MenuItem value="Brakes">{t('partCategories.Brakes')}</MenuItem>
+                <MenuItem value="Suspension">{t('partCategories.Suspension')}</MenuItem>
+                <MenuItem value="Electrical">{t('partCategories.Electrical')}</MenuItem>
+                <MenuItem value="Body">{t('partCategories.Body')}</MenuItem>
+                <MenuItem value="Interior">{t('partCategories.Interior')}</MenuItem>
+                <MenuItem value="Exhaust">{t('partCategories.Exhaust')}</MenuItem>
+                <MenuItem value="Cooling">{t('partCategories.Cooling')}</MenuItem>
+                <MenuItem value="Other">{t('partCategories.Other')}</MenuItem>
               </TextField>
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -228,7 +247,7 @@ export default function PartDialog({ open, onClose, part, vehicleId }) {
                 inputProps={{ step: '0.01', min: '0' }}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid item xs={12} sm={4}>
               <TextField
                 fullWidth
                 type="date"
@@ -239,7 +258,7 @@ export default function PartDialog({ open, onClose, part, vehicleId }) {
                 InputLabelProps={{ shrink: true }}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid item xs={12} sm={4}>
               <TextField
                 fullWidth
                 type="date"
@@ -248,6 +267,16 @@ export default function PartDialog({ open, onClose, part, vehicleId }) {
                 value={formData.installationDate}
                 onChange={handleChange}
                 InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <TextField
+                fullWidth
+                type="number"
+                name="mileageAtInstallation"
+                label={`${t('parts.mileageAtInstallation')} (${getLabel()})`}
+                value={formData.mileageAtInstallation}
+                onChange={handleChange}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -285,14 +314,19 @@ export default function PartDialog({ open, onClose, part, vehicleId }) {
               </TextField>
             </Grid>
             <Grid item xs={12} sm={6}>
-              <TextField
+                <TextField
                 fullWidth
-                type="number"
-                name="mileageAtInstallation"
-                label={`${t('parts.mileageAtInstallation')} (${getLabel()})`}
-                value={formData.mileageAtInstallation}
-                onChange={handleChange}
-              />
+                select
+                name="serviceRecordId"
+                label={t('service.serviceRecord')}
+                value={serviceRecordId || ''}
+                onChange={(e) => setServiceRecordId(e.target.value)}
+              >
+                <MenuItem value="">{t('service.selectService')}</MenuItem>
+                {serviceRecords.map(s => (
+                  <MenuItem key={s.id} value={s.id}>{`${s.serviceDate || ''} ${s.serviceProvider ? '- ' + s.serviceProvider : ''}`}</MenuItem>
+                ))}
+              </TextField>
             </Grid>
             <Grid item xs={12}>
               <TextField

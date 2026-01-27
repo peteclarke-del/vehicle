@@ -10,13 +10,12 @@
         "name": "12V Auxiliary Battery",
         "unit": "unit",
         "description": "12V battery used for accessories and vehicle electronics."
-    ,
+    },
     {
         "vehicleType": "EV",
         "name": "Indicator/Direction Lamp Bulb",
         "unit": "unit",
         "description": "Indicator / direction (turn signal) lamp bulb (LED or filament types). Specify fitting and polarity where applicable."
-    }
     },
     {
         "vehicleType": "EV",

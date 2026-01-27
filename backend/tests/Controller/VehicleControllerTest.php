@@ -23,7 +23,7 @@ class VehicleControllerTest extends BaseWebTestCase
      */
     protected function setUp(): void
     {
-        $this->client = static::createClient();
+        parent::setUp();
     }
 
     /**

@@ -28,6 +28,7 @@ import { fetchArrayData } from '../hooks/useApiData';
 import { useDistance } from '../hooks/useDistance';
 import { formatDateISO } from '../utils/formatDate';
 import ServiceDialog from '../components/ServiceDialog';
+import VehicleSelector from '../components/VehicleSelector';
 
 const ServiceRecords = () => {
   const [serviceRecords, setServiceRecords] = useState([]);
@@ -39,6 +40,10 @@ const ServiceRecords = () => {
   const [order, setOrder] = useState(() => localStorage.getItem('serviceRecordsSortOrder') || 'desc');
   const { api } = useAuth();
   const { t, i18n } = useTranslation();
+  const registrationLabelText = t('common.registrationNumber');
+  const regWords = (registrationLabelText || '').split(/\s+/).filter(Boolean);
+  const regLast = regWords.length > 0 ? regWords[regWords.length - 1] : '';
+  const regFirst = regWords.length > 1 ? regWords.slice(0, regWords.length - 1).join(' ') : (regWords[0] || 'Registration');
   const { defaultVehicleId, setDefaultVehicle } = useUserPreferences();
   const [hasManualSelection, setHasManualSelection] = useState(false);
   const { convert, format, getLabel } = useDistance();
@@ -58,9 +63,7 @@ const ServiceRecords = () => {
   }, [defaultVehicleId, vehicles, hasManualSelection]);
 
   useEffect(() => {
-    if (selectedVehicle) {
-      loadServiceRecords();
-    }
+    loadServiceRecords();
   }, [selectedVehicle]);
 
   const loadVehicles = async () => {
@@ -76,9 +79,9 @@ const ServiceRecords = () => {
   };
 
   const loadServiceRecords = async () => {
-    if (!selectedVehicle) return;
     try {
-      const response = await api.get(`/service-records?vehicleId=${selectedVehicle}`);
+      const url = !selectedVehicle || selectedVehicle === '__all__' ? '/service-records' : `/service-records?vehicleId=${selectedVehicle}`;
+      const response = await api.get(url);
       setServiceRecords(response.data);
     } catch (error) {
       console.error('Error loading service records:', error);
@@ -90,9 +93,29 @@ const ServiceRecords = () => {
     setDialogOpen(true);
   };
 
-  const handleEdit = (service) => {
-    setEditingService(service);
-    setDialogOpen(true);
+  const handleEdit = async (service) => {
+    try {
+      // Fetch detailed service record and associated items/consumables
+      const resp = await api.get(`/service-records/${service.id}/items`);
+      const svc = resp.data.serviceRecord || resp.data;
+      const parts = resp.data.parts || [];
+      const consumables = resp.data.consumables || [];
+
+      // Map parts/consumables into the items array expected by the dialog
+      const items = (svc.items || []).concat(
+        parts.map(p => ({ type: 'part', description: p.description || p.name || '', cost: String(p.cost || 0), quantity: p.quantity || 1, id: p.id })),
+        consumables.map(c => ({ type: 'consumable', name: c.name || c.description || '', description: c.name || c.description || '', cost: String(c.cost || 0), quantity: c.quantity || 1, id: c.id }))
+      );
+
+      svc.items = items;
+      setEditingService(svc);
+      setDialogOpen(true);
+    } catch (err) {
+      console.error('Error loading service details', err);
+      // fallback to minimal object
+      setEditingService(service);
+      setDialogOpen(true);
+    }
   };
 
   const handleDelete = async (id) => {
@@ -125,10 +148,16 @@ const ServiceRecords = () => {
 
   const sortedServiceRecords = React.useMemo(() => {
     const comparator = (a, b) => {
+      if (orderBy === 'registration') {
+        const aReg = vehicles.find(v => String(v.id) === String(a.vehicleId))?.registrationNumber || '';
+        const bReg = vehicles.find(v => String(v.id) === String(b.vehicleId))?.registrationNumber || '';
+        if (aReg === bReg) return 0;
+        return order === 'asc' ? (aReg > bReg ? 1 : -1) : (aReg < bReg ? 1 : -1);
+      }
       let aValue = a[orderBy];
       let bValue = b[orderBy];
 
-      if (['laborCost', 'partsCost', 'totalCost', 'mileage'].includes(orderBy)) {
+      if (['laborCost', 'partsCost', 'consumablesCost', 'totalCost', 'mileage'].includes(orderBy)) {
         aValue = parseFloat(a[orderBy]) || 0;
         bValue = parseFloat(b[orderBy]) || 0;
       }
@@ -165,28 +194,20 @@ const ServiceRecords = () => {
 
   const totalLaborCost = serviceRecords.reduce((sum, svc) => sum + parseFloat(svc.laborCost || 0), 0);
   const totalPartsCost = serviceRecords.reduce((sum, svc) => sum + parseFloat(svc.partsCost || 0), 0);
+  const totalConsumablesCost = serviceRecords.reduce((sum, svc) => sum + parseFloat(svc.consumablesCost || 0), 0);
 
   return (
     <Container maxWidth="xl">
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Typography variant="h4">{t('service.title')}</Typography>
         <Box display="flex" gap={2}>
-          <FormControl size="small" sx={{ width: 360, maxWidth: '100%' }}>
-            <InputLabel>{t('common.selectVehicle')}</InputLabel>
-            <Select
+            <VehicleSelector
+              vehicles={vehicles}
               value={selectedVehicle}
-              label={t('common.selectVehicle')}
-              onChange={(e) => { setHasManualSelection(true); setSelectedVehicle(e.target.value); setDefaultVehicle(e.target.value); }}
-              MenuProps={{ PaperProps: { sx: { minWidth: 360 } } }}
-            >
-              {vehicles.map((vehicle) => (
-                <MenuItem key={vehicle.id} value={vehicle.id}>
-                  {vehicle.name}{vehicle.registrationNumber ? ` (${vehicle.registrationNumber})` : ''}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          <Button variant="contained" color="primary" startIcon={<AddIcon />} onClick={handleAdd}>
+              onChange={(v) => { setHasManualSelection(true); setSelectedVehicle(v); setDefaultVehicle(v); }}
+              minWidth={360}
+            />
+          <Button variant="contained" color="primary" startIcon={<AddIcon />} onClick={handleAdd} disabled={!selectedVehicle || selectedVehicle === '__all__'}>
             {t('service.addService')}
           </Button>
         </Box>
@@ -196,6 +217,18 @@ const ServiceRecords = () => {
         <Table stickyHeader>
           <TableHead>
             <TableRow>
+              <TableCell>
+                <TableSortLabel
+                  active={orderBy === 'registration'}
+                  direction={orderBy === 'registration' ? order : 'asc'}
+                  onClick={() => handleRequestSort('registration')}
+                >
+                  <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
+                    <span>{regFirst}</span>
+                    <span>{regLast}</span>
+                  </div>
+                </TableSortLabel>
+              </TableCell>
               <TableCell>
                 <TableSortLabel
                   active={orderBy === 'serviceDate'}
@@ -230,6 +263,15 @@ const ServiceRecords = () => {
                   onClick={() => handleRequestSort('partsCost')}
                 >
                   {t('service.partsCost')}
+                </TableSortLabel>
+              </TableCell>
+              <TableCell align="right">
+                <TableSortLabel
+                  active={orderBy === 'consumablesCost'}
+                  direction={orderBy === 'consumablesCost' ? order : 'asc'}
+                  onClick={() => handleRequestSort('consumablesCost')}
+                >
+                  {t('service.consumablesCost')}
                 </TableSortLabel>
               </TableCell>
               <TableCell align="right">
@@ -273,10 +315,12 @@ const ServiceRecords = () => {
             ) : (
               sortedServiceRecords.map((service) => (
                 <TableRow key={service.id} sx={{ '&:nth-of-type(odd)': { backgroundColor: 'action.hover' } }}>
+                  <TableCell>{vehicles.find(v => String(v.id) === String(service.vehicleId))?.registrationNumber || '-'}</TableCell>
                   <TableCell>{formatDateISO(service.serviceDate)}</TableCell>
                   <TableCell>{service.serviceType}</TableCell>
                   <TableCell align="right">{formatCurrency(service.laborCost, 'GBP', i18n.language)}</TableCell>
                   <TableCell align="right">{formatCurrency(service.partsCost, 'GBP', i18n.language)}</TableCell>
+                  <TableCell align="right">{formatCurrency(service.consumablesCost || 0, 'GBP', i18n.language)}</TableCell>
                   <TableCell align="right">{formatCurrency(service.totalCost, 'GBP', i18n.language)}</TableCell>
                   <TableCell>{service.mileage ? format(convert(service.mileage)) : '-'}</TableCell>
                     <TableCell>{service.motTestNumber ? `${service.motTestNumber}${service.motTestDate ? ' (' + service.motTestDate + ')' : ''}` : '-'}</TableCell>
@@ -307,8 +351,11 @@ const ServiceRecords = () => {
         <Typography variant="h6">
           {t('service.partsCost')} {t('common.total')}: {formatCurrency(totalPartsCost, 'GBP', i18n.language)}
         </Typography>
+        <Typography variant="h6">
+          {t('service.consumablesCost')} {t('common.total')}: {formatCurrency(totalConsumablesCost, 'GBP', i18n.language)}
+        </Typography>
         <Typography variant="h6" color="primary">
-          {t('service.totalCost')}: {formatCurrency(totalLaborCost + totalPartsCost, 'GBP', i18n.language)}
+          {t('service.totalCost')}: {formatCurrency(totalLaborCost + totalPartsCost + totalConsumablesCost, 'GBP', i18n.language)}
         </Typography>
       </Box>
 

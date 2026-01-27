@@ -1,34 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import {
-  Box,
-  Button,
-  Typography,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  IconButton,
-  MenuItem,
-  TextField,
-  CircularProgress,
-  Chip,
-  FormControl,
-  InputLabel,
-  Select,
-  Tooltip,
-  TableSortLabel,
-} from '@mui/material';
+import { Box, Button, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, IconButton, CircularProgress, Chip, Tooltip, TableSortLabel } from '@mui/material';
 import { Add, Edit, Delete } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
+import VehicleSelector from '../components/VehicleSelector';
 import { useTranslation } from 'react-i18next';
 import { useUserPreferences } from '../contexts/UserPreferencesContext';
 import formatCurrency from '../utils/formatCurrency';
 import { fetchArrayData } from '../hooks/useApiData';
 import { useDistance } from '../hooks/useDistance';
 import PartDialog from '../components/PartDialog';
+import ServiceDialog from '../components/ServiceDialog';
 
 const Parts = () => {
   const [parts, setParts] = useState([]);
@@ -37,10 +18,16 @@ const Parts = () => {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedPart, setSelectedPart] = useState(null);
+  const [openServiceDialog, setOpenServiceDialog] = useState(false);
+  const [selectedServiceRecord, setSelectedServiceRecord] = useState(null);
   const [orderBy, setOrderBy] = useState(() => localStorage.getItem('partsSortBy') || 'description');
   const [order, setOrder] = useState(() => localStorage.getItem('partsSortOrder') || 'asc');
   const { api } = useAuth();
   const { t, i18n } = useTranslation();
+  const registrationLabelText = t('common.registrationNumber');
+  const regWords = (registrationLabelText || '').split(/\s+/).filter(Boolean);
+  const regLast = regWords.length > 0 ? regWords[regWords.length - 1] : '';
+  const regFirst = regWords.length > 1 ? regWords.slice(0, regWords.length - 1).join(' ') : (regWords[0] || 'Registration');
   const { defaultVehicleId, setDefaultVehicle } = useUserPreferences();
   const [hasManualSelection, setHasManualSelection] = useState(false);
   const { convert, format, getLabel } = useDistance();
@@ -82,7 +69,12 @@ const Parts = () => {
 
   const loadParts = async () => {
     try {
-      const response = await api.get(`/parts?vehicleId=${selectedVehicle}`);
+      let response;
+      if (!selectedVehicle || selectedVehicle === '__all__') {
+        response = await api.get('/parts');
+      } else {
+        response = await api.get(`/parts?vehicleId=${selectedVehicle}`);
+      }
       setParts(response.data);
     } catch (error) {
       console.error('Error loading parts:', error);
@@ -100,7 +92,7 @@ const Parts = () => {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm(t('common.confirmDelete') || 'Are you sure you want to delete this part?')) {
+    if (window.confirm(t('parts.confirmDelete'))) {
       try {
         await api.delete(`/parts/${id}`);
         loadParts();
@@ -129,6 +121,13 @@ const Parts = () => {
 
   const sortedParts = React.useMemo(() => {
     const comparator = (a, b) => {
+      if (orderBy === 'registration') {
+        const aReg = vehicles.find(v => String(v.id) === String(a.vehicleId))?.registration || '';
+        const bReg = vehicles.find(v => String(v.id) === String(b.vehicleId))?.registration || '';
+        if (aReg === bReg) return 0;
+        return order === 'asc' ? (aReg > bReg ? 1 : -1) : (aReg < bReg ? 1 : -1);
+      }
+
       let aValue = a[orderBy];
       let bValue = b[orderBy];
 
@@ -168,12 +167,7 @@ const Parts = () => {
   if (vehicles.length === 0) {
     return (
       <Box>
-        <Typography variant="h4" gutterBottom>
-          {t('parts.title')}
-        </Typography>
-        <Typography color="textSecondary">
-          {t('common.noVehicles')}
-        </Typography>
+        <Typography>{t('common.noVehicles')}</Typography>
       </Box>
     );
   }
@@ -183,26 +177,18 @@ const Parts = () => {
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Typography variant="h4">{t('parts.title')}</Typography>
         <Box display="flex" gap={2}>
-                <FormControl size="small" sx={{ width: 360, maxWidth: '100%' }}>
-                  <InputLabel>{t('common.selectVehicle')}</InputLabel>
-                  <Select
-                    value={selectedVehicle}
-                    label={t('common.selectVehicle')}
-                    onChange={(e) => { setHasManualSelection(true); setSelectedVehicle(e.target.value); setDefaultVehicle(e.target.value); }}
-                    MenuProps={{ PaperProps: { sx: { minWidth: 360 } } }}
-                  >
-              {vehicles.map((vehicle) => (
-                <MenuItem key={vehicle.id} value={vehicle.id}>
-                  {vehicle.name}{vehicle.registrationNumber ? ` (${vehicle.registrationNumber})` : ''}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          <VehicleSelector
+            vehicles={vehicles}
+            value={selectedVehicle}
+            onChange={(v) => { setHasManualSelection(true); setSelectedVehicle(v); setDefaultVehicle(v); }}
+            includeViewAll={true}
+            minWidth={360}
+          />
           <Button
             variant="contained"
             startIcon={<Add />}
             onClick={handleAdd}
-            disabled={!selectedVehicle}
+            disabled={!selectedVehicle || selectedVehicle === '__all__'}
           >
             {t('parts.addPart')}
           </Button>
@@ -221,6 +207,18 @@ const Parts = () => {
         <Table stickyHeader>
           <TableHead>
             <TableRow>
+              <TableCell>
+                <TableSortLabel
+                  active={orderBy === 'registration'}
+                  direction={orderBy === 'registration' ? order : 'asc'}
+                  onClick={() => handleRequestSort('registration')}
+                >
+                  <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
+                    <span>{regFirst}</span>
+                    <span>{regLast}</span>
+                  </div>
+                </TableSortLabel>
+              </TableCell>
               <TableCell>
                 <TableSortLabel
                   active={orderBy === 'description'}
@@ -298,20 +296,28 @@ const Parts = () => {
             ) : (
               sortedParts.map((part) => (
                 <TableRow key={part.id} sx={{ '&:nth-of-type(odd)': { backgroundColor: 'action.hover' } }}>
+                  <TableCell>{vehicles.find(v => String(v.id) === String(part.vehicleId))?.registrationNumber || '-'}</TableCell>
                   <TableCell>{part.description}</TableCell>
                   <TableCell>{part.partNumber || '-'}</TableCell>
-                  <TableCell>
-                    {part.category ? (
-                      <Chip label={part.category} size="small" />
-                    ) : (
-                      '-'
-                    )}
-                  </TableCell>
+                  <TableCell>{part.category || '-'}</TableCell>
                   <TableCell>{part.manufacturer || '-'}</TableCell>
                   <TableCell>{formatCurrency(parseFloat(part.cost) || 0, 'GBP', i18n.language)}</TableCell>
                   <TableCell>{part.purchaseDate || '-'}</TableCell>
                   <TableCell>{part.installationDate || '-'}</TableCell>
-                  <TableCell>{part.motTestNumber ? `${part.motTestNumber}${part.motTestDate ? ' (' + part.motTestDate + ')' : ''}` : '-'}</TableCell>
+                  <TableCell>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      <div>
+                        {part.motTestNumber ? `${part.motTestNumber}${part.motTestDate ? ' (' + part.motTestDate + ')' : ''}` : '-'}
+                      </div>
+                      <div>
+                        {part.serviceRecordId ? (
+                          <button onClick={async (e) => { e.preventDefault(); try { const resp = await api.get(`/service-records/${part.serviceRecordId}`); setSelectedServiceRecord(resp.data); setOpenServiceDialog(true); } catch (err) { console.error('Failed to load service record', err); } }} style={{ background: 'none', border: 'none', padding: 0, textDecoration: 'underline', cursor: 'pointer', color: 'inherit' }}>
+                            {part.serviceRecordDate ? t('service.serviceLabelDate', { date: part.serviceRecordDate }) : t('service.serviceLabelId', { id: part.serviceRecordId })}
+                          </button>
+                        ) : '-'}
+                      </div>
+                    </div>
+                  </TableCell>
                   <TableCell>
                         <Tooltip title={t('edit')}>
                       <IconButton size="small" onClick={() => handleEdit(part)}>
@@ -336,6 +342,16 @@ const Parts = () => {
         onClose={handleDialogClose}
         part={selectedPart}
         vehicleId={selectedVehicle}
+      />
+      <ServiceDialog
+        open={openServiceDialog}
+        serviceRecord={selectedServiceRecord}
+        vehicleId={selectedVehicle}
+        onClose={(saved) => {
+          setOpenServiceDialog(false);
+          setSelectedServiceRecord(null);
+          if (saved) loadParts();
+        }}
       />
     </Box>
   );
