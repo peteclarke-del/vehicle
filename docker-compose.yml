@@ -150,6 +150,7 @@ services:
     env_file: ./frontend/.env
     environment:
       - REACT_APP_API_URL=${REACT_APP_API_URL}
+      - REACT_APP_PASSWORD_POLICY=${REACT_APP_PASSWORD_POLICY}
       - CHOKIDAR_USEPOLLING=true
       - NODE_OPTIONS=--max-old-space-size=1024
     command: npm start

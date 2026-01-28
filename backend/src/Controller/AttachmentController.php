@@ -20,7 +20,7 @@ use App\Service\ReceiptOcrService;
 #[Route('/api/attachments')]
 class AttachmentController extends AbstractController
 {
-    private const MAX_FILE_SIZE = 10485760; // 10MB
+    private const MAX_FILE_SIZE = 52428800; // 50MB
     private const ALLOWED_MIME_TYPES = [
         'image/jpeg',
         'image/png',
@@ -70,7 +70,7 @@ class AttachmentController extends AbstractController
 
         // Validate file size
         if ($file->getSize() > self::MAX_FILE_SIZE) {
-            return $this->json(['error' => 'File too large (max 10MB)'], 400);
+            return $this->json(['error' => 'File too large (max 50MB)'], 400);
         }
 
         // Validate MIME type
