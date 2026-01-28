@@ -604,7 +604,7 @@ const VehicleDialog = ({ open, vehicle, onClose }) => {
                 select
                 fullWidth
                 name="year"
-                label={t('vehicle.year')}
+                label={t('common.year')}
                 value={formData.year}
                 onChange={handleChange}
                 required
@@ -717,7 +717,7 @@ const VehicleDialog = ({ open, vehicle, onClose }) => {
                 required
                 type="date"
                 name="purchaseDate"
-                label={t('vehicle.purchaseDate')}
+                label={t('common.purchaseDate')}
                 value={formData.purchaseDate}
                 onChange={handleChange}
                 InputLabelProps={{ shrink: true }}

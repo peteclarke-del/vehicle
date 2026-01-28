@@ -117,7 +117,7 @@ const VinDecoder = ({ vehicle }) => {
             disabled={loading}
             title={t('vinDecoder.forceRefreshTooltip')}
           >
-            {loading ? t('vinDecoder.decoding') : cached ? t('vinDecoder.refreshFromApi') : t('vinDecoder.refresh')}
+            {loading ? t('vinDecoder.decoding') : cached ? t('vinDecoder.refreshFromApi') : t('common.refresh')}
           </Button>
         </Box>
 
@@ -156,7 +156,7 @@ const VinDecoder = ({ vehicle }) => {
               {vinData.make && (
                 <Grid item xs={12} sm={6}>
                   <Typography variant="body2" color="textSecondary">
-                    {t('vinDecoder.manufacturer')}
+                    {t('common.manufacturer')}
                   </Typography>
                   <Typography variant="body1" fontWeight="medium">
                     {vinData.make}
@@ -178,7 +178,7 @@ const VinDecoder = ({ vehicle }) => {
               {vinData.year && (
                 <Grid item xs={12} sm={6}>
                   <Typography variant="body2" color="textSecondary">
-                    {t('vinDecoder.year')}
+                    {t('common.year')}
                   </Typography>
                   <Typography variant="body1" fontWeight="medium">
                     {vinData.year}

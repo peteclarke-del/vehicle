@@ -353,12 +353,12 @@ const Vehicles = () => {
                       </Box>
                     </Box>
                     <Box>
-                      <Tooltip title={t('edit')}>
+                      <Tooltip title={t('common.edit')}>
                         <IconButton size="small" onClick={(e) => { e.stopPropagation(); handleEdit(vehicle); }}>
                           <Edit fontSize="small" />
                         </IconButton>
                       </Tooltip>
-                      <Tooltip title={t('delete')}>
+                      <Tooltip title={t('common.delete')}>
                         <IconButton size="small" onClick={(e) => { e.stopPropagation(); handleDelete(vehicle.id); }}>
                           <Delete fontSize="small" />
                         </IconButton>
@@ -452,7 +452,7 @@ const Vehicles = () => {
                     direction={orderBy === 'year' ? order : 'asc'}
                     onClick={() => handleRequestSort('year')}
                   >
-                    {t('vehicle.year')}
+                    {t('common.year')}
                   </TableSortLabel>
                 </TableCell>
                 <TableCell sx={{ fontWeight: 'bold', fontSize: '1rem' }}>
@@ -530,7 +530,7 @@ const Vehicles = () => {
                   <TableCell>{vehicle.purchaseMileage ? format(convert(vehicle.purchaseMileage)) : t('vehicleDetails.na')}</TableCell>
                   <TableCell>{vehicle.currentMileage ? format(convert(vehicle.currentMileage)) : t('vehicleDetails.na')}</TableCell>
                   <TableCell align="right">
-                    <Tooltip title={t('edit')}>
+                    <Tooltip title={t('common.edit')}>
                       <IconButton 
                         size="small" 
                         onClick={(e) => {
@@ -541,7 +541,7 @@ const Vehicles = () => {
                         <Edit fontSize="small" />
                       </IconButton>
                     </Tooltip>
-                    <Tooltip title={t('delete')}>
+                    <Tooltip title={t('common.delete')}>
                       <IconButton 
                         size="small" 
                         onClick={(e) => {

@@ -215,7 +215,7 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
                 <TextField
                   fullWidth
                   name="partNumber"
-                  label={t('consumables.partNumber')}
+                  label={t('common.partNumber')}
                   value={formData.partNumber}
                   onChange={handleChange}
                 />
@@ -224,7 +224,7 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
                 <TextField
                   fullWidth
                   name="brand"
-                  label={t('consumables.brand')}
+                  label={t('common.brand')}
                   value={formData.brand}
                   onChange={handleChange}
                 />
@@ -235,7 +235,7 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
                   required
                   select
                   name="consumableTypeId"
-                  label={t('consumables.type')}
+                  label={t('common.type')}
                   value={formData.consumableTypeId}
                   onChange={handleChange}
                 >
@@ -251,7 +251,7 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
                 <TextField
                   fullWidth
                   name="supplier"
-                  label={t('consumables.supplier')}
+                  label={t('common.supplier')}
                   value={formData.supplier}
                   onChange={handleChange}
                 />
@@ -340,7 +340,7 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
                   multiline
                   rows={3}
                   name="notes"
-                  label={t('consumables.notes')}
+                  label={t('common.notes')}
                   value={formData.notes}
                   onChange={handleChange}
                 />

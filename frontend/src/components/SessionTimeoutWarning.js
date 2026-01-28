@@ -20,30 +20,33 @@ const SessionTimeoutWarning = () => {
   const [timeoutId, setTimeoutId] = useState(null);
   const [countdownId, setCountdownId] = useState(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [extendedSuccess, setExtendedSuccess] = useState(false);
+  const [extensionTime, setExtensionTime] = useState(0);
 
   const [tokenTtl, setTokenTtl] = useState(3600);
+  const WARNING_TIME = 300; // Show warning 5 minutes before expiry
 
   // load session timeout preference from server (do not expect user.sessionTimeout)
   useEffect(() => {
     let mounted = true;
     (async () => {
-      if (!api) return;
+      if (!api || !user) return;
       try {
         const resp = await api.get('/user/preferences?key=sessionTimeout');
         if (mounted && resp?.data?.value) {
-          setTokenTtl(resp.data.value);
-          return;
+          const newTtl = parseInt(resp.data.value, 10);
+          if (!isNaN(newTtl) && newTtl > 0) {
+            setTokenTtl(newTtl);
+            return;
+          }
         }
       } catch (e) {
-        // ignore and keep default
+        console.warn('Failed to load session timeout preference:', e);
       }
       if (mounted) setTokenTtl(3600);
     })();
     return () => { mounted = false; };
-  }, [api]);
-
-  const TOKEN_TTL = tokenTtl; // Use loaded preference or default
-  const WARNING_TIME = 300; // Show warning 5 minutes before expiry
+  }, [api, user]);
 
   const getTokenTimestamp = useCallback(() => {
     const token = localStorage.getItem('token');
@@ -90,7 +93,7 @@ const SessionTimeoutWarning = () => {
       const iat = getTokenTimestamp();
       if (!iat) return;
       const elapsed = now - iat;
-      remaining = TOKEN_TTL - elapsed;
+      remaining = tokenTtl - elapsed;
     }
 
     const timeUntilWarning = (remaining - WARNING_TIME) * 1000;
@@ -112,13 +115,13 @@ const SessionTimeoutWarning = () => {
       setCountdown(Math.max(0, remaining));
       setOpen(true);
     }
-  }, [getTokenTimestamp, getTokenExpiry, TOKEN_TTL, isRefreshing, open, logout, timeoutId]);
+  }, [getTokenTimestamp, getTokenExpiry, tokenTtl, isRefreshing, open, logout, timeoutId]);
 
   const handleExtendSession = async () => {
     // Set refreshing state BEFORE clearing timers to prevent periodic check from logging out
     setIsRefreshing(true);
     
-    // Clear all timers immediately
+    // Clear countdown timer immediately to stop the clock
     if (countdownId) {
       clearInterval(countdownId);
       setCountdownId(null);
@@ -128,9 +131,6 @@ const SessionTimeoutWarning = () => {
       setTimeoutId(null);
     }
     
-    // Reset countdown but keep dialog open during refresh
-    setCountdown(0);
-    
     try {
       // Prefer refresh-by-token flow so we can refresh without a valid JWT
       const refreshToken = localStorage.getItem('refreshToken');
@@ -139,11 +139,17 @@ const SessionTimeoutWarning = () => {
         const response = await api.post('/refresh-token');
         if (response.data.token) {
           updateToken(response.data.token);
-          setOpen(false);
+          // Calculate extension time (default to tokenTtl)
+          const extensionMinutes = Math.floor(tokenTtl / 60);
+          setExtensionTime(extensionMinutes);
+          setExtendedSuccess(true);
+          setIsRefreshing(false);
+          // Show success message for 2 seconds then close
           setTimeout(() => {
-            setIsRefreshing(false);
+            setOpen(false);
+            setExtendedSuccess(false);
             scheduleWarning();
-          }, 100);
+          }, 2000);
           return;
         }
         throw new Error('No refresh token available');
@@ -152,17 +158,24 @@ const SessionTimeoutWarning = () => {
       const resp = await api.post('/auth/refresh', { refreshToken });
       if (resp?.data?.token) {
         updateToken(resp.data.token);
-        setOpen(false);
+        // Calculate extension time (default to tokenTtl)
+        const extensionMinutes = Math.floor(tokenTtl / 60);
+        setExtensionTime(extensionMinutes);
+        setExtendedSuccess(true);
+        setIsRefreshing(false);
+        // Show success message for 2 seconds then close
         setTimeout(() => {
-          setIsRefreshing(false);
+          setOpen(false);
+          setExtendedSuccess(false);
           scheduleWarning();
-        }, 100);
+        }, 2000);
       } else {
         throw new Error('No token in refresh response');
       }
     } catch (error) {
       console.error('Failed to refresh token:', error);
       setIsRefreshing(false);
+      setExtendedSuccess(false);
       setOpen(false);
       logout();
     }
@@ -190,7 +203,7 @@ const SessionTimeoutWarning = () => {
       if (timeoutId) clearTimeout(timeoutId);
       if (countdownId) clearInterval(countdownId);
     };
-  }, [user, TOKEN_TTL]);
+  }, [user, tokenTtl, scheduleWarning]);
 
   // Periodic check for token expiration every 10 seconds
   useEffect(() => {
@@ -213,7 +226,7 @@ const SessionTimeoutWarning = () => {
           return;
         }
         const elapsed = now - iat;
-        remaining = TOKEN_TTL - elapsed;
+        remaining = tokenTtl - elapsed;
       }
 
       // If token expired, logout immediately
@@ -224,35 +237,37 @@ const SessionTimeoutWarning = () => {
     }, 10000); // Check every 10 seconds
 
     return () => clearInterval(checkInterval);
-  }, [user, getTokenTimestamp, TOKEN_TTL, logout, isRefreshing]);
+  }, [user, getTokenTimestamp, getTokenExpiry, tokenTtl, logout, isRefreshing]);
 
   useEffect(() => {
     // Cleanup countdown on unmount or when dialog closes
-    if (!open && countdownId) {
-      clearInterval(countdownId);
-      setCountdownId(null);
+    if (!open) {
+      if (countdownId) {
+        clearInterval(countdownId);
+        setCountdownId(null);
+      }
       return;
     }
 
-    // Only start countdown if dialog is open and countdown is positive
-    if (open && countdown > 0 && !countdownId) {
-      const id = setInterval(() => {
-        setCountdown(prev => {
-          if (prev <= 1) {
-            clearInterval(id);
-            logout();
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-      setCountdownId(id);
+    // Start countdown when dialog opens
+    const id = setInterval(() => {
+      setCountdown(prev => {
+        const newValue = prev - 1;
+        if (newValue <= 0) {
+          clearInterval(id);
+          logout();
+          return 0;
+        }
+        return newValue;
+      });
+    }, 1000);
+    setCountdownId(id);
 
-      return () => {
-        clearInterval(id);
-      };
-    }
-  }, [open, countdown, countdownId, logout]);
+    return () => {
+      clearInterval(id);
+      setCountdownId(null);
+    };
+  }, [open, logout]);
 
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
@@ -273,34 +288,62 @@ const SessionTimeoutWarning = () => {
       }}
     >
       <DialogTitle>
-        {t('session.expiring')}
+        {extendedSuccess ? t('session.extended') : t('session.expiring')}
       </DialogTitle>
       <DialogContent>
-        <Typography variant="body1" gutterBottom>
-          {t('session.timeoutMessage')}
-        </Typography>
-        <Box sx={{ my: 3, textAlign: 'center' }}>
-          <Typography variant="h3" color="warning.main">
-            {formatTime(countdown)}
-          </Typography>
-        </Box>
-        <LinearProgress 
-          variant="determinate" 
-          value={progress} 
-          color="warning"
-          sx={{ height: 8, borderRadius: 4 }}
-        />
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-          {t('session.extendPrompt')}
-        </Typography>
+        {extendedSuccess ? (
+          <>
+            <Typography variant="body1" gutterBottom color="success.main">
+              {t('session.extendedMessage', { minutes: extensionTime })}
+            </Typography>
+            <Box sx={{ my: 3, textAlign: 'center' }}>
+              <Typography variant="h3" color="success.main">
+                ✓
+              </Typography>
+            </Box>
+          </>
+        ) : isRefreshing ? (
+          <>
+            <Typography variant="body1" gutterBottom>
+              {t('session.extending')}
+            </Typography>
+            <Box sx={{ my: 3 }}>
+              <LinearProgress color="primary" />
+            </Box>
+          </>
+        ) : (
+          <>
+            <Typography variant="body1" gutterBottom>
+              {t('session.timeoutMessage')}
+            </Typography>
+            <Box sx={{ my: 3, textAlign: 'center' }}>
+              <Typography variant="h3" color="warning.main">
+                {formatTime(countdown)}
+              </Typography>
+            </Box>
+            <LinearProgress 
+              variant="determinate" 
+              value={progress} 
+              color="warning"
+              sx={{ height: 8, borderRadius: 4 }}
+            />
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+              {t('session.extendPrompt')}
+            </Typography>
+          </>
+        )}
       </DialogContent>
       <DialogActions>
-        <Button onClick={handleLogout} color="inherit">
-          {t('auth.logout')}
-        </Button>
-        <Button onClick={handleExtendSession} variant="contained" color="primary" autoFocus>
-          {t('session.continueSession')}
-        </Button>
+        {!extendedSuccess && !isRefreshing && (
+          <>
+            <Button onClick={handleLogout} color="inherit">
+              {t('auth.logout')}
+            </Button>
+            <Button onClick={handleExtendSession} variant="contained" color="primary" autoFocus>
+              {t('session.continueSession')}
+            </Button>
+          </>
+        )}
       </DialogActions>
     </Dialog>
   );

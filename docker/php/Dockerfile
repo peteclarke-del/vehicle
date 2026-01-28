@@ -1,6 +1,6 @@
 FROM php:8.4-fpm
 
-# Install system dependencies
+# Install system dependencies and PHP extensions in single layer
 RUN apt-get update && apt-get install -y \
     git \
     curl \
@@ -12,20 +12,25 @@ RUN apt-get update && apt-get install -y \
     unzip \
     libicu-dev \
     libssl-dev \
-    libsasl2-dev
+    libsasl2-dev \
+    && docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip intl \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
-# Clear cache
-RUN apt-get clean && rm -rf /var/lib/apt/lists/*
-
-# Install PHP extensions
-RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip intl
-
-# Install Xdebug (PECL) and build deps, create config to enable coverage, then clean up
+# Install Xdebug with build dependencies, configure, then clean up in single layer
 RUN apt-get update \
     && apt-get install -y --no-install-recommends autoconf pkg-config gcc make libc-dev \
     && pecl install xdebug \
     && docker-php-ext-enable xdebug \
-    && printf "; Xdebug settings added by Dockerfile\nxdebug.mode=coverage\nxdebug.start_with_request=trigger\nxdebug.discover_client_host=1\n" > /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
+    && echo "; Xdebug configuration" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
+    && echo "xdebug.mode=debug,develop,coverage" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
+    && echo "xdebug.start_with_request=yes" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
+    && echo "xdebug.client_host=host.docker.internal" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
+    && echo "xdebug.client_port=9003" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
+    && echo "xdebug.idekey=PHPSTORM" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
+    && echo "xdebug.log=/tmp/xdebug.log" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
+    && echo "xdebug.discover_client_host=1" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
+    && echo "xdebug.max_nesting_level=512" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
     && apt-get remove -y gcc make autoconf pkg-config libc-dev \
     && apt-get autoremove -y \
     && rm -rf /var/lib/apt/lists/* /tmp/pear

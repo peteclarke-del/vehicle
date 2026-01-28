@@ -119,7 +119,7 @@ const ServiceRecords = () => {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm(t('service.deleteConfirm'))) {
+    if (window.confirm(t('common.confirmDelete'))) {
       try {
         await api.delete(`/service-records/${id}`);
         loadServiceRecords();
@@ -289,7 +289,7 @@ const ServiceRecords = () => {
                   direction={orderBy === 'mileage' ? order : 'asc'}
                   onClick={() => handleRequestSort('mileage')}
                 >
-                  {t('service.mileage')} ({getLabel()})
+                  {t('common.mileage')} ({getLabel()})
                 </TableSortLabel>
               </TableCell>
               <TableCell>{t('mot.title') || 'MOT'}</TableCell>
@@ -326,12 +326,12 @@ const ServiceRecords = () => {
                     <TableCell>{service.motTestNumber ? `${service.motTestNumber}${service.motTestDate ? ' (' + service.motTestDate + ')' : ''}` : '-'}</TableCell>
                   <TableCell>{service.serviceProvider || '-'}</TableCell>
                   <TableCell align="center">
-                    <Tooltip title={t('edit')}>
+                    <Tooltip title={t('common.edit')}>
                       <IconButton size="small" onClick={() => handleEdit(service)}>
                         <EditIcon />
                       </IconButton>
                     </Tooltip>
-                    <Tooltip title={t('delete')}>
+                    <Tooltip title={t('common.delete')}>
                       <IconButton size="small" onClick={() => handleDelete(service.id)}>
                         <DeleteIcon />
                       </IconButton>

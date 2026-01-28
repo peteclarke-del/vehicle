@@ -157,12 +157,12 @@ const Policies = () => {
                   <TableCell>{p.expiryDate ? formatDateISO(p.expiryDate) : '-'}</TableCell>
                   <TableCell>{(p.vehicles || []).map(v => v.registration).join(', ')}</TableCell>
                   <TableCell align="center">
-                    <Tooltip title={t('edit')}>
+                    <Tooltip title={t('common.edit')}>
                       <IconButton size="small" onClick={() => handleEdit(p)}>
                         <EditIcon />
                       </IconButton>
                     </Tooltip>
-                    <Tooltip title={t('delete')}>
+                    <Tooltip title={t('common.delete')}>
                       <IconButton size="small" onClick={() => handleDelete(p.id)}>
                         <DeleteIcon />
                       </IconButton>

@@ -1,0 +1,59 @@
+# Root level .dockerignore for multi-service builds
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+README*
+LICENSE
+docs/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# Docker files (not needed in images)
+docker-compose*.yml
+Dockerfile*
+.dockerignore
+
+# Environment files (provided at runtime)
+.env
+.env.*
+
+# Build scripts
+setup.sh
+cleanup.sh
+Makefile
+
+# Backend specific
+backend/var/cache/
+backend/var/log/
+backend/vendor/
+backend/node_modules/
+backend/.phpunit.result.cache
+backend/phpunit.xml
+
+# Frontend specific
+frontend/node_modules/
+frontend/build/
+frontend/coverage/
+frontend/.eslintcache
+
+# Database files
+*.sql
+*.sqlite
+*.db

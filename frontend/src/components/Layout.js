@@ -58,7 +58,6 @@ import NotificationMenu from './NotificationMenu';
 import { Tooltip, IconButton as MuiIconButton, Snackbar, Alert } from '@mui/material';
 import PreferencesDialog from '../components/PreferencesDialog';
 import { Settings as SettingsIcon } from '@mui/icons-material';
-import { getAvailableLanguages } from '../i18n';
 
 const drawerWidth = 240;
 
@@ -69,11 +68,10 @@ const Layout = () => {
   const { logout, user, updateProfile } = useAuth();
   const { api } = useAuth();
   const { mode, toggleTheme } = useTheme();
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const muiTheme = useMuiTheme();
   const isMobile = useMediaQuery(muiTheme.breakpoints.down('sm'));
   const location = useLocation();
-  const [languages, setLanguages] = React.useState([]);
   const [preferencesOpen, setPreferencesOpen] = React.useState(false);
   const [snack, setSnack] = React.useState({ open: false, message: '', severity: 'error' });
 
@@ -92,20 +90,6 @@ const Layout = () => {
     window.addEventListener('app-notification', handler);
     return () => window.removeEventListener('app-notification', handler);
   }, []);
-
-  React.useEffect(() => {
-    let mounted = true;
-    getAvailableLanguages().then((langs) => {
-      if (mounted) setLanguages(langs);
-    }).catch(() => {
-      setLanguages([
-        { code: 'en', nativeName: 'English' }
-      ]);
-    });
-    return () => { mounted = false; };
-  }, []);
-
-  const currentLangBase = (i18n.language || '').split('-')[0];
 
   const isActive = (path) => {
     if (!location || !location.pathname) return false;
@@ -263,7 +247,7 @@ const Layout = () => {
               const newLocked = !drawerLocked;
               setDrawerLocked(newLocked);
               setTempOpen(false);
-              if (user && api) api.post('/user/preferences', { key: 'nav.drawerLocked', value: newLocked }).catch(() => {});
+              if (user && api) api.post('/user/preferences', { key: 'nav.drawerLocked', value: newLocked }).catch((err) => console.warn('Failed to save drawer lock preference:', err));
             }}
           >
             {drawerLocked ? <PushPin fontSize="small" /> : <PushPinOutlined fontSize="small" />}
@@ -334,74 +318,6 @@ const Layout = () => {
             </Typography>
           </Box>
 
-          <Box sx={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 1, zIndex: 2000 }}>
-            {languages.map((lang) => {
-              const selected = currentLangBase === lang.code;
-              const imgStyle = {
-                width: 22,
-                height: 16,
-                display: 'block',
-                borderRadius: 3,
-                boxShadow: selected ? '0 0 0 3px rgba(25,118,210,0.24)' : 'none',
-              };
-
-              return (
-                <Tooltip key={lang.code} title={lang.nativeName} arrow>
-                  <MuiIconButton
-                    size="small"
-                    color="inherit"
-                    aria-label={`Change language to ${lang.nativeName}`}
-                    onClick={async () => {
-                      // reduced verbosity
-                      // eslint-disable-next-line no-console
-                      console.debug('Language flag clicked:', lang.code, 'current=', i18n.language);
-                      try {
-                        const url = `/locales/${lang.code}/translation.json`;
-                        const resp = await fetch(url, { cache: 'no-store' });
-                        if (resp.ok) {
-                          const bundle = await resp.json();
-                          i18n.addResourceBundle(lang.code, 'translation', bundle, true, true);
-                          // eslint-disable-next-line no-console
-                          console.debug('Added/updated resource bundle for', lang.code);
-                        } else {
-                          // eslint-disable-next-line no-console
-                          console.warn('Locale file not found at', url, 'status', resp.status);
-                        }
-
-                        await i18n.changeLanguage(lang.code);
-                        // Persist choice to user profile when logged in
-                        if (user && updateProfile) {
-                          try {
-                            await updateProfile({ preferredLanguage: lang.code });
-                          } catch (err) {
-                            // eslint-disable-next-line no-console
-                            console.warn('Failed to persist language preference', err);
-                          }
-                        }
-                        // Also persist language as a user preference (best-effort)
-                        if (user && api) {
-                          try {
-                            await api.post('/user/preferences', { key: 'preferredLanguage', value: lang.code });
-                          } catch (err) {
-                            setSnack({ open: true, message: t('errors.failedToSavePreferences') || 'Failed to persist language preference', severity: 'error' });
-                            // eslint-disable-next-line no-console
-                            console.warn('Failed to persist language preference to user preferences', err);
-                          }
-                        }
-                        // eslint-disable-next-line no-console
-                        console.debug('Language changed to', i18n.language);
-                      } catch (err) {
-                        // eslint-disable-next-line no-console
-                        console.error('Language switch error', err);
-                      }
-                    }}
-                  >
-                    <img src={`/locales/${lang.code}/flag.svg`} alt={lang.nativeName} style={imgStyle} />
-                  </MuiIconButton>
-                </Tooltip>
-              );
-            })}
-          </Box>
           <NotificationMenu />
           <IconButton
             color="inherit"
@@ -463,7 +379,7 @@ const Layout = () => {
           <Drawer
             variant="persistent"
             open
-            onClose={() => { setDrawerLocked(false); if (user && api) api.post('/user/preferences', { key: 'nav.drawerLocked', value: false }).catch(() => {}); }}
+            onClose={() => { setDrawerLocked(false); if (user && api) api.post('/user/preferences', { key: 'nav.drawerLocked', value: false }).catch((err) => console.warn('Failed to save drawer unlock preference:', err)); }}
             sx={{
               display: { xs: 'none', sm: 'block' },
               '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },

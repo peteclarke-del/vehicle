@@ -122,15 +122,6 @@ export const getUnitLabel = (unit) => {
 };
 
 /**
- * Get the full unit name
- * @param {string} unit - Unit type ('km' or 'miles')
- * @returns {string} Full unit name
- */
-export const getUnitFullName = (unit) => {
-  return unit === 'miles' ? 'miles' : 'kilometers';
-};
-
-/**
  * Format distance with automatic unit conversion based on user preference
  * @param {number} distanceInKm - Distance in kilometers (from database)
  * @param {string} userUnit - User's preferred unit ('km' or 'miles')
@@ -144,18 +135,4 @@ export const formatDistanceFromKm = (distanceInKm, userUnit, options = {}) => {
   
   const convertedDistance = convertDistance(distanceInKm, userUnit, true, decimals);
   return formatDistance(convertedDistance, userUnit, decimals, i18n);
-};
-
-/**
- * Check if a value is a valid distance
- * @param {any} value - Value to check
- * @returns {boolean} True if valid distance
- */
-export const isValidDistance = (value) => {
-  return value !== null && 
-         value !== undefined && 
-         typeof value === 'number' && 
-         !isNaN(value) && 
-         isFinite(value) && 
-         value >= 0;
 };

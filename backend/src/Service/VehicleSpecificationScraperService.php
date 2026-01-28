@@ -257,7 +257,7 @@ class VehicleSpecificationScraperService
                     json_encode($mergedInfo, JSON_THROW_ON_ERROR)
                 );
             } catch (\Throwable $e) {
-                $base->setAdditionalInfo((string) print_r($mergedInfo, true));
+                $base->setAdditionalInfo(var_export($mergedInfo, true));
             }
         }
 

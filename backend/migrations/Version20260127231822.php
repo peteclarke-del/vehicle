@@ -10,7 +10,7 @@ use Doctrine\Migrations\AbstractMigration;
 /**
  * Auto-generated Migration: Please modify to your needs!
  */
-final class Version20260127102550 extends AbstractMigration
+final class Version20260127231822 extends AbstractMigration
 {
     public function getDescription(): string
     {
@@ -29,6 +29,7 @@ final class Version20260127102550 extends AbstractMigration
         $this->addSql('CREATE TABLE mot_records (id INT AUTO_INCREMENT NOT NULL, vehicle_id INT NOT NULL, receipt_attachment_id INT DEFAULT NULL, test_date DATE NOT NULL, result VARCHAR(20) NOT NULL, test_cost NUMERIC(10, 2) NOT NULL, repair_cost NUMERIC(10, 2) DEFAULT \'0.00\' NOT NULL, mileage INT DEFAULT NULL, test_center VARCHAR(100) DEFAULT NULL, expiry_date DATE DEFAULT NULL, mot_test_number VARCHAR(50) DEFAULT NULL, tester_name VARCHAR(100) DEFAULT NULL, is_retest TINYINT(1) DEFAULT 0 NOT NULL, advisories LONGTEXT DEFAULT NULL, failures LONGTEXT DEFAULT NULL, repair_details LONGTEXT DEFAULT NULL, notes LONGTEXT DEFAULT NULL, created_at DATETIME NOT NULL, INDEX IDX_F093C1A5545317D1 (vehicle_id), INDEX IDX_F093C1A579F22B74 (receipt_attachment_id), PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB');
         $this->addSql('CREATE TABLE parts (id INT AUTO_INCREMENT NOT NULL, vehicle_id INT NOT NULL, service_record_id INT DEFAULT NULL, todo_id INT DEFAULT NULL, mot_record_id INT DEFAULT NULL, receipt_attachment_id INT DEFAULT NULL, purchase_date DATE NOT NULL, description VARCHAR(200) NOT NULL, name VARCHAR(200) DEFAULT NULL, price NUMERIC(10, 2) DEFAULT NULL, part_number VARCHAR(100) DEFAULT NULL, sku VARCHAR(100) DEFAULT NULL, manufacturer VARCHAR(100) DEFAULT NULL, supplier VARCHAR(100) DEFAULT NULL, quantity INT DEFAULT 1 NOT NULL, warranty_months INT DEFAULT NULL, image_url VARCHAR(500) DEFAULT NULL, cost NUMERIC(10, 2) NOT NULL, category VARCHAR(50) NOT NULL, installation_date DATE DEFAULT NULL, mileage_at_installation INT DEFAULT NULL, notes LONGTEXT DEFAULT NULL, created_at DATETIME NOT NULL, product_url VARCHAR(500) DEFAULT NULL, INDEX IDX_6940A7FE545317D1 (vehicle_id), INDEX IDX_6940A7FE156C4F46 (service_record_id), INDEX IDX_6940A7FEEA1EBC33 (todo_id), INDEX IDX_6940A7FEB17D92CD (mot_record_id), INDEX IDX_6940A7FE79F22B74 (receipt_attachment_id), PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB');
         $this->addSql('CREATE TABLE refresh_tokens (id INT AUTO_INCREMENT NOT NULL, user_id INT NOT NULL, refresh_token VARCHAR(255) NOT NULL, expires_at DATETIME NOT NULL COMMENT \'(DC2Type:datetime_immutable)\', created_at DATETIME NOT NULL COMMENT \'(DC2Type:datetime_immutable)\', UNIQUE INDEX UNIQ_9BACE7E1C74F2195 (refresh_token), INDEX IDX_9BACE7E1A76ED395 (user_id), PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB');
+        $this->addSql('CREATE TABLE reports (id INT AUTO_INCREMENT NOT NULL, user_id INT NOT NULL, name VARCHAR(255) NOT NULL, template_key VARCHAR(255) DEFAULT NULL, payload JSON DEFAULT NULL, vehicle_id INT DEFAULT NULL, generated_at DATETIME NOT NULL, INDEX IDX_F11FA745A76ED395 (user_id), PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB');
         $this->addSql('CREATE TABLE road_tax (id INT AUTO_INCREMENT NOT NULL, vehicle_id INT NOT NULL, start_date DATE DEFAULT NULL, expiry_date DATE DEFAULT NULL, amount NUMERIC(10, 2) DEFAULT NULL, notes LONGTEXT DEFAULT NULL, created_at DATETIME NOT NULL, frequency VARCHAR(10) DEFAULT \'annual\' NOT NULL, INDEX IDX_BB1D046A545317D1 (vehicle_id), PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB');
         $this->addSql('CREATE TABLE service_items (id INT AUTO_INCREMENT NOT NULL, service_record_id INT NOT NULL, consumable_id INT DEFAULT NULL, type VARCHAR(20) NOT NULL, description VARCHAR(255) DEFAULT NULL, cost NUMERIC(10, 2) NOT NULL, quantity INT DEFAULT 1 NOT NULL, INDEX IDX_486C04AA156C4F46 (service_record_id), INDEX IDX_486C04AAA94ADB61 (consumable_id), PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB');
         $this->addSql('CREATE TABLE service_records (id INT AUTO_INCREMENT NOT NULL, vehicle_id INT NOT NULL, receipt_attachment_id INT DEFAULT NULL, mot_record_id INT DEFAULT NULL, service_date DATE NOT NULL, service_type VARCHAR(50) NOT NULL, labor_cost NUMERIC(10, 2) NOT NULL, parts_cost NUMERIC(10, 2) DEFAULT \'0.00\' NOT NULL, consumables_cost NUMERIC(10, 2) DEFAULT NULL, mileage INT DEFAULT NULL, service_provider VARCHAR(100) DEFAULT NULL, work_performed LONGTEXT DEFAULT NULL, additional_costs NUMERIC(10, 2) DEFAULT \'0.00\' NOT NULL, next_service_date DATE DEFAULT NULL, next_service_mileage INT DEFAULT NULL, notes LONGTEXT DEFAULT NULL, created_at DATETIME NOT NULL, INDEX IDX_53190ADA545317D1 (vehicle_id), INDEX IDX_53190ADA79F22B74 (receipt_attachment_id), INDEX IDX_53190ADAB17D92CD (mot_record_id), PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB');
@@ -64,6 +65,7 @@ final class Version20260127102550 extends AbstractMigration
         $this->addSql('ALTER TABLE parts ADD CONSTRAINT FK_6940A7FEB17D92CD FOREIGN KEY (mot_record_id) REFERENCES mot_records (id) ON DELETE SET NULL');
         $this->addSql('ALTER TABLE parts ADD CONSTRAINT FK_6940A7FE79F22B74 FOREIGN KEY (receipt_attachment_id) REFERENCES attachments (id) ON DELETE SET NULL');
         $this->addSql('ALTER TABLE refresh_tokens ADD CONSTRAINT FK_9BACE7E1A76ED395 FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE');
+        $this->addSql('ALTER TABLE reports ADD CONSTRAINT FK_F11FA745A76ED395 FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE');
         $this->addSql('ALTER TABLE road_tax ADD CONSTRAINT FK_BB1D046A545317D1 FOREIGN KEY (vehicle_id) REFERENCES vehicles (id)');
         $this->addSql('ALTER TABLE service_items ADD CONSTRAINT FK_486C04AA156C4F46 FOREIGN KEY (service_record_id) REFERENCES service_records (id) ON DELETE CASCADE');
         $this->addSql('ALTER TABLE service_items ADD CONSTRAINT FK_486C04AAA94ADB61 FOREIGN KEY (consumable_id) REFERENCES consumables (id) ON DELETE SET NULL');
@@ -108,6 +110,7 @@ final class Version20260127102550 extends AbstractMigration
         $this->addSql('ALTER TABLE parts DROP FOREIGN KEY FK_6940A7FEB17D92CD');
         $this->addSql('ALTER TABLE parts DROP FOREIGN KEY FK_6940A7FE79F22B74');
         $this->addSql('ALTER TABLE refresh_tokens DROP FOREIGN KEY FK_9BACE7E1A76ED395');
+        $this->addSql('ALTER TABLE reports DROP FOREIGN KEY FK_F11FA745A76ED395');
         $this->addSql('ALTER TABLE road_tax DROP FOREIGN KEY FK_BB1D046A545317D1');
         $this->addSql('ALTER TABLE service_items DROP FOREIGN KEY FK_486C04AA156C4F46');
         $this->addSql('ALTER TABLE service_items DROP FOREIGN KEY FK_486C04AAA94ADB61');
@@ -134,6 +137,7 @@ final class Version20260127102550 extends AbstractMigration
         $this->addSql('DROP TABLE mot_records');
         $this->addSql('DROP TABLE parts');
         $this->addSql('DROP TABLE refresh_tokens');
+        $this->addSql('DROP TABLE reports');
         $this->addSql('DROP TABLE road_tax');
         $this->addSql('DROP TABLE service_items');
         $this->addSql('DROP TABLE service_records');

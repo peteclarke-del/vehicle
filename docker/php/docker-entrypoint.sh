@@ -50,9 +50,17 @@ if [ -f "$TARGET_DIR/bin/console" ]; then
 
   # Wait for database to be ready
   echo "[entrypoint] waiting for database to be ready"
+  
+  # Extract database connection details from environment
+  export DB_HOST="${DB_HOST:-mysql}"
+  export DB_PORT="${DB_PORT:-3306}"
+  export DB_NAME="${MYSQL_DATABASE:-vehicle_management}"
+  export DB_USER="${MYSQL_USER:-vehicle_user}"
+  export DB_PASS="${MYSQL_PASSWORD:-vehicle_pass}"
+  
   while ! php -r "
     try {
-      \$pdo = new PDO('mysql:host=mysql;port=3306;dbname=vehicle_management', 'vehicle_user', 'vehicle_pass');
+      \$pdo = new PDO('mysql:host='.\$_ENV['DB_HOST'].';port='.\$_ENV['DB_PORT'].';dbname='.\$_ENV['DB_NAME'], \$_ENV['DB_USER'], \$_ENV['DB_PASS']);
       echo 'OK';
     } catch (Exception \$e) {
       exit(1);

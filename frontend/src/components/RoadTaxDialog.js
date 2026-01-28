@@ -110,7 +110,7 @@ const RoadTaxDialog = ({ open, roadTaxRecord, vehicleId, onClose }) => {
                 multiline
                 rows={3}
                 name="notes"
-                label={t('roadTax.notes')}
+                label={t('common.notes')}
                 value={formData.notes}
                 onChange={handleChange}
               />

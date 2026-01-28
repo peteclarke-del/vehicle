@@ -711,7 +711,7 @@ const Dashboard = () => {
                     <MenuItem value="name">{t('dashboard.name')}</MenuItem>
                     <MenuItem value="registration">{t('common.registrationNumber')}</MenuItem>
                     <MenuItem value="make">{t('dashboard.make')}</MenuItem>
-                    <MenuItem value="year">{t('dashboard.year')}</MenuItem>
+                    <MenuItem value="year">{t('common.year')}</MenuItem>
                   </Select>
                 </FormControl>
 
@@ -811,7 +811,7 @@ const Dashboard = () => {
                           </Typography>
                           {vehicle.year && (
                             <Typography variant="body2" sx={{ opacity: 0.9, mb: 2 }}>
-                              {t('vehicle.year')}: {vehicle.year}
+                              {t('common.year')}: {vehicle.year}
                             </Typography>
                           )}
 
@@ -836,7 +836,7 @@ const Dashboard = () => {
 
                           {vehicle.currentMileage && (
                             <Typography variant="caption" display="block" sx={{ mt: 1, opacity: 0.8 }}>
-                              {t('dashboard.mileage')}: {format(convert(vehicle.currentMileage))}
+                              {t('common.mileage')}: {format(convert(vehicle.currentMileage))}
                             </Typography>
                           )}
                         </Box>

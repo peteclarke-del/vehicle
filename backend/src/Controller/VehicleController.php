@@ -10,6 +10,7 @@ use App\Entity\VehicleStatusHistory;
 use App\Service\CostCalculator;
 use App\Service\DepreciationCalculator;
 use Doctrine\ORM\EntityManagerInterface;
+use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -21,7 +22,8 @@ class VehicleController extends AbstractController
     public function __construct(
         private EntityManagerInterface $entityManager,
         private CostCalculator $costCalculator,
-        private DepreciationCalculator $depreciationCalculator
+        private DepreciationCalculator $depreciationCalculator,
+        private LoggerInterface $logger
     ) {
     }
 
@@ -383,8 +385,10 @@ class VehicleController extends AbstractController
                 $this->entityManager->persist($history);
             } catch (\Throwable $e) {
                 // Non-fatal: don't block the update if history can't be created
-                // but log to help debugging in production
-                error_log('Failed to record vehicle status history: ' . $e->getMessage());
+                $this->logger->warning('Failed to record vehicle status history', [
+                    'exception' => $e->getMessage(),
+                    'vehicle_id' => $vehicle->getId()
+                ]);
             }
         }
 

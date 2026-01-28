@@ -124,7 +124,7 @@ const FuelRecords = () => {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm(t('fuel.deleteConfirm'))) {
+    if (window.confirm(t('common.confirmDelete'))) {
       try {
         await api.delete(`/fuel-records/${id}`);
         loadRecords();
@@ -259,7 +259,7 @@ const FuelRecords = () => {
                   direction={dateDisplayDirection}
                   onClick={() => handleRequestSort('date')}
                 >
-                  {t('fuel.date')}
+                  {t('common.date')}
                 </TableSortLabel>
               </TableCell>
               <TableCell>
@@ -268,7 +268,7 @@ const FuelRecords = () => {
                   direction={orderBy === 'mileage' ? order : 'asc'}
                   onClick={() => handleRequestSort('mileage')}
                 >
-                  {t('fuel.mileage')} ({getLabel()})
+                  {t('common.mileage')} ({getLabel()})
                 </TableSortLabel>
               </TableCell>
               <TableCell>
@@ -321,7 +321,7 @@ const FuelRecords = () => {
                 <TableCell>{record.fuelType || t('vehicleDetails.na')}</TableCell>
                 <TableCell>{record.station || t('vehicleDetails.na')}</TableCell>
                 <TableCell>
-                  <Tooltip title={t('vehicles.edit')}>
+                  <Tooltip title={t('common.edit')}>
                     <IconButton size="small" onClick={() => handleEdit(record)}>
                       <Edit fontSize="small" />
                     </IconButton>

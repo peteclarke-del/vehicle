@@ -96,7 +96,7 @@ const RoadTax = () => {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm(t('roadTax.confirmDelete'))) {
+    if (window.confirm(t('common.confirmDelete'))) {
       try {
         await api.delete(`/road-tax/${id}`);
         loadRecords();
@@ -206,7 +206,7 @@ const RoadTax = () => {
                   direction={orderBy === 'startDate' ? order : 'asc'}
                   onClick={() => handleRequestSort('startDate')}
                 >
-                  {t('roadTax.startDate')}
+                  {t('common.startDate')}
                 </TableSortLabel>
               </TableCell>
               <TableCell>
@@ -233,7 +233,7 @@ const RoadTax = () => {
                   direction={orderBy === 'notes' ? order : 'asc'}
                   onClick={() => handleRequestSort('notes')}
                 >
-                  {t('roadTax.notes')}
+                  {t('common.notes')}
                 </TableSortLabel>
               </TableCell>
               <TableCell align="center">{t('common.actions')}</TableCell>
@@ -253,8 +253,8 @@ const RoadTax = () => {
                   <TableCell align="right">{r.amount != null ? r.amount : '-'}</TableCell>
                   <TableCell>{r.notes || '-'}</TableCell>
                   <TableCell align="center">
-                    <Tooltip title={t('edit')}><IconButton size="small" onClick={() => handleEdit(r)}><EditIcon /></IconButton></Tooltip>
-                    <Tooltip title={t('delete')}><IconButton size="small" onClick={() => handleDelete(r.id)}><DeleteIcon /></IconButton></Tooltip>
+                    <Tooltip title={t('common.edit')}><IconButton size="small" onClick={() => handleEdit(r)}><EditIcon /></IconButton></Tooltip>
+                    <Tooltip title={t('common.delete')}><IconButton size="small" onClick={() => handleDelete(r.id)}><DeleteIcon /></IconButton></Tooltip>
                   </TableCell>
                 </TableRow>
               ))
