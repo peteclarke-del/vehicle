@@ -93,7 +93,7 @@ class DvlaAdapter implements VehicleSpecAdapterInterface
         try {
             $additional = json_encode($data, JSON_THROW_ON_ERROR);
         } catch (\JsonException $e) {
-            $additional = (string) print_r($data, true);
+            $additional = var_export($data, true);
         }
         $spec->setAdditionalInfo($additional);
         $spec->setScrapedAt(new \DateTime());

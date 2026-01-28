@@ -16,12 +16,15 @@ import {
 } from '@mui/material';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
+import { getAvailableLanguages } from '../i18n';
 
 const PreferencesDialog = ({ open, onClose }) => {
-  const { user, api, fetchUser } = useAuth();
-  const { t } = useTranslation();
+  const { user, api, fetchUser, updateProfile } = useAuth();
+  const { t, i18n } = useTranslation();
   const [sessionTimeout, setSessionTimeout] = useState(3600);
   const [distanceUnit, setDistanceUnit] = useState('km');
+  const [language, setLanguage] = useState('en');
+  const [languages, setLanguages] = useState([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
@@ -30,6 +33,19 @@ const PreferencesDialog = ({ open, onClose }) => {
     let mounted = true;
     (async () => {
       if (!api) return;
+      
+      // Load available languages
+      try {
+        const availableLanguages = await getAvailableLanguages();
+        if (mounted) setLanguages(availableLanguages);
+      } catch (e) {
+        if (mounted) setLanguages([{ code: 'en', name: 'English', nativeName: 'English', flag: '🇬🇧' }]);
+      }
+      
+      // Set current language
+      const currentLang = (i18n.language || 'en').split('-')[0];
+      if (mounted) setLanguage(currentLang);
+      
       try {
         // load session timeout preference
         const sess = await api.get('/user/preferences?key=sessionTimeout');
@@ -58,7 +74,7 @@ const PreferencesDialog = ({ open, onClose }) => {
       }
     })();
     return () => { mounted = false; };
-  }, [user, api]);
+  }, [user, api, i18n.language]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -66,6 +82,29 @@ const PreferencesDialog = ({ open, onClose }) => {
     setSuccess(false);
 
     try {
+      // Update language if changed
+      if (language !== i18n.language.split('-')[0]) {
+        try {
+          const url = `/locales/${language}/translation.json`;
+          const resp = await fetch(url, { cache: 'no-store' });
+          if (resp.ok) {
+            const bundle = await resp.json();
+            i18n.addResourceBundle(language, 'translation', bundle, true, true);
+          }
+          await i18n.changeLanguage(language);
+          
+          // Persist to profile
+          if (updateProfile) {
+            await updateProfile({ preferredLanguage: language });
+          }
+          
+          // Persist to preferences
+          await api.post('/user/preferences', { key: 'preferredLanguage', value: language });
+        } catch (err) {
+          console.warn('Failed to update language', err);
+        }
+      }
+      
       await api.put('/profile', {
         sessionTimeout,
         distanceUnit,
@@ -144,6 +183,34 @@ const PreferencesDialog = ({ open, onClose }) => {
           <Typography variant="h6" gutterBottom>
             {t('preferences.displaySettings')}
           </Typography>
+
+          <FormControl fullWidth sx={{ mb: 2 }}>
+            <InputLabel>{t('preferences.language') || 'Language'}</InputLabel>
+            <Select
+              value={language}
+              onChange={(e) => setLanguage(e.target.value)}
+              label={t('preferences.language') || 'Language'}
+              renderValue={(selected) => {
+                const lang = languages.find(l => l.code === selected);
+                if (!lang) return selected;
+                return (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    {lang.flag && <span style={{ fontSize: '1.2rem' }}>{lang.flag}</span>}
+                    <span>{lang.nativeName}</span>
+                  </Box>
+                );
+              }}
+            >
+              {languages.map((lang) => (
+                <MenuItem key={lang.code} value={lang.code}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    {lang.flag && <span style={{ fontSize: '1.2rem' }}>{lang.flag}</span>}
+                    <span>{lang.nativeName}</span>
+                  </Box>
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
 
           <FormControl fullWidth sx={{ mb: 2 }}>
             <InputLabel>{t('preferences.distanceUnit')}</InputLabel>

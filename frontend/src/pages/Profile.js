@@ -17,16 +17,14 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../contexts/ThemeContext';
 import PasswordChangeDialog from '../components/PasswordChangeDialog';
-import LanguageSelector from '../components/LanguageSelector';
 
 const Profile = () => {
   const { user, updateProfile } = useAuth();
   const { mode, toggleTheme } = useTheme();
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     firstName: user?.firstName || '',
     lastName: user?.lastName || '',
-    preferredLanguage: user?.preferredLanguage || 'en',
     theme: user?.theme || 'light',
   });
   const [loading, setLoading] = useState(false);
@@ -36,10 +34,6 @@ const Profile = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
-    
-    if (name === 'preferredLanguage') {
-      i18n.changeLanguage(value);
-    }
     
     if (name === 'theme') {
       if ((value === 'dark' && mode === 'light') || (value === 'light' && mode === 'dark')) {
@@ -108,15 +102,7 @@ const Profile = () => {
                   onChange={handleChange}
                 />
               </Grid>
-              <Grid item xs={12} sm={6}>
-                <LanguageSelector
-                  fullWidth
-                  name="preferredLanguage"
-                  value={formData.preferredLanguage}
-                  onChange={handleChange}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12}>
                 <TextField
                   fullWidth
                   select

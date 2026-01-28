@@ -100,7 +100,7 @@ const MotRecords = () => {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm(t('mot.deleteConfirm'))) {
+    if (window.confirm(t('common.confirmDelete'))) {
       try {
         await api.delete(`/mot-records/${id}`);
         loadMotRecords();
@@ -319,7 +319,7 @@ const MotRecords = () => {
                   direction={orderBy === 'mileage' ? order : 'asc'}
                   onClick={() => handleRequestSort('mileage')}
                 >
-                  {t('mot.mileage')} ({getLabel()})
+                  {t('common.mileage')} ({getLabel()})
                 </TableSortLabel>
               </TableCell>
               <TableCell>
@@ -359,14 +359,14 @@ const MotRecords = () => {
                       const disabled = sel ? (sel.isMotExempt || sel.motExempt) : false;
                       return (
                         <>
-                          <Tooltip title={t('edit')}>
+                          <Tooltip title={t('common.edit')}>
                             <span>
                               <IconButton size="small" onClick={() => handleEdit(mot)} disabled={disabled}>
                                 <EditIcon />
                               </IconButton>
                             </span>
                           </Tooltip>
-                          <Tooltip title={t('delete')}>
+                          <Tooltip title={t('common.delete')}>
                             <span>
                               <IconButton size="small" onClick={() => handleDelete(mot.id)} disabled={disabled}>
                                 <DeleteIcon />

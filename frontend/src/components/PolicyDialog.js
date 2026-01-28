@@ -22,7 +22,7 @@ import { useTranslation } from 'react-i18next';
 import ReceiptUpload from './ReceiptUpload';
 import AttachmentUpload from './AttachmentUpload';
 
-const PolicyDialog = ({ open, policy, vehicles, onClose }) => {
+const PolicyDialog = ({ open, policy, vehicles, selectedVehicleId, existingPolicies, onClose }) => {
   const [formData, setFormData] = useState({
     provider: '',
     policyNumber: '',
@@ -51,6 +51,7 @@ const PolicyDialog = ({ open, policy, vehicles, onClose }) => {
   useEffect(() => {
     if (open) {
       if (policy) {
+        // Editing an existing policy
         setFormData({
           provider: policy.provider || '',
           policyNumber: policy.policyNumber || '',
@@ -66,7 +67,8 @@ const PolicyDialog = ({ open, policy, vehicles, onClose }) => {
           vehicleIds: (policy.vehicles || []).map(v => v.id),
         });
       } else {
-        setFormData({
+        // Adding a new policy
+        let initialData = {
           provider: '',
           policyNumber: '',
           coverType: '',
@@ -79,10 +81,41 @@ const PolicyDialog = ({ open, policy, vehicles, onClose }) => {
           mileageLimit: '',
           autoRenewal: false,
           vehicleIds: [],
-        });
+        };
+
+        // If a vehicle is selected and it's part of an existing multi-vehicle policy,
+        // pre-fill the form with that policy's data
+        if (selectedVehicleId && selectedVehicleId !== '__all__' && existingPolicies) {
+          const existingPolicy = existingPolicies.find(p => 
+            p.vehicles && p.vehicles.some(v => String(v.id) === String(selectedVehicleId)) && 
+            p.vehicles.length > 1 // Only for multi-vehicle policies
+          );
+
+          if (existingPolicy) {
+            initialData = {
+              provider: existingPolicy.provider || '',
+              policyNumber: existingPolicy.policyNumber || '',
+              coverType: existingPolicy.coverageType || '',
+              notes: existingPolicy.notes || '',
+              startDate: existingPolicy.startDate || new Date().toISOString().split('T')[0],
+              expiryDate: existingPolicy.expiryDate || '',
+              annualCost: existingPolicy.annualCost || '',
+              ncdYears: existingPolicy.ncdYears ?? '',
+              excess: existingPolicy.excess ?? '',
+              mileageLimit: existingPolicy.mileageLimit ?? '',
+              autoRenewal: !!existingPolicy.autoRenewal,
+              vehicleIds: [parseInt(selectedVehicleId)], // Only include the selected vehicle
+            };
+          } else if (selectedVehicleId) {
+            // No existing policy, just pre-select the vehicle
+            initialData.vehicleIds = [parseInt(selectedVehicleId)];
+          }
+        }
+
+        setFormData(initialData);
       }
     }
-  }, [open, policy]);
+  }, [open, policy, selectedVehicleId, existingPolicies]);
 
   const handleChange = (e) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -159,7 +192,7 @@ const PolicyDialog = ({ open, policy, vehicles, onClose }) => {
               <TextField fullWidth type="number" name="ncdYears" label={t('insurance.policies.ncdYears')} value={formData.ncdYears} onChange={handleChange} inputProps={{ min: 0 }} />
             </Grid>
             <Grid item xs={12} sm={6}>
-              <TextField fullWidth type="date" name="startDate" label={t('insurance.policies.startDate')} value={formData.startDate} onChange={handleChange} InputLabelProps={{ shrink: true }} />
+              <TextField fullWidth type="date" name="startDate" label={t('common.startDate')} value={formData.startDate} onChange={handleChange} InputLabelProps={{ shrink: true }} />
             </Grid>
             <Grid item xs={12} sm={6}>
               <TextField fullWidth type="date" name="expiryDate" label={t('insurance.policies.expiryDate')} value={formData.expiryDate} onChange={handleChange} InputLabelProps={{ shrink: true }} />
@@ -181,7 +214,7 @@ const PolicyDialog = ({ open, policy, vehicles, onClose }) => {
             </Grid>
             {/* NCD percentage removed */}
             <Grid item xs={12}>
-              <TextField fullWidth multiline rows={2} name="notes" label={t('insurance.policies.notes') || 'Notes'} value={formData.notes} onChange={handleChange} />
+              <TextField fullWidth multiline rows={2} name="notes" label={t('common.notes') || 'Notes'} value={formData.notes} onChange={handleChange} />
             </Grid>
             <Grid item xs={12}>
               <Autocomplete

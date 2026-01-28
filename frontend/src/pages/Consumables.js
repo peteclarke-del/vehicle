@@ -228,7 +228,7 @@ const Consumables = () => {
                         direction={orderBy === 'consumableType' ? order : 'asc'}
                         onClick={() => handleRequestSort('consumableType')}
                       >
-                        {t('consumables.type')}
+                        {t('common.type')}
                       </TableSortLabel>
                     </TableCell>
               <TableCell>
@@ -255,7 +255,7 @@ const Consumables = () => {
                   direction={orderBy === 'brand' ? order : 'asc'}
                   onClick={() => handleRequestSort('brand')}
                 >
-                  {t('consumables.brand')}
+                  {t('common.brand')}
                 </TableSortLabel>
               </TableCell>
               <TableCell>
@@ -316,7 +316,7 @@ const Consumables = () => {
                   <TableCell>{consumable.mileageAtChange ? format(convert(consumable.mileageAtChange)) : '-'}</TableCell>
                       <TableCell>{consumable.motTestNumber ? `${consumable.motTestNumber}${consumable.motTestDate ? ' (' + consumable.motTestDate + ')' : ''}` : '-'}</TableCell>
                       <TableCell>
-                      <Tooltip title={t('vehicles.edit')}>
+                      <Tooltip title={t('common.edit')}>
                         <IconButton size="small" onClick={() => handleEdit(consumable)}>
                           <Edit />
                         </IconButton>

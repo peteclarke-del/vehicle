@@ -239,7 +239,7 @@ export default function PasswordChangeDialog({ open, onClose, required = false }
         <DialogActions>
           {!required && (
             <Button onClick={onClose} disabled={loading}>
-              {t('cancel') || 'Cancel'}
+              {t('common.cancel') || 'Cancel'}
             </Button>
           )}
           <Button type="submit" variant="contained" disabled={loading}>

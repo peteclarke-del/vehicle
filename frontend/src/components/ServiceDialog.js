@@ -484,7 +484,7 @@ const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose }) => {
                 fullWidth
                 type="number"
                 name="mileage"
-                label={`${t('service.mileage')} (${getLabel()})`}
+                label={`${t('common.mileage')} (${getLabel()})`}
                 value={formData.mileage}
                 onChange={handleChange}
               />
@@ -552,7 +552,7 @@ const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose }) => {
                 multiline
                 rows={2}
                 name="notes"
-                label={t('service.notes')}
+                label={t('common.notes')}
                 value={formData.notes}
                 onChange={handleChange}
               />
@@ -625,7 +625,7 @@ const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose }) => {
         <DialogTitle>{t('service.editLabour')}</DialogTitle>
         <form onSubmit={(e) => { e.preventDefault(); const idx = labourEditorIndex; const it = (formData.items || [])[idx]; if (!it) return; const updated = { description: e.target.description.value, cost: e.target.cost.value, quantity: e.target.quantity.value }; handleLabourSave(idx, updated); }}>
           <DialogContent>
-            <TextField fullWidth name="description" label={t('service.description')} defaultValue={labourEditorIndex !== null ? ((formData.items || [])[labourEditorIndex] || {}).description : ''} />
+            <TextField fullWidth name="description" label={t('common.description')} defaultValue={labourEditorIndex !== null ? ((formData.items || [])[labourEditorIndex] || {}).description : ''} />
             <TextField fullWidth name="cost" type="number" label={t('parts.cost') || 'Cost'} defaultValue={labourEditorIndex !== null ? ((formData.items || [])[labourEditorIndex] || {}).cost : ''} inputProps={{ step: '0.01', min: '0' }} />
             <TextField fullWidth name="quantity" type="number" label={t('common.quantity') || 'Quantity'} defaultValue={labourEditorIndex !== null ? ((formData.items || [])[labourEditorIndex] || {}).quantity || 1 : 1} inputProps={{ step: '1', min: '1' }} />
           </DialogContent>

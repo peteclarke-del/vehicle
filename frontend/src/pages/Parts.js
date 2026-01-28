@@ -92,7 +92,7 @@ const Parts = () => {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm(t('parts.confirmDelete'))) {
+    if (window.confirm(t('common.confirmDelete'))) {
       try {
         await api.delete(`/parts/${id}`);
         loadParts();
@@ -225,7 +225,7 @@ const Parts = () => {
                   direction={orderBy === 'description' ? order : 'asc'}
                   onClick={() => handleRequestSort('description')}
                 >
-                  {t('parts.description')}
+                  {t('common.description')}
                 </TableSortLabel>
               </TableCell>
               <TableCell>
@@ -234,7 +234,7 @@ const Parts = () => {
                   direction={orderBy === 'partNumber' ? order : 'asc'}
                   onClick={() => handleRequestSort('partNumber')}
                 >
-                  {t('parts.partNumber')}
+                  {t('common.partNumber')}
                 </TableSortLabel>
               </TableCell>
               <TableCell>
@@ -243,7 +243,7 @@ const Parts = () => {
                   direction={orderBy === 'category' ? order : 'asc'}
                   onClick={() => handleRequestSort('category')}
                 >
-                  {t('parts.category')}
+                  {t('common.category')}
                 </TableSortLabel>
               </TableCell>
               <TableCell>
@@ -252,7 +252,7 @@ const Parts = () => {
                   direction={orderBy === 'manufacturer' ? order : 'asc'}
                   onClick={() => handleRequestSort('manufacturer')}
                 >
-                  {t('parts.manufacturer')}
+                  {t('common.manufacturer')}
                 </TableSortLabel>
               </TableCell>
               <TableCell>
@@ -270,7 +270,7 @@ const Parts = () => {
                   direction={orderBy === 'purchaseDate' ? order : 'asc'}
                   onClick={() => handleRequestSort('purchaseDate')}
                 >
-                  {t('parts.purchaseDate')}
+                  {t('common.purchaseDate')}
                 </TableSortLabel>
               </TableCell>
               <TableCell>
@@ -279,7 +279,7 @@ const Parts = () => {
                   direction={orderBy === 'installationDate' ? order : 'asc'}
                   onClick={() => handleRequestSort('installationDate')}
                 >
-                  {t('parts.installationDate')}
+                  {t('common.installationDate')}
                 </TableSortLabel>
               </TableCell>
               <TableCell>{t('mot.title') || 'MOT'}</TableCell>
@@ -319,12 +319,12 @@ const Parts = () => {
                     </div>
                   </TableCell>
                   <TableCell>
-                        <Tooltip title={t('edit')}>
+                        <Tooltip title={t('common.edit')}>
                       <IconButton size="small" onClick={() => handleEdit(part)}>
                         <Edit />
                       </IconButton>
                     </Tooltip>
-                        <Tooltip title={t('delete')}>
+                        <Tooltip title={t('common.delete')}>
                       <IconButton size="small" onClick={() => handleDelete(part.id)}>
                         <Delete />
                       </IconButton>

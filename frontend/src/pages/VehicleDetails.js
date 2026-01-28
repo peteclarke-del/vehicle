@@ -530,7 +530,7 @@ const VehicleDetails = () => {
 
                   return (
                     <LineChart
-                      xAxis={[{ data: categories, label: t('vehicleDetails.year'), scaleType: 'point' }]}
+                      xAxis={[{ data: categories, label: t('common.year'), scaleType: 'point' }]}
                       series={[{ data: values, label: t('vehicleDetails.value') }]}
                       height={340}
                     />
@@ -544,7 +544,7 @@ const VehicleDetails = () => {
                   <Table size="small">
                     <TableHead>
                       <TableRow>
-                        <TableCell>{t('vehicleDetails.year')}</TableCell>
+                        <TableCell>{t('common.year')}</TableCell>
                         <TableCell align="right">{t('vehicleDetails.value')}</TableCell>
                       </TableRow>
                     </TableHead>

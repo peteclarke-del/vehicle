@@ -266,7 +266,7 @@ const FuelRecordDialog = ({ open, record, vehicleId, onClose }) => {
                 multiline
                 rows={3}
                 name="notes"
-                label={t('fuel.notes')}
+                label={t('common.notes')}
                 value={formData.notes}
                 onChange={handleChange}
               />

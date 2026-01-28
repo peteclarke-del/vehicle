@@ -527,7 +527,7 @@ const MotDialog = ({ open, motRecord, vehicleId, onClose }) => {
                 multiline
                 rows={2}
                 name="notes"
-                label={t('mot.notes')}
+                label={t('common.notes')}
                 value={formData.notes}
                 onChange={handleChange}
               />

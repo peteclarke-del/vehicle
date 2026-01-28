@@ -9,6 +9,7 @@ export default function LanguageSelector({ value, onChange, fullWidth = false, .
 
   useEffect(() => {
     loadLanguages();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadLanguages = async () => {

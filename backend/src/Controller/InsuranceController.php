@@ -514,16 +514,29 @@ class InsuranceController extends AbstractController
      */
     private function serializeInsurance(InsurancePolicy $policy): array
     {
+        $vehicles = [];
+        foreach ($policy->getVehicles() as $v) {
+            $vehicles[] = [
+                'id' => $v->getId(),
+                'registration' => $v->getRegistration(),
+            ];
+        }
+
         return [
             'id' => $policy->getId(),
-            'vehicleId' => $policy->getVehicles()->first()?->getId(), // For compatibility, use first vehicle
             'provider' => $policy->getProvider(),
             'policyNumber' => $policy->getPolicyNumber(),
-            'coverageType' => $policy->getCoverageType(),
-            'annualCost' => $policy->getAnnualCost(),
             'startDate' => $policy->getStartDate()?->format('Y-m-d'),
             'expiryDate' => $policy->getExpiryDate()?->format('Y-m-d'),
+            'annualCost' => $policy->getAnnualCost(),
+            'ncdYears' => $policy->getNcdYears(),
+            'coverageType' => $policy->getCoverageType(),
+            'excess' => $policy->getExcess(),
+            'mileageLimit' => $policy->getMileageLimit(),
+            'autoRenewal' => $policy->getAutoRenewal(),
             'notes' => $policy->getNotes(),
+            'holderId' => $policy->getHolderId(),
+            'vehicles' => $vehicles,
             'createdAt' => $policy->getCreatedAt()?->format('c'),
         ];
     }

@@ -1,10 +1,12 @@
-version: '3.8'
+version: '3.9'
 
 services:
   php:
     environment:
-      XDEBUG_MODE: debug
-      XDEBUG_CONFIG: client_host=host.docker.internal
+      XDEBUG_MODE: debug,develop,coverage
+      XDEBUG_CONFIG: client_host=host.docker.internal client_port=9003 idekey=PHPSTORM
+      XDEBUG_SESSION: PHPSTORM
+      PHP_IDE_CONFIG: serverName=vehicle-docker
     volumes:
       - ./backend:/var/www/html:cached
     user: "0:0"
@@ -15,6 +17,5 @@ services:
       - WATCHPACK_POLLING=true
       - REACT_APP_PASSWORD_POLICY=${REACT_APP_PASSWORD_POLICY}
       - REACT_APP_API_URL=${REACT_APP_API_URL}
-    env_file: .env
     stdin_open: true
     tty: true

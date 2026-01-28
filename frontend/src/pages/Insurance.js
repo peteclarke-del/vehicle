@@ -123,7 +123,7 @@ const Insurance = () => {
   };
 
   const handleDeletePolicy = async (id) => {
-    if (!window.confirm(t('insurance.policies.deleteConfirm'))) return;
+    if (!window.confirm(t('common.confirmDelete'))) return;
     try {
       await api.delete(`/insurance/policies/${id}`);
       loadPolicies();
@@ -177,7 +177,7 @@ const Insurance = () => {
                   direction={orderBy === 'startDate' ? order : 'asc'}
                   onClick={() => handleRequestSort('startDate')}
                 >
-                  {t('insurance.policies.startDate')}
+                  {t('common.startDate')}
                 </TableSortLabel>
               </TableCell>
               <TableCell>
@@ -208,34 +208,54 @@ const Insurance = () => {
                 <TableCell colSpan={7} align="center">{t('common.noRecords')}</TableCell>
               </TableRow>
             ) : (
-              sortedPolicies.map((p) => (
-                <TableRow key={p.id} sx={{ '&:nth-of-type(odd)': { backgroundColor: 'action.hover' } }}>
-                  <TableCell>{p.provider}</TableCell>
-                  <TableCell>{p.policyNumber || '-'}</TableCell>
-                  <TableCell>{p.startDate ? formatDateISO(p.startDate) : '-'}</TableCell>
-                  <TableCell>{p.expiryDate ? formatDateISO(p.expiryDate) : '-'}</TableCell>
-                  <TableCell>{p.ncdYears ?? '-'} {t('insurance.policies.years')}</TableCell>
-                  <TableCell>{(p.vehicles || []).map(v => v.registration).join(', ')}</TableCell>
-                  <TableCell align="center">
-                    <Tooltip title={t('edit')}>
-                      <IconButton size="small" onClick={() => handleEditPolicy(p)}>
-                        <EditIcon />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title={t('delete')}>
-                      <IconButton size="small" onClick={() => handleDeletePolicy(p.id)}>
-                        <DeleteIcon />
-                      </IconButton>
-                    </Tooltip>
-                  </TableCell>
-                </TableRow>
-              ))
+              sortedPolicies.map((p) => {
+                // If a specific vehicle is selected, show only that vehicle's registration
+                let displayVehicles = p.vehicles || [];
+                if (selectedVehicle && selectedVehicle !== '__all__') {
+                  displayVehicles = displayVehicles.filter(v => String(v.id) === String(selectedVehicle));
+                }
+                const vehicleDisplay = displayVehicles.map(v => v.registration).join(', ') || '-';
+
+                return (
+                  <TableRow key={p.id} sx={{ '&:nth-of-type(odd)': { backgroundColor: 'action.hover' } }}>
+                    <TableCell>{p.provider}</TableCell>
+                    <TableCell>{p.policyNumber || '-'}</TableCell>
+                    <TableCell>{p.startDate ? formatDateISO(p.startDate) : '-'}</TableCell>
+                    <TableCell>{p.expiryDate ? formatDateISO(p.expiryDate) : '-'}</TableCell>
+                    <TableCell>{p.ncdYears ?? '-'} {t('insurance.policies.years')}</TableCell>
+                    <TableCell>{vehicleDisplay}</TableCell>
+                    <TableCell align="center">
+                      <Tooltip title={t('common.edit')}>
+                        <IconButton size="small" onClick={() => handleEditPolicy(p)}>
+                          <EditIcon />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title={t('common.delete')}>
+                        <IconButton size="small" onClick={() => handleDeletePolicy(p.id)}>
+                          <DeleteIcon />
+                        </IconButton>
+                      </Tooltip>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
             )}
           </TableBody>
         </Table>
       </TableContainer>
 
-      <PolicyDialog open={policyDialogOpen} policy={editingPolicy} vehicles={vehicles} onClose={(reload) => { setPolicyDialogOpen(false); setEditingPolicy(null); if (reload) loadPolicies(); }} />
+      <PolicyDialog 
+        open={policyDialogOpen} 
+        policy={editingPolicy} 
+        vehicles={vehicles} 
+        selectedVehicleId={selectedVehicle}
+        existingPolicies={policies}
+        onClose={(reload) => { 
+          setPolicyDialogOpen(false); 
+          setEditingPolicy(null); 
+          if (reload) loadPolicies(); 
+        }} 
+      />
     </Container>
   );
 };

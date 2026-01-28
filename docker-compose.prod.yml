@@ -1,0 +1,67 @@
+version: '3.9'
+
+# Production overrides - use with: docker-compose -f docker-compose.yml -f docker-compose.prod.yml up
+
+services:
+  mysql:
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+
+  php:
+    environment:
+      APP_ENV: prod
+      APP_DEBUG: 0
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.0'
+        reservations:
+          memory: 256M
+      replicas: 2
+    volumes:
+      # Production: read-only mounts, no source code changes
+      - ./backend:/var/www/html:ro
+      - backend_var:/var/www/html/var:rw
+      - backend_uploads:/var/www/html/uploads:rw
+
+  nginx:
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+        reservations:
+          memory: 128M
+      replicas: 2
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: ../docker/node/Dockerfile
+      target: production
+    ports:
+      - "80:80"
+    environment:
+      - NODE_ENV=production
+    command: ["nginx", "-g", "daemon off;"]
+    volumes: []  # No volume mounts in production
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.5'
+        reservations:
+          memory: 64M
+      replicas: 2
+
+volumes:
+  backend_var:
+    driver: local
+  backend_uploads:
+    driver: local

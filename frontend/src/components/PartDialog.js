@@ -199,7 +199,7 @@ export default function PartDialog({ open, onClose, part, vehicleId }) {
               <TextField
                 fullWidth
                 name="partNumber"
-                label={t('parts.partNumber')}
+                label={t('common.partNumber')}
                 value={formData.partNumber}
                 onChange={handleChange}
               />
@@ -208,7 +208,7 @@ export default function PartDialog({ open, onClose, part, vehicleId }) {
               <TextField
                 fullWidth
                 name="manufacturer"
-                label={t('parts.manufacturer')}
+                label={t('common.manufacturer')}
                 value={formData.manufacturer}
                 onChange={handleChange}
               />
@@ -252,7 +252,7 @@ export default function PartDialog({ open, onClose, part, vehicleId }) {
                 fullWidth
                 type="date"
                 name="purchaseDate"
-                label={t('parts.purchaseDate')}
+                label={t('common.purchaseDate')}
                 value={formData.purchaseDate}
                 onChange={handleChange}
                 InputLabelProps={{ shrink: true }}
@@ -263,7 +263,7 @@ export default function PartDialog({ open, onClose, part, vehicleId }) {
                 fullWidth
                 type="date"
                 name="installationDate"
-                label={t('parts.installationDate')}
+                label={t('common.installationDate')}
                 value={formData.installationDate}
                 onChange={handleChange}
                 InputLabelProps={{ shrink: true }}
@@ -283,7 +283,7 @@ export default function PartDialog({ open, onClose, part, vehicleId }) {
               <TextField
                 fullWidth
                 name="warranty"
-                label={t('parts.warranty')}
+                label={t('common.warranty')}
                 value={formData.warranty}
                 onChange={handleChange}
                 placeholder={t('common.warrantyPlaceholder')}
@@ -293,7 +293,7 @@ export default function PartDialog({ open, onClose, part, vehicleId }) {
               <TextField
                 fullWidth
                 name="supplier"
-                label={t('parts.supplier')}
+                label={t('common.supplier')}
                 value={formData.supplier}
                 onChange={handleChange}
               />
@@ -334,7 +334,7 @@ export default function PartDialog({ open, onClose, part, vehicleId }) {
                 multiline
                 rows={3}
                 name="notes"
-                label={t('parts.notes')}
+                label={t('common.notes')}
                 value={formData.notes}
                 onChange={handleChange}
               />

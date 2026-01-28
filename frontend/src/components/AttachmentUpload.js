@@ -80,7 +80,7 @@ const AttachmentUpload = ({ entityType, entityId, onChange, compact = false }) =
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm(t('attachments.deleteConfirm'))) return;
+    if (!window.confirm(t('common.confirmDelete'))) return;
 
     try {
       await api.delete(`/attachments/${id}`);

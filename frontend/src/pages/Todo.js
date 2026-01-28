@@ -232,10 +232,10 @@ const Todo = () => {
                         size="small"
                       />
                     </Tooltip>
-                    <Tooltip title={t('edit')}>
+                    <Tooltip title={t('common.edit')}>
                       <IconButton size="small" onClick={() => handleEdit(todo)}><Edit /></IconButton>
                     </Tooltip>
-                    <Tooltip title={t('delete')}>
+                    <Tooltip title={t('common.delete')}>
                       <IconButton size="small" onClick={() => handleDelete(todo.id)}><Delete /></IconButton>
                     </Tooltip>
                   </TableCell>
