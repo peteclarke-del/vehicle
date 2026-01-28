@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -17,8 +17,8 @@ const SessionTimeoutWarning = () => {
   const { api, logout, user, updateToken } = useAuth();
   const [open, setOpen] = useState(false);
   const [countdown, setCountdown] = useState(0);
-  const [timeoutId, setTimeoutId] = useState(null);
-  const [countdownId, setCountdownId] = useState(null);
+  const timeoutIdRef = useRef(null);
+  const countdownIdRef = useRef(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [extendedSuccess, setExtendedSuccess] = useState(false);
   const [extensionTime, setExtensionTime] = useState(0);
@@ -77,9 +77,9 @@ const SessionTimeoutWarning = () => {
     // Don't schedule if we're refreshing or dialog is already open
     if (isRefreshing || open) return;
     // clear any existing scheduled timeout first
-    if (timeoutId) {
-      clearTimeout(timeoutId);
-      setTimeoutId(null);
+    if (timeoutIdRef.current) {
+      clearTimeout(timeoutIdRef.current);
+      timeoutIdRef.current = null;
     }
     
     // Prefer explicit token expiry if present (keeps client in sync with server token TTL)
@@ -109,26 +109,26 @@ const SessionTimeoutWarning = () => {
         setCountdown(WARNING_TIME);
         setOpen(true);
       }, timeUntilWarning);
-      setTimeoutId(id);
+      timeoutIdRef.current = id;
     } else if (remaining > 0 && remaining <= WARNING_TIME) {
       // Token is already in warning period
       setCountdown(Math.max(0, remaining));
       setOpen(true);
     }
-  }, [getTokenTimestamp, getTokenExpiry, tokenTtl, isRefreshing, open, logout, timeoutId]);
+  }, [getTokenTimestamp, getTokenExpiry, tokenTtl, isRefreshing, open, logout]);
 
   const handleExtendSession = async () => {
     // Set refreshing state BEFORE clearing timers to prevent periodic check from logging out
     setIsRefreshing(true);
     
     // Clear countdown timer immediately to stop the clock
-    if (countdownId) {
-      clearInterval(countdownId);
-      setCountdownId(null);
+    if (countdownIdRef.current) {
+      clearInterval(countdownIdRef.current);
+      countdownIdRef.current = null;
     }
-    if (timeoutId) {
-      clearTimeout(timeoutId);
-      setTimeoutId(null);
+    if (timeoutIdRef.current) {
+      clearTimeout(timeoutIdRef.current);
+      timeoutIdRef.current = null;
     }
     
     try {
@@ -182,13 +182,13 @@ const SessionTimeoutWarning = () => {
   };
 
   const handleLogout = () => {
-    if (countdownId) {
-      clearInterval(countdownId);
-      setCountdownId(null);
+    if (countdownIdRef.current) {
+      clearInterval(countdownIdRef.current);
+      countdownIdRef.current = null;
     }
-    if (timeoutId) {
-      clearTimeout(timeoutId);
-      setTimeoutId(null);
+    if (timeoutIdRef.current) {
+      clearTimeout(timeoutIdRef.current);
+      timeoutIdRef.current = null;
     }
     setOpen(false);
     logout();
@@ -200,8 +200,8 @@ const SessionTimeoutWarning = () => {
     }
 
     return () => {
-      if (timeoutId) clearTimeout(timeoutId);
-      if (countdownId) clearInterval(countdownId);
+      if (timeoutIdRef.current) clearTimeout(timeoutIdRef.current);
+      if (countdownIdRef.current) clearInterval(countdownIdRef.current);
     };
   }, [user, tokenTtl, scheduleWarning]);
 
@@ -242,9 +242,9 @@ const SessionTimeoutWarning = () => {
   useEffect(() => {
     // Cleanup countdown on unmount or when dialog closes
     if (!open) {
-      if (countdownId) {
-        clearInterval(countdownId);
-        setCountdownId(null);
+      if (countdownIdRef.current) {
+        clearInterval(countdownIdRef.current);
+        countdownIdRef.current = null;
       }
       return;
     }
@@ -261,11 +261,11 @@ const SessionTimeoutWarning = () => {
         return newValue;
       });
     }, 1000);
-    setCountdownId(id);
+    countdownIdRef.current = id;
 
     return () => {
       clearInterval(id);
-      setCountdownId(null);
+      countdownIdRef.current = null;
     };
   }, [open, logout]);
 

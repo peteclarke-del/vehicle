@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Container,
   Typography,
@@ -20,7 +20,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useUserPreferences } from '../contexts/UserPreferencesContext';
 import { useTranslation } from 'react-i18next';
 import { formatDateISO } from '../utils/formatDate';
-import { fetchArrayData } from '../hooks/useApiData';
+import { useVehicles } from '../contexts/VehiclesContext';
 import PolicyDialog from '../components/PolicyDialog';
 import VehicleSelector from '../components/VehicleSelector';
 
@@ -30,34 +30,45 @@ const Insurance = () => {
 
   // Policies state
   const [policies, setPolicies] = useState([]);
-  const [vehicles, setVehicles] = useState([]);
   const [selectedVehicle, setSelectedVehicle] = useState('');
   const [policyDialogOpen, setPolicyDialogOpen] = useState(false);
   const [editingPolicy, setEditingPolicy] = useState(null);
+  const { vehicles, fetchVehicles } = useVehicles();
   const [orderBy, setOrderBy] = useState(() => localStorage.getItem('insuranceSortBy') || 'expiryDate');
   const [order, setOrder] = useState(() => localStorage.getItem('insuranceSortOrder') || 'desc');
 
-  useEffect(() => {
-    loadVehicles();
-  }, []);
+  const loadPolicies = useCallback(async () => {
+    const url = !selectedVehicle || selectedVehicle === '__all__' ? '/insurance/policies' : `/insurance?vehicleId=${selectedVehicle}`;
+    try {
+      const response = await api.get(url);
+      setPolicies(Array.isArray(response.data) ? response.data : []);
+    } catch (error) {
+      console.error('Error loading policies:', error);
+      setPolicies([]);
+    }
+  }, [api, selectedVehicle]);
 
   useEffect(() => {
-    loadPolicies();
-  }, [selectedVehicle]);
+    fetchVehicles();
+  }, [fetchVehicles]);
+
+  useEffect(() => {
+    if (selectedVehicle) {
+      loadPolicies();
+    }
+  }, [selectedVehicle, loadPolicies]);
 
   const { defaultVehicleId, setDefaultVehicle } = useUserPreferences();
 
-  const loadVehicles = async () => {
-    const data = await fetchArrayData(api, '/vehicles');
-    setVehicles(data);
-    if (data.length > 0 && !selectedVehicle) {
-      if (defaultVehicleId && data.find((v) => String(v.id) === String(defaultVehicleId))) {
+  useEffect(() => {
+    if (vehicles.length > 0 && !selectedVehicle) {
+      if (defaultVehicleId && vehicles.find((v) => String(v.id) === String(defaultVehicleId))) {
         setSelectedVehicle(defaultVehicleId);
       } else {
-        setSelectedVehicle(data[0].id);
+        setSelectedVehicle(vehicles[0].id);
       }
     }
-  };
+  }, [vehicles, selectedVehicle, defaultVehicleId]);
 
   useEffect(() => {
     if (!defaultVehicleId) return;
@@ -67,12 +78,6 @@ const Insurance = () => {
       setSelectedVehicle(defaultVehicleId);
     }
   }, [defaultVehicleId, vehicles]);
-
-  const loadPolicies = async () => {
-    const url = !selectedVehicle || selectedVehicle === '__all__' ? '/insurance/policies' : `/insurance?vehicleId=${selectedVehicle}`;
-    const data = await fetchArrayData(api, url);
-    setPolicies(data);
-  };
 
   const handleRequestSort = (property) => {
     const isAsc = orderBy === property && order === 'asc';
@@ -143,7 +148,7 @@ const Insurance = () => {
             onChange={(v) => setSelectedVehicle(v)}
             minWidth={300}
           />
-          <Button variant="contained" startIcon={<AddIcon />} onClick={handleAddPolicy} disabled={!selectedVehicle || selectedVehicle === '__all__'}>
+          <Button variant="contained" startIcon={<AddIcon />} onClick={handleAddPolicy}>
             {t('insurance.policies.addPolicy')}
           </Button>
         </Box>
@@ -209,12 +214,9 @@ const Insurance = () => {
               </TableRow>
             ) : (
               sortedPolicies.map((p) => {
-                // If a specific vehicle is selected, show only that vehicle's registration
-                let displayVehicles = p.vehicles || [];
-                if (selectedVehicle && selectedVehicle !== '__all__') {
-                  displayVehicles = displayVehicles.filter(v => String(v.id) === String(selectedVehicle));
-                }
-                const vehicleDisplay = displayVehicles.map(v => v.registration).join(', ') || '-';
+                // Display all vehicles on the policy
+                const displayVehicles = p.vehicles || [];
+                const vehicleDisplay = displayVehicles.map(v => v.registrationNumber || v.registration).join(', ') || '-';
 
                 return (
                   <TableRow key={p.id} sx={{ '&:nth-of-type(odd)': { backgroundColor: 'action.hover' } }}>

@@ -369,7 +369,23 @@ const Layout = () => {
           ModalProps={{ keepMounted: true }}
           sx={{
             display: { xs: 'block', sm: drawerLocked ? 'none' : 'block' },
-            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
+            '& .MuiDrawer-paper': { 
+              boxSizing: 'border-box', 
+              width: drawerWidth,
+              background: `
+                linear-gradient(90deg, rgba(92,33,33,0.04) 0%, rgba(92,33,33,0) 50%, rgba(92,33,33,0.04) 100%),
+                linear-gradient(0deg, rgba(139,35,10,0.06) 0%, rgba(139,35,10,0) 100%),
+                repeating-linear-gradient(
+                  90deg,
+                  rgba(160,50,10,0.12) 0px,
+                  rgba(192,64,0,0.08) 35px,
+                  rgba(139,35,10,0.10) 70px,
+                  rgba(120,30,10,0.08) 105px
+                ),
+                ${mode === 'dark' ? '#1e1e1e' : '#f5f5f5'}
+              `,
+              backdropFilter: 'brightness(0.98)',
+            },
           }}
         >
           {drawer}
@@ -382,7 +398,23 @@ const Layout = () => {
             onClose={() => { setDrawerLocked(false); if (user && api) api.post('/user/preferences', { key: 'nav.drawerLocked', value: false }).catch((err) => console.warn('Failed to save drawer unlock preference:', err)); }}
             sx={{
               display: { xs: 'none', sm: 'block' },
-              '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
+              '& .MuiDrawer-paper': { 
+                boxSizing: 'border-box', 
+                width: drawerWidth,
+                background: `
+                  linear-gradient(90deg, rgba(92,33,33,0.04) 0%, rgba(92,33,33,0) 50%, rgba(92,33,33,0.04) 100%),
+                  linear-gradient(0deg, rgba(139,35,10,0.06) 0%, rgba(139,35,10,0) 100%),
+                  repeating-linear-gradient(
+                    90deg,
+                    rgba(160,50,10,0.12) 0px,
+                    rgba(192,64,0,0.08) 35px,
+                    rgba(139,35,10,0.10) 70px,
+                    rgba(120,30,10,0.08) 105px
+                  ),
+                  ${mode === 'dark' ? '#1e1e1e' : '#f5f5f5'}
+                `,
+                backdropFilter: 'brightness(0.98)',
+              },
             }}
           >
             {drawer}

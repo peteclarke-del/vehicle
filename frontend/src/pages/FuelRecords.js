@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Box, Button, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, IconButton, CircularProgress, Tooltip, TableSortLabel } from '@mui/material';
 import { Add, Edit, Delete } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
@@ -31,17 +31,19 @@ const FuelRecords = () => {
   const { defaultVehicleId, setDefaultVehicle } = useUserPreferences();
   const [hasManualSelection, setHasManualSelection] = useState(false);
 
-  useEffect(() => {
-    loadVehicles();
-  }, []);
-
-  useEffect(() => {
-    if (selectedVehicle) {
-      loadRecords();
+  // Send client-side logs to backend if endpoint exists, otherwise console.warn/error
+  const sendClientLog = useCallback(async (level, message, context = {}) => {
+    const payload = { level, message, context, ts: new Date().toISOString() };
+    try {
+      // attempt to post to /client-logs; ignore failures
+      await api.post('/client-logs', payload);
+    } catch (err) {
+      if (level === 'error') console.error('[client-log]', message, context, err);
+      else console.warn('[client-log]', message, context, err);
     }
-  }, [selectedVehicle]);
+  }, [api]);
 
-  const loadVehicles = async () => {
+  const loadVehicles = useCallback(async () => {
     const data = await fetchArrayData(api, '/vehicles');
     setVehicles(data);
     if (data.length > 0 && !selectedVehicle) {
@@ -52,7 +54,48 @@ const FuelRecords = () => {
       }
     }
     setLoading(false);
-  };
+  }, [api, defaultVehicleId, selectedVehicle]);
+
+  const loadRecords = useCallback(async () => {
+    if (recordsAbortRef.current) {
+      try { recordsAbortRef.current.abort(); } catch (e) {}
+      recordsAbortRef.current = null;
+    }
+    const controller = new AbortController();
+    recordsAbortRef.current = controller;
+    setLoadingRecords(true);
+    let timeoutId;
+    try {
+      timeoutId = setTimeout(() => {
+        try { controller.abort(); } catch (e) {}
+        sendClientLog('error', 'fuel_records_request_timeout', { vehicleId: selectedVehicle });
+      }, 15000);
+
+      const url = (!selectedVehicle || selectedVehicle === '__all__') ? '/fuel-records' : `/fuel-records?vehicleId=${selectedVehicle}`;
+      const response = await api.get(url, { signal: controller.signal });
+      setRecords(response.data);
+    } catch (error) {
+      if (error.name !== 'CanceledError' && error.name !== 'AbortError') {
+        console.error('Error loading fuel records:', error);
+        sendClientLog('error', 'fuel_records_error', { vehicleId: selectedVehicle, error: String(error) });
+      }
+      setRecords([]);
+    } finally {
+      clearTimeout(timeoutId);
+      recordsAbortRef.current = null;
+      setLoadingRecords(false);
+    }
+  }, [api, selectedVehicle, sendClientLog]);
+
+  useEffect(() => {
+    loadVehicles();
+  }, [loadVehicles]);
+
+  useEffect(() => {
+    if (selectedVehicle) {
+      loadRecords();
+    }
+  }, [selectedVehicle, loadRecords]);
 
   // react to changes in defaultVehicleId while on the page
   useEffect(() => {
@@ -63,56 +106,8 @@ const FuelRecords = () => {
     if (found && String(selectedVehicle) !== String(defaultVehicleId)) {
       setSelectedVehicle(defaultVehicleId);
     }
-  }, [defaultVehicleId, vehicles, hasManualSelection]);
+  }, [defaultVehicleId, vehicles, hasManualSelection, selectedVehicle]);
   
-  // Send client-side logs to backend if endpoint exists, otherwise console.warn/error
-  const sendClientLog = async (level, message, context = {}) => {
-    const payload = { level, message, context, ts: new Date().toISOString() };
-    try {
-      // attempt to post to /client-logs; ignore failures
-      await api.post('/client-logs', payload);
-    } catch (err) {
-      if (level === 'error') console.error('[client-log]', message, context, err);
-      else console.warn('[client-log]', message, context, err);
-    }
-  };
-
-  const loadRecords = async () => {
-    // Cancel any outstanding records request
-    if (recordsAbortRef.current) {
-      try { recordsAbortRef.current.abort(); } catch (e) {}
-      recordsAbortRef.current = null;
-    }
-    const controller = new AbortController();
-    recordsAbortRef.current = controller;
-    setLoadingRecords(true);
-    let timeoutId;
-    try {
-      // Safety: abort the request if it takes too long
-      timeoutId = setTimeout(() => {
-        try { controller.abort(); } catch (e) {}
-        sendClientLog('error', 'fuel_records_request_timeout', { vehicleId: selectedVehicle });
-      }, 15000);
-
-      const url = (!selectedVehicle || selectedVehicle === '__all__') ? '/fuel-records' : `/fuel-records?vehicleId=${selectedVehicle}`;
-      const response = await api.get(url, { signal: controller.signal });
-      setRecords(response.data);
-    } catch (error) {
-      const isCanceled = (error && (error.name === 'CanceledError' || error.name === 'AbortError' || error.code === 'ERR_CANCELED' || error.message === 'canceled'));
-      if (isCanceled) {
-        // request was cancelled, ignore
-        sendClientLog('debug', 'fuel_records_request_cancelled', { vehicleId: selectedVehicle });
-      } else {
-        console.error('Error loading fuel records:', error);
-        sendClientLog('error', 'Error loading fuel records', { vehicleId: selectedVehicle, error: (error && error.toString && error.toString()) || error });
-      }
-    } finally {
-      if (timeoutId) clearTimeout(timeoutId);
-      setLoadingRecords(false);
-      recordsAbortRef.current = null;
-    }
-  };
-
   const handleAdd = () => {
     setSelectedRecord(null);
     setDialogOpen(true);

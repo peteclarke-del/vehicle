@@ -3,7 +3,7 @@ import { FormControl, InputLabel, Select, MenuItem, Box, Button } from '@mui/mat
 import { Add as AddIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 
-const VehicleSelector = ({
+const VehicleSelector = React.memo(({
   vehicles = [],
   value,
   onChange = () => {},
@@ -15,9 +15,9 @@ const VehicleSelector = ({
   disabled = false,
 }) => {
   const { t } = useTranslation();
-  const handleChange = (e) => {
+  const handleChange = React.useCallback((e) => {
     onChange(e.target.value);
-  };
+  }, [onChange]);
 
   return (
     <Box display="flex" gap={2} alignItems="center">
@@ -46,6 +46,6 @@ const VehicleSelector = ({
       )}
     </Box>
   );
-};
+});
 
 export default VehicleSelector;

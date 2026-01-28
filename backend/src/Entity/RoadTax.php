@@ -38,6 +38,9 @@ class RoadTax
     #[ORM\Column(type: 'string', length: 10, options: ['default' => 'annual'])]
     private string $frequency = 'annual';
 
+    #[ORM\Column(type: 'boolean', options: ['default' => false])]
+    private bool $sorn = false;
+
     public function __construct()
     {
         $this->createdAt = new \DateTime();
@@ -139,6 +142,17 @@ class RoadTax
     public function setCreatedAt(\DateTimeInterface $createdAt): self
     {
         $this->createdAt = $createdAt;
+        return $this;
+    }
+
+    public function getSorn(): bool
+    {
+        return $this->sorn;
+    }
+
+    public function setSorn(bool $sorn): self
+    {
+        $this->sorn = $sorn;
         return $this;
     }
 }

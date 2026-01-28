@@ -37,7 +37,7 @@ const VinDecoder = ({ vehicle }) => {
         setInfo(t('vinDecoder.cachedLoaded', { date: vehicle.vinDecodedAt }));
       }
     }
-  }, [vehicle?.vinDecodedData, vehicle?.vinDecodedAt]);
+  }, [vehicle?.vinDecodedData, vehicle?.vinDecodedAt, vinData, t]);
 
   const decodeVin = async (forceRefresh = false) => {
     if (!vehicle?.vin) {

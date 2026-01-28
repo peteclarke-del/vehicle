@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import {
   Box,
   Button,
@@ -82,22 +82,14 @@ const Todo = () => {
     return [...todos].sort(comparator);
   }, [todos, order, orderBy]);
 
-  useEffect(() => {
-    fetchVehicles();
-  }, []);
-
-  useEffect(() => {
-    loadTodos();
-  }, [selectedVehicle]);
-
-  const fetchVehicles = async () => {
+  const fetchVehicles = useCallback(async () => {
     const data = await fetchArrayData(api, '/vehicles');
     setVehicles(data);
     if (data.length > 0) setSelectedVehicle((prev) => prev || data[0].id);
     setLoading(false);
-  };
+  }, [api]);
 
-  const loadTodos = async () => {
+  const loadTodos = useCallback(async () => {
     try {
       const url = !selectedVehicle || selectedVehicle === '__all__' ? '/todos' : `/todos?vehicleId=${selectedVehicle}`;
       const response = await api.get(url);
@@ -105,7 +97,15 @@ const Todo = () => {
     } catch (err) {
       console.error('Error loading todos', err);
     }
-  };
+  }, [api, selectedVehicle]);
+
+  useEffect(() => {
+    fetchVehicles();
+  }, [fetchVehicles]);
+
+  useEffect(() => {
+    loadTodos();
+  }, [selectedVehicle, loadTodos]);
 
   const handleAdd = () => {
     setEditing(null);

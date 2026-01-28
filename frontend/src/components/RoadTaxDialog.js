@@ -8,15 +8,23 @@ import {
   TextField,
   Grid,
   CircularProgress,
+  FormControlLabel,
+  Checkbox,
+  MenuItem,
+  Select,
+  FormControl,
+  InputLabel,
 } from '@mui/material';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 
-const RoadTaxDialog = ({ open, roadTaxRecord, vehicleId, onClose }) => {
+const RoadTaxDialog = ({ open, roadTaxRecord, vehicleId, vehicles, onClose }) => {
   const [formData, setFormData] = useState({
+    vehicleId: vehicleId || '',
     startDate: new Date().toISOString().split('T')[0],
     expiryDate: '',
     amount: '',
+    sorn: false,
     notes: '',
   });
   const [loading, setLoading] = useState(false);
@@ -27,16 +35,25 @@ const RoadTaxDialog = ({ open, roadTaxRecord, vehicleId, onClose }) => {
     if (open) {
       if (roadTaxRecord) {
         setFormData({
+          vehicleId: roadTaxRecord.vehicleId || vehicleId || '',
           startDate: roadTaxRecord.startDate || '',
           expiryDate: roadTaxRecord.expiryDate || '',
           amount: roadTaxRecord.amount || '',
+          sorn: roadTaxRecord.sorn || false,
           notes: roadTaxRecord.notes || '',
         });
       } else {
-        setFormData({ startDate: new Date().toISOString().split('T')[0], expiryDate: '', amount: '', notes: '' });
+        setFormData({ 
+          vehicleId: vehicleId || '', 
+          startDate: new Date().toISOString().split('T')[0], 
+          expiryDate: '', 
+          amount: '', 
+          sorn: false, 
+          notes: '' 
+        });
       }
     }
-  }, [open, roadTaxRecord]);
+  }, [open, roadTaxRecord, vehicleId]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -48,7 +65,7 @@ const RoadTaxDialog = ({ open, roadTaxRecord, vehicleId, onClose }) => {
     try {
       const data = {
         ...formData,
-        vehicleId,
+        vehicleId: formData.vehicleId,
         amount: formData.amount ? parseFloat(formData.amount) : null,
       };
       if (roadTaxRecord) {
@@ -71,6 +88,25 @@ const RoadTaxDialog = ({ open, roadTaxRecord, vehicleId, onClose }) => {
       <form onSubmit={handleSubmit}>
         <DialogContent>
           <Grid container spacing={2}>
+            {(!vehicleId || vehicleId === '__all__') && vehicles && vehicles.length > 0 && (
+              <Grid item xs={12}>
+                <FormControl fullWidth required>
+                  <InputLabel>{t('common.vehicle')}</InputLabel>
+                  <Select
+                    name="vehicleId"
+                    value={formData.vehicleId}
+                    onChange={handleChange}
+                    label={t('common.vehicle')}
+                  >
+                    {vehicles.map((v) => (
+                      <MenuItem key={v.id} value={v.id}>
+                        {v.registrationNumber} - {v.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+            )}
             <Grid item xs={12} sm={6}>
               <TextField
                 fullWidth
@@ -95,6 +131,18 @@ const RoadTaxDialog = ({ open, roadTaxRecord, vehicleId, onClose }) => {
               />
             </Grid>
             <Grid item xs={12} sm={6}>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={formData.sorn}
+                    onChange={(e) => setFormData({ ...formData, sorn: e.target.checked, amount: e.target.checked ? '' : formData.amount })}
+                    name="sorn"
+                  />
+                }
+                label={t('roadTax.sorn')}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
               <TextField
                 fullWidth
                 type="number"
@@ -102,6 +150,7 @@ const RoadTaxDialog = ({ open, roadTaxRecord, vehicleId, onClose }) => {
                 label={t('roadTax.amount')}
                 value={formData.amount}
                 onChange={handleChange}
+                disabled={formData.sorn}
               />
             </Grid>
             <Grid item xs={12}>
