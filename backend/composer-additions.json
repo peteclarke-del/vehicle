@@ -1,5 +1,7 @@
 {
   "require": {
-    "doctrine/doctrine-fixtures-bundle": "^3.5"
+    "doctrine/doctrine-fixtures-bundle": "^3.5",
+    "predis/predis": "^2.2",
+    "symfony/cache": "6.4.*"
   }
 }

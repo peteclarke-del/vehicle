@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   Box,
   Button,
@@ -51,7 +51,6 @@ import { fetchArrayData } from '../hooks/useApiData';
 import { useDistance } from '../hooks/useDistance';
 import VehicleDialog from '../components/VehicleDialog';
 import VehicleSpecifications from '../components/VehicleSpecifications';
-// no drag-and-drop for vehicle cards any more
 
 const Vehicles = () => {
   const [vehicles, setVehicles] = useState([]);
@@ -59,7 +58,7 @@ const Vehicles = () => {
   const { convert, format } = useDistance();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
-  const [statusFilter, setStatusFilter] = useState(() => localStorage.getItem('vehiclesStatusFilter') || 'all');
+  const [statusFilter, setStatusFilter] = useState(() => localStorage.getItem('vehiclesStatusFilter') || 'Live');
   const [viewMode, setViewMode] = useState(() => {
     return localStorage.getItem('vehiclesViewMode') || 'card';
   });
@@ -73,16 +72,16 @@ const Vehicles = () => {
   const { api } = useAuth();
   const { t } = useTranslation();
 
-  useEffect(() => {
-    loadVehicles();
-  }, []);
-
-  const loadVehicles = async () => {
+  const loadVehicles = useCallback(async () => {
     setLoading(true);
     const data = await fetchArrayData(api, '/vehicles');
     setVehicles(data);
     setLoading(false);
-  };
+  }, [api]);
+
+  useEffect(() => {
+    loadVehicles();
+  }, [loadVehicles]);
 
   const handleViewModeChange = (event, newMode) => {
     if (newMode !== null) {
@@ -250,7 +249,7 @@ const Vehicles = () => {
     <Box>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Box display="flex" alignItems="center" gap={2}>
-          <Typography variant="h4">{(vehicles && vehicles.length > 0) ? t('vehicles.titleWithCount', { count: vehicles.length }) : t('vehicle.title')}</Typography>
+          <Typography variant="h4">{(vehicles && vehicles.length > 0) ? t('vehicles.titleWithCount', { count: vehicles.filter(v => (v.status || 'Live') === 'Live').length }) : t('vehicle.title')}</Typography>
           <FormControl size="small" sx={{ minWidth: 160 }}>
             <InputLabel id="vehicle-status-filter-label">{t('vehicles.filterByStatus') || 'Status'}</InputLabel>
             <Select

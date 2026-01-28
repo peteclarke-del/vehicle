@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -44,6 +44,7 @@ import { useDistance } from '../hooks/useDistance';
 import formatCurrency from '../utils/formatCurrency';
 import VehicleSpecifications from '../components/VehicleSpecifications';
 import VehicleImages from '../components/VehicleImages';
+import VehicleDocuments from '../components/VehicleDocuments';
 import VinDecoder from '../components/VinDecoder';
 import LicensePlate from '../components/LicensePlate';
 import { LineChart } from '@mui/x-charts/LineChart';
@@ -95,9 +96,24 @@ const VehicleDetails = () => {
 
   // Debug logs removed: kept logic intact
 
+  const loadVehicleData = useCallback(async () => {
+    try {
+      const [vehicleRes, statsRes] = await Promise.all([
+        api.get(`/vehicles/${id}`),
+        api.get(`/vehicles/${id}/stats`),
+      ]);
+      setVehicle(vehicleRes.data);
+      setStats(statsRes.data);
+    } catch (error) {
+      console.error('Error loading vehicle data:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [api, id]);
+
   useEffect(() => {
     loadVehicleData();
-  }, [id]);
+  }, [loadVehicleData]);
 
   useEffect(() => {
     // When user navigates to the Depreciation tab, fetch the full schedule
@@ -113,22 +129,7 @@ const VehicleDetails = () => {
         })
         .finally(() => setDepreciationLoading(false));
     }
-  }, [tab, id]);
-
-  const loadVehicleData = async () => {
-    try {
-      const [vehicleRes, statsRes] = await Promise.all([
-        api.get(`/vehicles/${id}`),
-        api.get(`/vehicles/${id}/stats`),
-      ]);
-      setVehicle(vehicleRes.data);
-      setStats(statsRes.data);
-    } catch (error) {
-      console.error('Error loading vehicle data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [tab, id, depreciationSchedule, api]);
 
   if (loading) {
     return (
@@ -171,6 +172,9 @@ const VehicleDetails = () => {
         <Tab label={t('stats.depreciation')} />
         <Tab label={t('vehicleDetails.specifications')} />
         <Tab label={t('vehicleDetails.pictures')} />
+        <Tab label={t('vehicleDetails.documentation')} />
+        <Tab label={t('vehicleDetails.userManual')} />
+        <Tab label={t('vehicleDetails.serviceManual')} />
       </Tabs>
 
       {tab === 0 && (
@@ -578,6 +582,18 @@ const VehicleDetails = () => {
 
       {tab === 4 && vehicle && (
         <VehicleImages vehicle={vehicle} />
+      )}
+
+      {tab === 5 && vehicle && (
+        <VehicleDocuments vehicle={vehicle} category="documentation" />
+      )}
+
+      {tab === 6 && vehicle && (
+        <VehicleDocuments vehicle={vehicle} category="user_manual" />
+      )}
+
+      {tab === 7 && vehicle && (
+        <VehicleDocuments vehicle={vehicle} category="service_manual" />
       )}
     </Box>
   );

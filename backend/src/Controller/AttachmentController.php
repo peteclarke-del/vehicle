@@ -20,7 +20,6 @@ use App\Service\ReceiptOcrService;
 #[Route('/api/attachments')]
 class AttachmentController extends AbstractController
 {
-    private const UPLOAD_DIR = __DIR__ . '/../../../uploads';
     private const MAX_FILE_SIZE = 10485760; // 10MB
     private const ALLOWED_MIME_TYPES = [
         'image/jpeg',
@@ -39,9 +38,11 @@ class AttachmentController extends AbstractController
         private SluggerInterface $slugger,
         private ReceiptOcrService $ocrService
     ) {
-        if (!file_exists(self::UPLOAD_DIR)) {
-            mkdir(self::UPLOAD_DIR, 0755, true);
-        }
+    }
+
+    private function getUploadDir(): string
+    {
+        return $this->getParameter('kernel.project_dir') . '/uploads/attachments';
     }
 
     private function getUserEntity(): ?\App\Entity\User
@@ -64,6 +65,9 @@ class AttachmentController extends AbstractController
             return $this->json(['error' => 'No file provided'], 400);
         }
 
+        // Log upload attempt
+        error_log('Upload attempt - File: ' . $file->getClientOriginalName() . ', Size: ' . $file->getSize());
+
         // Validate file size
         if ($file->getSize() > self::MAX_FILE_SIZE) {
             return $this->json(['error' => 'File too large (max 10MB)'], 400);
@@ -72,17 +76,32 @@ class AttachmentController extends AbstractController
         // Validate MIME type
         $mimeType = $file->getMimeType();
         if (!in_array($mimeType, self::ALLOWED_MIME_TYPES)) {
-            return $this->json(['error' => 'File type not allowed'], 400);
+            return $this->json(['error' => 'File type not allowed: ' . $mimeType], 400);
         }
 
         $originalFilename = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
         $safeFilename = $this->slugger->slug($originalFilename);
         $newFilename = $safeFilename . '-' . uniqid() . '.' . $file->guessExtension();
 
+        $uploadDir = $this->getUploadDir();
+        error_log('Upload directory: ' . $uploadDir);
+        error_log('Directory exists: ' . (is_dir($uploadDir) ? 'yes' : 'no'));
+        error_log('Directory writable: ' . (is_writable(dirname($uploadDir)) ? 'yes' : 'no'));
+        
+        if (!is_dir($uploadDir)) {
+            if (!@mkdir($uploadDir, 0755, true) && !is_dir($uploadDir)) {
+                error_log('Failed to create directory: ' . $uploadDir);
+                return $this->json(['error' => 'Failed to create upload directory: ' . $uploadDir], 500);
+            }
+            error_log('Created directory: ' . $uploadDir);
+        }
+
         try {
-            $file->move(self::UPLOAD_DIR, $newFilename);
+            $file->move($uploadDir, $newFilename);
+            error_log('File uploaded successfully: ' . $uploadDir . '/' . $newFilename);
         } catch (FileException $e) {
-            return $this->json(['error' => 'Failed to upload file'], 500);
+            error_log('Upload failed: ' . $e->getMessage());
+            return $this->json(['error' => 'Failed to upload file: ' . $e->getMessage()], 500);
         }
 
         $attachment = new Attachment();
@@ -91,9 +110,24 @@ class AttachmentController extends AbstractController
         $attachment->setMimeType($mimeType);
         $attachment->setFileSize($file->getSize());
         $attachment->setUser($user);
-        $attachment->setEntityType($request->request->get('entityType'));
-        $attachment->setEntityId($request->request->get('entityId'));
-        $attachment->setDescription($request->request->get('description'));
+        
+        $entityType = $request->request->get('entityType');
+        $entityId = $request->request->get('entityId');
+        $description = $request->request->get('description');
+        $category = $request->request->get('category');
+        
+        if ($entityType) {
+            $attachment->setEntityType($entityType);
+        }
+        if ($entityId) {
+            $attachment->setEntityId((int)$entityId);
+        }
+        if ($description) {
+            $attachment->setDescription($description);
+        }
+        if ($category) {
+            $attachment->setCategory($category);
+        }
 
         $this->entityManager->persist($attachment);
         $this->entityManager->flush();
@@ -114,7 +148,7 @@ class AttachmentController extends AbstractController
             return $this->json(['error' => 'Attachment not found'], 404);
         }
 
-        $filePath = self::UPLOAD_DIR . '/' . $attachment->getFilename();
+        $filePath = $this->getUploadDir() . '/' . $attachment->getFilename();
         if (!file_exists($filePath)) {
             return $this->json(['error' => 'File not found'], 404);
         }
@@ -147,6 +181,7 @@ class AttachmentController extends AbstractController
 
         $entityType = $request->query->get('entityType');
         $entityId = $request->query->get('entityId');
+        $category = $request->query->get('category');
 
         $qb = $this->entityManager->getRepository(Attachment::class)
             ->createQueryBuilder('a')
@@ -161,6 +196,11 @@ class AttachmentController extends AbstractController
         if ($entityId) {
             $qb->andWhere('a.entityId = :entityId')
                 ->setParameter('entityId', $entityId);
+        }
+
+        if ($category) {
+            $qb->andWhere('a.category = :category')
+                ->setParameter('category', $category);
         }
 
         $attachments = $qb->orderBy('a.uploadedAt', 'DESC')
@@ -183,7 +223,7 @@ class AttachmentController extends AbstractController
             return $this->json(['error' => 'Attachment not found'], 404);
         }
 
-        $filePath = self::UPLOAD_DIR . '/' . $attachment->getFilename();
+        $filePath = $this->getUploadDir() . '/' . $attachment->getFilename();
         if (!file_exists($filePath)) {
             return $this->json(['error' => 'File not found'], 404);
         }
@@ -210,7 +250,7 @@ class AttachmentController extends AbstractController
             return $this->json(['error' => 'Attachment not found'], 404);
         }
 
-        $filePath = self::UPLOAD_DIR . '/' . $attachment->getFilename();
+        $filePath = $this->getUploadDir() . '/' . $attachment->getFilename();
         if (file_exists($filePath)) {
             unlink($filePath);
         }
@@ -242,6 +282,10 @@ class AttachmentController extends AbstractController
 
         if (isset($data['entityType'])) {
             $attachment->setEntityType($data['entityType']);
+        if (isset($data['category'])) {
+            $attachment->setCategory($data['category']);
+        }
+
         }
 
         if (isset($data['entityId'])) {
@@ -261,11 +305,15 @@ class AttachmentController extends AbstractController
             'originalName' => $attachment->getOriginalName(),
             'mimeType' => $attachment->getMimeType(),
             'fileSize' => $attachment->getFileSize(),
+            'fileSizeFormatted' => $attachment->getFileSizeFormatted(),
             'uploadedAt' => $attachment->getUploadedAt()->format('Y-m-d H:i:s'),
             'entityType' => $attachment->getEntityType(),
             'entityId' => $attachment->getEntityId(),
             'description' => $attachment->getDescription(),
+            'category' => $attachment->getCategory(),
             'downloadUrl' => '/api/attachments/' . $attachment->getId(),
+            'isImage' => $attachment->isImage(),
+            'isPdf' => $attachment->isPdf(),
         ];
     }
 }

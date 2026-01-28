@@ -3,6 +3,9 @@ services:
         autowire: true
         autoconfigure: true
 
+    # Redis cache with tag support
+    Symfony\Contracts\Cache\TagAwareCacheInterface: '@cache.app'
+
     App\:
         resource: '../src/'
         exclude:

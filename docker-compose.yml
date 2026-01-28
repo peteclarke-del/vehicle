@@ -31,6 +31,32 @@ services:
         reservations:
           memory: 256M
 
+  redis:
+    image: redis:7-alpine
+    container_name: vehicle_redis
+    ports:
+      - "6379:6379"
+    networks:
+      - vehicle_network
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.25'
+        reservations:
+          memory: 128M
+
   php:
     build:
       context: ./docker/php
@@ -45,6 +71,8 @@ services:
       - vehicle_network
     depends_on:
       mysql:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     env_file: .env
     environment:
@@ -146,4 +174,8 @@ networks:
 
 volumes:
   mysql_data:
-    driver: local
+    driver: local  
+    
+  redis_data:
+    driver: local  
+

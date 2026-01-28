@@ -57,13 +57,7 @@ const VehicleSpecifications = ({ vehicle }) => {
   const [success, setSuccess] = useState(null);
   const [formData, setFormData] = useState({});
 
-  useEffect(() => {
-    if (vehicle) {
-      loadSpecifications();
-    }
-  }, [vehicle]);
-
-  const loadSpecifications = async () => {
+  const loadSpecifications = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -79,7 +73,13 @@ const VehicleSpecifications = ({ vehicle }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [api, vehicle.id, t]);
+
+  useEffect(() => {
+    if (vehicle) {
+      loadSpecifications();
+    }
+  }, [vehicle, loadSpecifications]);
 
   const handleScrape = async () => {
     try {

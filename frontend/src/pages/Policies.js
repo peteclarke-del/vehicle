@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Container,
   Typography,
@@ -35,20 +35,20 @@ const Policies = () => {
   const { api } = useAuth();
   const { t } = useTranslation();
 
+  const loadVehicles = useCallback(async () => {
+    const data = await fetchArrayData(api, '/vehicles');
+    setVehicles(data);
+  }, [api]);
+
+  const loadPolicies = useCallback(async () => {
+    const data = await fetchArrayData(api, '/insurance/policies');
+    setPolicies(data);
+  }, [api]);
+
   useEffect(() => {
     loadVehicles();
     loadPolicies();
-  }, []);
-
-  const loadVehicles = async () => {
-    const data = await fetchArrayData(api, '/vehicles');
-    setVehicles(data);
-  };
-
-  const loadPolicies = async () => {
-    const data = await fetchArrayData(api, '/insurance/policies');
-    setPolicies(data);
-  };
+  }, [loadVehicles, loadPoliciesloadVehicles, loadPolicies]);
 
   const handleAdd = () => {
     setEditingPolicy(null);

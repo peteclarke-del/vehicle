@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Container,
   Typography,
@@ -25,7 +25,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { useUserPreferences } from '../contexts/UserPreferencesContext';
 import formatCurrency from '../utils/formatCurrency';
-import { fetchArrayData } from '../hooks/useApiData';
+import { useVehicles } from '../contexts/VehiclesContext';
 import { useDistance } from '../hooks/useDistance';
 import { formatDateISO } from '../utils/formatDate';
 import MotDialog from '../components/MotDialog';
@@ -33,10 +33,10 @@ import VehicleSelector from '../components/VehicleSelector';
 
 const MotRecords = () => {
   const [motRecords, setMotRecords] = useState([]);
-  const [vehicles, setVehicles] = useState([]);
   const [selectedVehicle, setSelectedVehicle] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingMot, setEditingMot] = useState(null);
+  const { vehicles, fetchVehicles } = useVehicles();
   const [orderBy, setOrderBy] = useState(() => localStorage.getItem('motRecordsSortBy') || 'expiryDate');
   const [order, setOrder] = useState(() => localStorage.getItem('motRecordsSortOrder') || 'desc');
   const { api } = useAuth();
@@ -49,9 +49,19 @@ const MotRecords = () => {
   const { defaultVehicleId, setDefaultVehicle } = useUserPreferences();
   const [hasManualSelection, setHasManualSelection] = useState(false);
 
+  const loadMotRecords = useCallback(async () => {
+    try {
+      const url = !selectedVehicle || selectedVehicle === '__all__' ? '/mot-records' : `/mot-records?vehicleId=${selectedVehicle}`;
+      const response = await api.get(url);
+      setMotRecords(response.data);
+    } catch (error) {
+      console.error('Error loading MOT records:', error);
+    }
+  }, [api, selectedVehicle]);
+
   useEffect(() => {
-    loadVehicles();
-  }, []);
+    fetchVehicles();
+  }, [fetchVehicles]);
 
   useEffect(() => {
     if (!defaultVehicleId) return;
@@ -64,30 +74,20 @@ const MotRecords = () => {
   }, [defaultVehicleId, vehicles, hasManualSelection]);
 
   useEffect(() => {
-    loadMotRecords();
-  }, [selectedVehicle]);
+    if (selectedVehicle) {
+      loadMotRecords();
+    }
+  }, [selectedVehicle, loadMotRecords]);
 
-  const loadVehicles = async () => {
-    const data = await fetchArrayData(api, '/vehicles');
-    setVehicles(data);
-    if (data.length > 0 && !selectedVehicle) {
-      if (defaultVehicleId && data.find((v) => String(v.id) === String(defaultVehicleId))) {
+  useEffect(() => {
+    if (vehicles.length > 0 && !selectedVehicle) {
+      if (defaultVehicleId && vehicles.find((v) => String(v.id) === String(defaultVehicleId))) {
         setSelectedVehicle(defaultVehicleId);
       } else {
-        setSelectedVehicle(data[0].id);
+        setSelectedVehicle(vehicles[0].id);
       }
     }
-  };
-
-  const loadMotRecords = async () => {
-    try {
-      const url = !selectedVehicle || selectedVehicle === '__all__' ? '/mot-records' : `/mot-records?vehicleId=${selectedVehicle}`;
-      const response = await api.get(url);
-      setMotRecords(response.data);
-    } catch (error) {
-      console.error('Error loading MOT records:', error);
-    }
-  };
+  }, [vehicles, selectedVehicle, defaultVehicleId]);
 
   const handleAdd = () => {
     setEditingMot(null);
@@ -399,7 +399,8 @@ const MotRecords = () => {
       <MotDialog
         open={dialogOpen}
         motRecord={editingMot}
-        vehicleId={selectedVehicle}
+        vehicleId={selectedVehicle !== '__all__' ? selectedVehicle : null}
+        vehicles={vehicles}
         onClose={handleDialogClose}
       />
     </Container>

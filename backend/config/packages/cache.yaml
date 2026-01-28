@@ -1,19 +1,35 @@
 framework:
     cache:
         # Unique name of your app: used to compute stable namespaces for cache keys.
-        #prefix_seed: your_vendor_name/app_name
+        prefix_seed: vehicle_app
 
-        # The "app" cache stores to the filesystem by default.
-        # The data in this cache should persist between deploys.
-        # Other options include:
+        # Redis cache configuration with tag support
+        app: cache.adapter.redis_tag_aware
+        default_redis_provider: '%env(resolve:REDIS_URL)%'
 
-        # Redis
-        #app: cache.adapter.redis
-        #default_redis_provider: redis://localhost
-
-        # APCu (not recommended with heavy random-write workloads as memory fragmentation can cause perf issues)
-        #app: cache.adapter.apcu
-
-        # Namespaced pools use the above "app" backend by default
-        #pools:
-            #my.dedicated.cache: null
+        # Namespaced pools with sensible timeouts
+        pools:
+            # Cache for vehicle data - 10 minutes
+            cache.vehicles:
+                adapter: cache.adapter.redis_tag_aware
+                default_lifetime: 600
+                
+            # Cache for dashboard statistics - 2 minutes
+            cache.dashboard:
+                adapter: cache.adapter.redis_tag_aware
+                default_lifetime: 120
+                
+            # Cache for user preferences - 30 minutes
+            cache.preferences:
+                adapter: cache.adapter.redis_tag_aware
+                default_lifetime: 1800
+                
+            # Cache for heavy queries (MOT, Service records) - 5 minutes
+            cache.records:
+                adapter: cache.adapter.redis_tag_aware
+                default_lifetime: 300
+                
+            # Cache for lookup data (types, statuses) - 1 hour
+            cache.lookups:
+                adapter: cache.adapter.redis_tag_aware
+                default_lifetime: 3600

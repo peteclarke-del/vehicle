@@ -143,6 +143,7 @@ class RoadTaxController extends AbstractController
             'expiryDate' => $rt->getExpiryDate()?->format('Y-m-d'),
             'amount' => $rt->getAmount(),
             'frequency' => $rt->getFrequency(),
+            'sorn' => $rt->getSorn(),
             'notes' => $rt->getNotes(),
             'createdAt' => $rt->getCreatedAt()?->format('c'),
         ];
@@ -158,6 +159,9 @@ class RoadTaxController extends AbstractController
         }
         if (isset($data['amount'])) {
             $rt->setAmount($data['amount'] === null ? null : (string)$data['amount']);
+        }
+        if (isset($data['sorn'])) {
+            $rt->setSorn((bool)$data['sorn']);
         }
         if (isset($data['notes'])) {
             $rt->setNotes($data['notes']);

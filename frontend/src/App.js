@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { UserPreferencesProvider } from './contexts/UserPreferencesContext';
+import { VehiclesProvider } from './contexts/VehiclesContext';
 import Layout from './components/Layout';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -23,7 +24,7 @@ import PasswordChangeDialog from './components/PasswordChangeDialog';
 import SessionTimeoutWarning from './components/SessionTimeoutWarning';
 import ImportExport from './pages/ImportExport';
 import { CircularProgress, Box } from '@mui/material';
-import i18next from 'i18next';
+import { useTranslation } from 'react-i18next';
 
 const PrivateRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -45,6 +46,7 @@ function AppRoutes() {
   const [showPasswordChange, setShowPasswordChange] = useState(false);
   const [systemStatus, setSystemStatus] = useState(null);
   const [checkingSystem, setCheckingSystem] = useState(true);
+  const { t } = useTranslation();
 
   useEffect(() => {
     let mounted = true;
@@ -76,7 +78,7 @@ function AppRoutes() {
     return (
       <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" minHeight="100vh">
         <CircularProgress />
-        <Box mt={2}>{i18next.t('app.systemChecks')}</Box>
+        <Box mt={2}>{t('app.systemChecks')}</Box>
       </Box>
     );
   }
@@ -126,7 +128,9 @@ function App() {
       <AuthProvider>
         <ThemeProvider>
           <UserPreferencesProvider>
-            <AppRoutes />
+            <VehiclesProvider>
+              <AppRoutes />
+            </VehiclesProvider>
           </UserPreferencesProvider>
         </ThemeProvider>
       </AuthProvider>

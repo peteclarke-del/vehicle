@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Container,
   Typography,
@@ -24,7 +24,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { useUserPreferences } from '../contexts/UserPreferencesContext';
 import formatCurrency from '../utils/formatCurrency';
-import { fetchArrayData } from '../hooks/useApiData';
+import { useVehicles } from '../contexts/VehiclesContext';
 import { useDistance } from '../hooks/useDistance';
 import { formatDateISO } from '../utils/formatDate';
 import ServiceDialog from '../components/ServiceDialog';
@@ -32,10 +32,10 @@ import VehicleSelector from '../components/VehicleSelector';
 
 const ServiceRecords = () => {
   const [serviceRecords, setServiceRecords] = useState([]);
-  const [vehicles, setVehicles] = useState([]);
   const [selectedVehicle, setSelectedVehicle] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingService, setEditingService] = useState(null);
+  const { vehicles, fetchVehicles } = useVehicles();
   const [orderBy, setOrderBy] = useState(() => localStorage.getItem('serviceRecordsSortBy') || 'serviceDate');
   const [order, setOrder] = useState(() => localStorage.getItem('serviceRecordsSortOrder') || 'desc');
   const { api } = useAuth();
@@ -48,9 +48,19 @@ const ServiceRecords = () => {
   const [hasManualSelection, setHasManualSelection] = useState(false);
   const { convert, format, getLabel } = useDistance();
 
+  const loadServiceRecords = useCallback(async () => {
+    try {
+      const url = !selectedVehicle || selectedVehicle === '__all__' ? '/service-records' : `/service-records?vehicleId=${selectedVehicle}`;
+      const response = await api.get(url);
+      setServiceRecords(response.data);
+    } catch (error) {
+      console.error('Error loading service records:', error);
+    }
+  }, [api, selectedVehicle]);
+
   useEffect(() => {
-    loadVehicles();
-  }, []);
+    fetchVehicles();
+  }, [fetchVehicles]);
 
   useEffect(() => {
     if (!defaultVehicleId) return;
@@ -63,30 +73,20 @@ const ServiceRecords = () => {
   }, [defaultVehicleId, vehicles, hasManualSelection]);
 
   useEffect(() => {
-    loadServiceRecords();
-  }, [selectedVehicle]);
+    if (selectedVehicle) {
+      loadServiceRecords();
+    }
+  }, [selectedVehicle, loadServiceRecords]);
 
-  const loadVehicles = async () => {
-    const data = await fetchArrayData(api, '/vehicles');
-    setVehicles(data);
-    if (data.length > 0 && !selectedVehicle) {
-      if (defaultVehicleId && data.find((v) => String(v.id) === String(defaultVehicleId))) {
+  useEffect(() => {
+    if (vehicles.length > 0 && !selectedVehicle) {
+      if (defaultVehicleId && vehicles.find((v) => String(v.id) === String(defaultVehicleId))) {
         setSelectedVehicle(defaultVehicleId);
       } else {
-        setSelectedVehicle(data[0].id);
+        setSelectedVehicle(vehicles[0].id);
       }
     }
-  };
-
-  const loadServiceRecords = async () => {
-    try {
-      const url = !selectedVehicle || selectedVehicle === '__all__' ? '/service-records' : `/service-records?vehicleId=${selectedVehicle}`;
-      const response = await api.get(url);
-      setServiceRecords(response.data);
-    } catch (error) {
-      console.error('Error loading service records:', error);
-    }
-  };
+  }, [vehicles, selectedVehicle, defaultVehicleId]);
 
   const handleAdd = () => {
     setEditingService(null);

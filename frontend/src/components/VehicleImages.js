@@ -126,17 +126,17 @@ const VehicleImages = ({ vehicle }) => {
     setLightboxOpen(true);
   };
 
-  const closeLightbox = () => {
+  const closeLightbox = useCallback(() => {
     setLightboxOpen(false);
-  };
+  }, []);
 
-  const goToPrevious = () => {
+  const goToPrevious = useCallback(() => {
     setCurrentIndex((prevIndex) => (prevIndex === 0 ? images.length - 1 : prevIndex - 1));
-  };
+  }, [images.length]);
 
-  const goToNext = () => {
+  const goToNext = useCallback(() => {
     setCurrentIndex((prevIndex) => (prevIndex === images.length - 1 ? 0 : prevIndex + 1));
-  };
+  }, [images.length]);
 
   useEffect(() => {
     const handleKeyPress = (e) => {
@@ -153,7 +153,7 @@ const VehicleImages = ({ vehicle }) => {
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [lightboxOpen]);
+  }, [lightboxOpen, closeLightbox, goToPrevious, goToNext]);
 
   if (loading) {
     return (

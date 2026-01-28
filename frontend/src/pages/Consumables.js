@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Box, Button, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, IconButton, CircularProgress, Tooltip, TableSortLabel } from '@mui/material';
 import { Add, Edit, Delete } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
@@ -35,9 +35,32 @@ const Consumables = () => {
     const { defaultVehicleId, setDefaultVehicle } = useUserPreferences();
     const [hasManualSelection, setHasManualSelection] = useState(false);
 
+  const loadVehicles = useCallback(async () => {
+    const data = await fetchArrayData(api, '/vehicles');
+    setVehicles(data);
+    if (data.length > 0 && !selectedVehicle) {
+      if (defaultVehicleId && data.find((v) => String(v.id) === String(defaultVehicleId))) {
+        setSelectedVehicle(defaultVehicleId);
+      } else {
+        setSelectedVehicle(data[0].id);
+      }
+    }
+    setLoading(false);
+  }, [api, selectedVehicle, defaultVehicleId]);
+
+  const loadConsumables = useCallback(async () => {
+    try {
+      const url = (!selectedVehicle || selectedVehicle === '__all__') ? '/consumables' : `/consumables?vehicleId=${selectedVehicle}`;
+      const response = await api.get(url);
+      setConsumables(response.data);
+    } catch (error) {
+      console.error('Error loading consumables:', error);
+    }
+  }, [api, selectedVehicle]);
+
   useEffect(() => {
     loadVehicles();
-  }, []);
+  }, [loadVehicles]);
 
   useEffect(() => {
     if (!defaultVehicleId) return;
@@ -55,30 +78,7 @@ const Consumables = () => {
     } else {
       setConsumables([]);
     }
-  }, [selectedVehicle]);
-
-  const loadVehicles = async () => {
-    const data = await fetchArrayData(api, '/vehicles');
-    setVehicles(data);
-    if (data.length > 0 && !selectedVehicle) {
-      if (defaultVehicleId && data.find((v) => String(v.id) === String(defaultVehicleId))) {
-        setSelectedVehicle(defaultVehicleId);
-      } else {
-        setSelectedVehicle(data[0].id);
-      }
-    }
-    setLoading(false);
-  };
-
-  const loadConsumables = async () => {
-    try {
-      const url = (!selectedVehicle || selectedVehicle === '__all__') ? '/consumables' : `/consumables?vehicleId=${selectedVehicle}`;
-      const response = await api.get(url);
-      setConsumables(response.data);
-    } catch (error) {
-      console.error('Error loading consumables:', error);
-    }
-  };
+  }, [selectedVehicle, loadConsumables]);
 
   const handleAdd = () => {
     setSelectedConsumable(null);

@@ -295,6 +295,7 @@ class VehicleImportExportController extends AbstractController
                     'expiryDate' => $roadTax->getExpiryDate()?->format('Y-m-d'),
                     'amount' => $roadTax->getAmount(),
                     'frequency' => $roadTax->getFrequency(),
+                    'sorn' => $roadTax->getSorn(),
                     'notes' => $roadTax->getNotes(),
                     'createdAt' => $roadTax->getCreatedAt()?->format('c'),
                 ];
@@ -2119,6 +2120,9 @@ class VehicleImportExportController extends AbstractController
                         }
                         if (!empty($roadTaxData['frequency'])) {
                             $roadTax->setFrequency($roadTaxData['frequency']);
+                        }
+                        if (isset($roadTaxData['sorn'])) {
+                            $roadTax->setSorn((bool)$roadTaxData['sorn']);
                         }
                         if (!empty($roadTaxData['notes'])) {
                             $roadTax->setNotes($roadTaxData['notes']);

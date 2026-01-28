@@ -15,6 +15,9 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Contracts\Cache\CacheInterface;
+use Symfony\Contracts\Cache\ItemInterface;
+use Symfony\Contracts\Cache\TagAwareCacheInterface;
 
 #[Route('/api/vehicles')]
 class VehicleController extends AbstractController
@@ -23,7 +26,8 @@ class VehicleController extends AbstractController
         private EntityManagerInterface $entityManager,
         private CostCalculator $costCalculator,
         private DepreciationCalculator $depreciationCalculator,
-        private LoggerInterface $logger
+        private LoggerInterface $logger,
+        private TagAwareCacheInterface $cache
     ) {
     }
 
@@ -269,14 +273,22 @@ class VehicleController extends AbstractController
             // swallow logging errors
         }
 
-        if ($isAdmin) {
-            $vehicles = $this->entityManager->getRepository(Vehicle::class)->findAll();
-        } else {
-            $vehicles = $this->entityManager->getRepository(Vehicle::class)
-                ->findBy(['owner' => $user]);
-        }
-
-        $data = array_map(fn($v) => $this->serializeVehicle($v), $vehicles);
+        // Cache vehicles list for 10 minutes per user
+        $cacheKey = 'vehicles.list.' . ($isAdmin ? 'admin' : 'user.' . $user->getId());
+        
+        $data = $this->cache->get($cacheKey, function (ItemInterface $item) use ($isAdmin, $user) {
+            $item->expiresAfter(600); // 10 minutes
+            $item->tag(['vehicles', 'user.' . $user->getId()]);
+            
+            if ($isAdmin) {
+                $vehicles = $this->entityManager->getRepository(Vehicle::class)->findAll();
+            } else {
+                $vehicles = $this->entityManager->getRepository(Vehicle::class)
+                    ->findBy(['owner' => $user]);
+            }
+            
+            return array_map(fn($v) => $this->serializeVehicle($v), $vehicles);
+        });
 
         return $this->json($data);
     }
@@ -324,6 +336,9 @@ class VehicleController extends AbstractController
         // Ensure database non-nullable fields have sensible defaults
         if (null === $vehicle->getPurchaseCost()) {
             $vehicle->setPurchaseCost('0.00');
+        // Invalidate vehicle caches
+        $this->cache->invalidateTags(['vehicles', 'user.' . $user->getId(), 'dashboard']);
+
         }
         if (null === $vehicle->getPurchaseDate()) {
             $vehicle->setPurchaseDate(new \DateTime());
@@ -392,6 +407,9 @@ class VehicleController extends AbstractController
             }
         }
 
+        // Invalidate vehicle caches
+        $this->cache->invalidateTags(['vehicles', 'user.' . $user->getId(), 'dashboard']);
+
         $vehicle->setUpdatedAt(new \DateTime());
         $this->entityManager->flush();
 
@@ -415,6 +433,9 @@ class VehicleController extends AbstractController
         if (!$this->isAdminForUser($user) && $vehicle->getOwner()->getId() !== $user->getId()) {
             return $this->json(['error' => 'Access denied'], 403);
         }
+
+        // Invalidate vehicle caches
+        $this->cache->invalidateTags(['vehicles', 'user.' . $user->getId(), 'dashboard']);
 
         $this->entityManager->remove($vehicle);
         $this->entityManager->flush();
@@ -519,152 +540,162 @@ class VehicleController extends AbstractController
 
         $isAdmin = $this->isAdminForUser($user);
 
-        // Fuel total
-        if ($isAdmin) {
-            $dqlFuel = 'SELECT SUM(fr.cost) FROM App\\Entity\\FuelRecord fr WHERE fr.date >= :cutoff';
-            $fuelTotal = (float) ($this->entityManager->createQuery($dqlFuel)
-                ->setParameter('cutoff', $cutoff)
-                ->getSingleScalarResult() ?? 0.0);
+        // Cache dashboard totals for 2 minutes per user and period
+        $cacheKey = 'dashboard.totals.' . ($isAdmin ? 'admin' : 'user.' . $user->getId()) . '.period.' . $periodMonths;
+        
+        $result = $this->cache->get($cacheKey, function (ItemInterface $item) use ($user, $isAdmin, $cutoff, $periodMonths) {
+            $item->expiresAfter(120); // 2 minutes
+            $item->tag(['dashboard', 'user.' . $user->getId()]);
 
-            $dqlFuelCount = 'SELECT COUNT(fr.id) FROM App\\Entity\\FuelRecord fr WHERE fr.date >= :cutoff';
-            $fuelCount = (int) ($this->entityManager->createQuery($dqlFuelCount)
-                ->setParameter('cutoff', $cutoff)
-                ->getSingleScalarResult() ?? 0);
-        } else {
-            $dqlFuel = 'SELECT SUM(fr.cost) FROM App\\Entity\\FuelRecord fr JOIN fr.vehicle v WHERE v.owner = :user AND fr.date >= :cutoff';
-            $fuelTotal = (float) ($this->entityManager->createQuery($dqlFuel)
-                ->setParameter('user', $user)
-                ->setParameter('cutoff', $cutoff)
-                ->getSingleScalarResult() ?? 0.0);
-
-            $dqlFuelCount = 'SELECT COUNT(fr.id) FROM App\\Entity\\FuelRecord fr JOIN fr.vehicle v WHERE v.owner = :user AND fr.date >= :cutoff';
-            $fuelCount = (int) ($this->entityManager->createQuery($dqlFuelCount)
-                ->setParameter('user', $user)
-                ->setParameter('cutoff', $cutoff)
-                ->getSingleScalarResult() ?? 0);
-        }
-
-        // Parts total (use purchaseDate)
-        if ($isAdmin) {
-            $dqlParts = 'SELECT SUM(p.cost) FROM App\\Entity\\Part p WHERE p.purchaseDate >= :cutoff';
-            $partsTotal = (float) ($this->entityManager->createQuery($dqlParts)
-                ->setParameter('cutoff', $cutoff)
-                ->getSingleScalarResult() ?? 0.0);
-
-            $dqlPartsCount = 'SELECT COUNT(p.id) FROM App\\Entity\\Part p WHERE p.purchaseDate >= :cutoff';
-            $partsCount = (int) ($this->entityManager->createQuery($dqlPartsCount)
-                ->setParameter('cutoff', $cutoff)
-                ->getSingleScalarResult() ?? 0);
-        } else {
-            $dqlParts = 'SELECT SUM(p.cost) FROM App\\Entity\\Part p JOIN p.vehicle v WHERE v.owner = :user AND p.purchaseDate >= :cutoff';
-            $partsTotal = (float) ($this->entityManager->createQuery($dqlParts)
-                ->setParameter('user', $user)
-                ->setParameter('cutoff', $cutoff)
-                ->getSingleScalarResult() ?? 0.0);
-
-            $dqlPartsCount = 'SELECT COUNT(p.id) FROM App\\Entity\\Part p JOIN p.vehicle v WHERE v.owner = :user AND p.purchaseDate >= :cutoff';
-            $partsCount = (int) ($this->entityManager->createQuery($dqlPartsCount)
-                ->setParameter('user', $user)
-                ->setParameter('cutoff', $cutoff)
-                ->getSingleScalarResult() ?? 0);
-        }
-
-        // Consumables total (use createdAt)
-        if ($isAdmin) {
-            $dqlConsumables = 'SELECT SUM(c.cost) FROM App\\Entity\\Consumable c WHERE c.createdAt >= :cutoff';
-            $consumablesTotal = (float) ($this->entityManager->createQuery($dqlConsumables)
-                ->setParameter('cutoff', $cutoff)
-                ->getSingleScalarResult() ?? 0.0);
-
-            $dqlConsumablesCount = 'SELECT COUNT(c.id) FROM App\\Entity\\Consumable c WHERE c.createdAt >= :cutoff';
-            $consumablesCount = (int) ($this->entityManager->createQuery($dqlConsumablesCount)
-                ->setParameter('cutoff', $cutoff)
-                ->getSingleScalarResult() ?? 0);
-        } else {
-            $dqlConsumables = 'SELECT SUM(c.cost) FROM App\\Entity\\Consumable c JOIN c.vehicle v WHERE v.owner = :user AND c.createdAt >= :cutoff';
-            $consumablesTotal = (float) ($this->entityManager->createQuery($dqlConsumables)
-                ->setParameter('user', $user)
-                ->setParameter('cutoff', $cutoff)
-                ->getSingleScalarResult() ?? 0.0);
-
-            $dqlConsumablesCount = 'SELECT COUNT(c.id) FROM App\\Entity\\Consumable c JOIN c.vehicle v WHERE v.owner = :user AND c.createdAt >= :cutoff';
-            $consumablesCount = (int) ($this->entityManager->createQuery($dqlConsumablesCount)
-                ->setParameter('user', $user)
-                ->setParameter('cutoff', $cutoff)
-                ->getSingleScalarResult() ?? 0);
-        }
-
-        // Average service cost over the period (labor + parts + additional)
-        if ($isAdmin) {
-            $dqlServiceAvg = 'SELECT AVG(COALESCE(sr.laborCost, 0) + COALESCE(sr.partsCost, 0) + COALESCE(sr.additionalCosts, 0))'
-                . ' FROM App\\Entity\\ServiceRecord sr WHERE sr.serviceDate >= :cutoff';
-            $serviceAvg = (float) ($this->entityManager->createQuery($dqlServiceAvg)
-                ->setParameter('cutoff', $cutoff)
-                ->getSingleScalarResult() ?? 0.0);
-
-            $dqlServiceCount = 'SELECT COUNT(sr.id) FROM App\\Entity\\ServiceRecord sr WHERE sr.serviceDate >= :cutoff';
-            $serviceCount = (int) ($this->entityManager->createQuery($dqlServiceCount)
-                ->setParameter('cutoff', $cutoff)
-                ->getSingleScalarResult() ?? 0);
-        } else {
-            $dqlServiceAvg = 'SELECT AVG(COALESCE(sr.laborCost, 0) + COALESCE(sr.partsCost, 0) + COALESCE(sr.additionalCosts, 0))'
-                . ' FROM App\\Entity\\ServiceRecord sr JOIN sr.vehicle v WHERE v.owner = :user AND sr.serviceDate >= :cutoff';
-            $serviceAvg = (float) ($this->entityManager->createQuery($dqlServiceAvg)
-                ->setParameter('user', $user)
-                ->setParameter('cutoff', $cutoff)
-                ->getSingleScalarResult() ?? 0.0);
-
-            $dqlServiceCount = 'SELECT COUNT(sr.id) FROM App\\Entity\\ServiceRecord sr JOIN sr.vehicle v WHERE v.owner = :user AND sr.serviceDate >= :cutoff';
-            $serviceCount = (int) ($this->entityManager->createQuery($dqlServiceCount)
-                ->setParameter('user', $user)
-                ->setParameter('cutoff', $cutoff)
-                ->getSingleScalarResult() ?? 0);
-        }
-
-        // Write debug info to log
-        try {
-            $debug = [
-                'time' => (new \DateTime())->format('c'),
-                'user' => $user instanceof User ? $user->getEmail() : null,
-                'isAdmin' => $isAdmin,
-                'cutoff' => $cutoff->format('c'),
-                'fuelTotal' => $fuelTotal,
-                'fuelCount' => $fuelCount ?? 0,
-                'partsTotal' => $partsTotal,
-                'partsCount' => $partsCount ?? 0,
-                'consumablesTotal' => $consumablesTotal,
-                'consumablesCount' => $consumablesCount ?? 0,
-                'serviceAvg' => $serviceAvg,
-                'serviceCount' => $serviceCount ?? 0,
-            ];
-            @file_put_contents($this->getParameter('kernel.project_dir') . '/var/log/vehicle_totals_debug.log', json_encode($debug, JSON_PRETTY_PRINT) . "\n", FILE_APPEND);
-        } catch (\Throwable $e) {
-            // ignore
-        }
-
-        // Compute total purchase value of vehicles (site-wide for admins, owner-scoped otherwise)
-        try {
+            // Fuel total
             if ($isAdmin) {
-                $dqlTotalValue = 'SELECT SUM(v.purchaseCost) FROM App\\Entity\\Vehicle v';
-                $totalValue = (float) ($this->entityManager->createQuery($dqlTotalValue)
+                $dqlFuel = 'SELECT SUM(fr.cost) FROM App\\Entity\\FuelRecord fr WHERE fr.date >= :cutoff';
+                $fuelTotal = (float) ($this->entityManager->createQuery($dqlFuel)
+                    ->setParameter('cutoff', $cutoff)
                     ->getSingleScalarResult() ?? 0.0);
-            } else {
-                $dqlTotalValue = 'SELECT SUM(v.purchaseCost) FROM App\\Entity\\Vehicle v WHERE v.owner = :user';
-                $totalValue = (float) ($this->entityManager->createQuery($dqlTotalValue)
-                    ->setParameter('user', $user)
-                    ->getSingleScalarResult() ?? 0.0);
-            }
-        } catch (\Throwable $e) {
-            $totalValue = 0.0;
-        }
 
-        return $this->json([
-            'periodMonths' => $periodMonths,
-            'fuel' => round($fuelTotal, 2),
-            'parts' => round($partsTotal, 2),
-            'consumables' => round($consumablesTotal, 2),
-            'averageServiceCost' => round($serviceAvg, 2),
-        ]);
+                $dqlFuelCount = 'SELECT COUNT(fr.id) FROM App\\Entity\\FuelRecord fr WHERE fr.date >= :cutoff';
+                $fuelCount = (int) ($this->entityManager->createQuery($dqlFuelCount)
+                    ->setParameter('cutoff', $cutoff)
+                    ->getSingleScalarResult() ?? 0);
+            } else {
+                $dqlFuel = 'SELECT SUM(fr.cost) FROM App\\Entity\\FuelRecord fr JOIN fr.vehicle v WHERE v.owner = :user AND fr.date >= :cutoff';
+                $fuelTotal = (float) ($this->entityManager->createQuery($dqlFuel)
+                    ->setParameter('user', $user)
+                    ->setParameter('cutoff', $cutoff)
+                    ->getSingleScalarResult() ?? 0.0);
+
+                $dqlFuelCount = 'SELECT COUNT(fr.id) FROM App\\Entity\\FuelRecord fr JOIN fr.vehicle v WHERE v.owner = :user AND fr.date >= :cutoff';
+                $fuelCount = (int) ($this->entityManager->createQuery($dqlFuelCount)
+                    ->setParameter('user', $user)
+                    ->setParameter('cutoff', $cutoff)
+                    ->getSingleScalarResult() ?? 0);
+            }
+
+            // Parts total (use purchaseDate)
+            if ($isAdmin) {
+                $dqlParts = 'SELECT SUM(p.cost) FROM App\\Entity\\Part p WHERE p.purchaseDate >= :cutoff';
+                $partsTotal = (float) ($this->entityManager->createQuery($dqlParts)
+                    ->setParameter('cutoff', $cutoff)
+                    ->getSingleScalarResult() ?? 0.0);
+
+                $dqlPartsCount = 'SELECT COUNT(p.id) FROM App\\Entity\\Part p WHERE p.purchaseDate >= :cutoff';
+                $partsCount = (int) ($this->entityManager->createQuery($dqlPartsCount)
+                    ->setParameter('cutoff', $cutoff)
+                    ->getSingleScalarResult() ?? 0);
+            } else {
+                $dqlParts = 'SELECT SUM(p.cost) FROM App\\Entity\\Part p JOIN p.vehicle v WHERE v.owner = :user AND p.purchaseDate >= :cutoff';
+                $partsTotal = (float) ($this->entityManager->createQuery($dqlParts)
+                    ->setParameter('user', $user)
+                    ->setParameter('cutoff', $cutoff)
+                    ->getSingleScalarResult() ?? 0.0);
+
+                $dqlPartsCount = 'SELECT COUNT(p.id) FROM App\\Entity\\Part p JOIN p.vehicle v WHERE v.owner = :user AND p.purchaseDate >= :cutoff';
+                $partsCount = (int) ($this->entityManager->createQuery($dqlPartsCount)
+                    ->setParameter('user', $user)
+                    ->setParameter('cutoff', $cutoff)
+                    ->getSingleScalarResult() ?? 0);
+            }
+
+            // Consumables total (use createdAt)
+            if ($isAdmin) {
+                $dqlConsumables = 'SELECT SUM(c.cost) FROM App\\Entity\\Consumable c WHERE c.createdAt >= :cutoff';
+                $consumablesTotal = (float) ($this->entityManager->createQuery($dqlConsumables)
+                    ->setParameter('cutoff', $cutoff)
+                    ->getSingleScalarResult() ?? 0.0);
+
+                $dqlConsumablesCount = 'SELECT COUNT(c.id) FROM App\\Entity\\Consumable c WHERE c.createdAt >= :cutoff';
+                $consumablesCount = (int) ($this->entityManager->createQuery($dqlConsumablesCount)
+                    ->setParameter('cutoff', $cutoff)
+                    ->getSingleScalarResult() ?? 0);
+            } else {
+                $dqlConsumables = 'SELECT SUM(c.cost) FROM App\\Entity\\Consumable c JOIN c.vehicle v WHERE v.owner = :user AND c.createdAt >= :cutoff';
+                $consumablesTotal = (float) ($this->entityManager->createQuery($dqlConsumables)
+                    ->setParameter('user', $user)
+                    ->setParameter('cutoff', $cutoff)
+                    ->getSingleScalarResult() ?? 0.0);
+
+                $dqlConsumablesCount = 'SELECT COUNT(c.id) FROM App\\Entity\\Consumable c JOIN c.vehicle v WHERE v.owner = :user AND c.createdAt >= :cutoff';
+                $consumablesCount = (int) ($this->entityManager->createQuery($dqlConsumablesCount)
+                    ->setParameter('user', $user)
+                    ->setParameter('cutoff', $cutoff)
+                    ->getSingleScalarResult() ?? 0);
+            }
+
+            // Average service cost over the period (labor + parts + additional)
+            if ($isAdmin) {
+                $dqlServiceAvg = 'SELECT AVG(COALESCE(sr.laborCost, 0) + COALESCE(sr.partsCost, 0) + COALESCE(sr.additionalCosts, 0))'
+                    . ' FROM App\\Entity\\ServiceRecord sr WHERE sr.serviceDate >= :cutoff';
+                $serviceAvg = (float) ($this->entityManager->createQuery($dqlServiceAvg)
+                    ->setParameter('cutoff', $cutoff)
+                    ->getSingleScalarResult() ?? 0.0);
+
+                $dqlServiceCount = 'SELECT COUNT(sr.id) FROM App\\Entity\\ServiceRecord sr WHERE sr.serviceDate >= :cutoff';
+                $serviceCount = (int) ($this->entityManager->createQuery($dqlServiceCount)
+                    ->setParameter('cutoff', $cutoff)
+                    ->getSingleScalarResult() ?? 0);
+            } else {
+                $dqlServiceAvg = 'SELECT AVG(COALESCE(sr.laborCost, 0) + COALESCE(sr.partsCost, 0) + COALESCE(sr.additionalCosts, 0))'
+                    . ' FROM App\\Entity\\ServiceRecord sr JOIN sr.vehicle v WHERE v.owner = :user AND sr.serviceDate >= :cutoff';
+                $serviceAvg = (float) ($this->entityManager->createQuery($dqlServiceAvg)
+                    ->setParameter('user', $user)
+                    ->setParameter('cutoff', $cutoff)
+                    ->getSingleScalarResult() ?? 0.0);
+
+                $dqlServiceCount = 'SELECT COUNT(sr.id) FROM App\\Entity\\ServiceRecord sr JOIN sr.vehicle v WHERE v.owner = :user AND sr.serviceDate >= :cutoff';
+                $serviceCount = (int) ($this->entityManager->createQuery($dqlServiceCount)
+                    ->setParameter('user', $user)
+                    ->setParameter('cutoff', $cutoff)
+                    ->getSingleScalarResult() ?? 0);
+            }
+
+            // Write debug info to log
+            try {
+                $debug = [
+                    'time' => (new \DateTime())->format('c'),
+                    'user' => $user instanceof User ? $user->getEmail() : null,
+                    'isAdmin' => $isAdmin,
+                    'cutoff' => $cutoff->format('c'),
+                    'fuelTotal' => $fuelTotal,
+                    'fuelCount' => $fuelCount ?? 0,
+                    'partsTotal' => $partsTotal,
+                    'partsCount' => $partsCount ?? 0,
+                    'consumablesTotal' => $consumablesTotal,
+                    'consumablesCount' => $consumablesCount ?? 0,
+                    'serviceAvg' => $serviceAvg,
+                    'serviceCount' => $serviceCount ?? 0,
+                ];
+                @file_put_contents($this->getParameter('kernel.project_dir') . '/var/log/vehicle_totals_debug.log', json_encode($debug, JSON_PRETTY_PRINT) . "\n", FILE_APPEND);
+            } catch (\Throwable $e) {
+                // ignore
+            }
+
+            // Compute total purchase value of vehicles (site-wide for admins, owner-scoped otherwise)
+            try {
+                if ($isAdmin) {
+                    $dqlTotalValue = 'SELECT SUM(v.purchaseCost) FROM App\\Entity\\Vehicle v';
+                    $totalValue = (float) ($this->entityManager->createQuery($dqlTotalValue)
+                        ->getSingleScalarResult() ?? 0.0);
+                } else {
+                    $dqlTotalValue = 'SELECT SUM(v.purchaseCost) FROM App\\Entity\\Vehicle v WHERE v.owner = :user';
+                    $totalValue = (float) ($this->entityManager->createQuery($dqlTotalValue)
+                        ->setParameter('user', $user)
+                        ->getSingleScalarResult() ?? 0.0);
+                }
+            } catch (\Throwable $e) {
+                $totalValue = 0.0;
+            }
+
+            return [
+                'periodMonths' => $periodMonths,
+                'fuel' => round($fuelTotal, 2),
+                'parts' => round($partsTotal, 2),
+                'consumables' => round($consumablesTotal, 2),
+                'averageServiceCost' => round($serviceAvg, 2),
+            ];
+        });
+
+        return $this->json($result);
     }
 
     private function serializeVehicle(Vehicle $vehicle): array

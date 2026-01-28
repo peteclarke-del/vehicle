@@ -25,7 +25,7 @@ import { useUserPreferences } from '../contexts/UserPreferencesContext';
 import formatCurrency from '../utils/formatCurrency';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { useApiData } from '../hooks/useApiData';
+import { useVehicles } from '../contexts/VehiclesContext';
 import { useDistance } from '../hooks/useDistance';
 import { formatDateISO } from '../utils/formatDate';
 import VehicleDialog from '../components/VehicleDialog';
@@ -48,13 +48,15 @@ import {
 
 const Dashboard = () => {
   const { api, user } = useAuth();
-  const { data: vehicles, loading, fetchData: loadVehicles } = useApiData('/vehicles');
+  const { vehicles, loading, refreshVehicles } = useVehicles();
   const { convert, format } = useDistance();
   const [last12FuelTotal, setLast12FuelTotal] = useState(0);
   const [last12PartsTotal, setLast12PartsTotal] = useState(0);
   const [last12ConsumablesTotal, setLast12ConsumablesTotal] = useState(0);
   const [avgServiceCost, setAvgServiceCost] = useState(0);
   const [totalsLoading, setTotalsLoading] = useState(false);
+  const [sornVehicles, setSornVehicles] = useState(0);
+  const [roadTaxData, setRoadTaxData] = useState([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [orderedVehicles, setOrderedVehicles] = useState([]);
   const [activeFilter, setActiveFilter] = useState(null);
@@ -75,7 +77,7 @@ const Dashboard = () => {
   const CARD_HEIGHT = 163;
 
   // Responsive stat card that scales typography based on card size and text length
-  const StatCard = ({ title, value, subtitle, loading, topRightIcon, onClick, children, isBottom = false }) => {
+  const StatCard = React.memo(({ title, value, subtitle, loading, topRightIcon, onClick, children, isBottom = false, isCircular = false }) => {
     const ref = useRef(null);
     const [dims, setDims] = useState({ width: 0, height: 0 });
 
@@ -118,6 +120,76 @@ const Dashboard = () => {
 
     const { titleSize, valueSize, subtitleSize, gapPx } = computeSizes(dims.width, dims.height, title, value, subtitle, isBottom);
 
+    if (isCircular) {
+      return (
+        <Paper
+          ref={ref}
+          onClick={onClick}
+          sx={{ 
+            p: 2, 
+            textAlign: 'center', 
+            aspectRatio: '1/1',
+            borderRadius: '50%',
+            display: 'flex', 
+            flexDirection: 'column', 
+            justifyContent: 'center', 
+            alignItems: 'center',
+            width: '100%', 
+            minWidth: 0, 
+            position: 'relative',
+            cursor: onClick ? 'pointer' : 'default',
+            gap: 0.5,
+            boxShadow: `
+              0 0 0 3px #c0c0c0,
+              0 0 0 4px #e8e8e8,
+              0 0 0 5px #ffffff,
+              0 0 0 6px #d4d4d4,
+              0 0 0 7px #b0b0b0,
+              inset 0 2px 6px rgba(255, 255, 255, 0.5),
+              inset 0 -2px 6px rgba(0, 0, 0, 0.15),
+              0 4px 12px rgba(0, 0, 0, 0.2)
+            `
+          }}
+        >
+          {title ? (
+            <Typography variant="body2" color="text.secondary" sx={{ fontSize: '12px', lineHeight: 1.1, flexShrink: 0 }}>{title}</Typography>
+          ) : (
+            <Box sx={{ height: '16px' }} />
+          )}
+          <Box
+            sx={{
+              backgroundColor: 'rgba(0, 0, 0, 0.85)',
+              borderRadius: '8px',
+              px: 1,
+              py: 2,
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              position: 'relative',
+              flexShrink: 0
+            }}
+          >
+            {topRightIcon && (
+              <Box sx={{ position: 'absolute', top: 8, right: 8 }}>{topRightIcon}</Box>
+            )}
+            {loading ? (
+              <CircularProgress size={32} sx={{ color: 'primary.main' }} />
+            ) : children ? (
+              children
+            ) : (
+              <Typography variant="h4" sx={{ color: 'primary.main', fontWeight: 'bold', fontSize: '28px' }}>{value}</Typography>
+            )}
+          </Box>
+          {subtitle ? (
+            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '11px', flexShrink: 0 }}>{subtitle}</Typography>
+          ) : (
+            <Box sx={{ height: '15px' }} />
+          )}
+        </Paper>
+      );
+    }
+
     return (
       <Paper
         ref={ref}
@@ -136,15 +208,12 @@ const Dashboard = () => {
         {subtitle ? <Typography variant="body2" color="text.secondary" sx={{ fontSize: subtitleSize }}>{subtitle}</Typography> : null}
       </Paper>
     );
-  };
+  });
 
-  useEffect(() => {
-    loadVehicles();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // No need to load vehicles - VehiclesContext handles it automatically
 
   // Fetch and set dashboard totals (extracted as a named function)
-  const fetchDashboardTotals = async (periodMonths = 12) => {
+  const fetchDashboardTotals = useCallback(async (periodMonths = 12) => {
     setTotalsLoading(true);
     try {
       const resp = await api.get(`/vehicles/totals?period=${periodMonths}`);
@@ -157,11 +226,37 @@ const Dashboard = () => {
     } finally {
       setTotalsLoading(false);
     }
-  };
+  }, [api]);
+
+  // Fetch road tax data and count SORN vehicles (only Live vehicles with SORN as latest record)
+  const fetchRoadTaxData = useCallback(async () => {
+    try {
+      const resp = await api.get('/road-tax');
+      setRoadTaxData(resp.data || []);
+      // Count unique vehicles with SORN status (latest record per vehicle, only Live vehicles)
+      const vehicleLatestRecord = {};
+      (resp.data || []).forEach(record => {
+        const vId = record.vehicleId;
+        if (!vehicleLatestRecord[vId] || new Date(record.startDate) > new Date(vehicleLatestRecord[vId].startDate)) {
+          vehicleLatestRecord[vId] = record;
+        }
+      });
+      // Filter to only count SORN vehicles that are Live status and have SORN as latest record
+      const liveVehicleIds = (vehicles || []).filter(v => (v.status || 'Live') === 'Live').map(v => v.id);
+      const sornCount = Object.entries(vehicleLatestRecord)
+        .filter(([vId, record]) => record.sorn === true && liveVehicleIds.includes(parseInt(vId)))
+        .length;
+      setSornVehicles(sornCount);
+    } catch (err) {
+      console.warn('Failed to load road tax data', err);
+    }
+  }, [api, vehicles]);
 
   useEffect(() => {
+    // Fetch both dashboard totals and road tax data in parallel
     fetchDashboardTotals(12);
-  }, [api, user]);
+    fetchRoadTaxData();
+  }, [fetchDashboardTotals, fetchRoadTaxData]);
 
   // Apply sort order when vehicles are loaded or sortOrder changes
   useEffect(() => {
@@ -195,7 +290,7 @@ const Dashboard = () => {
   const handleDialogClose = (reload) => {
     setDialogOpen(false);
     if (reload) {
-      loadVehicles();
+      refreshVehicles();
     }
   };
 
@@ -215,7 +310,7 @@ const Dashboard = () => {
       if (date) payload.statusChangeDate = date;
       if (notes) payload.statusChangeNotes = notes;
       await api.put(`/vehicles/${vehicleId}`, payload);
-      await loadVehicles();
+      await refreshVehicles();
     } catch (e) {
       console.error('Error updating vehicle status with metadata', e);
     } finally {
@@ -300,6 +395,15 @@ const Dashboard = () => {
     if (count === 0) return 'success.main';
     if (count >= Math.ceil(total / 2)) return 'error.main';
     return 'warning.main';
+  };
+
+  // Helper to get the actual color value for text/icons
+  const getStatusColorValue = (count, total) => {
+    const status = statusColor(count, total);
+    if (status === 'success.main') return '#4caf50'; // green
+    if (status === 'error.main') return '#f44336'; // red
+    if (status === 'warning.main') return '#ff9800'; // orange
+    return '#29b6f6'; // blue fallback
   };
 
   const getCardStyle = (color) => {
@@ -392,12 +496,24 @@ const Dashboard = () => {
     );
   };
 
+  // Helper to get latest road tax record for a vehicle
+  const getLatestRoadTaxRecord = (vehicleId) => {
+    const vehicleRecords = roadTaxData.filter(r => r.vehicleId === vehicleId);
+    if (vehicleRecords.length === 0) return null;
+    return vehicleRecords.reduce((latest, current) => 
+      new Date(current.startDate) > new Date(latest.startDate) ? current : latest
+    );
+  };
+
   const calculateStatistics = () => {
     if (!vehicles || vehicles.length === 0) return null;
 
     const now = new Date();
+    // Only count Live vehicles for statistics (except cost totals which include all)
+    const liveVehicles = vehicles.filter(v => (v.status || 'Live') === 'Live');
+    
     const stats = {
-      total: vehicles.length,
+      total: liveVehicles.length,
       expiredMot: 0,
       expiredTax: 0,
       expiredInsurance: 0,
@@ -407,15 +523,20 @@ const Dashboard = () => {
       byMake: {},
     };
 
-    vehicles.forEach(vehicle => {
+    liveVehicles.forEach(vehicle => {
       // Count expired items
         // Treat missing expiry dates as expired (no records yet) but only when country requires them
         if (!vehicle.motExpiryDate || new Date(vehicle.motExpiryDate) < now) {
           stats.expiredMot++;
         }
-        if (!vehicle.roadTaxExpiryDate || new Date(vehicle.roadTaxExpiryDate) < now) {
+        
+        // For expired tax, exclude vehicles with SORN as the latest record
+        const latestRoadTax = getLatestRoadTaxRecord(vehicle.id);
+        const hasActiveSorn = latestRoadTax && latestRoadTax.sorn === true;
+        if (!hasActiveSorn && (!vehicle.roadTaxExpiryDate || new Date(vehicle.roadTaxExpiryDate) < now)) {
           stats.expiredTax++;
         }
+        
         if (!vehicle.insuranceExpiryDate || new Date(vehicle.insuranceExpiryDate) < now) {
           stats.expiredInsurance++;
         }
@@ -459,6 +580,15 @@ const Dashboard = () => {
       }
       if (activeFilter === 'serviceDue') {
         return isServiceDue(vehicle).due;
+      }
+      if (activeFilter === 'sorn') {
+        // Check if vehicle has SORN status from latest road tax record
+        const vehicleRecords = roadTaxData.filter(r => r.vehicleId === vehicle.id);
+        if (vehicleRecords.length === 0) return false;
+        const latestRecord = vehicleRecords.reduce((latest, current) => 
+          new Date(current.startDate) > new Date(latest.startDate) ? current : latest
+        );
+        return latestRecord.sorn === true;
       }
       // Filter by vehicle type
       if (activeFilter.startsWith('type:')) {
@@ -538,17 +668,19 @@ const Dashboard = () => {
                   gap: 3
                 }}
               >
-                {/* Left area: cards arranged into two rows (top: 4, bottom: 5) */}
-                <Box sx={{ gridColumn: { lg: '1 / 9' }, gridRow: { lg: '1 / 3' } }}>
+                {/* Left area: cards arranged into two rows (top: 5, bottom: 6) */}
+                <Box sx={{ gridColumn: { lg: '1 / 10' }, gridRow: { lg: '1 / 3' } }}>
                   <Box sx={{ display: 'grid', gridTemplateColumns: { lg: 'repeat(5, 1fr)' }, gap: 3, mb: 3, alignItems: 'stretch' }}>
                     {/* Top row: Total Value, Total Fuel Cost, Total Parts Cost, Total Consumables Cost, Average Service Cost */}
                     <StatCard
+                      isCircular={true}
                       title={t('dashboard.totalValue')}
                       value={new Intl.NumberFormat(i18n.language || undefined, { style: 'currency', currency: 'GBP', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(Math.ceil(parseFloat(stats.totalValue || 0)))}
                       subtitle={t('dashboard.purchaseCost')}
                     />
 
                     <StatCard
+                      isCircular={true}
                       title={`${t('dashboard.totalFuelCost')} (12m)`}
                       value={formatCurrency(last12FuelTotal, 'GBP', i18n.language)}
                       loading={totalsLoading}
@@ -556,6 +688,7 @@ const Dashboard = () => {
                     />
 
                     <StatCard
+                      isCircular={true}
                       title={`${t('dashboard.totalPartsCost')} (12m)`}
                       value={formatCurrency(last12PartsTotal, 'GBP', i18n.language)}
                       loading={totalsLoading}
@@ -563,6 +696,7 @@ const Dashboard = () => {
                     />
 
                     <StatCard
+                      isCircular={true}
                       title={`${t('dashboard.totalConsumablesCost') || 'Total Consumables Cost'} (12m)`}
                       value={formatCurrency(last12ConsumablesTotal, 'GBP', i18n.language)}
                       loading={totalsLoading}
@@ -570,6 +704,7 @@ const Dashboard = () => {
                     />
 
                     <StatCard
+                      isCircular={true}
                       title={`${t('dashboard.averageServiceCost')} (12m)`}
                       value={`£${avgServiceCost.toLocaleString('en-GB', { maximumFractionDigits: 2 })}`}
                       loading={totalsLoading}
@@ -577,63 +712,79 @@ const Dashboard = () => {
                     />
                   </Box>
 
-                  <Box sx={{ display: 'grid', gridTemplateColumns: { lg: 'repeat(5, 1fr)' }, gap: 3, alignItems: 'stretch' }}>
-                    {/* Bottom row: total vehicles filter, expired mot, expired tax, expired insurance, service due */}
+                  <Box sx={{ display: 'grid', gridTemplateColumns: { lg: 'repeat(6, 1fr)' }, gap: 3, alignItems: 'stretch' }}>
+                    {/* Bottom row: total vehicles filter, expired mot, expired tax, expired insurance, service due, sorn vehicles */}
                     <StatCard
+                      isCircular={true}
                       value={stats.total}
                       subtitle={t('dashboard.totalVehicles')}
-                      topRightIcon={<CarIcon sx={{ fontSize: 32, color: 'primary.main' }} />}
+                      topRightIcon={<CarIcon sx={{ fontSize: 24, color: 'primary.main' }} />}
                       onClick={() => setActiveFilter(null)}
                       isBottom={true}
                     >
-                      <Typography variant="h4" color="primary">{stats.total}</Typography>
+                      <Typography variant="h4" sx={{ fontSize: '32px', color: '#29b6f6' }}>{stats.total}</Typography>
                     </StatCard>
 
                     <StatCard
+                      isCircular={true}
                       value={stats.expiredMot}
                       subtitle={t('dashboard.expiredMot')}
-                      topRightIcon={<EventIcon sx={{ fontSize: 32, color: statusColor(stats.expiredMot, stats.total) }} />}
+                      topRightIcon={<EventIcon sx={{ fontSize: 24, color: statusColor(stats.expiredMot, stats.total) }} />}
                       onClick={() => stats.expiredMot > 0 && setActiveFilter(activeFilter === 'expiredMot' ? null : 'expiredMot')}
                       isBottom={true}
                     >
-                      <Typography variant="h4" color={stats.expiredMot > 0 ? 'error' : 'success'}>{stats.expiredMot}</Typography>
+                      <Typography variant="h4" sx={{ fontSize: '32px', color: getStatusColorValue(stats.expiredMot, stats.total) }}>{stats.expiredMot}</Typography>
                     </StatCard>
 
                     <StatCard
+                      isCircular={true}
                       value={stats.expiredTax}
                       subtitle={t('dashboard.expiredTax')}
-                      topRightIcon={<EventIcon sx={{ fontSize: 32, color: statusColor(stats.expiredTax, stats.total) }} />}
+                      topRightIcon={<EventIcon sx={{ fontSize: 24, color: statusColor(stats.expiredTax, stats.total) }} />}
                       onClick={() => stats.expiredTax > 0 && setActiveFilter(activeFilter === 'expiredTax' ? null : 'expiredTax')}
                       isBottom={true}
                     >
-                      <Typography variant="h4" color={stats.expiredTax > 0 ? 'error' : 'success'}>{stats.expiredTax}</Typography>
+                      <Typography variant="h4" sx={{ fontSize: '32px', color: getStatusColorValue(stats.expiredTax, stats.total) }}>{stats.expiredTax}</Typography>
                     </StatCard>
 
                     <StatCard
+                      isCircular={true}
                       value={stats.expiredInsurance}
                       subtitle={t('dashboard.expiredInsurance')}
-                      topRightIcon={<WarningIcon sx={{ fontSize: 32, color: statusColor(stats.expiredInsurance, stats.total) }} />}
+                      topRightIcon={<WarningIcon sx={{ fontSize: 24, color: statusColor(stats.expiredInsurance, stats.total) }} />}
                       onClick={() => stats.expiredInsurance > 0 && setActiveFilter(activeFilter === 'expiredInsurance' ? null : 'expiredInsurance')}
                       isBottom={true}
                     >
-                      <Typography variant="h4" color={stats.expiredInsurance > 0 ? 'error' : 'success'}>{stats.expiredInsurance}</Typography>
+                      <Typography variant="h4" sx={{ fontSize: '32px', color: getStatusColorValue(stats.expiredInsurance, stats.total) }}>{stats.expiredInsurance}</Typography>
                     </StatCard>
 
                     <StatCard
+                      isCircular={true}
                       value={stats.serviceDue}
                       subtitle={t('dashboard.serviceDue')}
-                      topRightIcon={<BuildIcon sx={{ fontSize: 32, color: statusColor(stats.serviceDue, stats.total) }} />}
+                      topRightIcon={<BuildIcon sx={{ fontSize: 24, color: statusColor(stats.serviceDue, stats.total) }} />}
                       onClick={() => stats.serviceDue > 0 && setActiveFilter(activeFilter === 'serviceDue' ? null : 'serviceDue')}
                       isBottom={true}
                     >
-                      <Typography variant="h4" color={stats.serviceDue > 0 ? 'warning' : 'success'}>{stats.serviceDue}</Typography>
+                      <Typography variant="h4" sx={{ fontSize: '32px', color: getStatusColorValue(stats.serviceDue, stats.total) }}>{stats.serviceDue}</Typography>
+                    </StatCard>
+
+                    <StatCard
+                      isCircular={true}
+                      value={sornVehicles}
+                      subtitle={t('dashboard.sornVehicles')}
+                      topRightIcon={<EventIcon sx={{ fontSize: 24, color: 'primary.main' }} />}
+                      onClick={() => sornVehicles > 0 && setActiveFilter(activeFilter === 'sorn' ? null : 'sorn')}
+                      isBottom={true}
+                    >
+                      <Typography variant="h4" sx={{ fontSize: '32px', color: '#29b6f6' }}>{sornVehicles}</Typography>
                     </StatCard>
                   </Box>
                 </Box>
 
-                {/* Pie Chart: Col 9-13, spans both rows */}
-                <Box sx={{ gridColumn: { lg: '9 / 13' }, gridRow: { lg: '1 / 3' } }}>
-                  <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', height: '100%', minHeight: 304 }}>
+                {/* Pie Chart: Col 10-13, spans both rows */}
+                <Box sx={{ gridColumn: { lg: '10 / 13' }, gridRow: { lg: '1 / 3' } }}>
+                  <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', height: '100%' }}>
                     <Typography variant="h6" gutterBottom>{t('dashboard.byType')}</Typography>
                     <Box 
                       sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
@@ -659,8 +810,8 @@ const Dashboard = () => {
                           highlightScope: { faded: 'global', highlighted: 'item' },
                           faded: { innerRadius: 30, additionalRadius: -30, color: 'gray' },
                         }]}
-                        width={350}
-                        height={280}
+                        width={300}
+                        height={300}
                         sx={{
                           cursor: 'pointer',
                           '& .MuiPieArc-root': {
@@ -669,16 +820,16 @@ const Dashboard = () => {
                         }}
                         slotProps={{
                           legend: {
-                            direction: 'column',
-                            position: { vertical: 'middle', horizontal: 'right' },
-                            padding: 0,
+                            direction: 'row',
+                            position: { vertical: 'bottom', horizontal: 'middle' },
+                            padding: { bottom: 8 },
                             itemMarkWidth: 10,
                             itemMarkHeight: 10,
                             markGap: 5,
-                            itemGap: 8,
+                            itemGap: 10,
                           },
                         }}
-                        margin={{ right: 120 }}
+                        margin={{ bottom: 35, left: 50, right: 50 }}
                       />
                     </Box>
                   </Paper>
@@ -708,7 +859,7 @@ const Dashboard = () => {
                     label={t('dashboard.sortBy')}
                     onChange={handleSortChange}
                   >
-                    <MenuItem value="name">{t('dashboard.name')}</MenuItem>
+                    <MenuItem value="name">{t('common.name')}</MenuItem>
                     <MenuItem value="registration">{t('common.registrationNumber')}</MenuItem>
                     <MenuItem value="make">{t('dashboard.make')}</MenuItem>
                     <MenuItem value="year">{t('common.year')}</MenuItem>

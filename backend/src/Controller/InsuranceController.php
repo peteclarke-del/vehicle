@@ -442,11 +442,17 @@ class InsuranceController extends AbstractController
             return new JsonResponse(['error' => 'Vehicle not found'], 404);
         }
 
-        $policies = $this->entityManager->getRepository(InsurancePolicy::class)
-            ->findBy(['holderId' => $user->getId()]);
+        // Use DQL to directly query policies that include this vehicle
+        $qb = $this->entityManager->createQueryBuilder();
+        $qb->select('p')
+           ->from(InsurancePolicy::class, 'p')
+           ->join('p.vehicles', 'v')
+           ->where('v.id = :vehicleId')
+           ->andWhere('p.holderId = :userId')
+           ->setParameter('vehicleId', $vehicleId)
+           ->setParameter('userId', $user->getId());
 
-        // Filter to only policies that include this vehicle
-        $vehiclePolicies = array_filter($policies, fn($policy) => $policy->getVehicles()->contains($vehicle));
+        $vehiclePolicies = $qb->getQuery()->getResult();
 
         return new JsonResponse(array_map(fn($policy) => $this->serializeInsurance($policy), $vehiclePolicies));
     }
@@ -518,7 +524,7 @@ class InsuranceController extends AbstractController
         foreach ($policy->getVehicles() as $v) {
             $vehicles[] = [
                 'id' => $v->getId(),
-                'registration' => $v->getRegistration(),
+                'registrationNumber' => $v->getRegistration(),
             ];
         }
 
@@ -599,7 +605,7 @@ class InsuranceController extends AbstractController
         foreach ($policy->getVehicles() as $v) {
             $vehicles[] = [
                 'id' => $v->getId(),
-                'registration' => $v->getRegistration(),
+                'registrationNumber' => $v->getRegistration(),
             ];
         }
 

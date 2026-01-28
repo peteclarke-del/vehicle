@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Container,
   Typography,
@@ -23,17 +23,17 @@ import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/ico
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { useUserPreferences } from '../contexts/UserPreferencesContext';
-import { fetchArrayData } from '../hooks/useApiData';
+import { useVehicles } from '../contexts/VehiclesContext';
 import RoadTaxDialog from '../components/RoadTaxDialog';
 import VehicleSelector from '../components/VehicleSelector';
 
 const RoadTax = () => {
   const [records, setRecords] = useState([]);
-  const [vehicles, setVehicles] = useState([]);
   const [selectedVehicle, setSelectedVehicle] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState(null);
   const { api } = useAuth();
+  const { vehicles, fetchVehicles } = useVehicles();
   const { t } = useTranslation();
   const registrationLabelText = t('common.registrationNumber');
   const regWords = (registrationLabelText || '').split(/\s+/).filter(Boolean);
@@ -45,8 +45,18 @@ const RoadTax = () => {
   const [order, setOrder] = useState(() => localStorage.getItem('roadTaxSortOrder') || 'desc');
 
   useEffect(() => {
-    loadVehicles();
-  }, []);
+    fetchVehicles();
+  }, [fetchVehicles]);
+
+  const loadRecords = useCallback(async () => {
+    try {
+      const url = !selectedVehicle || selectedVehicle === '__all__' ? '/road-tax' : `/road-tax?vehicleId=${selectedVehicle}`;
+      const response = await api.get(url);
+      setRecords(response.data);
+    } catch (error) {
+      console.error('Error loading road tax records:', error);
+    }
+  }, [api, selectedVehicle]);
 
   useEffect(() => {
     if (!defaultVehicleId) return;
@@ -56,33 +66,23 @@ const RoadTax = () => {
     if (found && String(selectedVehicle) !== String(defaultVehicleId)) {
       setSelectedVehicle(defaultVehicleId);
     }
-  }, [defaultVehicleId, vehicles, hasManualSelection]);
+  }, [defaultVehicleId, vehicles, hasManualSelection, selectedVehicle]);
 
   useEffect(() => {
-    loadRecords();
-  }, [selectedVehicle]);
+    if (selectedVehicle) {
+      loadRecords();
+    }
+  }, [selectedVehicle, loadRecords]);
 
-  const loadVehicles = async () => {
-    const data = await fetchArrayData(api, '/vehicles');
-    setVehicles(data);
-    if (data.length > 0 && !selectedVehicle) {
-      if (defaultVehicleId && data.find((v) => String(v.id) === String(defaultVehicleId))) {
+  useEffect(() => {
+    if (vehicles.length > 0 && !selectedVehicle) {
+      if (defaultVehicleId && vehicles.find((v) => String(v.id) === String(defaultVehicleId))) {
         setSelectedVehicle(defaultVehicleId);
       } else {
-        setSelectedVehicle(data[0].id);
+        setSelectedVehicle(vehicles[0].id);
       }
     }
-  };
-
-  const loadRecords = async () => {
-    try {
-      const url = !selectedVehicle || selectedVehicle === '__all__' ? '/road-tax' : `/road-tax?vehicleId=${selectedVehicle}`;
-      const response = await api.get(url);
-      setRecords(response.data);
-    } catch (error) {
-      console.error('Error loading road tax records:', error);
-    }
-  };
+  }, [vehicles, selectedVehicle, defaultVehicleId]);
   
   
   const handleAdd = () => {
@@ -146,6 +146,14 @@ const RoadTax = () => {
         const bNum = parseFloat(bValue) || 0;
         if (aNum === bNum) return 0;
         return order === 'asc' ? (aNum - bNum) : (bNum - aNum);
+      }
+
+      // boolean compare for sorn
+      if (orderBy === 'sorn') {
+        const aBool = aValue ? 1 : 0;
+        const bBool = bValue ? 1 : 0;
+        if (aBool === bBool) return 0;
+        return order === 'asc' ? (aBool - bBool) : (bBool - aBool);
       }
 
       // fallback string compare
@@ -218,6 +226,15 @@ const RoadTax = () => {
                   {t('roadTax.expiryDate')}
                 </TableSortLabel>
               </TableCell>
+              <TableCell>
+                <TableSortLabel
+                  active={orderBy === 'sorn'}
+                  direction={orderBy === 'sorn' ? order : 'asc'}
+                  onClick={() => handleRequestSort('sorn')}
+                >
+                  {t('roadTax.sorn')}
+                </TableSortLabel>
+              </TableCell>
               <TableCell align="right">
                 <TableSortLabel
                   active={orderBy === 'amount'}
@@ -242,7 +259,7 @@ const RoadTax = () => {
           <TableBody>
             {sortedRecords.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} align="center">{t('common.noRecords')}</TableCell>
+                <TableCell colSpan={7} align="center">{t('common.noRecords')}</TableCell>
               </TableRow>
             ) : (
               sortedRecords.map(r => (
@@ -250,6 +267,7 @@ const RoadTax = () => {
                   <TableCell>{vehicles.find(v => String(v.id) === String(r.vehicleId))?.registrationNumber || '-'}</TableCell>
                   <TableCell>{r.startDate || '-'}</TableCell>
                   <TableCell>{r.expiryDate || '-'}</TableCell>
+                  <TableCell>{r.sorn ? 'Yes' : 'No'}</TableCell>
                   <TableCell align="right">{r.amount != null ? r.amount : '-'}</TableCell>
                   <TableCell>{r.notes || '-'}</TableCell>
                   <TableCell align="center">
@@ -263,7 +281,13 @@ const RoadTax = () => {
         </Table>
       </TableContainer>
 
-      <RoadTaxDialog open={dialogOpen} roadTaxRecord={editingRecord} vehicleId={selectedVehicle} onClose={handleDialogClose} />
+      <RoadTaxDialog 
+        open={dialogOpen} 
+        roadTaxRecord={editingRecord} 
+        vehicleId={selectedVehicle !== '__all__' ? selectedVehicle : null} 
+        vehicles={vehicles}
+        onClose={handleDialogClose} 
+      />
     </Container>
   );
 };

@@ -11,6 +11,9 @@ import {
   CircularProgress,
   Checkbox,
   FormControlLabel,
+  FormControl,
+  InputLabel,
+  Select,
 } from '@mui/material';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
@@ -26,8 +29,9 @@ import BuildIcon from '@mui/icons-material/Build';
 import OpacityIcon from '@mui/icons-material/Opacity';
 import MiscellaneousServicesIcon from '@mui/icons-material/MiscellaneousServices';
 
-const MotDialog = ({ open, motRecord, vehicleId, onClose }) => {
+const MotDialog = ({ open, motRecord, vehicleId, vehicles, onClose }) => {
   const [formData, setFormData] = useState({
+    vehicleId: vehicleId || '',
     testDate: new Date().toISOString().split('T')[0],
     result: 'Pass',
     testCost: '',
@@ -155,6 +159,7 @@ const MotDialog = ({ open, motRecord, vehicleId, onClose }) => {
     if (open) {
       if (motRecord) {
         setFormData({
+          vehicleId: motRecord.vehicleId || vehicleId || '',
           testDate: motRecord.testDate || '',
           result: motRecord.result || 'Pass',
           testCost: motRecord.testCost || '',
@@ -173,6 +178,7 @@ const MotDialog = ({ open, motRecord, vehicleId, onClose }) => {
         setReceiptAttachmentId(motRecord.receiptAttachmentId || null);
       } else {
         setFormData({
+          vehicleId: vehicleId || '',
           testDate: new Date().toISOString().split('T')[0],
           result: 'Pass',
           testCost: '',
@@ -227,7 +233,7 @@ const MotDialog = ({ open, motRecord, vehicleId, onClose }) => {
     try {
       const data = { 
         ...formData, 
-        vehicleId,
+        vehicleId: formData.vehicleId,
         mileage: formData.mileage ? Math.round(toKm(parseFloat(formData.mileage))) : null,
         receiptAttachmentId,
       };
@@ -253,6 +259,25 @@ const MotDialog = ({ open, motRecord, vehicleId, onClose }) => {
       <form onSubmit={handleSubmit}>
         <DialogContent>
           <Grid container spacing={2}>
+            {(!vehicleId || vehicleId === '__all__') && vehicles && vehicles.length > 0 && (
+              <Grid item xs={12}>
+                <FormControl fullWidth required>
+                  <InputLabel>{t('common.vehicle')}</InputLabel>
+                  <Select
+                    name="vehicleId"
+                    value={formData.vehicleId}
+                    onChange={handleChange}
+                    label={t('common.vehicle')}
+                  >
+                    {vehicles.map((v) => (
+                      <MenuItem key={v.id} value={v.id}>
+                        {v.registrationNumber} - {v.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+            )}
             <Grid item xs={12} sm={4}>
               <TextField
                 fullWidth

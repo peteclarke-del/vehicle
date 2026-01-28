@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import {
   Box,
   Typography,
@@ -51,9 +51,33 @@ const Reports = () => {
   const [viewerBlob, setViewerBlob] = useState(null);
   const [viewerPreview, setViewerPreview] = useState(null);
 
+  const fetchVehicles = useCallback(async () => {
+    try {
+      const resp = await api.get('/vehicles');
+      setVehicles(resp.data || []);
+      if ((resp.data || []).length > 0) setSelectedVehicle('__all__');
+    } catch (err) {
+      console.error('Failed to load vehicles', err);
+    }
+  }, [api]);
+
+  const loadReports = useCallback(async () => {
+    setLoading(true);
+    try {
+      const url = selectedVehicle && selectedVehicle !== '__all__' ? `/reports?vehicleId=${selectedVehicle}` : '/reports';
+      const resp = await api.get(url);
+      setReports(resp.data || []);
+    } catch (err) {
+      console.error('Failed to load reports', err);
+      setReports([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [api, selectedVehicle]);
+
   useEffect(() => {
     fetchVehicles();
-  }, []);
+  }, [fetchVehicles]);
 
   useEffect(() => {
     // Use build-time discovery via webpack's require.context (templates in frontend/src/reports)
@@ -105,7 +129,7 @@ const Reports = () => {
 
   useEffect(() => {
     loadReports();
-  }, [selectedVehicle]);
+  }, [selectedVehicle, loadReports]);
 
   const handleRequestSort = (property) => {
     const isAsc = orderBy === property && order === 'asc';
@@ -201,30 +225,6 @@ const Reports = () => {
     setViewerBlob(null);
     setViewerPreview(null);
     setViewerOpen(false);
-  };
-
-  const fetchVehicles = async () => {
-    try {
-      const resp = await api.get('/vehicles');
-      setVehicles(resp.data || []);
-      if ((resp.data || []).length > 0) setSelectedVehicle('__all__');
-    } catch (err) {
-      console.error('Failed to load vehicles', err);
-    }
-  };
-
-  const loadReports = async () => {
-    setLoading(true);
-    try {
-      const url = selectedVehicle && selectedVehicle !== '__all__' ? `/reports?vehicleId=${selectedVehicle}` : '/reports';
-      const resp = await api.get(url);
-      setReports(resp.data || []);
-    } catch (err) {
-      console.error('Failed to load reports', err);
-      setReports([]);
-    } finally {
-      setLoading(false);
-    }
   };
 
   const handleGenerate = async () => {

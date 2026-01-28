@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Box, Button, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, IconButton, CircularProgress, Chip, Tooltip, TableSortLabel } from '@mui/material';
 import { Add, Edit, Delete } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
@@ -32,19 +32,7 @@ const Parts = () => {
   const [hasManualSelection, setHasManualSelection] = useState(false);
   const { convert, format, getLabel } = useDistance();
 
-  useEffect(() => {
-    loadVehicles();
-  }, []);
-
-  useEffect(() => {
-    if (selectedVehicle) {
-      loadParts();
-    } else {
-      setParts([]);
-    }
-  }, [selectedVehicle]);
-
-  const loadVehicles = async () => {
+  const loadVehicles = useCallback(async () => {
     const data = await fetchArrayData(api, '/vehicles');
     setVehicles(data);
     if (data.length > 0 && !selectedVehicle) {
@@ -55,19 +43,9 @@ const Parts = () => {
       }
     }
     setLoading(false);
-  };
+  }, [api, selectedVehicle, defaultVehicleId]);
 
-  useEffect(() => {
-    if (!defaultVehicleId) return;
-    if (hasManualSelection) return;
-    if (!vehicles || vehicles.length === 0) return;
-    const found = vehicles.find((v) => String(v.id) === String(defaultVehicleId));
-    if (found && String(selectedVehicle) !== String(defaultVehicleId)) {
-      setSelectedVehicle(defaultVehicleId);
-    }
-  }, [defaultVehicleId, vehicles, hasManualSelection]);
-
-  const loadParts = async () => {
+  const loadParts = useCallback(async () => {
     try {
       let response;
       if (!selectedVehicle || selectedVehicle === '__all__') {
@@ -79,7 +57,29 @@ const Parts = () => {
     } catch (error) {
       console.error('Error loading parts:', error);
     }
-  };
+  }, [api, selectedVehicle]);
+
+  useEffect(() => {
+    loadVehicles();
+  }, [loadVehicles]);
+
+  useEffect(() => {
+    if (selectedVehicle) {
+      loadParts();
+    } else {
+      setParts([]);
+    }
+  }, [selectedVehicle, loadParts]);
+
+  useEffect(() => {
+    if (!defaultVehicleId) return;
+    if (hasManualSelection) return;
+    if (!vehicles || vehicles.length === 0) return;
+    const found = vehicles.find((v) => String(v.id) === String(defaultVehicleId));
+    if (found && String(selectedVehicle) !== String(defaultVehicleId)) {
+      setSelectedVehicle(defaultVehicleId);
+    }
+  }, [defaultVehicleId, vehicles, hasManualSelection]);
 
   const handleAdd = () => {
     setSelectedPart(null);
