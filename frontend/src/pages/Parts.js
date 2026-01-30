@@ -294,7 +294,7 @@ const Parts = () => {
                   {t('common.installationDate')}
                 </TableSortLabel>
               </TableCell>
-              <TableCell>{t('mot.title') || 'MOT'}</TableCell>
+              <TableCell>{t('common.linkedRecords') || 'Linked Records'}</TableCell>
               <TableCell>{t('common.actions')}</TableCell>
             </TableRow>
           </TableHead>
