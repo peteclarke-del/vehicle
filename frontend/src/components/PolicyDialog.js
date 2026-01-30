@@ -11,7 +11,6 @@ import {
   Select,
   FormControl,
   InputLabel,
-  CircularProgress,
   Autocomplete,
   Chip,
   Checkbox,
@@ -21,6 +20,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import ReceiptUpload from './ReceiptUpload';
 import AttachmentUpload from './AttachmentUpload';
+import KnightRiderLoader from './KnightRiderLoader';
 
 const PolicyDialog = ({ open, policy, vehicles, selectedVehicleId, existingPolicies, onClose }) => {
   const [formData, setFormData] = useState({
@@ -251,7 +251,7 @@ const PolicyDialog = ({ open, policy, vehicles, selectedVehicleId, existingPolic
         <DialogActions>
           <Button onClick={() => onClose(false)}>{t('common.cancel')}</Button>
           <Button type="submit" variant="contained" color="primary" disabled={loading}>
-            {loading ? <CircularProgress size={24} /> : t('common.save')}
+            {loading ? <KnightRiderLoader size={18} /> : t('common.save')}
           </Button>
         </DialogActions>
       </form>

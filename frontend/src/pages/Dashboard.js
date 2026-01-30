@@ -14,7 +14,6 @@ import {
   InputLabel,
   Paper,
   IconButton,
-  CircularProgress,
   Tabs,
   Tab,
   Menu,
@@ -30,6 +29,7 @@ import { useDistance } from '../hooks/useDistance';
 import { formatDateISO } from '../utils/formatDate';
 import VehicleDialog from '../components/VehicleDialog';
 import StatusChangeDialog from '../components/StatusChangeDialog';
+import KnightRiderLoader from '../components/KnightRiderLoader';
 import {
   Add as AddIcon,
   DirectionsCar,
@@ -174,7 +174,7 @@ const Dashboard = () => {
               <Box sx={{ position: 'absolute', top: 8, right: 8 }}>{topRightIcon}</Box>
             )}
             {loading ? (
-              <CircularProgress size={32} sx={{ color: 'primary.main' }} />
+              <KnightRiderLoader size={28} />
             ) : children ? (
               children
             ) : (
@@ -203,7 +203,7 @@ const Dashboard = () => {
         {children ? (
           <Box sx={{ fontSize: valueSize }}>{children}</Box>
         ) : (
-          <Typography variant="h4" color="primary" sx={{ fontSize: valueSize }}>{loading ? <CircularProgress size={24} /> : value}</Typography>
+          <Typography variant="h4" color="primary" sx={{ fontSize: valueSize }}>{loading ? <KnightRiderLoader size={18} /> : value}</Typography>
         )}
         {subtitle ? <Typography variant="body2" color="text.secondary" sx={{ fontSize: subtitleSize }}>{subtitle}</Typography> : null}
       </Paper>
@@ -599,7 +599,7 @@ const Dashboard = () => {
     });
   };
 
-  if (loading) {
+  if (loading && (!vehicles || vehicles.length === 0)) {
     return (
       <Container>
         <Typography>{t('common.loading')}</Typography>

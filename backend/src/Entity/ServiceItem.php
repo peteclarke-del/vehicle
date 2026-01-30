@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
+use App\Entity\Part;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'service_items')]
@@ -22,6 +23,10 @@ class ServiceItem
     #[ORM\ManyToOne(targetEntity: Consumable::class)]
     #[ORM\JoinColumn(name: 'consumable_id', referencedColumnName: 'id', nullable: true, onDelete: 'SET NULL')]
     private ?Consumable $consumable = null;
+
+    #[ORM\ManyToOne(targetEntity: Part::class)]
+    #[ORM\JoinColumn(name: 'part_id', referencedColumnName: 'id', nullable: true, onDelete: 'SET NULL')]
+    private ?Part $part = null;
 
     #[ORM\Column(type: 'string', length: 20)]
     private string $type = 'part'; // 'part' or 'labour' or 'consumable'
@@ -108,6 +113,17 @@ class ServiceItem
     public function setConsumable(?Consumable $consumable): self
     {
         $this->consumable = $consumable;
+        return $this;
+    }
+
+    public function getPart(): ?Part
+    {
+        return $this->part;
+    }
+
+    public function setPart(?Part $part): self
+    {
+        $this->part = $part;
         return $this;
     }
 }

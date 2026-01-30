@@ -16,7 +16,6 @@ import {
   Paper,
   IconButton,
   Tooltip,
-  CircularProgress,
   TableSortLabel,
   Dialog,
   DialogTitle,
@@ -28,6 +27,9 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import VehicleSelector from '../components/VehicleSelector';
 import { saveBlob } from '../components/DownloadHelpers';
+import KnightRiderLoader from '../components/KnightRiderLoader';
+import useTablePagination from '../hooks/useTablePagination';
+import TablePaginationBar from '../components/TablePaginationBar';
 
 const Reports = () => {
   const { api } = useAuth();
@@ -157,6 +159,10 @@ const Reports = () => {
     };
     return [...(reports || [])].sort(comparator);
   }, [reports, order, orderBy]);
+
+  const { page: reportsPage, rowsPerPage: reportsRowsPerPage, paginatedRows: paginatedReports, handleChangePage: handleReportsPageChange, handleChangeRowsPerPage: handleReportsRowsPerPageChange } = useTablePagination(sortedReports);
+  const previewRows = useMemo(() => viewerPreview?.rows || [], [viewerPreview]);
+  const { page: previewPage, rowsPerPage: previewRowsPerPage, paginatedRows: paginatedPreviewRows, handleChangePage: handlePreviewPageChange, handleChangeRowsPerPage: handlePreviewRowsPerPageChange } = useTablePagination(previewRows);
 
   // viewer: fetch blob and show
   const handleView = async (report) => {
@@ -306,12 +312,19 @@ const Reports = () => {
           </FormControl>
 
           <VehicleSelector vehicles={vehicles} value={selectedVehicle} onChange={setSelectedVehicle} includeViewAll={true} />
-          <Button variant="contained" onClick={handleGenerate} disabled={generating || !selectedTemplateKey} startIcon={generating ? <CircularProgress size={16} /> : null}>
+          <Button variant="contained" onClick={handleGenerate} disabled={generating || !selectedTemplateKey} startIcon={generating ? <KnightRiderLoader size={12} /> : null}>
             {t('reports.generate') || 'Generate Report'}
           </Button>
         </Box>
       </Box>
 
+      <TablePaginationBar
+        count={sortedReports.length}
+        page={reportsPage}
+        rowsPerPage={reportsRowsPerPage}
+        onPageChange={handleReportsPageChange}
+        onRowsPerPageChange={handleReportsRowsPerPageChange}
+      />
       <TableContainer component={Paper} sx={{ maxHeight: 'calc(100vh - 220px)', overflow: 'auto' }}>
         <Table stickyHeader>
           <TableHead>
@@ -350,14 +363,14 @@ const Reports = () => {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={5} align="center"><CircularProgress /></TableCell>
+                <TableCell colSpan={5} align="center"><KnightRiderLoader size={24} /></TableCell>
               </TableRow>
             ) : sortedReports.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} align="center">{t('common.noRecords')}</TableCell>
               </TableRow>
             ) : (
-              sortedReports.map((r) => (
+              paginatedReports.map((r) => (
                 <TableRow key={r.id} sx={{ '&:nth-of-type(odd)': { backgroundColor: 'action.hover' } }}>
                   <TableCell>
                     <Button variant="text" onClick={() => handleView(r)}>{r.name || r.type}</Button>
@@ -379,6 +392,13 @@ const Reports = () => {
           </TableBody>
         </Table>
       </TableContainer>
+      <TablePaginationBar
+        count={sortedReports.length}
+        page={reportsPage}
+        rowsPerPage={reportsRowsPerPage}
+        onPageChange={handleReportsPageChange}
+        onRowsPerPageChange={handleReportsRowsPerPageChange}
+      />
 
       <Dialog open={viewerOpen} onClose={closeViewer} maxWidth="lg" fullWidth>
         <DialogTitle>{viewerFileName || t('reports.name')}</DialogTitle>
@@ -386,24 +406,40 @@ const Reports = () => {
           {viewerUrl && viewerMime && viewerMime.indexOf('pdf') !== -1 ? (
             <iframe title="report-preview" src={viewerUrl} style={{ width: '100%', height: '80vh', border: 'none' }} />
           ) : viewerPreview ? (
-            <TableContainer component={Paper} sx={{ maxHeight: '60vh' }}>
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    {(viewerPreview.columns || []).map((c, i) => (
-                      <TableCell key={i}>{c}</TableCell>
-                    ))}
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {((viewerPreview.rows || []).slice(0, 200)).map((r, ri) => (
-                    <TableRow key={ri} sx={{ '&:nth-of-type(odd)': { backgroundColor: 'action.hover' } }}>
-                      {(r || []).map((cell, ci) => <TableCell key={ci}>{String(cell ?? '')}</TableCell>)}
+            <Box>
+              <TablePaginationBar
+                count={previewRows.length}
+                page={previewPage}
+                rowsPerPage={previewRowsPerPage}
+                onPageChange={handlePreviewPageChange}
+                onRowsPerPageChange={handlePreviewRowsPerPageChange}
+              />
+              <TableContainer component={Paper} sx={{ maxHeight: '60vh' }}>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      {(viewerPreview.columns || []).map((c, i) => (
+                        <TableCell key={i}>{c}</TableCell>
+                      ))}
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
+                  </TableHead>
+                  <TableBody>
+                    {paginatedPreviewRows.map((r, ri) => (
+                      <TableRow key={ri} sx={{ '&:nth-of-type(odd)': { backgroundColor: 'action.hover' } }}>
+                        {(r || []).map((cell, ci) => <TableCell key={ci}>{String(cell ?? '')}</TableCell>)}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+              <TablePaginationBar
+                count={previewRows.length}
+                page={previewPage}
+                rowsPerPage={previewRowsPerPage}
+                onPageChange={handlePreviewPageChange}
+                onRowsPerPageChange={handlePreviewRowsPerPageChange}
+              />
+            </Box>
           ) : viewerUrl ? (
             <Box>
               <Typography>{t('reports.previewUnavailable') || 'Preview not available for this file type.'}</Typography>

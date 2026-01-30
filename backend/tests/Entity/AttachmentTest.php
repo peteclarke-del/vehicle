@@ -6,7 +6,6 @@ namespace App\Tests\Entity;
 
 use App\Entity\Attachment;
 use App\Entity\Vehicle;
-use App\Entity\ServiceRecord;
 use App\Entity\User;
 use PHPUnit\Framework\TestCase;
 
@@ -71,15 +70,6 @@ class AttachmentTest extends TestCase
         $this->assertSame($vehicle, $this->attachment->getVehicle());
     }
 
-    public function testGetSetServiceRecord(): void
-    {
-        $serviceRecord = new ServiceRecord();
-        $serviceRecord->setDescription('Oil change');
-
-        $this->attachment->setServiceRecord($serviceRecord);
-
-        $this->assertSame($serviceRecord, $this->attachment->getServiceRecord());
-    }
 
     public function testGetSetUploadedBy(): void
     {
@@ -128,14 +118,6 @@ class AttachmentTest extends TestCase
         $this->assertSame('500 bytes', $this->attachment->getFileSizeFormatted());
     }
 
-    public function testGetThumbnailPath(): void
-    {
-        $this->attachment->setStoragePath('/var/uploads/attachments/2024/03/photo.jpg');
-        
-        $thumbPath = $this->attachment->getThumbnailPath();
-
-        $this->assertStringContainsString('_thumb', $thumbPath);
-    }
 
     public function testGetSetDescription(): void
     {

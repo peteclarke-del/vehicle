@@ -6,7 +6,6 @@ import {
   CardContent,
   Grid,
   Typography,
-  CircularProgress,
   IconButton,
   ToggleButtonGroup,
   ToggleButton,
@@ -49,8 +48,11 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { fetchArrayData } from '../hooks/useApiData';
 import { useDistance } from '../hooks/useDistance';
+import useTablePagination from '../hooks/useTablePagination';
 import VehicleDialog from '../components/VehicleDialog';
 import VehicleSpecifications from '../components/VehicleSpecifications';
+import KnightRiderLoader from '../components/KnightRiderLoader';
+import TablePaginationBar from '../components/TablePaginationBar';
 
 const Vehicles = () => {
   const [vehicles, setVehicles] = useState([]);
@@ -167,6 +169,8 @@ const Vehicles = () => {
     return sortedVehicles.filter(v => statusFilter === 'all' || (v.status || 'Live') === statusFilter);
   }, [sortedVehicles, statusFilter]);
 
+  const { page, rowsPerPage, paginatedRows: paginatedVehicles, handleChangePage, handleChangeRowsPerPage } = useTablePagination(displayedVehicles);
+
   const handleAdd = () => {
     setSelectedVehicle(null);
     setDialogOpen(true);
@@ -212,7 +216,7 @@ const Vehicles = () => {
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
-        <CircularProgress />
+        <KnightRiderLoader size={32} />
       </Box>
     );
   }
@@ -405,7 +409,15 @@ const Vehicles = () => {
           ))}
         </Grid>
       ) : (
-            <TableContainer component={Paper} sx={{ maxHeight: 'calc(100vh - 180px)', overflow: 'auto' }}>
+            <>
+              <TablePaginationBar
+                count={displayedVehicles.length}
+                page={page}
+                rowsPerPage={rowsPerPage}
+                onPageChange={handleChangePage}
+                onRowsPerPageChange={handleChangeRowsPerPage}
+              />
+              <TableContainer component={Paper} sx={{ maxHeight: 'calc(100vh - 180px)', overflow: 'auto' }}>
               <Table stickyHeader>
                 <TableHead>
               <TableRow>
@@ -503,7 +515,7 @@ const Vehicles = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {displayedVehicles.map((vehicle, index) => (
+              {paginatedVehicles.map((vehicle, index) => (
                 <TableRow 
                   key={vehicle.id}
                   hover
@@ -557,6 +569,14 @@ const Vehicles = () => {
             </TableBody>
           </Table>
         </TableContainer>
+        <TablePaginationBar
+          count={displayedVehicles.length}
+          page={page}
+          rowsPerPage={rowsPerPage}
+          onPageChange={handleChangePage}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+        />
+      </>
       )}
 
       <VehicleDialog

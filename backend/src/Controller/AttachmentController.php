@@ -16,11 +16,15 @@ use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\String\Slugger\SluggerInterface;
 use App\Service\ReceiptOcrService;
+use App\Entity\Vehicle;
 
 #[Route('/api/attachments')]
+
+/**
+ * class AttachmentController
+ */
 class AttachmentController extends AbstractController
 {
-    private const MAX_FILE_SIZE = 52428800; // 50MB
     private const ALLOWED_MIME_TYPES = [
         'image/jpeg',
         'image/png',
@@ -33,18 +37,49 @@ class AttachmentController extends AbstractController
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     ];
 
+    /**
+     * function __construct
+     *
+     * @param EntityManagerInterface $entityManager
+     * @param SluggerInterface $slugger
+     * @param ReceiptOcrService $ocrService
+     *
+     * @return void
+     */
     public function __construct(
         private EntityManagerInterface $entityManager,
         private SluggerInterface $slugger,
-        private ReceiptOcrService $ocrService
+        private ReceiptOcrService $ocrService,
+        private int $uploadMaxBytes
     ) {
     }
 
+    /**
+     * function getUploadDir
+     *
+     * @return string
+     */
     private function getUploadDir(): string
     {
         return $this->getParameter('kernel.project_dir') . '/uploads/attachments';
     }
 
+    private function getAttachmentFilePath(Attachment $attachment): string
+    {
+        $uploadsRoot = $this->getParameter('kernel.project_dir') . '/uploads';
+        $storagePath = $attachment->getStoragePath();
+        if ($storagePath) {
+            return $uploadsRoot . '/' . ltrim($storagePath, '/');
+        }
+
+        return $this->getUploadDir() . '/' . $attachment->getFilename();
+    }
+
+    /**
+     * function getUserEntity
+     *
+     * @return \App\Entity\User
+     */
     private function getUserEntity(): ?\App\Entity\User
     {
         $user = $this->getUser();
@@ -52,12 +87,25 @@ class AttachmentController extends AbstractController
     }
 
     #[Route('', methods: ['POST'])]
+
+    /**
+     * function upload
+     *
+     * @param Request $request
+     *
+     * @return JsonResponse
+     */
     public function upload(Request $request): JsonResponse
     {
         $user = $this->getUserEntity();
         if (!$user) {
             return $this->json(['error' => 'Unauthorized'], 401);
         }
+
+        $entityType = $request->request->get('entityType');
+        $entityId = $request->request->get('entityId');
+        $description = $request->request->get('description');
+        $category = $request->request->get('category');
 
         /** @var UploadedFile $file */
         $file = $request->files->get('file');
@@ -66,11 +114,14 @@ class AttachmentController extends AbstractController
         }
 
         // Log upload attempt
-        error_log('Upload attempt - File: ' . $file->getClientOriginalName() . ', Size: ' . $file->getSize());
+        $fileSize = $file->getSize();
+        error_log('Upload attempt - File: ' . $file->getClientOriginalName() . ', Size: ' . $fileSize);
 
         // Validate file size
-        if ($file->getSize() > self::MAX_FILE_SIZE) {
-            return $this->json(['error' => 'File too large (max 50MB)'], 400);
+        $contentLength = (int) $request->server->get('CONTENT_LENGTH', 0);
+        if ($contentLength > $this->uploadMaxBytes) {
+            $maxMb = (int) ceil($this->uploadMaxBytes / (1024 * 1024));
+            return $this->json(['error' => 'File too large (max ' . $maxMb . 'MB)'], 413);
         }
 
         // Validate MIME type
@@ -84,6 +135,17 @@ class AttachmentController extends AbstractController
         $newFilename = $safeFilename . '-' . uniqid() . '.' . $file->guessExtension();
 
         $uploadDir = $this->getUploadDir();
+        $storageSubDir = 'misc';
+        $vehicle = null;
+        if ($entityType === 'vehicle' && $entityId) {
+            $vehicle = $this->entityManager->getRepository(Vehicle::class)->find((int) $entityId);
+            $reg = $vehicle?->getRegistrationNumber() ?: $vehicle?->getName() ?: ('vehicle-' . $entityId);
+            $storageSubDir = strtolower((string) $this->slugger->slug($reg));
+        } elseif ($entityType && $entityId) {
+            $storageSubDir = strtolower((string) $this->slugger->slug($entityType . '-' . $entityId));
+        }
+
+        $uploadDir = $uploadDir . '/' . $storageSubDir;
         error_log('Upload directory: ' . $uploadDir);
         error_log('Directory exists: ' . (is_dir($uploadDir) ? 'yes' : 'no'));
         error_log('Directory writable: ' . (is_writable(dirname($uploadDir)) ? 'yes' : 'no'));
@@ -104,17 +166,18 @@ class AttachmentController extends AbstractController
             return $this->json(['error' => 'Failed to upload file: ' . $e->getMessage()], 500);
         }
 
+        $storagePath = 'attachments/' . $storageSubDir . '/' . $newFilename;
+
         $attachment = new Attachment();
         $attachment->setFilename($newFilename);
         $attachment->setOriginalName($file->getClientOriginalName());
         $attachment->setMimeType($mimeType);
-        $attachment->setFileSize($file->getSize());
+        $attachment->setFileSize($fileSize ?? (int) @filesize($uploadDir . '/' . $newFilename));
         $attachment->setUser($user);
-        
-        $entityType = $request->request->get('entityType');
-        $entityId = $request->request->get('entityId');
-        $description = $request->request->get('description');
-        $category = $request->request->get('category');
+        $attachment->setStoragePath($storagePath);
+        if ($vehicle) {
+            $attachment->setVehicle($vehicle);
+        }
         
         if ($entityType) {
             $attachment->setEntityType($entityType);
@@ -136,6 +199,15 @@ class AttachmentController extends AbstractController
     }
 
     #[Route('/{id}/ocr', methods: ['GET'])]
+
+    /**
+     * function processOcr
+     *
+     * @param int $id
+     * @param Request $request
+     *
+     * @return JsonResponse
+     */
     public function processOcr(int $id, Request $request): JsonResponse
     {
         $user = $this->getUserEntity();
@@ -148,7 +220,7 @@ class AttachmentController extends AbstractController
             return $this->json(['error' => 'Attachment not found'], 404);
         }
 
-        $filePath = $this->getUploadDir() . '/' . $attachment->getFilename();
+        $filePath = $this->getAttachmentFilePath($attachment);
         if (!file_exists($filePath)) {
             return $this->json(['error' => 'File not found'], 404);
         }
@@ -172,6 +244,14 @@ class AttachmentController extends AbstractController
     }
 
     #[Route('', methods: ['GET'])]
+
+    /**
+     * function list
+     *
+     * @param Request $request
+     *
+     * @return JsonResponse
+     */
     public function list(Request $request): JsonResponse
     {
         $user = $this->getUserEntity();
@@ -211,6 +291,14 @@ class AttachmentController extends AbstractController
     }
 
     #[Route('/{id}', methods: ['GET'])]
+
+    /**
+     * function download
+     *
+     * @param int $id
+     *
+     * @return BinaryFileResponse|JsonResponse
+     */
     public function download(int $id): BinaryFileResponse|JsonResponse
     {
         $user = $this->getUserEntity();
@@ -223,7 +311,7 @@ class AttachmentController extends AbstractController
             return $this->json(['error' => 'Attachment not found'], 404);
         }
 
-        $filePath = $this->getUploadDir() . '/' . $attachment->getFilename();
+        $filePath = $this->getAttachmentFilePath($attachment);
         if (!file_exists($filePath)) {
             return $this->json(['error' => 'File not found'], 404);
         }
@@ -238,6 +326,14 @@ class AttachmentController extends AbstractController
     }
 
     #[Route('/{id}', methods: ['DELETE'])]
+
+    /**
+     * function delete
+     *
+     * @param int $id
+     *
+     * @return JsonResponse
+     */
     public function delete(int $id): JsonResponse
     {
         $user = $this->getUserEntity();
@@ -250,7 +346,7 @@ class AttachmentController extends AbstractController
             return $this->json(['error' => 'Attachment not found'], 404);
         }
 
-        $filePath = $this->getUploadDir() . '/' . $attachment->getFilename();
+        $filePath = $this->getAttachmentFilePath($attachment);
         if (file_exists($filePath)) {
             unlink($filePath);
         }
@@ -262,6 +358,15 @@ class AttachmentController extends AbstractController
     }
 
     #[Route('/{id}', methods: ['PUT'])]
+
+    /**
+     * function update
+     *
+     * @param int $id
+     * @param Request $request
+     *
+     * @return JsonResponse
+     */
     public function update(int $id, Request $request): JsonResponse
     {
         $user = $this->getUserEntity();
@@ -282,10 +387,10 @@ class AttachmentController extends AbstractController
 
         if (isset($data['entityType'])) {
             $attachment->setEntityType($data['entityType']);
-        if (isset($data['category'])) {
-            $attachment->setCategory($data['category']);
         }
 
+        if (isset($data['category'])) {
+            $attachment->setCategory($data['category']);
         }
 
         if (isset($data['entityId'])) {
@@ -297,6 +402,13 @@ class AttachmentController extends AbstractController
         return $this->json($this->serializeAttachment($attachment));
     }
 
+    /**
+     * function serializeAttachment
+     *
+     * @param Attachment $attachment
+     *
+     * @return array
+     */
     private function serializeAttachment(Attachment $attachment): array
     {
         return [
@@ -311,6 +423,7 @@ class AttachmentController extends AbstractController
             'entityId' => $attachment->getEntityId(),
             'description' => $attachment->getDescription(),
             'category' => $attachment->getCategory(),
+            'storagePath' => $attachment->getStoragePath(),
             'downloadUrl' => '/api/attachments/' . $attachment->getId(),
             'isImage' => $attachment->isImage(),
             'isPdf' => $attachment->isPdf(),

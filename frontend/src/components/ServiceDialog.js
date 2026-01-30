@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -8,7 +8,6 @@ import {
   TextField,
   Grid,
   MenuItem,
-  CircularProgress,
   IconButton,
   Tooltip,
   Typography,
@@ -23,6 +22,7 @@ import { useDistance } from '../hooks/useDistance';
 import ReceiptUpload from './ReceiptUpload';
 import PartDialog from './PartDialog';
 import ConsumableDialog from './ConsumableDialog';
+import KnightRiderLoader from './KnightRiderLoader';
 
 const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose }) => {
   const [formData, setFormData] = useState({
@@ -207,23 +207,26 @@ const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose }) => {
   const handleConfirmAction = async (action) => {
     if (!confirmTarget) return;
     try {
-      const { type, id, index } = confirmTarget;
-      if (action === 'delete') {
-        if (id) {
-          if (type === 'consumable') await api.delete(`/consumables/${id}`);
-          else if (type === 'part') await api.delete(`/parts/${id}`);
-          else if (type === 'service') await api.delete(`/service-records/${id}`);
-        }
-      } else if (action === 'disassociate') {
-        if (id) {
-          let url;
-          if (type === 'consumable') url = `/consumables/${id}`;
-          else if (type === 'part') url = `/parts/${id}`;
-          else if (type === 'service') url = `/service-records/${id}`;
-          if (url) await api.put(url, { serviceRecordId: 0 });
+      const { serviceItemId, consumableId, partId, index } = confirmTarget;
+
+      // If there is a ServiceItem id, prefer operating on that
+      if (serviceItemId) {
+        // action === 'delete' -> remove linked entity too
+        // action === 'disassociate' -> keep linked entity but remove association
+        const removeLinked = action === 'delete' ? 1 : 0;
+        await api.delete(`/service-items/${serviceItemId}?removeLinked=${removeLinked}`);
+      } else {
+        // No ServiceItem row: fall back to operating on linked entity directly
+        if (action === 'delete') {
+          if (consumableId) await api.delete(`/consumables/${consumableId}`);
+          else if (partId) await api.delete(`/parts/${partId}`);
+        } else if (action === 'disassociate') {
+          if (consumableId) await api.put(`/consumables/${consumableId}`, { serviceRecordId: 0 });
+          else if (partId) await api.put(`/parts/${partId}`, { serviceRecordId: 0 });
         }
       }
-      // remove from local items
+
+      // remove from local items list in UI
       const items = [...(formData.items || [])];
       if (typeof index === 'number') items.splice(index, 1);
       setFormData({ ...formData, items });
@@ -270,6 +273,17 @@ const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose }) => {
     });
   }, [formData.items]);
 
+  const consumablesTotal = useMemo(() => {
+    const items = formData.items || [];
+    const total = items
+      .filter((i) => i.type === 'consumable')
+      .reduce(
+        (sum, i) => sum + (parseFloat(i.cost || 0) * (parseFloat(i.quantity || 1) || 1)),
+        0
+      );
+    return total.toFixed(2);
+  }, [formData.items]);
+
   const handleReceiptUploaded = (attachmentId, ocrData) => {
     setReceiptAttachmentId(attachmentId);
     const updates = {};
@@ -298,6 +312,7 @@ const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose }) => {
         cost: it.cost,
         quantity: it.quantity || 1,
         consumableId: it.consumableId || null,
+        partId: it.type === 'part' ? (it.partId || it.id || null) : null,
       }));
       if (items.length > 0) {
         laborTotal = items.filter(i => i.type === 'labour').reduce((s, i) => s + (parseFloat(i.cost || 0) * (parseInt(i.quantity || 1))), 0);
@@ -368,21 +383,11 @@ const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose }) => {
                 <MenuItem value="Interim Service">{t('service.interimService')}</MenuItem>
                 <MenuItem value="Oil Change">{t('service.oilChange')}</MenuItem>
                 <MenuItem value="Brake Service">{t('service.brakeService')}</MenuItem>
+                <MenuItem value="Tyres">{t('service.tyres') || 'Tyres'}</MenuItem>
                 <MenuItem value="Other">{t('service.other')}</MenuItem>
               </TextField>
             </Grid>
-            <Grid item xs={12} sm={4}>
-              <TextField
-                fullWidth
-                type="number"
-                name="laborCost"
-                label={t('service.laborCost')}
-                value={formData.laborCost}
-                onChange={handleChange}
-                inputProps={{ step: '0.01', min: '0', readOnly: true }}
-              />
-            </Grid>
-            <Grid item xs={12} sm={4}>
+            <Grid item xs={12} sm={3}>
               <TextField
                 fullWidth
                 type="number"
@@ -393,7 +398,28 @@ const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose }) => {
                 inputProps={{ step: '0.01', min: '0', readOnly: true }}
               />
             </Grid>
-            <Grid item xs={12} sm={4}>
+            <Grid item xs={12} sm={3}>
+              <TextField
+                fullWidth
+                type="number"
+                name="consumablesCost"
+                label={t('service.consumablesCost')}
+                value={consumablesTotal}
+                inputProps={{ step: '0.01', min: '0', readOnly: true }}
+              />
+            </Grid>
+            <Grid item xs={12} sm={3}>
+              <TextField
+                fullWidth
+                type="number"
+                name="laborCost"
+                label={t('service.laborCost')}
+                value={formData.laborCost}
+                onChange={handleChange}
+                inputProps={{ step: '0.01', min: '0', readOnly: true }}
+              />
+            </Grid>
+            <Grid item xs={12} sm={3}>
               <TextField
                 fullWidth
                 type="number"
@@ -469,8 +495,21 @@ const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose }) => {
                       <span>{`— ${it.quantity || 1} × ${parseFloat(it.cost || 0).toFixed(2)}`}</span>
                     </div>
                     <div>
-                      <Tooltip title={t('common.delete')}> 
-                        <IconButton size="small" onClick={() => { setConfirmTarget({ type: it.type, id: it.consumableId || it.id, name: it.description || it.name || '', index: idx }); setConfirmOpen(true); }}>
+                      <Tooltip title={t('common.delete')}>
+                        <IconButton
+                          size="small"
+                          onClick={() => {
+                            setConfirmTarget({
+                              type: it.type,
+                              serviceItemId: it.id ?? null,
+                              consumableId: it.consumableId ?? null,
+                              partId: it.partId ?? null,
+                              name: it.description || it.name || '',
+                              index: idx,
+                            });
+                            setConfirmOpen(true);
+                          }}
+                        >
                           <DeleteIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
@@ -570,7 +609,7 @@ const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose }) => {
         <DialogActions>
           <Button onClick={() => onClose(false)}>{t('common.cancel')}</Button>
           <Button type="submit" variant="contained" color="primary" disabled={loading}>
-            {loading ? <CircularProgress size={24} /> : t('common.save')}
+            {loading ? <KnightRiderLoader size={18} /> : t('common.save')}
           </Button>
         </DialogActions>
       </form>
@@ -619,6 +658,18 @@ const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose }) => {
         consumable={selectedConsumable || (editingItemIndex !== null ? (formData.items || [])[editingItemIndex] : null)}
         vehicleId={vehicleId}
       />
+
+      <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)}>
+        <DialogTitle>{t('service.confirmRemoveTitle') || t('mot.confirmRemoveTitle')}</DialogTitle>
+        <DialogContent>
+          <div>{(t('service.confirmRemoveMessage') || t('mot.confirmRemoveMessage')).replace('{{name}}', confirmTarget?.name || '')}</div>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => { setConfirmOpen(false); setConfirmTarget(null); }}>{t('common.cancel')}</Button>
+          <Button color="primary" onClick={() => handleConfirmAction('disassociate')}>{t('service.disassociate') || t('mot.disassociate')}</Button>
+          <Button color="error" onClick={() => handleConfirmAction('delete')}>{t('common.delete')}</Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Labour editor dialog */}
       <Dialog open={labourEditorIndex !== null} onClose={() => setLabourEditorIndex(null)} maxWidth="sm" fullWidth>

@@ -8,7 +8,6 @@ import {
   TextField,
   Grid,
   MenuItem,
-  CircularProgress,
   IconButton,
   Tooltip,
   Checkbox,
@@ -21,6 +20,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { fetchArrayData } from '../hooks/useApiData';
 import { useDistance } from '../hooks/useDistance';
+import KnightRiderLoader from './KnightRiderLoader';
 
 const VehicleDialog = ({ open, vehicle, onClose }) => {
   const { convert, toKm, getLabel } = useDistance();
@@ -648,7 +648,7 @@ const VehicleDialog = ({ open, vehicle, onClose }) => {
                 InputProps={{
                   endAdornment: (
                     <>
-                      {lookingUpReg ? <CircularProgress size={20} /> : null}
+                      {lookingUpReg ? <KnightRiderLoader size={16} /> : null}
                       <Tooltip title={t('vehicle.fetchVin')}>
                         <IconButton size="small" onClick={() => lookupByVin(formData.vin)} aria-label="fetch-vin">
                           <SearchIcon fontSize="small" />
@@ -671,7 +671,7 @@ const VehicleDialog = ({ open, vehicle, onClose }) => {
                 InputProps={{
                   endAdornment: (
                     <>
-                      {lookingUpReg ? <CircularProgress size={20} /> : null}
+                      {lookingUpReg ? <KnightRiderLoader size={16} /> : null}
                       <Tooltip title={t('vehicle.fetchRegistration')}>
                         <IconButton size="small" onClick={() => lookupRegistration(formData.registrationNumber)} aria-label="fetch-reg">
                           <SearchIcon fontSize="small" />
@@ -880,7 +880,7 @@ const VehicleDialog = ({ open, vehicle, onClose }) => {
         <DialogActions>
           <Button onClick={() => handleClose(false)}>{t('common.cancel')}</Button>
           <Button type="submit" variant="contained" disabled={loading}>
-            {loading ? <CircularProgress size={24} /> : t('common.save')}
+            {loading ? <KnightRiderLoader size={18} /> : t('common.save')}
           </Button>
         </DialogActions>
       </form>

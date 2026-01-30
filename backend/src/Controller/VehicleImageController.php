@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Entity\User;
 use App\Entity\Vehicle;
 use App\Entity\VehicleImage;
 use Doctrine\ORM\EntityManagerInterface;
@@ -16,15 +17,37 @@ use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\String\Slugger\SluggerInterface;
 
 #[Route('/api')]
+
+/**
+ * class VehicleImageController
+ */
 class VehicleImageController extends AbstractController
 {
+    /**
+     * function __construct
+     *
+     * @param EntityManagerInterface $entityManager
+     * @param SluggerInterface $slugger
+     * @param int $uploadMaxBytes
+     *
+     * @return void
+     */
     public function __construct(
         private EntityManagerInterface $entityManager,
         private SluggerInterface $slugger,
+        private int $uploadMaxBytes
     ) {
     }
 
     #[Route('/vehicles/{id}/images', name: 'vehicle_images_list', methods: ['GET'])]
+
+    /**
+     * function list
+     *
+     * @param int $id
+     *
+     * @return JsonResponse
+     */
     public function list(int $id): JsonResponse
     {
         $vehicle = $this->entityManager->getRepository(Vehicle::class)->find($id);
@@ -32,7 +55,13 @@ class VehicleImageController extends AbstractController
             return $this->json(['error' => 'Vehicle not found'], 404);
         }
 
-        $this->denyAccessUnlessGranted('view', $vehicle);
+        $user = $this->getUserEntity();
+        if (!$user) {
+            return $this->json(['error' => 'Unauthorized'], 401);
+        }
+        if (!$this->canAccessVehicle($user, $vehicle)) {
+            return $this->json(['error' => 'Forbidden'], 403);
+        }
 
         $images = [];
         foreach ($vehicle->getImages() as $image) {
@@ -43,6 +72,15 @@ class VehicleImageController extends AbstractController
     }
 
     #[Route('/vehicles/{id}/images', name: 'vehicle_images_upload', methods: ['POST'])]
+
+    /**
+     * function upload
+     *
+     * @param int $id
+     * @param Request $request
+     *
+     * @return JsonResponse
+     */
     public function upload(int $id, Request $request): JsonResponse
     {
         $vehicle = $this->entityManager->getRepository(Vehicle::class)->find($id);
@@ -50,7 +88,13 @@ class VehicleImageController extends AbstractController
             return $this->json(['error' => 'Vehicle not found'], 404);
         }
 
-        $this->denyAccessUnlessGranted('edit', $vehicle);
+        $user = $this->getUserEntity();
+        if (!$user) {
+            return $this->json(['error' => 'Unauthorized'], 401);
+        }
+        if (!$this->canAccessVehicle($user, $vehicle)) {
+            return $this->json(['error' => 'Forbidden'], 403);
+        }
 
         /** @var UploadedFile $file */
         $file = $request->files->get('image');
@@ -64,9 +108,10 @@ class VehicleImageController extends AbstractController
             return $this->json(['error' => 'Invalid file type. Allowed: JPG, PNG, WEBP'], 400);
         }
 
-        // Validate file size (5MB max)
-        if ($file->getSize() > 5 * 1024 * 1024) {
-            return $this->json(['error' => 'File too large. Maximum size: 5MB'], 400);
+        // Validate file size (configured max)
+        if ($file->getSize() > $this->uploadMaxBytes) {
+            $maxMb = (int) ceil($this->uploadMaxBytes / (1024 * 1024));
+            return $this->json(['error' => 'File too large. Maximum size: ' . $maxMb . 'MB'], 400);
         }
 
         $originalFilename = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
@@ -74,9 +119,19 @@ class VehicleImageController extends AbstractController
         $newFilename = $safeFilename . '-' . uniqid() . '.' . $file->guessExtension();
 
         // Create uploads directory if it doesn't exist
-        $uploadDir = $this->getParameter('kernel.project_dir') . '/public/uploads/vehicles/' . $vehicle->getId();
+        $reg = $vehicle->getRegistrationNumber()
+            ?: $vehicle->getName()
+            ?: ('vehicle-' . $vehicle->getId());
+        $storageSubDir = strtolower((string) $this->slugger->slug($reg));
+        $uploadDir = $this->getParameter('kernel.project_dir')
+            . '/uploads/vehicles/'
+            . $storageSubDir;
         if (!is_dir($uploadDir)) {
-            mkdir($uploadDir, 0777, true);
+            if (!@mkdir($uploadDir, 0755, true) && !is_dir($uploadDir)) {
+                return $this->json([
+                    'error' => 'Failed to create upload directory: ' . $uploadDir,
+                ], 500);
+            }
         }
 
         try {
@@ -87,7 +142,7 @@ class VehicleImageController extends AbstractController
 
         $image = new VehicleImage();
         $image->setVehicle($vehicle);
-        $image->setPath('/uploads/vehicles/' . $vehicle->getId() . '/' . $newFilename);
+        $image->setPath('/uploads/vehicles/' . $storageSubDir . '/' . $newFilename);
         $image->setCaption($request->request->get('caption'));
         
         // Set as primary if it's the first image
@@ -114,6 +169,16 @@ class VehicleImageController extends AbstractController
     }
 
     #[Route('/vehicles/{vehicleId}/images/{imageId}', name: 'vehicle_images_update', methods: ['PUT'])]
+
+    /**
+     * function update
+     *
+     * @param int $vehicleId
+     * @param int $imageId
+     * @param Request $request
+     *
+     * @return JsonResponse
+     */
     public function update(int $vehicleId, int $imageId, Request $request): JsonResponse
     {
         $image = $this->entityManager->getRepository(VehicleImage::class)->find($imageId);
@@ -121,7 +186,13 @@ class VehicleImageController extends AbstractController
             return $this->json(['error' => 'Image not found'], 404);
         }
 
-        $this->denyAccessUnlessGranted('edit', $image->getVehicle());
+        $user = $this->getUserEntity();
+        if (!$user) {
+            return $this->json(['error' => 'Unauthorized'], 401);
+        }
+        if (!$this->canAccessVehicle($user, $image->getVehicle())) {
+            return $this->json(['error' => 'Forbidden'], 403);
+        }
 
         $data = json_decode($request->getContent(), true);
 
@@ -142,6 +213,15 @@ class VehicleImageController extends AbstractController
     }
 
     #[Route('/vehicles/{vehicleId}/images/{imageId}/primary', name: 'vehicle_images_set_primary', methods: ['PUT'])]
+
+    /**
+     * function setPrimary
+     *
+     * @param int $vehicleId
+     * @param int $imageId
+     *
+     * @return JsonResponse
+     */
     public function setPrimary(int $vehicleId, int $imageId): JsonResponse
     {
         $image = $this->entityManager->getRepository(VehicleImage::class)->find($imageId);
@@ -149,7 +229,13 @@ class VehicleImageController extends AbstractController
             return $this->json(['error' => 'Image not found'], 404);
         }
 
-        $this->denyAccessUnlessGranted('edit', $image->getVehicle());
+        $user = $this->getUserEntity();
+        if (!$user) {
+            return $this->json(['error' => 'Unauthorized'], 401);
+        }
+        if (!$this->canAccessVehicle($user, $image->getVehicle())) {
+            return $this->json(['error' => 'Forbidden'], 403);
+        }
 
         // Remove primary flag from other images
         foreach ($image->getVehicle()->getImages() as $vehicleImage) {
@@ -167,6 +253,15 @@ class VehicleImageController extends AbstractController
     }
 
     #[Route('/vehicles/{vehicleId}/images/{imageId}', name: 'vehicle_images_delete', methods: ['DELETE'])]
+
+    /**
+     * function delete
+     *
+     * @param int $vehicleId
+     * @param int $imageId
+     *
+     * @return JsonResponse
+     */
     public function delete(int $vehicleId, int $imageId): JsonResponse
     {
         $image = $this->entityManager->getRepository(VehicleImage::class)->find($imageId);
@@ -174,10 +269,16 @@ class VehicleImageController extends AbstractController
             return $this->json(['error' => 'Image not found'], 404);
         }
 
-        $this->denyAccessUnlessGranted('edit', $image->getVehicle());
+        $user = $this->getUserEntity();
+        if (!$user) {
+            return $this->json(['error' => 'Unauthorized'], 401);
+        }
+        if (!$this->canAccessVehicle($user, $image->getVehicle())) {
+            return $this->json(['error' => 'Forbidden'], 403);
+        }
 
         // Delete physical file
-        $filePath = $this->getParameter('kernel.project_dir') . '/public' . $image->getPath();
+        $filePath = $this->getParameter('kernel.project_dir') . $image->getPath();
         if (file_exists($filePath)) {
             unlink($filePath);
         }
@@ -188,6 +289,13 @@ class VehicleImageController extends AbstractController
         return $this->json(['message' => 'Image deleted successfully']);
     }
 
+    /**
+     * function serializeImage
+     *
+     * @param VehicleImage $image
+     *
+     * @return array
+     */
     private function serializeImage(VehicleImage $image): array
     {
         return [
@@ -200,5 +308,46 @@ class VehicleImageController extends AbstractController
             'sourceUrl' => $image->getSourceUrl(),
             'uploadedAt' => $image->getUploadedAt()?->format('Y-m-d H:i:s'),
         ];
+    }
+
+    /**
+     * function getUserEntity
+     *
+     * @return User
+     */
+    private function getUserEntity(): ?User
+    {
+        $user = $this->getUser();
+        return $user instanceof User ? $user : null;
+    }
+
+    /**
+     * function canAccessVehicle
+     *
+     * @param User $user
+     * @param Vehicle $vehicle
+     *
+     * @return bool
+     */
+    private function canAccessVehicle(User $user, Vehicle $vehicle): bool
+    {
+        if ($this->isAdminForUser($user)) {
+            return true;
+        }
+
+        $owner = $vehicle->getOwner();
+        return $owner instanceof User && $owner->getId() === $user->getId();
+    }
+
+    /**
+     * function isAdminForUser
+     *
+     * @param User $user
+     *
+     * @return bool
+     */
+    private function isAdminForUser(User $user): bool
+    {
+        return in_array('ROLE_ADMIN', $user->getRoles(), true);
     }
 }

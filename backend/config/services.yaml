@@ -1,7 +1,12 @@
+parameters:
+    app.upload_max_bytes: '%env(int:UPLOAD_MAX_BYTES)%'
+
 services:
     _defaults:
         autowire: true
         autoconfigure: true
+        bind:
+            int $uploadMaxBytes: '%app.upload_max_bytes%'
 
     # Redis cache with tag support
     Symfony\Contracts\Cache\TagAwareCacheInterface: '@cache.app'

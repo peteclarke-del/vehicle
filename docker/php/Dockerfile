@@ -36,10 +36,10 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/* /tmp/pear
 
 # Configure PHP upload limits
-RUN echo "upload_max_filesize = 50M" > /usr/local/etc/php/conf.d/uploads.ini \
-    && echo "post_max_size = 50M" >> /usr/local/etc/php/conf.d/uploads.ini \
+RUN echo "upload_max_filesize = 200M" > /usr/local/etc/php/conf.d/uploads.ini \
+    && echo "post_max_size = 200M" >> /usr/local/etc/php/conf.d/uploads.ini \
     && echo "max_execution_time = 300" >> /usr/local/etc/php/conf.d/uploads.ini \
-    && echo "memory_limit = 256M" >> /usr/local/etc/php/conf.d/uploads.ini
+    && echo "memory_limit = 512M" >> /usr/local/etc/php/conf.d/uploads.ini
 
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer

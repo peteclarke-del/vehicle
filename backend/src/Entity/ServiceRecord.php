@@ -203,7 +203,9 @@ class ServiceRecord
         $labor = $this->laborCost ?? '0.00';
         $parts = $this->partsCost ?? '0.00';
         $consumables = $this->consumablesCost ?? $this->sumItemsByType('consumable');
-        return bcadd(bcadd($labor, $parts, 2), $consumables, 2);
+        $additional = $this->additionalCosts ?? '0.00';
+        $baseTotal = bcadd(bcadd($labor, $parts, 2), $consumables, 2);
+        return bcadd($baseTotal, $additional, 2);
     }
 
     public function getMileage(): ?int

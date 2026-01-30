@@ -24,7 +24,9 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { useUserPreferences } from '../contexts/UserPreferencesContext';
 import { useVehicles } from '../contexts/VehiclesContext';
+import useTablePagination from '../hooks/useTablePagination';
 import RoadTaxDialog from '../components/RoadTaxDialog';
+import TablePaginationBar from '../components/TablePaginationBar';
 import VehicleSelector from '../components/VehicleSelector';
 
 const RoadTax = () => {
@@ -166,6 +168,8 @@ const RoadTax = () => {
     return [...records].sort(comparator);
   }, [records, order, orderBy]);
 
+  const { page, rowsPerPage, paginatedRows: paginatedRecords, handleChangePage, handleChangeRowsPerPage } = useTablePagination(sortedRecords);
+
   if (vehicles.length === 0) {
     return (
       <Container>
@@ -192,6 +196,13 @@ const RoadTax = () => {
         </Box>
       </Box>
 
+      <TablePaginationBar
+        rowsPerPage={rowsPerPage}
+        page={page}
+        count={sortedRecords.length}
+        onPageChange={handleChangePage}
+        onRowsPerPageChange={handleChangeRowsPerPage}
+      />
       <TableContainer component={Paper} sx={{ maxHeight: 'calc(100vh - 180px)', overflow: 'auto' }}>
         <Table stickyHeader>
           <TableHead>
@@ -262,7 +273,7 @@ const RoadTax = () => {
                 <TableCell colSpan={7} align="center">{t('common.noRecords')}</TableCell>
               </TableRow>
             ) : (
-              sortedRecords.map(r => (
+              paginatedRecords.map(r => (
                 <TableRow key={r.id} sx={{ '&:nth-of-type(odd)': { backgroundColor: 'action.hover' } }}>
                   <TableCell>{vehicles.find(v => String(v.id) === String(r.vehicleId))?.registrationNumber || '-'}</TableCell>
                   <TableCell>{r.startDate || '-'}</TableCell>
@@ -280,6 +291,13 @@ const RoadTax = () => {
           </TableBody>
         </Table>
       </TableContainer>
+      <TablePaginationBar
+        rowsPerPage={rowsPerPage}
+        page={page}
+        count={sortedRecords.length}
+        onPageChange={handleChangePage}
+        onRowsPerPageChange={handleChangeRowsPerPage}
+      />
 
       <RoadTaxDialog 
         open={dialogOpen} 

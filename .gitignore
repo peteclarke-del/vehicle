@@ -10,6 +10,8 @@
 /backend/tools/
 /backend/uploads/*
 !/backend/uploads/.gitkeep
+/uploads/*
+!/uploads/.gitkeep
 
 # React
 /frontend/node_modules/

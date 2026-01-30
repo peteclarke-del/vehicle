@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Box, Button, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, IconButton, CircularProgress, Chip, Tooltip, TableSortLabel } from '@mui/material';
+import { Box, Button, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, IconButton, Chip, Tooltip, TableSortLabel } from '@mui/material';
 import { Add, Edit, Delete } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import VehicleSelector from '../components/VehicleSelector';
@@ -8,8 +8,11 @@ import { useUserPreferences } from '../contexts/UserPreferencesContext';
 import formatCurrency from '../utils/formatCurrency';
 import { fetchArrayData } from '../hooks/useApiData';
 import { useDistance } from '../hooks/useDistance';
+import useTablePagination from '../hooks/useTablePagination';
 import PartDialog from '../components/PartDialog';
 import ServiceDialog from '../components/ServiceDialog';
+import KnightRiderLoader from '../components/KnightRiderLoader';
+import TablePaginationBar from '../components/TablePaginationBar';
 
 const Parts = () => {
   const [parts, setParts] = useState([]);
@@ -152,6 +155,8 @@ const Parts = () => {
     return [...parts].sort(comparator);
   }, [parts, order, orderBy]);
 
+  const { page, rowsPerPage, paginatedRows: paginatedParts, handleChangePage, handleChangeRowsPerPage } = useTablePagination(sortedParts);
+
   const calculateTotalCost = () => {
     return parts.reduce((sum, part) => sum + (parseFloat(part.cost) || 0), 0);
   };
@@ -159,7 +164,7 @@ const Parts = () => {
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
-        <CircularProgress />
+        <KnightRiderLoader size={32} />
       </Box>
     );
   }
@@ -203,6 +208,13 @@ const Parts = () => {
           </Box>
       )}
 
+      <TablePaginationBar
+        page={page}
+        rowsPerPage={rowsPerPage}
+        count={sortedParts.length}
+        onPageChange={handleChangePage}
+        onRowsPerPageChange={handleChangeRowsPerPage}
+      />
       <TableContainer component={Paper} sx={{ maxHeight: 'calc(100vh - 180px)', overflow: 'auto' }}>
         <Table stickyHeader>
           <TableHead>
@@ -294,7 +306,7 @@ const Parts = () => {
                 </TableCell>
               </TableRow>
             ) : (
-              sortedParts.map((part) => (
+              paginatedParts.map((part) => (
                 <TableRow key={part.id} sx={{ '&:nth-of-type(odd)': { backgroundColor: 'action.hover' } }}>
                   <TableCell>{vehicles.find(v => String(v.id) === String(part.vehicleId))?.registrationNumber || '-'}</TableCell>
                   <TableCell>{part.description}</TableCell>
@@ -336,6 +348,14 @@ const Parts = () => {
           </TableBody>
         </Table>
       </TableContainer>
+
+        <TablePaginationBar
+          page={page}
+          rowsPerPage={rowsPerPage}
+          count={sortedParts.length}
+          onPageChange={handleChangePage}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+        />
 
       <PartDialog
         open={dialogOpen}

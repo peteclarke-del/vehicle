@@ -6,7 +6,6 @@ import {
   CardContent,
   Grid,
   Typography,
-  CircularProgress,
   Tabs,
   Tab,
   Chip,
@@ -33,6 +32,7 @@ import {
   TrendingUp as TrendingUpIcon,
   LocalGasStation as GasIcon,
   Construction as ConstructionIcon,
+  Opacity as OpacityIcon,
   CheckCircle as CheckIcon,
   Warning as WarningIcon,
   Error as ErrorIcon,
@@ -41,12 +41,15 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { useDistance } from '../hooks/useDistance';
+import useTablePagination from '../hooks/useTablePagination';
 import formatCurrency from '../utils/formatCurrency';
 import VehicleSpecifications from '../components/VehicleSpecifications';
 import VehicleImages from '../components/VehicleImages';
 import VehicleDocuments from '../components/VehicleDocuments';
 import VinDecoder from '../components/VinDecoder';
 import LicensePlate from '../components/LicensePlate';
+import KnightRiderLoader from '../components/KnightRiderLoader';
+import TablePaginationBar from '../components/TablePaginationBar';
 import { LineChart } from '@mui/x-charts/LineChart';
 import { PieChart } from '@mui/x-charts/PieChart';
 
@@ -62,6 +65,47 @@ const VehicleDetails = () => {
   const { api, user } = useAuth();
   const { t, i18n } = useTranslation();
   const { convert, format, getLabel, convertFuelConsumption, getFuelConsumptionLabel, userUnit } = useDistance();
+  const { page, rowsPerPage, paginatedRows: paginatedDepreciation, handleChangePage, handleChangeRowsPerPage } = useTablePagination(depreciationSchedule || []);
+
+  const isExpired = (dateString) => {
+    if (!dateString) return null;
+    const date = new Date(dateString);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return date < today;
+  };
+
+  const getDaysUntil = (dateString) => {
+    if (!dateString) return null;
+    const date = new Date(dateString);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const diff = Math.ceil((date - today) / (1000 * 60 * 60 * 24));
+    return diff;
+  };
+
+  const getDateStatus = (dateString) => {
+    if (!dateString) return null;
+    const expired = isExpired(dateString);
+    const daysUntil = getDaysUntil(dateString);
+    if (expired) return { color: 'error', icon: <WarningIcon /> };
+    if (daysUntil !== null && daysUntil <= 30) return { color: 'warning', icon: <WarningIcon /> };
+    return { color: 'success', icon: <CheckIcon /> };
+  };
+
+  const getServiceStatus = (vehicleData) => {
+    if (!vehicleData?.lastServiceDate) {
+      return { color: 'error', icon: <WarningIcon /> };
+    }
+    const intervalMonths = Number(vehicleData.serviceIntervalMonths || 12);
+    const lastService = new Date(vehicleData.lastServiceDate);
+    const dueDate = new Date(lastService);
+    dueDate.setMonth(dueDate.getMonth() + intervalMonths);
+    const daysUntil = getDaysUntil(dueDate.toISOString());
+    if (daysUntil !== null && daysUntil < 0) return { color: 'error', icon: <WarningIcon /> };
+    if (daysUntil !== null && daysUntil <= 30) return { color: 'warning', icon: <WarningIcon /> };
+    return { color: 'success', icon: <CheckIcon /> };
+  };
 
   // responsive pie sizing: measure container and set pie size accordingly
   const pieRef = useRef(null);
@@ -93,8 +137,6 @@ const VehicleDetails = () => {
     onResize();
     return () => window.removeEventListener('resize', onResize);
   }, [pieRef]);
-
-  // Debug logs removed: kept logic intact
 
   const loadVehicleData = useCallback(async () => {
     try {
@@ -134,7 +176,7 @@ const VehicleDetails = () => {
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
-        <CircularProgress />
+        <KnightRiderLoader size={32} />
       </Box>
     );
   }
@@ -188,6 +230,14 @@ const VehicleDetails = () => {
                 </Box>
                 <Divider sx={{ mb: 2 }} />
                 <Stack spacing={1.5}>
+                  {vehicle.registrationNumber && (
+                    <Box display="flex" alignItems="center" gap={1}>
+                      <Typography variant="body2" color="textSecondary" sx={{ minWidth: 140 }}>
+                        {t('common.registrationNumber')}:
+                      </Typography>
+                      <LicensePlate registrationNumber={vehicle.registrationNumber} />
+                    </Box>
+                  )}
                   {vehicle.vin && (
                     <Box display="flex" alignItems="center" gap={1}>
                       <Typography variant="body2" color="textSecondary" sx={{ minWidth: 140 }}>
@@ -196,14 +246,6 @@ const VehicleDetails = () => {
                       <Typography variant="body1" fontFamily="monospace" fontWeight="500">
                         {vehicle.vin}
                       </Typography>
-                    </Box>
-                  )}
-                  {vehicle.registrationNumber && (
-                    <Box display="flex" alignItems="center" gap={1}>
-                      <Typography variant="body2" color="textSecondary" sx={{ minWidth: 140 }}>
-                        {t('common.registrationNumber')}:
-                      </Typography>
-                      <LicensePlate registrationNumber={vehicle.registrationNumber} />
                     </Box>
                   )}
                   {vehicle.engineNumber && (
@@ -222,6 +264,17 @@ const VehicleDetails = () => {
                       <Typography variant="body1">{vehicle.v5DocumentNumber}</Typography>
                     </Box>
                   )}
+                  <Box display="flex" alignItems="center" gap={1}>
+                    <Typography variant="body2" color="textSecondary" sx={{ minWidth: 140 }}>
+                      {t('vehicle.purchaseMileage')}:
+                    </Typography>
+                    <Box display="flex" alignItems="center" gap={0.5}>
+                      <SpeedIcon fontSize="small" color="action" />
+                      <Typography variant="h6" color="primary">
+                        {vehicle.purchaseMileage ? format(convert(vehicle.purchaseMileage)) : t('vehicleDetails.na')}
+                      </Typography>
+                    </Box>
+                  </Box>
                   <Box display="flex" alignItems="center" gap={1}>
                     <Typography variant="body2" color="textSecondary" sx={{ minWidth: 140 }}>
                       {t('vehicle.currentMileage')}:
@@ -253,9 +306,9 @@ const VehicleDetails = () => {
                     </Typography>
                     {vehicle.lastServiceDate ? (
                       <Chip
-                        icon={<CheckIcon />}
+                        icon={getServiceStatus(vehicle).icon}
                         label={vehicle.lastServiceDate}
-                        color="success"
+                        color={getServiceStatus(vehicle).color}
                         variant="outlined"
                         size="small"
                       />
@@ -270,9 +323,9 @@ const VehicleDetails = () => {
                     </Typography>
                     {vehicle.motExpiryDate ? (
                       <Chip
-                        icon={new Date(vehicle.motExpiryDate) > new Date() ? <CheckIcon /> : <ErrorIcon />}
+                        icon={getDateStatus(vehicle.motExpiryDate)?.icon}
                         label={vehicle.motExpiryDate}
-                        color={new Date(vehicle.motExpiryDate) > new Date() ? 'success' : 'error'}
+                        color={getDateStatus(vehicle.motExpiryDate)?.color}
                         variant="outlined"
                         size="small"
                       />
@@ -287,9 +340,9 @@ const VehicleDetails = () => {
                     </Typography>
                     {vehicle.roadTaxExpiryDate ? (
                       <Chip
-                        icon={new Date(vehicle.roadTaxExpiryDate) > new Date() ? <CheckIcon /> : <WarningIcon />}
+                        icon={getDateStatus(vehicle.roadTaxExpiryDate)?.icon}
                         label={vehicle.roadTaxExpiryDate}
-                        color={new Date(vehicle.roadTaxExpiryDate) > new Date() ? 'success' : 'warning'}
+                        color={getDateStatus(vehicle.roadTaxExpiryDate)?.color}
                         variant="outlined"
                         size="small"
                       />
@@ -304,9 +357,9 @@ const VehicleDetails = () => {
                     </Typography>
                     {vehicle.insuranceExpiryDate ? (
                       <Chip
-                        icon={new Date(vehicle.insuranceExpiryDate) > new Date() ? <CheckIcon /> : <ErrorIcon />}
+                        icon={getDateStatus(vehicle.insuranceExpiryDate)?.icon}
                         label={vehicle.insuranceExpiryDate}
-                        color={new Date(vehicle.insuranceExpiryDate) > new Date() ? 'success' : 'error'}
+                        color={getDateStatus(vehicle.insuranceExpiryDate)?.color}
                         variant="outlined"
                         size="small"
                       />
@@ -370,7 +423,7 @@ const VehicleDetails = () => {
               <Grid item xs={12} sm={6} md={3}>
                 <Card sx={{ position: 'relative', overflow: 'hidden' }}>
                   <CardContent>
-                    <Tooltip title={t('vehicleDetails.tooltip.totalRunningCost') || 'Fuel + parts + consumables costs'}>
+                    <Tooltip title={t('vehicleDetails.tooltip.totalRunningCost') || 'Fuel + service + standalone parts/consumables (excluding items already counted in services or MOT records)'}>
                       <Typography color="textSecondary" gutterBottom>{t('stats.totalRunningCost')}</Typography>
                     </Tooltip>
                     <Typography variant="h5">{formatCurrency(stats.stats.totalRunningCost, 'GBP', i18n.language)}</Typography>
@@ -395,7 +448,7 @@ const VehicleDetails = () => {
               <Grid item xs={12} sm={6} md={3}>
                 <Card sx={{ position: 'relative', overflow: 'hidden' }}>
                   <CardContent>
-                    <Tooltip title={t('vehicleDetails.tooltip.totalPartsCost') || 'Sum of parts costs for this vehicle'}>
+                    <Tooltip title={t('vehicleDetails.tooltip.totalPartsCost') || 'Total parts costs (excluding items linked to services or MOT records)'}>
                       <Typography color="textSecondary" gutterBottom>{t('stats.totalPartsCost')}</Typography>
                     </Tooltip>
                     <Typography variant="h5">{formatCurrency(stats.stats.totalPartsCost, 'GBP', i18n.language)}</Typography>
@@ -407,30 +460,24 @@ const VehicleDetails = () => {
               <Grid item xs={12} sm={6} md={3}>
                 <Card sx={{ position: 'relative', overflow: 'hidden' }}>
                   <CardContent>
-                    <Tooltip title={t('vehicleDetails.tooltip.totalServiceCost') || 'Sum of service costs for this vehicle'}>
-                      <Typography color="textSecondary" gutterBottom>{t('vehicleDetails.serviceCosts') || 'Service Costs'}</Typography>
+                    <Tooltip title={t('vehicleDetails.tooltip.totalConsumablesCost') || 'Total consumables costs (excluding items linked to services or MOT records)'}>
+                      <Typography color="textSecondary" gutterBottom>{t('consumables.totalCost') || 'Total Consumables Cost'}</Typography>
                     </Tooltip>
-                    <Typography variant="h5">{formatCurrency(stats.stats.totalServiceCost ?? 0, 'GBP', i18n.language)}</Typography>
+                    <Typography variant="h5">{formatCurrency(stats.stats.totalConsumablesCost ?? 0, 'GBP', i18n.language)}</Typography>
                   </CardContent>
-                  <BuildIcon sx={{ position: 'absolute', right: 8, bottom: 8, fontSize: 84, color: 'primary.main', opacity: 0.06, pointerEvents: 'none' }} />
+                  <OpacityIcon sx={{ position: 'absolute', right: 8, bottom: 8, fontSize: 84, color: 'primary.main', opacity: 0.06, pointerEvents: 'none' }} />
                 </Card>
               </Grid>
 
               <Grid item xs={12} sm={6} md={3}>
                 <Card sx={{ position: 'relative', overflow: 'hidden' }}>
                   <CardContent>
-                    <Tooltip title={t('vehicleDetails.tooltip.costPerDistance') || 'Total running cost divided by current mileage'}>
-                      <Typography color="textSecondary" gutterBottom>
-                        {t('vehicleDetails.costPerDistance')} ({getLabel()})
-                      </Typography>
+                    <Tooltip title={t('vehicleDetails.tooltip.totalServiceCost') || 'Service costs (includes parts/consumables installed/used and MOT records)'}>
+                      <Typography color="textSecondary" gutterBottom>{t('vehicleDetails.serviceCosts') || 'Service Costs'}</Typography>
                     </Tooltip>
-                    <Typography variant="h5">
-                      {stats.stats.costPerMile !== null && stats.stats.costPerMile !== undefined
-                        ? formatCurrency((stats.stats.costPerMile * (userUnit === 'mi' ? 1.60934 : 1)), 'GBP', i18n.language)
-                        : t('na')}
-                    </Typography>
+                    <Typography variant="h5">{formatCurrency(stats.stats.totalServiceCost ?? 0, 'GBP', i18n.language)}</Typography>
                   </CardContent>
-                  <MoneyIcon sx={{ position: 'absolute', right: 8, bottom: 8, fontSize: 84, color: 'primary.main', opacity: 0.06, pointerEvents: 'none' }} />
+                  <BuildIcon sx={{ position: 'absolute', right: 8, bottom: 8, fontSize: 84, color: 'primary.main', opacity: 0.06, pointerEvents: 'none' }} />
                 </Card>
               </Grid>
 
@@ -449,6 +496,24 @@ const VehicleDetails = () => {
                   </Card>
                 </Grid>
               )}
+
+              <Grid item xs={12} sm={6} md={3}>
+                <Card sx={{ position: 'relative', overflow: 'hidden' }}>
+                  <CardContent>
+                    <Tooltip title={t('vehicleDetails.tooltip.costPerDistance') || 'Total running cost divided by current mileage'}>
+                      <Typography color="textSecondary" gutterBottom>
+                        {t('vehicleDetails.costPerDistance')} ({getLabel()})
+                      </Typography>
+                    </Tooltip>
+                    <Typography variant="h5">
+                      {stats.stats.costPerMile !== null && stats.stats.costPerMile !== undefined
+                        ? formatCurrency((stats.stats.costPerMile * (userUnit === 'mi' ? 1.60934 : 1)), 'GBP', i18n.language)
+                        : t('na')}
+                    </Typography>
+                  </CardContent>
+                  <MoneyIcon sx={{ position: 'absolute', right: 8, bottom: 8, fontSize: 84, color: 'primary.main', opacity: 0.06, pointerEvents: 'none' }} />
+                </Card>
+              </Grid>
             </Grid>
           </Grid>
 
@@ -517,7 +582,7 @@ const VehicleDetails = () => {
               <Grid item xs={12} md={10}>
                 {(() => {
                   if (depreciationLoading) {
-                    return <CircularProgress />;
+                    return <KnightRiderLoader size={28} />;
                   }
 
                   const schedule = depreciationSchedule || [];
@@ -544,6 +609,13 @@ const VehicleDetails = () => {
 
               <Grid item xs={12} md={2}>
                 <Typography variant="subtitle1" gutterBottom>{t('vehicleDetails.valuesTableTitle')}</Typography>
+                <TablePaginationBar
+                  count={(depreciationSchedule || []).length}
+                  page={page}
+                  rowsPerPage={rowsPerPage}
+                  onPageChange={handleChangePage}
+                  onRowsPerPageChange={handleChangeRowsPerPage}
+                />
                 <TableContainer component={Paper} sx={{ overflow: 'visible' }}>
                   <Table size="small">
                     <TableHead>
@@ -553,7 +625,14 @@ const VehicleDetails = () => {
                       </TableRow>
                     </TableHead>
                         <TableBody>
-                          {(depreciationSchedule || []).map((s, idx) => {
+                          {(depreciationSchedule || []).length === 0 ? (
+                            <TableRow>
+                              <TableCell colSpan={2} align="center">
+                                {t('common.noRecords')}
+                              </TableCell>
+                            </TableRow>
+                          ) : (
+                            paginatedDepreciation.map((s, idx) => {
                             const baseYear = vehicle.purchaseDate
                               ? new Date(vehicle.purchaseDate).getFullYear()
                               : (vehicle.year || new Date().getFullYear());
@@ -566,10 +645,18 @@ const VehicleDetails = () => {
                                 <TableCell align="right">{valueLabel}</TableCell>
                               </TableRow>
                             );
-                          })}
+                          })
+                          )}
                         </TableBody>
                   </Table>
                 </TableContainer>
+                <TablePaginationBar
+                  count={(depreciationSchedule || []).length}
+                  page={page}
+                  rowsPerPage={rowsPerPage}
+                  onPageChange={handleChangePage}
+                  onRowsPerPageChange={handleChangeRowsPerPage}
+                />
               </Grid>
             </Grid>
           </CardContent>

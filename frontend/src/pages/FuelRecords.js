@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Box, Button, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, IconButton, CircularProgress, Tooltip, TableSortLabel } from '@mui/material';
+import { Box, Button, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, IconButton, Tooltip, TableSortLabel } from '@mui/material';
 import { Add, Edit, Delete } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { useUserPreferences } from '../contexts/UserPreferencesContext';
@@ -7,8 +7,11 @@ import { useTranslation } from 'react-i18next';
 import formatCurrency from '../utils/formatCurrency';
 import { fetchArrayData } from '../hooks/useApiData';
 import { useDistance } from '../hooks/useDistance';
+import useTablePagination from '../hooks/useTablePagination';
 import FuelRecordDialog from '../components/FuelRecordDialog';
+import TablePaginationBar from '../components/TablePaginationBar';
 import VehicleSelector from '../components/VehicleSelector';
+import KnightRiderLoader from '../components/KnightRiderLoader';
 
 const FuelRecords = () => {
   const [records, setRecords] = useState([]);
@@ -191,6 +194,8 @@ const FuelRecords = () => {
     return [...records].sort(comparator);
   }, [records, order, orderBy]);
 
+  const { page, rowsPerPage, paginatedRows: paginatedRecords, handleChangePage, handleChangeRowsPerPage } = useTablePagination(sortedRecords);
+
   // For UX: show the Date column's sort arrow so that newest-first (internal 'desc') appears as an up arrow.
   const dateDisplayDirection = orderBy === 'date' ? (order === 'desc' ? 'asc' : 'desc') : order;
 
@@ -199,7 +204,7 @@ const FuelRecords = () => {
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
-        <CircularProgress />
+        <KnightRiderLoader size={32} />
       </Box>
     );
   }
@@ -229,12 +234,20 @@ const FuelRecords = () => {
 
       {loadingRecords ? (
         <Box display="flex" justifyContent="center" alignItems="center" minHeight="40vh">
-          <CircularProgress />
+          <KnightRiderLoader size={28} />
         </Box>
       ) : (
-        <TableContainer component={Paper} sx={{ maxHeight: 'calc(100vh - 180px)', overflow: 'auto' }}>
-          <Table stickyHeader>
-          <TableHead>
+        <>
+          <TablePaginationBar
+            count={sortedRecords.length}
+            page={page}
+            rowsPerPage={rowsPerPage}
+            onPageChange={handleChangePage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+          />
+          <TableContainer component={Paper} sx={{ maxHeight: 'calc(100vh - 180px)', overflow: 'auto' }}>
+            <Table stickyHeader>
+            <TableHead>
             <TableRow>
                 <TableCell>
                   <TableSortLabel
@@ -306,7 +319,7 @@ const FuelRecords = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {sortedRecords.map((record) => (
+            {paginatedRecords.map((record) => (
               <TableRow key={record.id} sx={{ '&:nth-of-type(odd)': { backgroundColor: 'action.hover' } }}>
                 <TableCell>{vehicles.find(v => String(v.id) === String(record.vehicleId))?.registrationNumber || '-'}</TableCell>
                 <TableCell>{record.date}</TableCell>
@@ -330,8 +343,16 @@ const FuelRecords = () => {
               </TableRow>
             ))}
           </TableBody>
-          </Table>
-        </TableContainer>
+            </Table>
+          </TableContainer>
+          <TablePaginationBar
+            count={sortedRecords.length}
+            page={page}
+            rowsPerPage={rowsPerPage}
+            onPageChange={handleChangePage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+          />
+        </>
       )}
 
       <FuelRecordDialog

@@ -3,12 +3,12 @@ import {
   Box,
   Typography,
   TextField,
-  Button,
-  CircularProgress
+  Button
 } from '@mui/material';
 import { Search as SearchIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
+import KnightRiderLoader from './KnightRiderLoader';
 
 export default function UrlScraper({ onDataScraped, endpoint }) {
   const { t } = useTranslation();
@@ -52,7 +52,7 @@ export default function UrlScraper({ onDataScraped, endpoint }) {
           variant="outlined"
           onClick={handleScrape}
           disabled={!url || scraping}
-          startIcon={scraping ? <CircularProgress size={20} /> : <SearchIcon />}
+          startIcon={scraping ? <KnightRiderLoader size={16} /> : <SearchIcon />}
         >
           {t('scraper.scrape')}
         </Button>

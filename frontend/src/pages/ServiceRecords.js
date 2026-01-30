@@ -27,7 +27,9 @@ import formatCurrency from '../utils/formatCurrency';
 import { useVehicles } from '../contexts/VehiclesContext';
 import { useDistance } from '../hooks/useDistance';
 import { formatDateISO } from '../utils/formatDate';
+import useTablePagination from '../hooks/useTablePagination';
 import ServiceDialog from '../components/ServiceDialog';
+import TablePaginationBar from '../components/TablePaginationBar';
 import VehicleSelector from '../components/VehicleSelector';
 
 const ServiceRecords = () => {
@@ -52,7 +54,11 @@ const ServiceRecords = () => {
     try {
       const url = !selectedVehicle || selectedVehicle === '__all__' ? '/service-records' : `/service-records?vehicleId=${selectedVehicle}`;
       const response = await api.get(url);
-      setServiceRecords(response.data);
+      // Ensure we always store an array: some API responses may wrap the list in an object
+      const data = response.data;
+      if (Array.isArray(data)) setServiceRecords(data);
+      else if (data && Array.isArray(data.serviceRecords)) setServiceRecords(data.serviceRecords);
+      else setServiceRecords([]);
     } catch (error) {
       console.error('Error loading service records:', error);
     }
@@ -101,13 +107,28 @@ const ServiceRecords = () => {
       const parts = resp.data.parts || [];
       const consumables = resp.data.consumables || [];
 
-      // Map parts/consumables into the items array expected by the dialog
-      const items = (svc.items || []).concat(
-        parts.map(p => ({ type: 'part', description: p.description || p.name || '', cost: String(p.cost || 0), quantity: p.quantity || 1, id: p.id })),
-        consumables.map(c => ({ type: 'consumable', name: c.name || c.description || '', description: c.name || c.description || '', cost: String(c.cost || 0), quantity: c.quantity || 1, id: c.id }))
-      );
-
-      svc.items = items;
+      // Use items from API; only fallback to parts/consumables when items missing
+      const items = Array.isArray(svc.items) ? svc.items : [];
+      if (items.length === 0) {
+        svc.items = items.concat(
+          parts.map((p) => ({
+            type: 'part',
+            description: p.description || p.name || '',
+            cost: String(p.cost || 0),
+            quantity: p.quantity || 1,
+            partId: p.id,
+          })),
+          consumables.map((c) => ({
+            type: 'consumable',
+            description: c.name || c.description || '',
+            cost: String(c.cost || 0),
+            quantity: c.quantity || 1,
+            consumableId: c.id,
+          }))
+        );
+      } else {
+        svc.items = items;
+      }
       setEditingService(svc);
       setDialogOpen(true);
     } catch (err) {
@@ -157,7 +178,7 @@ const ServiceRecords = () => {
       let aValue = a[orderBy];
       let bValue = b[orderBy];
 
-      if (['laborCost', 'partsCost', 'consumablesCost', 'totalCost', 'mileage'].includes(orderBy)) {
+      if (['laborCost', 'partsCost', 'consumablesCost', 'additionalCosts', 'totalCost', 'mileage'].includes(orderBy)) {
         aValue = parseFloat(a[orderBy]) || 0;
         bValue = parseFloat(b[orderBy]) || 0;
       }
@@ -174,8 +195,11 @@ const ServiceRecords = () => {
       return 0;
     };
 
-    return [...serviceRecords].sort(comparator);
+    const base = Array.isArray(serviceRecords) ? serviceRecords : [];
+    return [...base].sort(comparator);
   }, [serviceRecords, order, orderBy]);
+
+    const { page, rowsPerPage, paginatedRows: paginatedServiceRecords, handleChangePage, handleChangeRowsPerPage } = useTablePagination(sortedServiceRecords);
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP' }).format(amount);
@@ -192,9 +216,11 @@ const ServiceRecords = () => {
     );
   }
 
-  const totalLaborCost = serviceRecords.reduce((sum, svc) => sum + parseFloat(svc.laborCost || 0), 0);
-  const totalPartsCost = serviceRecords.reduce((sum, svc) => sum + parseFloat(svc.partsCost || 0), 0);
-  const totalConsumablesCost = serviceRecords.reduce((sum, svc) => sum + parseFloat(svc.consumablesCost || 0), 0);
+  const _svc = Array.isArray(serviceRecords) ? serviceRecords : [];
+  const totalLaborCost = _svc.reduce((sum, svc) => sum + parseFloat(svc.laborCost || 0), 0);
+  const totalPartsCost = _svc.reduce((sum, svc) => sum + parseFloat(svc.partsCost || 0), 0);
+  const totalConsumablesCost = _svc.reduce((sum, svc) => sum + parseFloat(svc.consumablesCost || 0), 0);
+  const totalAdditionalCost = _svc.reduce((sum, svc) => sum + parseFloat(svc.additionalCosts || 0), 0);
 
   return (
     <Container maxWidth="xl">
@@ -213,6 +239,13 @@ const ServiceRecords = () => {
         </Box>
       </Box>
 
+      <TablePaginationBar
+        count={sortedServiceRecords.length}
+        page={page}
+        rowsPerPage={rowsPerPage}
+        onPageChange={handleChangePage}
+        onRowsPerPageChange={handleChangeRowsPerPage}
+      />
       <TableContainer component={Paper} sx={{ maxHeight: 'calc(100vh - 180px)', overflow: 'auto' }}>
         <Table stickyHeader>
           <TableHead>
@@ -276,6 +309,15 @@ const ServiceRecords = () => {
               </TableCell>
               <TableCell align="right">
                 <TableSortLabel
+                  active={orderBy === 'additionalCosts'}
+                  direction={orderBy === 'additionalCosts' ? order : 'asc'}
+                  onClick={() => handleRequestSort('additionalCosts')}
+                >
+                  {t('service.additionalCosts')}
+                </TableSortLabel>
+              </TableCell>
+              <TableCell align="right">
+                <TableSortLabel
                   active={orderBy === 'totalCost'}
                   direction={orderBy === 'totalCost' ? order : 'asc'}
                   onClick={() => handleRequestSort('totalCost')}
@@ -308,12 +350,12 @@ const ServiceRecords = () => {
           <TableBody>
             {serviceRecords.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} align="center">
+                <TableCell colSpan={12} align="center">
                   {t('common.noRecords')}
                 </TableCell>
               </TableRow>
             ) : (
-              sortedServiceRecords.map((service) => (
+              paginatedServiceRecords.map((service) => (
                 <TableRow key={service.id} sx={{ '&:nth-of-type(odd)': { backgroundColor: 'action.hover' } }}>
                   <TableCell>{vehicles.find(v => String(v.id) === String(service.vehicleId))?.registrationNumber || '-'}</TableCell>
                   <TableCell>{formatDateISO(service.serviceDate)}</TableCell>
@@ -321,6 +363,7 @@ const ServiceRecords = () => {
                   <TableCell align="right">{formatCurrency(service.laborCost, 'GBP', i18n.language)}</TableCell>
                   <TableCell align="right">{formatCurrency(service.partsCost, 'GBP', i18n.language)}</TableCell>
                   <TableCell align="right">{formatCurrency(service.consumablesCost || 0, 'GBP', i18n.language)}</TableCell>
+                  <TableCell align="right">{formatCurrency(service.additionalCosts || 0, 'GBP', i18n.language)}</TableCell>
                   <TableCell align="right">{formatCurrency(service.totalCost, 'GBP', i18n.language)}</TableCell>
                   <TableCell>{service.mileage ? format(convert(service.mileage)) : '-'}</TableCell>
                     <TableCell>{service.motTestNumber ? `${service.motTestNumber}${service.motTestDate ? ' (' + service.motTestDate + ')' : ''}` : '-'}</TableCell>
@@ -343,6 +386,13 @@ const ServiceRecords = () => {
           </TableBody>
         </Table>
       </TableContainer>
+      <TablePaginationBar
+        count={sortedServiceRecords.length}
+        page={page}
+        rowsPerPage={rowsPerPage}
+        onPageChange={handleChangePage}
+        onRowsPerPageChange={handleChangeRowsPerPage}
+      />
 
       <Box mt={2} display="flex" gap={4}>
         <Typography variant="h6">
@@ -355,7 +405,7 @@ const ServiceRecords = () => {
           {t('service.consumablesCost')} {t('common.total')}: {formatCurrency(totalConsumablesCost, 'GBP', i18n.language)}
         </Typography>
         <Typography variant="h6" color="primary">
-          {t('service.totalCost')}: {formatCurrency(totalLaborCost + totalPartsCost + totalConsumablesCost, 'GBP', i18n.language)}
+          {t('service.totalCost')}: {formatCurrency(totalLaborCost + totalPartsCost + totalConsumablesCost + totalAdditionalCost, 'GBP', i18n.language)}
         </Typography>
       </Box>
 

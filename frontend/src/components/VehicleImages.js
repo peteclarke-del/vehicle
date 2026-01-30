@@ -13,7 +13,6 @@ import {
   DialogContent,
   TextField,
   Alert,
-  CircularProgress,
   Checkbox,
   FormControlLabel,
 } from '@mui/material';
@@ -28,6 +27,7 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
+import KnightRiderLoader from './KnightRiderLoader';
 
 const VehicleImages = ({ vehicle }) => {
   const { api } = useAuth();
@@ -65,6 +65,9 @@ const VehicleImages = ({ vehicle }) => {
     setError('');
     setSuccess('');
 
+    let successCount = 0;
+    let errorMessage = '';
+
     for (const file of files) {
       const formData = new FormData();
       formData.append('image', file);
@@ -73,13 +76,20 @@ const VehicleImages = ({ vehicle }) => {
         await api.post(`/vehicles/${vehicle.id}/images`, formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
+        successCount += 1;
       } catch (err) {
-        setError(err.response?.data?.error || 'Failed to upload image');
+        errorMessage = err.response?.data?.error || t('vehicleImages.failedUpload');
       }
     }
 
     setUploading(false);
-    setSuccess(t('vehicleImages.uploadSuccess', { count: files.length }));
+    if (errorMessage) {
+      setSuccess('');
+      setError(errorMessage);
+    } else {
+      setSuccess(t('vehicleImages.uploadSuccess', { count: successCount }));
+      setError('');
+    }
     loadImages();
     
     // Clear the file input
@@ -158,7 +168,7 @@ const VehicleImages = ({ vehicle }) => {
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" p={4}>
-        <CircularProgress />
+        <KnightRiderLoader size={28} />
       </Box>
     );
   }
@@ -171,7 +181,7 @@ const VehicleImages = ({ vehicle }) => {
           <Button
             variant="contained"
             component="label"
-            startIcon={uploading ? <CircularProgress size={20} /> : <UploadIcon />}
+            startIcon={uploading ? <KnightRiderLoader size={16} /> : <UploadIcon />}
             disabled={uploading}
           >
             {t('vehicleImages.upload')}
@@ -208,7 +218,7 @@ const VehicleImages = ({ vehicle }) => {
             {images.map((image, index) => (
               <ImageListItem key={image.id} sx={{ cursor: 'pointer' }}>
                 <img
-                  src={`${process.env.REACT_APP_API_URL || 'http://localhost:8000'}${image.path}`}
+                  src={`${(process.env.REACT_APP_API_URL || 'http://localhost:8000').replace(/\/api\/?$/, '')}${image.path}`}
                   alt={image.caption || `Vehicle image ${index + 1}`}
                   loading="lazy"
                   style={{ height: 200, objectFit: 'cover' }}

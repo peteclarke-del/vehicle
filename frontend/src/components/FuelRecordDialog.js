@@ -7,7 +7,6 @@ import {
   Button,
   TextField,
   Grid,
-  CircularProgress,
   Select,
   MenuItem,
   FormControl,
@@ -25,6 +24,8 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { useDistance } from '../hooks/useDistance';
+import KnightRiderLoader from './KnightRiderLoader';
+import AttachmentViewerDialog from './AttachmentViewerDialog';
 
 const FuelRecordDialog = ({ open, record, vehicleId, onClose }) => {
   const [formData, setFormData] = useState({
@@ -40,6 +41,7 @@ const FuelRecordDialog = ({ open, record, vehicleId, onClose }) => {
   const [fuelTypes, setFuelTypes] = useState([]);
   const [receiptFile, setReceiptFile] = useState(null);
   const [uploadingReceipt, setUploadingReceipt] = useState(false);
+  const [viewerOpen, setViewerOpen] = useState(false);
   const { api } = useAuth();
   const { t } = useTranslation();
   const { convert, toKm, getLabel } = useDistance();
@@ -82,6 +84,12 @@ const FuelRecordDialog = ({ open, record, vehicleId, onClose }) => {
       setReceiptFile(null);
     }
   }, [record, open]);
+
+  useEffect(() => {
+    if (!open) {
+      setViewerOpen(false);
+    }
+  }, [open]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -148,8 +156,12 @@ const FuelRecordDialog = ({ open, record, vehicleId, onClose }) => {
 
   const handleViewReceipt = () => {
     if (formData.receiptAttachmentId) {
-      window.open(`${api.defaults.baseURL}/attachments/${formData.receiptAttachmentId}/download`, '_blank');
+      setViewerOpen(true);
     }
+  };
+
+  const handleCloseViewer = () => {
+    setViewerOpen(false);
   };
 
   const handleSubmit = async (e) => {
@@ -300,7 +312,7 @@ const FuelRecordDialog = ({ open, record, vehicleId, onClose }) => {
                 {!formData.receiptAttachmentId && !receiptFile ? (
                   uploadingReceipt ? (
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <CircularProgress size={20} />
+                      <KnightRiderLoader size={16} />
                       <Typography variant="body2">
                         {t('attachment.uploading')}
                       </Typography>
@@ -344,10 +356,16 @@ const FuelRecordDialog = ({ open, record, vehicleId, onClose }) => {
         <DialogActions>
           <Button onClick={() => onClose(false)}>{t('common.cancel')}</Button>
           <Button type="submit" variant="contained" disabled={loading}>
-            {loading ? <CircularProgress size={24} /> : t('common.save')}
+            {loading ? <KnightRiderLoader size={18} /> : t('common.save')}
           </Button>
         </DialogActions>
       </form>
+      <AttachmentViewerDialog
+        open={viewerOpen}
+        onClose={handleCloseViewer}
+        attachmentId={formData.receiptAttachmentId}
+        title={t('attachment.view')}
+      />
     </Dialog>
   );
 };

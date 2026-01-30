@@ -28,7 +28,9 @@ import formatCurrency from '../utils/formatCurrency';
 import { useVehicles } from '../contexts/VehiclesContext';
 import { useDistance } from '../hooks/useDistance';
 import { formatDateISO } from '../utils/formatDate';
+import useTablePagination from '../hooks/useTablePagination';
 import MotDialog from '../components/MotDialog';
+import TablePaginationBar from '../components/TablePaginationBar';
 import VehicleSelector from '../components/VehicleSelector';
 
 const MotRecords = () => {
@@ -37,7 +39,7 @@ const MotRecords = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingMot, setEditingMot] = useState(null);
   const { vehicles, fetchVehicles } = useVehicles();
-  const [orderBy, setOrderBy] = useState(() => localStorage.getItem('motRecordsSortBy') || 'expiryDate');
+  const [orderBy, setOrderBy] = useState(() => localStorage.getItem('motRecordsSortBy') || 'testDate');
   const [order, setOrder] = useState(() => localStorage.getItem('motRecordsSortOrder') || 'desc');
   const { api } = useAuth();
   const { t, i18n } = useTranslation();
@@ -159,6 +161,8 @@ const MotRecords = () => {
     return [...motRecords].sort(comparator);
   }, [motRecords, order, orderBy]);
 
+  const { page, rowsPerPage, paginatedRows: paginatedMotRecords, handleChangePage, handleChangeRowsPerPage } = useTablePagination(sortedMotRecords);
+
   const getResultChip = (result) => {
     const colors = { Pass: 'success', Fail: 'error', Advisory: 'warning' };
     return <Chip label={result} color={colors[result] || 'default'} size="small" />;
@@ -243,6 +247,13 @@ const MotRecords = () => {
         </Box>
       </Box>
 
+      <TablePaginationBar
+        count={sortedMotRecords.length}
+        page={page}
+        rowsPerPage={rowsPerPage}
+        onPageChange={handleChangePage}
+        onRowsPerPageChange={handleChangeRowsPerPage}
+      />
       <TableContainer component={Paper} sx={{ maxHeight: 'calc(100vh - 180px)', overflow: 'auto' }}>
         <Table stickyHeader>
           <TableHead>
@@ -342,7 +353,7 @@ const MotRecords = () => {
                 </TableCell>
               </TableRow>
             ) : (
-              sortedMotRecords.map((mot) => (
+              paginatedMotRecords.map((mot) => (
                 <TableRow key={mot.id} sx={{ '&:nth-of-type(odd)': { backgroundColor: 'action.hover' } }}>
                   <TableCell>{vehicles.find(v => String(v.id) === String(mot.vehicleId))?.registrationNumber || '-'}</TableCell>
                   <TableCell>{formatDateISO(mot.testDate)}</TableCell>
@@ -383,6 +394,13 @@ const MotRecords = () => {
           </TableBody>
         </Table>
       </TableContainer>
+      <TablePaginationBar
+        count={sortedMotRecords.length}
+        page={page}
+        rowsPerPage={rowsPerPage}
+        onPageChange={handleChangePage}
+        onRowsPerPageChange={handleChangeRowsPerPage}
+      />
 
       <Box mt={2} display="flex" gap={4}>
         <Typography variant="h6">

@@ -25,12 +25,6 @@ class Attachment
     #[ORM\JoinColumn(nullable: true, onDelete: 'CASCADE')]
     private ?Vehicle $vehicle = null;
 
-    #[ORM\ManyToOne(targetEntity: ServiceRecord::class)]
-    #[ORM\JoinColumn(nullable: true, onDelete: 'CASCADE')]
-    private ?ServiceRecord $serviceRecord = null;
-
-    #[ORM\Column(type: 'string', length: 255, nullable: true)]
-    private ?string $thumbnailPath = null;
 
     #[ORM\Column(type: 'string', length: 100)]
     private string $mimeType;
@@ -269,37 +263,9 @@ class Attachment
         return $this;
     }
 
-    public function getServiceRecord(): ?ServiceRecord
-    {
-        return $this->serviceRecord;
-    }
-
-    public function setServiceRecord(?ServiceRecord $serviceRecord): self
-    {
-        $this->serviceRecord = $serviceRecord;
-        return $this;
-    }
-
     public function getUploadedBy(): User
     {
         return $this->user;
     }
 
-    public function getThumbnailPath(): ?string
-    {
-        if ($this->thumbnailPath) {
-            return $this->thumbnailPath;
-        }
-        // Generate thumbnail path from storage path if it exists
-        if ($this->storagePath) {
-            $pathInfo = pathinfo($this->storagePath);
-            return $pathInfo['dirname'] . '/' . $pathInfo['filename'] . '_thumb.' . $pathInfo['extension'];
-        }
-        return null;
-    }
-    public function setThumbnailPath(?string $thumbnailPath): self
-    {
-        $this->thumbnailPath = $thumbnailPath;
-        return $this;
-    }
 }

@@ -2,10 +2,7 @@ import React, { useState } from 'react';
 import {
   Box,
   Typography,
-  Button,
   IconButton,
-  TextField,
-  CircularProgress,
   Tooltip
 } from '@mui/material';
 import {
@@ -16,6 +13,8 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
+import KnightRiderLoader from './KnightRiderLoader';
+import AttachmentViewerDialog from './AttachmentViewerDialog';
 
 export default function ReceiptUpload({ 
   entityType, 
@@ -24,9 +23,10 @@ export default function ReceiptUpload({
   onReceiptRemoved 
 }) {
   const { t } = useTranslation();
-  const { api, token } = useAuth();
+  const { api } = useAuth();
   const [uploading, setUploading] = useState(false);
   const [processing, setProcessing] = useState(false);
+  const [viewerOpen, setViewerOpen] = useState(false);
 
   const handleFileSelect = async (e) => {
     const file = e.target.files?.[0];
@@ -76,8 +76,12 @@ export default function ReceiptUpload({
 
   const handleView = () => {
     if (receiptAttachmentId) {
-      window.open(`${api.defaults.baseURL}/attachments/${receiptAttachmentId}?token=${token}`, '_blank');
+      setViewerOpen(true);
     }
+  };
+
+  const handleCloseViewer = () => {
+    setViewerOpen(false);
   };
 
   return (
@@ -109,7 +113,7 @@ export default function ReceiptUpload({
           />
           {uploading || processing ? (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <CircularProgress size={20} />
+              <KnightRiderLoader size={16} />
               <Typography variant="body2">
                 {uploading ? t('attachment.uploading') : t('attachment.processing')}
               </Typography>
@@ -150,6 +154,12 @@ export default function ReceiptUpload({
           </Tooltip>
         </Box>
       )}
+      <AttachmentViewerDialog
+        open={viewerOpen}
+        onClose={handleCloseViewer}
+        attachmentId={receiptAttachmentId}
+        title={t('attachment.view')}
+      />
     </Box>
   );
 }

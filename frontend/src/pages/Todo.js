@@ -24,6 +24,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import TodoDialog from '../components/TodoDialog';
 import { fetchArrayData } from '../hooks/useApiData';
+import useTablePagination from '../hooks/useTablePagination';
+import TablePaginationBar from '../components/TablePaginationBar';
 import VehicleSelector from '../components/VehicleSelector';
 
 const Todo = () => {
@@ -81,6 +83,8 @@ const Todo = () => {
     };
     return [...todos].sort(comparator);
   }, [todos, order, orderBy]);
+
+  const { page, rowsPerPage, paginatedRows: paginatedTodos, handleChangePage, handleChangeRowsPerPage } = useTablePagination(sortedTodos);
 
   const fetchVehicles = useCallback(async () => {
     const data = await fetchArrayData(api, '/vehicles');
@@ -155,6 +159,13 @@ const Todo = () => {
           </Box>
       </Box>
 
+      <TablePaginationBar
+        count={sortedTodos.length}
+        page={page}
+        rowsPerPage={rowsPerPage}
+        onPageChange={handleChangePage}
+        onRowsPerPageChange={handleChangeRowsPerPage}
+      />
       <TableContainer component={Paper} sx={{ maxHeight: 'calc(100vh - 180px)', overflow: 'auto' }}>
         <Table stickyHeader>
           <TableHead>
@@ -216,7 +227,7 @@ const Todo = () => {
                 <TableCell colSpan={6} align="center">{t('common.noRecords')}</TableCell>
               </TableRow>
             ) : (
-              sortedTodos.map((todo) => (
+              paginatedTodos.map((todo) => (
                 <TableRow key={todo.id} sx={{ '&:nth-of-type(odd)': { backgroundColor: 'action.hover' } }}>
                   <TableCell>{vehicles.find(v => String(v.id) === String(todo.vehicleId))?.registrationNumber || '-'}</TableCell>
                   <TableCell>{todo.title}</TableCell>
@@ -245,6 +256,13 @@ const Todo = () => {
           </TableBody>
         </Table>
       </TableContainer>
+      <TablePaginationBar
+        count={sortedTodos.length}
+        page={page}
+        rowsPerPage={rowsPerPage}
+        onPageChange={handleChangePage}
+        onRowsPerPageChange={handleChangeRowsPerPage}
+      />
 
       <TodoDialog
         open={dialogOpen}

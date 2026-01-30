@@ -1,63 +1,62 @@
 [
-    {
-        "vehicleType": "Motorcycle",
-        "name": "Engine Oil",
-        "unit": "litres",
-        "description": "Motorcycle-specific engine oil (may require JASO MA/MA2 rating)."
-    },
-    {
-        "vehicleType": "Motorcycle",
-        "name": "Brake Fluid",
-        "unit": "ml",
-        "description": "DOT 3/4/5.1 hydraulic brake fluid for brake and clutch hydraulics."
-    },
-    {
-        "vehicleType": "Motorcycle",
-        "name": "Indicator/Direction Lamp Bulb",
-        "unit": "unit",
-        "description": "Indicator / direction (turn signal) lamp bulb suitable for motorcycle fittings; LED or filament types." 
-    },
-    {
-        "vehicleType": "Motorcycle",
-        "name": "Tyres/Tires",
-        "unit": "psi / bar",
-        "description": "Front and rear tyre sizes and pressures."
-    },
-    {
-        "vehicleType": "Motorcycle",
-        "name": "Chain Lube",
-        "unit": "ml",
-        "description": "Lubricant for motorcycle drive chain."
-    },
-    {
-        "vehicleType": "Motorcycle",
-        "name": "Air Filter",
-        "unit": "unit",
-        "description": "Engine air filter element."
-    },
-    {
-        "vehicleType": "Motorcycle",
-        "name": "Spark Plugs",
-        "unit": "unit",
-        "description": "Spark plug type and gap."
-    },
-    {
-        "vehicleType": "Motorcycle",
-        "name": "Fork Oil",
-        "unit": "ml",
-        "description": "Suspension fork oil with specified viscosity."
-    },
-    {
-        "vehicleType": "Motorcycle",
-        "name": "Battery",
-        "unit": "unit",
-        "description": "12V motorcycle battery (AGM or lead-acid)."
-    }
-    ,
-    {
-        "vehicleType": "Motorcycle",
-        "name": "Engine Flush/Catalytic Converter Cleaner",
-        "unit": "litres",
-        "description": "Engine flush and catalytic converter cleaner; specify product and application instructions."
-    }
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Air Filter",
+    "unit": "unit",
+    "description": "Engine air filter element."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Battery",
+    "unit": "unit",
+    "description": "12V motorcycle battery (AGM or lead-acid)."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Brake Fluid",
+    "unit": "ml",
+    "description": "DOT 3/4/5.1 hydraulic brake fluid for brake and clutch hydraulics."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Chain Lube",
+    "unit": "ml",
+    "description": "Lubricant for motorcycle drive chain."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Engine Flush/Catalytic Converter Cleaner",
+    "unit": "litres",
+    "description": "Engine flush and catalytic converter cleaner; specify product and application instructions."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Engine Oil",
+    "unit": "litres",
+    "description": "Motorcycle-specific engine oil (may require JASO MA/MA2 rating)."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Fork Oil",
+    "unit": "ml",
+    "description": "Suspension fork oil with specified viscosity."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Indicator/Direction Lamp Bulb",
+    "unit": "unit",
+    "description": "Indicator / direction (turn signal) lamp bulb suitable for motorcycle fittings; LED or filament types."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Spark Plugs",
+    "unit": "unit",
+    "description": "Spark plug type and gap."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Tyres/Tires",
+    "unit": "psi / bar",
+    "description": "Front and rear tyre sizes and pressures."
+  }
 ]

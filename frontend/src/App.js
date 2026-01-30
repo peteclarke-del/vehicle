@@ -23,8 +23,9 @@ import Reports from './pages/Reports';
 import PasswordChangeDialog from './components/PasswordChangeDialog';
 import SessionTimeoutWarning from './components/SessionTimeoutWarning';
 import ImportExport from './pages/ImportExport';
-import { CircularProgress, Box } from '@mui/material';
+import { Box } from '@mui/material';
 import { useTranslation } from 'react-i18next';
+import KnightRiderLoader from './components/KnightRiderLoader';
 
 const PrivateRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -32,7 +33,7 @@ const PrivateRoute = ({ children }) => {
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
-        <CircularProgress />
+        <KnightRiderLoader size={32} />
       </Box>
     );
   }
@@ -50,9 +51,15 @@ function AppRoutes() {
 
   useEffect(() => {
     let mounted = true;
+    let timeoutId;
     const runCheck = async () => {
       try {
-        const resp = await api.get('/system-check');
+        const resp = await Promise.race([
+          api.get('/system-check'),
+          new Promise((_, reject) => {
+            timeoutId = setTimeout(() => reject(new Error('System check timed out')), 6000);
+          }),
+        ]);
         if (!mounted) return;
         setSystemStatus(resp.data);
       } catch (err) {
@@ -63,7 +70,10 @@ function AppRoutes() {
       }
     };
     runCheck();
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+      if (timeoutId) clearTimeout(timeoutId);
+    };
   }, [api]);
 
   useEffect(() => {
@@ -77,7 +87,7 @@ function AppRoutes() {
   if (checkingSystem) {
     return (
       <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" minHeight="100vh">
-        <CircularProgress />
+        <KnightRiderLoader size={32} />
         <Box mt={2}>{t('app.systemChecks')}</Box>
       </Box>
     );

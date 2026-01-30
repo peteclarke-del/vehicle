@@ -38,6 +38,7 @@ security:
         - { path: ^/api/system-check, roles: PUBLIC_ACCESS }
         - { path: ^/api/auth/refresh, roles: PUBLIC_ACCESS }
         - { path: ^/api/reports/templates, roles: PUBLIC_ACCESS }
+        - { path: ^/api/notifications/stream, roles: PUBLIC_ACCESS }
         - { path: ^/api/auth/issue-refresh, roles: IS_AUTHENTICATED_FULLY }
         - { path: ^/api, roles: IS_AUTHENTICATED_FULLY }
 
