@@ -18,14 +18,16 @@ export const VehiclesProvider = ({ children }) => {
   const lastFetchRef = useRef(null);
   const hasFetchedRef = useRef(false);
 
-  const fetchVehicles = useCallback(async (force = false) => {
+  const fetchVehicles = useCallback(async (force = false, silent = false) => {
     // Cache for 30 seconds to avoid repeated fetches
     const now = Date.now();
     if (!force && lastFetchRef.current && (now - lastFetchRef.current) < 30000) {
       return vehicles;
     }
 
-    setLoading(true);
+    if (!silent && vehicles.length === 0) {
+      setLoading(true);
+    }
     try {
       const response = await api.get('/vehicles');
       const data = Array.isArray(response.data) ? response.data : [];
@@ -36,7 +38,9 @@ export const VehiclesProvider = ({ children }) => {
       console.error('Error fetching vehicles:', error);
       return [];
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
     }
   }, [api, vehicles]);
 
@@ -56,7 +60,7 @@ export const VehiclesProvider = ({ children }) => {
   }, [user?.id]);
 
   // Memoize refresh function
-  const refreshVehicles = useCallback(() => fetchVehicles(true), [fetchVehicles]);
+  const refreshVehicles = useCallback((silent = false) => fetchVehicles(true, silent), [fetchVehicles]);
 
   // Memoize context value to prevent re-renders
   const value = useMemo(

@@ -8,7 +8,6 @@ import {
   TextField,
   Grid,
   MenuItem,
-  CircularProgress,
   Checkbox,
   FormControlLabel,
   FormControl,
@@ -22,6 +21,7 @@ import ReceiptUpload from './ReceiptUpload';
 import ServiceDialog from './ServiceDialog';
 import PartDialog from './PartDialog';
 import ConsumableDialog from './ConsumableDialog';
+import KnightRiderLoader from './KnightRiderLoader';
 import { IconButton, Typography, Tooltip } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import LinkIcon from '@mui/icons-material/Link';
@@ -570,7 +570,7 @@ const MotDialog = ({ open, motRecord, vehicleId, vehicles, onClose }) => {
         <DialogActions>
           <Button onClick={() => onClose(false)}>{t('common.cancel')}</Button>
           <Button type="submit" variant="contained" color="primary" disabled={loading}>
-            {loading ? <CircularProgress size={24} /> : t('common.save')}
+            {loading ? <KnightRiderLoader size={18} /> : t('common.save')}
           </Button>
         </DialogActions>
       </form>

@@ -9,6 +9,7 @@ services:
       PHP_IDE_CONFIG: serverName=vehicle-docker
     volumes:
       - ./backend:/var/www/html:cached
+      - ./uploads:/var/www/html/uploads:rw
     user: "0:0"
     entrypoint: ["/usr/local/bin/docker-entrypoint.sh"]
 

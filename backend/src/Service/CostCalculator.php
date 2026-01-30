@@ -28,6 +28,9 @@ class CostCalculator
     {
         $total = 0;
         foreach ($vehicle->getParts() as $part) {
+            if ($part->getServiceRecord() || $part->getMotRecord()) {
+                continue;
+            }
             $total += (float) $part->getCost();
         }
         return $total;
@@ -37,6 +40,9 @@ class CostCalculator
     {
         $total = 0;
         foreach ($vehicle->getConsumables() as $consumable) {
+            if ($consumable->getServiceRecord() || $consumable->getMotRecord()) {
+                continue;
+            }
             if ($consumable->getCost()) {
                 $total += (float) $consumable->getCost();
             }
@@ -48,7 +54,8 @@ class CostCalculator
     {
         return $this->calculateTotalFuelCost($vehicle)
             + $this->calculateTotalPartsCost($vehicle)
-            + $this->calculateTotalConsumablesCost($vehicle);
+            + $this->calculateTotalConsumablesCost($vehicle)
+            + $this->calculateTotalServiceCost($vehicle);
     }
 
     public function calculateTotalCostToDate(Vehicle $vehicle): float
@@ -192,12 +199,21 @@ class CostCalculator
     public function calculateTotalServiceCost(Vehicle $vehicle): float
     {
         $total = 0.0;
+        $linkedMotIds = [];
         foreach ($vehicle->getServiceRecords() as $sr) {
-            // labourCost may be null
-            $labor = $sr->getLaborCost() !== null ? (float) $sr->getLaborCost() : 0.0;
-            $parts = $sr->getPartsCost() !== null ? (float) $sr->getPartsCost() : 0.0;
-            $additional = $sr->getAdditionalCosts() !== null ? (float) $sr->getAdditionalCosts() : 0.0;
-            $total += $labor + $parts + $additional;
+            $total += (float) $sr->getTotalCost();
+            $mot = $sr->getMotRecord();
+            if ($mot && $mot->getId()) {
+                $linkedMotIds[$mot->getId()] = true;
+            }
+        }
+
+        foreach ($vehicle->getMotRecords() as $mot) {
+            $motId = $mot->getId();
+            if ($motId && isset($linkedMotIds[$motId])) {
+                continue;
+            }
+            $total += (float) $mot->getTotalCost();
         }
         return $total;
     }

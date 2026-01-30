@@ -336,9 +336,6 @@ class VehicleController extends AbstractController
         // Ensure database non-nullable fields have sensible defaults
         if (null === $vehicle->getPurchaseCost()) {
             $vehicle->setPurchaseCost('0.00');
-        // Invalidate vehicle caches
-        $this->cache->invalidateTags(['vehicles', 'user.' . $user->getId(), 'dashboard']);
-
         }
         if (null === $vehicle->getPurchaseDate()) {
             $vehicle->setPurchaseDate(new \DateTime());
@@ -346,6 +343,9 @@ class VehicleController extends AbstractController
 
         $this->entityManager->persist($vehicle);
         $this->entityManager->flush();
+
+        // Invalidate vehicle caches
+        $this->cache->invalidateTags(['vehicles', 'vehicle.' . $vehicle->getId(), 'user.' . $user->getId(), 'dashboard']);
 
         return $this->json($this->serializeVehicle($vehicle), 201);
     }
@@ -408,7 +408,7 @@ class VehicleController extends AbstractController
         }
 
         // Invalidate vehicle caches
-        $this->cache->invalidateTags(['vehicles', 'user.' . $user->getId(), 'dashboard']);
+        $this->cache->invalidateTags(['vehicles', 'vehicle.' . $vehicle->getId(), 'user.' . $user->getId(), 'dashboard']);
 
         $vehicle->setUpdatedAt(new \DateTime());
         $this->entityManager->flush();
@@ -435,7 +435,7 @@ class VehicleController extends AbstractController
         }
 
         // Invalidate vehicle caches
-        $this->cache->invalidateTags(['vehicles', 'user.' . $user->getId(), 'dashboard']);
+        $this->cache->invalidateTags(['vehicles', 'vehicle.' . $vehicle->getId(), 'user.' . $user->getId(), 'dashboard']);
 
         $this->entityManager->remove($vehicle);
         $this->entityManager->flush();
@@ -460,11 +460,19 @@ class VehicleController extends AbstractController
             return $this->json(['error' => 'Access denied'], 403);
         }
 
-        $rawSchedule = $this->depreciationCalculator->getDepreciationSchedule($vehicle);
-        $schedule = [];
-        foreach ($rawSchedule as $year => $value) {
-            $schedule[] = ['year' => (int) $year, 'value' => (float) $value];
-        }
+        $cacheKey = 'vehicles.depreciation.' . $vehicle->getId() . '.user.' . $user->getId();
+        $schedule = $this->cache->get($cacheKey, function (ItemInterface $item) use ($vehicle, $user) {
+            $item->expiresAfter(3600); // 1 hour
+            $item->tag(['vehicles', 'vehicle.' . $vehicle->getId(), 'user.' . $user->getId()]);
+
+            $rawSchedule = $this->depreciationCalculator->getDepreciationSchedule($vehicle);
+            $mapped = [];
+            foreach ($rawSchedule as $year => $value) {
+                $mapped[] = ['year' => (int) $year, 'value' => (float) $value];
+            }
+
+            return $mapped;
+        });
 
         return $this->json(['schedule' => $schedule]);
     }
@@ -486,7 +494,13 @@ class VehicleController extends AbstractController
             return $this->json(['error' => 'Access denied'], 403);
         }
 
-        $stats = $this->costCalculator->getVehicleStats($vehicle);
+        $cacheKey = 'vehicles.stats.' . $vehicle->getId() . '.user.' . $user->getId();
+        $stats = $this->cache->get($cacheKey, function (ItemInterface $item) use ($vehicle, $user) {
+            $item->expiresAfter(120); // 2 minutes
+            $item->tag(['vehicles', 'vehicle.' . $vehicle->getId(), 'dashboard', 'user.' . $user->getId()]);
+
+            return $this->costCalculator->getVehicleStats($vehicle);
+        });
 
         $breakdown = [
             'purchaseCost' => $stats['purchaseCost'],
@@ -517,7 +531,13 @@ class VehicleController extends AbstractController
             return $this->json(['error' => 'Vehicle not found'], 404);
         }
 
-        $stats = $this->costCalculator->getVehicleStats($vehicle);
+        $cacheKey = 'vehicles.stats.' . $vehicle->getId() . '.user.' . $user->getId();
+        $stats = $this->cache->get($cacheKey, function (ItemInterface $item) use ($vehicle, $user) {
+            $item->expiresAfter(120); // 2 minutes
+            $item->tag(['vehicles', 'vehicle.' . $vehicle->getId(), 'dashboard', 'user.' . $user->getId()]);
+
+            return $this->costCalculator->getVehicleStats($vehicle);
+        });
 
         // Return only summary stats here; the full depreciation schedule
         // is available from the dedicated `/depreciation` endpoint.
@@ -597,25 +617,25 @@ class VehicleController extends AbstractController
                     ->getSingleScalarResult() ?? 0);
             }
 
-            // Consumables total (use createdAt)
+            // Consumables total (use lastChanged)
             if ($isAdmin) {
-                $dqlConsumables = 'SELECT SUM(c.cost) FROM App\\Entity\\Consumable c WHERE c.createdAt >= :cutoff';
+                $dqlConsumables = 'SELECT SUM(c.cost) FROM App\\Entity\\Consumable c WHERE c.lastChanged >= :cutoff';
                 $consumablesTotal = (float) ($this->entityManager->createQuery($dqlConsumables)
                     ->setParameter('cutoff', $cutoff)
                     ->getSingleScalarResult() ?? 0.0);
 
-                $dqlConsumablesCount = 'SELECT COUNT(c.id) FROM App\\Entity\\Consumable c WHERE c.createdAt >= :cutoff';
+                $dqlConsumablesCount = 'SELECT COUNT(c.id) FROM App\\Entity\\Consumable c WHERE c.lastChanged >= :cutoff';
                 $consumablesCount = (int) ($this->entityManager->createQuery($dqlConsumablesCount)
                     ->setParameter('cutoff', $cutoff)
                     ->getSingleScalarResult() ?? 0);
             } else {
-                $dqlConsumables = 'SELECT SUM(c.cost) FROM App\\Entity\\Consumable c JOIN c.vehicle v WHERE v.owner = :user AND c.createdAt >= :cutoff';
+                $dqlConsumables = 'SELECT SUM(c.cost) FROM App\\Entity\\Consumable c JOIN c.vehicle v WHERE v.owner = :user AND c.lastChanged >= :cutoff';
                 $consumablesTotal = (float) ($this->entityManager->createQuery($dqlConsumables)
                     ->setParameter('user', $user)
                     ->setParameter('cutoff', $cutoff)
                     ->getSingleScalarResult() ?? 0.0);
 
-                $dqlConsumablesCount = 'SELECT COUNT(c.id) FROM App\\Entity\\Consumable c JOIN c.vehicle v WHERE v.owner = :user AND c.createdAt >= :cutoff';
+                $dqlConsumablesCount = 'SELECT COUNT(c.id) FROM App\\Entity\\Consumable c JOIN c.vehicle v WHERE v.owner = :user AND c.lastChanged >= :cutoff';
                 $consumablesCount = (int) ($this->entityManager->createQuery($dqlConsumablesCount)
                     ->setParameter('user', $user)
                     ->setParameter('cutoff', $cutoff)

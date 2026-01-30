@@ -367,6 +367,9 @@ class ServiceRecordController extends AbstractController
             'mileage' => $service->getMileage(),
             'serviceProvider' => $service->getServiceProvider(),
             'workPerformed' => $service->getWorkPerformed(),
+            'additionalCosts' => $service->getAdditionalCosts(),
+            'nextServiceDate' => $service->getNextServiceDate()?->format('Y-m-d'),
+            'nextServiceMileage' => $service->getNextServiceMileage(),
             'notes' => $service->getNotes(),
             'receiptAttachmentId' => $service->getReceiptAttachment()?->getId(),
             'createdAt' => $service->getCreatedAt()?->format('c'),
@@ -413,6 +416,7 @@ class ServiceRecordController extends AbstractController
             'quantity' => $item->getQuantity(),
             'total' => $item->getTotal(),
             'consumableId' => $item->getConsumable()?->getId(),
+            'partId' => $item->getPart()?->getId(),
         ];
     }
 
@@ -468,6 +472,35 @@ class ServiceRecordController extends AbstractController
         
         if (isset($data['workPerformed'])) {
             $service->setWorkPerformed($data['workPerformed']);
+        }
+
+        if (isset($data['additionalCosts'])) {
+            if (!is_numeric($data['additionalCosts']) || (float) $data['additionalCosts'] < 0) {
+                throw new \InvalidArgumentException('Invalid additional costs');
+            }
+            $service->setAdditionalCosts($data['additionalCosts']);
+        }
+
+        if (array_key_exists('nextServiceDate', $data)) {
+            if ($data['nextServiceDate'] === null || $data['nextServiceDate'] === '') {
+                $service->setNextServiceDate(null);
+            } else {
+                try {
+                    $service->setNextServiceDate(new \DateTime($data['nextServiceDate']));
+                } catch (\Exception $e) {
+                    throw new \InvalidArgumentException('Invalid next service date format');
+                }
+            }
+        }
+
+        if (array_key_exists('nextServiceMileage', $data)) {
+            if ($data['nextServiceMileage'] === null || $data['nextServiceMileage'] === '') {
+                $service->setNextServiceMileage(null);
+            } elseif (!is_numeric($data['nextServiceMileage']) || (int) $data['nextServiceMileage'] < 0) {
+                throw new \InvalidArgumentException('Invalid next service mileage');
+            } else {
+                $service->setNextServiceMileage((int) $data['nextServiceMileage']);
+            }
         }
         
         if (isset($data['notes'])) {
@@ -557,12 +590,23 @@ class ServiceRecordController extends AbstractController
                     $consumable = $this->entityManager->getRepository(Consumable::class)->find((int)$it['consumableId']);
                     if ($consumable) {
                         $si->setConsumable($consumable);
+                        $consumable->setServiceRecord($service);
                     } else {
                         // If provided id not found, leave consumable null but log
                         $this->logger->warning('Linked consumable not found', ['consumableId' => $it['consumableId']]);
                     }
                 } else {
                     $si->setConsumable(null);
+                }
+
+                if (isset($it['partId']) && is_numeric($it['partId']) && (int) $it['partId'] > 0) {
+                    $part = $this->entityManager->getRepository(Part::class)->find((int) $it['partId']);
+                    if ($part) {
+                        $part->setServiceRecord($service);
+                        $si->setPart($part);
+                    } else {
+                        $this->logger->warning('Linked part not found', ['partId' => $it['partId']]);
+                    }
                 }
                 
                 $this->entityManager->persist($si);
@@ -579,5 +623,76 @@ class ServiceRecordController extends AbstractController
         // Fallback calculation
         $result = (float)$cost * $quantity;
         return number_format($result, 2, '.', '');
+    }
+
+    #[Route('/service-items/{id}', methods: ['DELETE'])]
+    public function deleteServiceItem(Request $request, int|string $id): JsonResponse
+    {
+        if (!is_numeric($id) || (int)$id <= 0) {
+            return new JsonResponse(['error' => 'Invalid service item ID'], 400);
+        }
+
+        $id = (int)$id;
+        $removeLinked = (int) $request->query->get('removeLinked', 0);
+
+        $item = $this->entityManager->getRepository(ServiceItem::class)->find($id);
+        $user = $this->getUserEntity();
+
+        if (!$item || !$user) {
+            return new JsonResponse(['error' => 'Service item not found'], 404);
+        }
+
+        $service = $item->getServiceRecord();
+        if (!$service || (!$this->isAdminForUser($user) && $service->getVehicle()->getOwner()->getId() !== $user->getId())) {
+            return new JsonResponse(['error' => 'Not authorized to delete this item'], 403);
+        }
+
+        $this->entityManager->beginTransaction();
+        try {
+            $consumable = $item->getConsumable();
+            $part = $item->getPart();
+
+            // If disassociate requested (removeLinked==0), clear serviceRecord on linked entities
+            if ($removeLinked === 0) {
+                if ($consumable && $consumable->getServiceRecord() && $consumable->getServiceRecord()->getId() === $service->getId()) {
+                    $consumable->setServiceRecord(null);
+                    $this->entityManager->persist($consumable);
+                }
+                if ($part && $part->getServiceRecord() && $part->getServiceRecord()->getId() === $service->getId()) {
+                    $part->setServiceRecord(null);
+                    $this->entityManager->persist($part);
+                }
+            }
+
+            // Remove the service item
+            $this->entityManager->remove($item);
+
+            // If delete requested (removeLinked==1), also remove linked entities if they are associated only with this service
+            if ($removeLinked === 1) {
+                if ($consumable && ($consumable->getServiceRecord() === null || $consumable->getServiceRecord()->getId() === $service->getId())) {
+                    $this->entityManager->remove($consumable);
+                }
+                if ($part && ($part->getServiceRecord() === null || $part->getServiceRecord()->getId() === $service->getId())) {
+                    $this->entityManager->remove($part);
+                }
+            }
+
+            $this->entityManager->flush();
+
+            $motId = $service->getMotRecord()?->getId();
+            if ($motId) {
+                $mot = $this->entityManager->getRepository(MotRecord::class)->find($motId);
+                if ($mot) {
+                    $this->repairCostCalculator->recalculateAndPersist($mot);
+                }
+            }
+
+            $this->entityManager->commit();
+            return new JsonResponse(['message' => 'Service item deleted']);
+        } catch (\Throwable $e) {
+            $this->entityManager->rollback();
+            $this->logger->error('Error deleting service item', ['exception' => $e->getMessage()]);
+            return new JsonResponse(['error' => 'Failed to delete service item'], 500);
+        }
     }
 }

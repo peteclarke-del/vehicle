@@ -22,7 +22,9 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { formatDateISO } from '../utils/formatDate';
 import { fetchArrayData } from '../hooks/useApiData';
+import useTablePagination from '../hooks/useTablePagination';
 import PolicyDialog from '../components/PolicyDialog';
+import TablePaginationBar from '../components/TablePaginationBar';
 
 const Policies = () => {
   const [policies, setPolicies] = useState([]);
@@ -34,6 +36,8 @@ const Policies = () => {
   const pendingDeletes = React.useRef(new Map());
   const { api } = useAuth();
   const { t } = useTranslation();
+
+  const { page, rowsPerPage, paginatedRows: paginatedPolicies, handleChangePage, handleChangeRowsPerPage } = useTablePagination(policies);
 
   const loadVehicles = useCallback(async () => {
     const data = await fetchArrayData(api, '/vehicles');
@@ -116,6 +120,13 @@ const Policies = () => {
         </Button>
       </Box>
 
+      <TablePaginationBar
+        count={policies.length}
+        page={page}
+        rowsPerPage={rowsPerPage}
+        onPageChange={handleChangePage}
+        onRowsPerPageChange={handleChangeRowsPerPage}
+      />
       <TableContainer component={Paper} sx={{ maxHeight: 'calc(100vh - 180px)', overflow: 'auto' }}>
         <Table stickyHeader>
           <TableHead>
@@ -134,7 +145,7 @@ const Policies = () => {
                 <TableCell colSpan={6} align="center">{t('common.noRecords')}</TableCell>
               </TableRow>
             ) : (
-              policies.map((p) => (
+              paginatedPolicies.map((p) => (
                 <TableRow key={p.id} sx={{ '&:nth-of-type(odd)': { backgroundColor: 'action.hover' } }}>
                   <TableCell>
                     {p.provider}
@@ -174,6 +185,13 @@ const Policies = () => {
           </TableBody>
         </Table>
       </TableContainer>
+      <TablePaginationBar
+        count={policies.length}
+        page={page}
+        rowsPerPage={rowsPerPage}
+        onPageChange={handleChangePage}
+        onRowsPerPageChange={handleChangeRowsPerPage}
+      />
 
       <PolicyDialog open={dialogOpen} policy={editingPolicy} vehicles={vehicles} onClose={handleDialogClose} />
       <Snackbar

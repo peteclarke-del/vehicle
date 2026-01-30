@@ -18,9 +18,11 @@ import { useTranslation } from 'react-i18next';
 import ImportPreview from '../components/ImportPreview';
 import { buildUrl as helpersBuildUrl, authHeaders } from '../components/ImportHelpers';
 import { saveBlob, downloadJsonObject } from '../components/DownloadHelpers';
+import { useVehicles } from '../contexts/VehiclesContext';
 
 const ImportExport = () => {
   const { t } = useTranslation();
+  const { refreshVehicles } = useVehicles();
   const [status, setStatus] = useState('all');
   const [selectedVehicles, setSelectedVehicles] = useState([]);
   const [elements, setElements] = useState([]);
@@ -170,6 +172,7 @@ const ImportExport = () => {
       } catch (e) {
         // ignore
       }
+      await refreshVehicles();
       setImportPreviewOpen(false);
     } catch (err) {
       setOpStatus(t('common.importFailed'));
@@ -193,6 +196,7 @@ const ImportExport = () => {
       } catch (e) {
         // ignore
       }
+      await refreshVehicles();
     } catch (err) {
       setOpStatus(t('common.importFailed'));
     }

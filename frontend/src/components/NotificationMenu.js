@@ -22,13 +22,12 @@ import {
   Close as CloseIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import { useNotifications } from '../hooks/useNotifications';
 import { useTranslation } from 'react-i18next';
 
-const NotificationMenu = () => {
+const NotificationMenu = ({ notifications, dismissNotification, snoozeNotification, clearAllNotifications }) => {
   const [anchorEl, setAnchorEl] = useState(null);
   const navigate = useNavigate();
-  const { notifications, dismissNotification, snoozeNotification, clearAllNotifications } = useNotifications();
+  const items = Array.isArray(notifications) ? notifications : [];
 
   const handleOpen = (event) => {
     setAnchorEl(event.currentTarget);
@@ -52,7 +51,11 @@ const NotificationMenu = () => {
 
   const handleNotificationClick = (notification) => {
     handleClose();
-    navigate(`/vehicles/${notification.vehicleId}`);
+    if (notification.route) {
+      navigate(notification.route);
+    } else if (notification.vehicleId) {
+      navigate(`/vehicles/${notification.vehicleId}`);
+    }
   };
 
   const getSeverityIcon = (severity) => {
@@ -70,7 +73,7 @@ const NotificationMenu = () => {
     <>
       <Tooltip title={t('notifications.title') || 'Notifications'}>
         <IconButton color="inherit" onClick={handleOpen}>
-          <Badge badgeContent={notifications.length} color="error">
+          <Badge badgeContent={items.length} color="error">
             <NotificationsIcon />
           </Badge>
         </IconButton>
@@ -88,7 +91,7 @@ const NotificationMenu = () => {
       >
         <Box sx={{ px: 2, py: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Typography variant="h6">{t('notifications.title')}</Typography>
-          {notifications.length > 0 && (
+          {items.length > 0 && (
             <Button size="small" onClick={clearAllNotifications}>
               {t('notifications.clearAll')}
             </Button>
@@ -96,7 +99,7 @@ const NotificationMenu = () => {
         </Box>
         <Divider />
         
-        {notifications.length === 0 ? (
+        {items.length === 0 ? (
           <Box sx={{ p: 3, textAlign: 'center' }}>
             <CheckCircleIcon sx={{ fontSize: 48, color: 'success.main', mb: 1 }} />
             <Typography color="text.secondary">
@@ -104,17 +107,35 @@ const NotificationMenu = () => {
             </Typography>
           </Box>
         ) : (
-          notifications.map((notification) => (
+          items.map((notification) => {
+            const title = notification.titleKey
+              ? t(notification.titleKey, notification.params || {})
+              : (notification.title || t('notifications.notification'));
+            const message = notification.messageKey
+              ? t(notification.messageKey, notification.params || {})
+              : (notification.message || '');
+
+            return (
             <MenuItem
               key={notification.id}
               onClick={() => handleNotificationClick(notification)}
               sx={{
                 flexDirection: 'column',
                 alignItems: 'flex-start',
-                py: 1.5,
+                py: 0.75,
                 borderBottom: '1px solid',
                 borderColor: 'divider',
+                overflow: 'hidden',
+                maxHeight: 64,
+                transition: 'max-height 180ms ease',
                 '&:last-child': { borderBottom: 'none' },
+                '&:hover': {
+                  maxHeight: 180,
+                },
+                '&:hover .notification-extra': {
+                  opacity: 1,
+                  maxHeight: 120,
+                },
               }}
             >
               <Box sx={{ display: 'flex', alignItems: 'flex-start', width: '100%', mb: 0.5 }}>
@@ -122,18 +143,42 @@ const NotificationMenu = () => {
                   {getSeverityIcon(notification.severity)}
                 </Box>
                 <Box sx={{ flex: 1 }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 600 }} noWrap>
                     {notification.vehicleName}
                   </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-                    {notification.title}
+                  <Typography variant="body2" color="text.secondary" noWrap>
+                    {title}
                   </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {notification.message}
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    className="notification-extra"
+                    sx={{
+                      display: 'block',
+                      opacity: 0,
+                      maxHeight: 0,
+                      overflow: 'hidden',
+                      transition: 'opacity 150ms ease, max-height 150ms ease',
+                    }}
+                  >
+                    {message}
                   </Typography>
                 </Box>
               </Box>
-              <Box sx={{ display: 'flex', gap: 1, mt: 1, width: '100%', justifyContent: 'flex-end' }}>
+              <Box
+                className="notification-extra"
+                sx={{
+                  display: 'flex',
+                  gap: 1,
+                  mt: 1,
+                  width: '100%',
+                  justifyContent: 'flex-end',
+                  opacity: 0,
+                  maxHeight: 0,
+                  overflow: 'hidden',
+                  transition: 'opacity 150ms ease, max-height 150ms ease',
+                }}
+              >
                 <Chip
                   size="small"
                   icon={<SnoozeIcon />}
@@ -150,7 +195,8 @@ const NotificationMenu = () => {
                 />
               </Box>
             </MenuItem>
-          ))
+            );
+          })
         )}
       </Menu>
     </>

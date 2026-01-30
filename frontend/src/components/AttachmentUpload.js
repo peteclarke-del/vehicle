@@ -10,13 +10,13 @@ import {
   ListItemSecondaryAction,
   Typography,
   TextField,
-  CircularProgress,
   Chip,
 } from '@mui/material';
 import {
   CloudUpload,
   Delete as DeleteIcon,
   Download as DownloadIcon,
+  Visibility as ViewIcon,
   InsertDriveFile,
   Image as ImageIcon,
   PictureAsPdf,
@@ -24,11 +24,15 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
+import KnightRiderLoader from './KnightRiderLoader';
+import AttachmentViewerDialog from './AttachmentViewerDialog';
 
 const AttachmentUpload = ({ entityType, entityId, onChange, compact = false }) => {
   const [attachments, setAttachments] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [selectedAttachment, setSelectedAttachment] = useState(null);
   const { api } = useAuth();
   const { t } = useTranslation();
 
@@ -109,6 +113,16 @@ const AttachmentUpload = ({ entityType, entityId, onChange, compact = false }) =
     }
   };
 
+  const handleView = (attachment) => {
+    setSelectedAttachment(attachment);
+    setViewerOpen(true);
+  };
+
+  const handleCloseViewer = () => {
+    setViewerOpen(false);
+    setSelectedAttachment(null);
+  };
+
   const getFileIcon = (mimeType) => {
     if (!mimeType) return <InsertDriveFile />;
     if (mimeType.startsWith('image/')) return <ImageIcon />;
@@ -131,7 +145,7 @@ const AttachmentUpload = ({ entityType, entityId, onChange, compact = false }) =
           <Button
             variant="outlined"
             component="label"
-            startIcon={uploading ? <CircularProgress size={20} /> : <CloudUpload />}
+            startIcon={uploading ? <KnightRiderLoader size={16} /> : <CloudUpload />}
             disabled={uploading}
           >
             {t('attachments.upload')}
@@ -148,7 +162,7 @@ const AttachmentUpload = ({ entityType, entityId, onChange, compact = false }) =
 
       {loading ? (
         <Box display="flex" justifyContent="center" p={2}>
-          <CircularProgress />
+          <KnightRiderLoader size={24} />
         </Box>
       ) : attachments.length === 0 ? (
         compact ? (
@@ -180,7 +194,7 @@ const AttachmentUpload = ({ entityType, entityId, onChange, compact = false }) =
             >
               {uploading ? (
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <CircularProgress size={20} />
+                  <KnightRiderLoader size={16} />
                   <Typography variant="body2">{t('attachment.uploading')}</Typography>
                 </Box>
               ) : (
@@ -216,6 +230,9 @@ const AttachmentUpload = ({ entityType, entityId, onChange, compact = false }) =
             >
               <ReceiptIcon color="primary" />
               <Typography variant="body2" sx={{ flex: 1 }}>{t('attachment.receiptAttached')}</Typography>
+              <IconButton size="small" onClick={() => handleView(att)}>
+                <ViewIcon />
+              </IconButton>
               <IconButton size="small" onClick={() => handleDownload(att)}>
                 <DownloadIcon />
               </IconButton>
@@ -243,6 +260,9 @@ const AttachmentUpload = ({ entityType, entityId, onChange, compact = false }) =
                 <IconButton edge="end" onClick={() => handleDownload(attachment)} size="small">
                   <DownloadIcon />
                 </IconButton>
+                <IconButton edge="end" onClick={() => handleView(attachment)} size="small">
+                  <ViewIcon />
+                </IconButton>
                 <IconButton edge="end" onClick={() => handleDelete(attachment.id)} size="small">
                   <DeleteIcon />
                 </IconButton>
@@ -257,6 +277,18 @@ const AttachmentUpload = ({ entityType, entityId, onChange, compact = false }) =
           {t('attachments.saveFirst')}
         </Typography>
       )}
+
+      <AttachmentViewerDialog
+        open={viewerOpen}
+        onClose={handleCloseViewer}
+        attachmentId={selectedAttachment?.id}
+        title={selectedAttachment?.originalName || t('common.view')}
+        mimeType={selectedAttachment?.mimeType}
+        showDownload
+        onDownload={
+          selectedAttachment ? () => handleDownload(selectedAttachment) : undefined
+        }
+      />
     </Box>
   );
 };

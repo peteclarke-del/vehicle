@@ -21,7 +21,9 @@ import { useUserPreferences } from '../contexts/UserPreferencesContext';
 import { useTranslation } from 'react-i18next';
 import { formatDateISO } from '../utils/formatDate';
 import { useVehicles } from '../contexts/VehiclesContext';
+import useTablePagination from '../hooks/useTablePagination';
 import PolicyDialog from '../components/PolicyDialog';
+import TablePaginationBar from '../components/TablePaginationBar';
 import VehicleSelector from '../components/VehicleSelector';
 
 const Insurance = () => {
@@ -116,6 +118,8 @@ const Insurance = () => {
     return [...policies].sort(comparator);
   }, [policies, order, orderBy]);
 
+  const { page, rowsPerPage, paginatedRows: paginatedPolicies, handleChangePage, handleChangeRowsPerPage } = useTablePagination(sortedPolicies);
+
   // Policy handlers
   const handleAddPolicy = () => {
     setEditingPolicy(null);
@@ -154,6 +158,13 @@ const Insurance = () => {
         </Box>
       </Box>
 
+      <TablePaginationBar
+        count={sortedPolicies.length}
+        page={page}
+        rowsPerPage={rowsPerPage}
+        onPageChange={handleChangePage}
+        onRowsPerPageChange={handleChangeRowsPerPage}
+      />
       <TableContainer component={Paper} sx={{ maxHeight: 'calc(100vh - 180px)', overflow: 'auto' }}>
         <Table stickyHeader>
           <TableHead>
@@ -213,7 +224,7 @@ const Insurance = () => {
                 <TableCell colSpan={7} align="center">{t('common.noRecords')}</TableCell>
               </TableRow>
             ) : (
-              sortedPolicies.map((p) => {
+              paginatedPolicies.map((p) => {
                 // Display all vehicles on the policy
                 const displayVehicles = p.vehicles || [];
                 const vehicleDisplay = displayVehicles.map(v => v.registrationNumber || v.registration).join(', ') || '-';
@@ -245,6 +256,13 @@ const Insurance = () => {
           </TableBody>
         </Table>
       </TableContainer>
+      <TablePaginationBar
+        count={sortedPolicies.length}
+        page={page}
+        rowsPerPage={rowsPerPage}
+        onPageChange={handleChangePage}
+        onRowsPerPageChange={handleChangeRowsPerPage}
+      />
 
       <PolicyDialog 
         open={policyDialogOpen} 

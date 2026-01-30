@@ -7,7 +7,6 @@ import {
   Box,
   Grid,
   Alert,
-  CircularProgress,
   Chip,
   Divider,
 } from '@mui/material';
@@ -18,6 +17,7 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
+import KnightRiderLoader from './KnightRiderLoader';
 
 const VinDecoder = ({ vehicle }) => {
   const { api } = useAuth();
@@ -112,7 +112,7 @@ const VinDecoder = ({ vehicle }) => {
           <Button
             variant="outlined"
             size="small"
-            startIcon={loading ? <CircularProgress size={16} /> : <RefreshIcon />}
+            startIcon={loading ? <KnightRiderLoader size={12} /> : <RefreshIcon />}
             onClick={() => decodeVin(true)}
             disabled={loading}
             title={t('vinDecoder.forceRefreshTooltip')}
@@ -144,7 +144,7 @@ const VinDecoder = ({ vehicle }) => {
 
         {loading && !vinData && (
           <Box display="flex" justifyContent="center" alignItems="center" py={4}>
-            <CircularProgress />
+            <KnightRiderLoader size={28} />
           </Box>
         )}
 

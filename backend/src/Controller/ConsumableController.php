@@ -19,8 +19,23 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 
 #[Route('/api/consumables')]
+
+/**
+ * class ConsumableController
+ */
 class ConsumableController extends AbstractController
 {
+    /**
+     * function __construct
+     *
+     * @param EntityManagerInterface $entityManager
+     * @param ReceiptOcrService $ocrService
+     * @param UrlScraperService $scraperService
+     * @param LoggerInterface $logger
+     * @param RepairCostCalculator $repairCostCalculator
+     *
+     * @return void
+     */
     public function __construct(
         private EntityManagerInterface $entityManager,
         private ReceiptOcrService $ocrService,
@@ -31,6 +46,14 @@ class ConsumableController extends AbstractController
     }
 
     #[Route('', name: 'api_consumables_list', methods: ['GET'])]
+
+    /**
+     * function list
+     *
+     * @param Request $request
+     *
+     * @return JsonResponse
+     */
     public function list(Request $request): JsonResponse
     {
         $user = $this->getUser();
@@ -71,6 +94,14 @@ class ConsumableController extends AbstractController
     }
 
     #[Route('/{id}', name: 'api_consumables_get', methods: ['GET'])]
+
+    /**
+     * function get
+     *
+     * @param mixed $id
+     *
+     * @return JsonResponse
+     */
     public function get(int|string $id): JsonResponse
     {
         $user = $this->getUser();
@@ -89,6 +120,14 @@ class ConsumableController extends AbstractController
     }
 
     #[Route('', name: 'api_consumables_create', methods: ['POST'])]
+
+    /**
+     * function create
+     *
+     * @param Request $request
+     *
+     * @return JsonResponse
+     */
     public function create(Request $request): JsonResponse
     {
         $user = $this->getUser();
@@ -105,9 +144,7 @@ class ConsumableController extends AbstractController
             return $this->json(['error' => 'Vehicle not found'], 404);
         }
 
-        $consumableType = $this->entityManager->getRepository(ConsumableType::class)
-            ->find($data['consumableTypeId']);
-
+        $consumableType = $this->resolveConsumableType($data, $vehicle);
         if (!$consumableType) {
             return $this->json(['error' => 'Consumable type not found'], 404);
         }
@@ -117,7 +154,10 @@ class ConsumableController extends AbstractController
         $consumable->setConsumableType($consumableType);
         // Ensure description is set. Accept legacy `name` too.
         $desc = $data['description'] ?? $data['name'] ?? $consumableType->getName() ?? null;
-        $consumable->setDescription($desc !== null ? (string)$desc : null);
+        $desc = is_string($desc) ? trim($desc) : $desc;
+        if ($desc !== null && $desc !== '') {
+            $consumable->setDescription((string) $desc);
+        }
         // Do not force lastChanged: leave null unless explicitly provided
         $this->updateConsumableFromData($consumable, $data);
 
@@ -128,6 +168,15 @@ class ConsumableController extends AbstractController
     }
 
     #[Route('/{id}', name: 'api_consumables_update', methods: ['PUT'])]
+
+    /**
+     * function update
+     *
+     * @param mixed $id
+     * @param Request $request
+     *
+     * @return JsonResponse
+     */
     public function update(int|string $id, Request $request): JsonResponse
     {
         $user = $this->getUser();
@@ -179,6 +228,14 @@ class ConsumableController extends AbstractController
     }
 
     #[Route('/{id}', name: 'api_consumables_delete', methods: ['DELETE'])]
+
+    /**
+     * function delete
+     *
+     * @param mixed $id
+     *
+     * @return JsonResponse
+     */
     public function delete(int|string $id): JsonResponse
     {
         $user = $this->getUser();
@@ -210,6 +267,14 @@ class ConsumableController extends AbstractController
 
         return $this->json(['message' => 'Consumable deleted successfully']);
     }
+
+    /**
+     * function isAdminForUser
+     *
+     * @param User $user
+     *
+     * @return bool
+     */
     private function isAdminForUser(?User $user): bool
     {
         if (!$user) return false;
@@ -217,20 +282,33 @@ class ConsumableController extends AbstractController
         return in_array('ROLE_ADMIN', $roles, true);
     }
 
+    /**
+     * function serializeConsumable
+     *
+     * @param Consumable $consumable
+     *
+     * @return array
+     */
     private function serializeConsumable(Consumable $consumable): array
     {
         return [
             'id' => $consumable->getId(),
             'vehicleId' => $consumable->getVehicle()->getId(),
+            'serviceRecordId' => $consumable->getServiceRecord()?->getId(),
             'consumableType' => [
                 'id' => $consumable->getConsumableType()->getId(),
                 'name' => $consumable->getConsumableType()->getName(),
                 'unit' => $consumable->getConsumableType()->getUnit()
             ],
             'description' => $consumable->getDescription(),
+            'brand' => $consumable->getBrand(),
+            'partNumber' => $consumable->getPartNumber(),
+            'supplier' => $consumable->getSupplier(),
             'quantity' => $consumable->getQuantity(),
             'lastChanged' => $consumable->getLastChanged()?->format('Y-m-d'),
             'mileageAtChange' => $consumable->getMileageAtChange(),
+            'replacementIntervalMiles' => $consumable->getReplacementIntervalMiles(),
+            'nextReplacementMileage' => $consumable->getNextReplacementMileage(),
             'cost' => $consumable->getCost(),
             'notes' => $consumable->getNotes(),
             'receiptAttachmentId' => $consumable->getReceiptAttachment()?->getId(),
@@ -243,16 +321,45 @@ class ConsumableController extends AbstractController
         ];
     }
 
+    /**
+     * function updateConsumableFromData
+     *
+     * @param Consumable $consumable
+     * @param array $data
+     *
+     * @return void
+     */
     private function updateConsumableFromData(Consumable $consumable, array $data): void
     {
+        if (array_key_exists('consumableTypeId', $data) || !empty($data['consumableTypeName'])) {
+            $resolved = $this->resolveConsumableType($data, $consumable->getVehicle());
+            if ($resolved) {
+                $consumable->setConsumableType($resolved);
+            }
+        }
         // Accept `description` from clients (and fallback to legacy `name`).
         if (isset($data['description'])) {
-            $consumable->setDescription($data['description']);
+            $desc = is_string($data['description']) ? trim($data['description']) : $data['description'];
+            if ($desc !== '' && $desc !== null) {
+                $consumable->setDescription((string) $desc);
+            }
         } elseif (isset($data['name'])) {
-            $consumable->setDescription($data['name']);
+            $name = is_string($data['name']) ? trim($data['name']) : $data['name'];
+            if ($name !== '' && $name !== null) {
+                $consumable->setDescription((string) $name);
+            }
         }
         if (isset($data['quantity'])) {
             $consumable->setQuantity($data['quantity']);
+        }
+        if (isset($data['brand'])) {
+            $consumable->setBrand($data['brand']);
+        }
+        if (isset($data['partNumber'])) {
+            $consumable->setPartNumber($data['partNumber']);
+        }
+        if (isset($data['supplier'])) {
+            $consumable->setSupplier($data['supplier']);
         }
         if (isset($data['lastChanged'])) {
             if (!empty($data['lastChanged'])) {
@@ -306,9 +413,113 @@ class ConsumableController extends AbstractController
                 }
             }
         }
+
+        if (array_key_exists('serviceRecordId', $data)) {
+            $this->logger->info('Consumable serviceRecordId present in payload', [
+                'id' => $consumable->getId(),
+                'serviceRecordId' => $data['serviceRecordId'],
+            ]);
+
+            $svcId = $data['serviceRecordId'];
+            if (is_array($svcId)) {
+                $svcId = $svcId['id'] ?? $svcId['serviceRecordId'] ?? null;
+            }
+
+            if ($svcId === null || $svcId === '' || $svcId === 0 || $svcId === '0') {
+                $consumable->setServiceRecord(null);
+                $this->logger->info('Consumable disassociated from Service (explicit)', [
+                    'consumableId' => $consumable->getId(),
+                ]);
+            } else {
+                $svcId = is_numeric($svcId) ? (int) $svcId : $svcId;
+                $svc = $this->entityManager->getRepository(\App\Entity\ServiceRecord::class)->find($svcId);
+                if ($svc) {
+                    $consumable->setServiceRecord($svc);
+                    $this->logger->info('Consumable associated with Service', [
+                        'consumableId' => $consumable->getId(),
+                        'serviceId' => $svc->getId(),
+                    ]);
+                } else {
+                    $consumable->setServiceRecord(null);
+                    $this->logger->info('Consumable disassociated from Service (not found)', [
+                        'consumableId' => $consumable->getId(),
+                        'serviceId' => $svcId,
+                    ]);
+                }
+            }
+        }
+    }
+
+    /**
+     * function resolveConsumableType
+     *
+     * @param array $data
+     *
+     * @return ConsumableType
+     */
+    private function resolveConsumableType(array $data, ?Vehicle $vehicle = null): ?ConsumableType
+    {
+        $typeId = $data['consumableTypeId'] ?? null;
+        if ($typeId === 'other') {
+            $typeId = null;
+        }
+
+        if (!empty($typeId)) {
+            $type = $this->entityManager->getRepository(ConsumableType::class)->find($typeId);
+            if ($type) {
+                return $type;
+            }
+        }
+
+        if (!$vehicle && !empty($data['vehicleId'])) {
+            $vehicle = $this->entityManager->getRepository(Vehicle::class)->find($data['vehicleId']);
+        }
+
+        $vehicleType = $vehicle?->getVehicleType();
+
+        $typeName = $data['consumableTypeName'] ?? null;
+        $typeName = is_string($typeName) ? trim($typeName) : null;
+        if ($typeName === '') {
+            $typeName = null;
+        }
+
+        if ($typeName) {
+            $criteria = ['name' => $typeName];
+            if ($vehicleType) {
+                $criteria['vehicleType'] = $vehicleType;
+            }
+
+            $type = $this->entityManager->getRepository(ConsumableType::class)
+                ->findOneBy($criteria);
+            if (!$type) {
+                $type = new ConsumableType();
+                $type->setName($typeName);
+                if ($vehicleType) {
+                    $type->setVehicleType($vehicleType);
+                } else {
+                    $this->logger->warning('Cannot create consumable type without vehicle type', [
+                        'consumableTypeName' => $typeName,
+                        'vehicleId' => $vehicle?->getId(),
+                    ]);
+                    return null;
+                }
+                $this->entityManager->persist($type);
+            }
+            return $type;
+        }
+
+        return null;
     }
 
     #[Route('/scrape-url', name: 'api_consumables_scrape_url', methods: ['POST'])]
+
+    /**
+     * function scrapeUrl
+     *
+     * @param Request $request
+     *
+     * @return JsonResponse
+     */
     public function scrapeUrl(Request $request): JsonResponse
     {
         $user = $this->getUser();

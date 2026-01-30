@@ -18,6 +18,7 @@ use App\Entity\MotRecord;
 use App\Entity\InsurancePolicy;
 use App\Entity\RoadTax;
 use App\Entity\VehicleStatusHistory;
+use App\Entity\VehicleImage;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -84,6 +85,7 @@ class VehicleImportExportController extends AbstractController
                     continue;
                 }
                 $parts[] = [
+                    'id' => $part->getId(),
                     'name' => $part->getName(),
                     'price' => $part->getPrice(),
                     'sku' => $part->getSku(),
@@ -114,9 +116,11 @@ class VehicleImportExportController extends AbstractController
                     continue;
                 }
                 $consumables[] = [
+                    'id' => $consumable->getId(),
                     'description' => $consumable->getDescription(),
                     'brand' => $consumable->getBrand(),
                     'partNumber' => $consumable->getPartNumber(),
+                    'supplier' => $consumable->getSupplier(),
                     'replacementIntervalMiles' => $consumable->getReplacementIntervalMiles(),
                     'nextReplacementMileage' => $consumable->getNextReplacementMileage(),
                     'consumableType' => $consumable->getConsumableType()->getName(),
@@ -146,6 +150,7 @@ class VehicleImportExportController extends AbstractController
                     'serviceType' => $serviceRecord->getServiceType(),
                     'laborCost' => $serviceRecord->getLaborCost(),
                     'partsCost' => $serviceRecord->getPartsCost(),
+                    'consumablesCost' => $serviceRecord->getConsumablesCost(),
                     'mileage' => $serviceRecord->getMileage(),
                     'serviceProvider' => $serviceRecord->getServiceProvider(),
                     'additionalCosts' => $serviceRecord->getAdditionalCosts(),
@@ -153,13 +158,55 @@ class VehicleImportExportController extends AbstractController
                     'nextServiceMileage' => $serviceRecord->getNextServiceMileage(),
                     'workPerformed' => $serviceRecord->getWorkPerformed(),
                     'notes' => $serviceRecord->getNotes(),
-                    'items' => array_map(fn($it) => [
-                        'type' => $it->getType(),
-                        'description' => $it->getDescription(),
-                        'cost' => $it->getCost(),
-                        'quantity' => $it->getQuantity(),
-                    ], $serviceRecord->getItems()),
-                        'receiptAttachmentId' => $serviceRecord->getReceiptAttachment()?->getId(),
+                    'items' => array_map(function ($it) {
+                        $part = $it->getPart();
+                        $consumable = $it->getConsumable();
+
+                        return [
+                            'type' => $it->getType(),
+                            'description' => $it->getDescription(),
+                            'cost' => $it->getCost(),
+                            'quantity' => $it->getQuantity(),
+                            'consumableId' => $consumable?->getId(),
+                            'partId' => $part?->getId(),
+                            'part' => $part ? [
+                                'id' => $part->getId(),
+                                'description' => $part->getDescription(),
+                                'partNumber' => $part->getPartNumber(),
+                                'manufacturer' => $part->getManufacturer(),
+                                'supplier' => $part->getSupplier(),
+                                'cost' => $part->getCost(),
+                                'category' => $part->getCategory(),
+                                'purchaseDate' => $part->getPurchaseDate()?->format('Y-m-d'),
+                                'installationDate' => $part->getInstallationDate()?->format('Y-m-d'),
+                                'mileageAtInstallation' => $part->getMileageAtInstallation(),
+                                'notes' => $part->getNotes(),
+                                'receiptAttachmentOriginalId' => $part->getReceiptAttachment()?->getId(),
+                                'productUrl' => $part->getProductUrl(),
+                                'createdAt' => $part->getCreatedAt()?->format('c'),
+                            ] : null,
+                            'consumable' => $consumable ? [
+                                'id' => $consumable->getId(),
+                                'consumableType' => $consumable->getConsumableType()->getName(),
+                                'description' => $consumable->getDescription(),
+                                'brand' => $consumable->getBrand(),
+                                'partNumber' => $consumable->getPartNumber(),
+                                'supplier' => $consumable->getSupplier(),
+                                'replacementIntervalMiles' => $consumable->getReplacementIntervalMiles(),
+                                'nextReplacementMileage' => $consumable->getNextReplacementMileage(),
+                                'quantity' => $consumable->getQuantity(),
+                                'lastChanged' => $consumable->getLastChanged()?->format('Y-m-d'),
+                                'mileageAtChange' => $consumable->getMileageAtChange(),
+                                'cost' => $consumable->getCost(),
+                                'notes' => $consumable->getNotes(),
+                                'receiptAttachmentOriginalId' => $consumable->getReceiptAttachment()?->getId(),
+                                'productUrl' => $consumable->getProductUrl(),
+                                'createdAt' => $consumable->getCreatedAt()?->format('c'),
+                                'updatedAt' => $consumable->getUpdatedAt()?->format('c'),
+                            ] : null,
+                        ];
+                    }, $serviceRecord->getItems()),
+                    'receiptAttachmentId' => $serviceRecord->getReceiptAttachment()?->getId(),
                     'createdAt' => $serviceRecord->getCreatedAt()?->format('c'),
                 ];
             }
@@ -197,6 +244,9 @@ class VehicleImportExportController extends AbstractController
                         $motConsumables[] = [
                             'consumableType' => $consumable->getConsumableType()->getName(),
                             'description' => $consumable->getDescription(),
+                            'brand' => $consumable->getBrand(),
+                            'partNumber' => $consumable->getPartNumber(),
+                            'supplier' => $consumable->getSupplier(),
                             'quantity' => $consumable->getQuantity(),
                             'lastChanged' => $consumable->getLastChanged()?->format('Y-m-d'),
                             'mileageAtChange' => $consumable->getMileageAtChange(),
@@ -218,15 +268,61 @@ class VehicleImportExportController extends AbstractController
                             'serviceType' => $svc->getServiceType(),
                             'laborCost' => $svc->getLaborCost(),
                             'partsCost' => $svc->getPartsCost(),
+                            'consumablesCost' => $svc->getConsumablesCost(),
                             'mileage' => $svc->getMileage(),
                             'serviceProvider' => $svc->getServiceProvider(),
                             'workPerformed' => $svc->getWorkPerformed(),
-                            'items' => array_map(fn($it) => [
-                                'type' => $it->getType(),
-                                'description' => $it->getDescription(),
-                                'cost' => $it->getCost(),
-                                'quantity' => $it->getQuantity(),
-                            ], $svc->getItems()),
+                            'additionalCosts' => $svc->getAdditionalCosts(),
+                            'nextServiceDate' => $svc->getNextServiceDate()?->format('Y-m-d'),
+                            'nextServiceMileage' => $svc->getNextServiceMileage(),
+                            'items' => array_map(function ($it) {
+                                $part = $it->getPart();
+                                $consumable = $it->getConsumable();
+
+                                return [
+                                    'type' => $it->getType(),
+                                    'description' => $it->getDescription(),
+                                    'cost' => $it->getCost(),
+                                    'quantity' => $it->getQuantity(),
+                                    'consumableId' => $consumable?->getId(),
+                                    'partId' => $part?->getId(),
+                                    'part' => $part ? [
+                                        'id' => $part->getId(),
+                                        'description' => $part->getDescription(),
+                                        'partNumber' => $part->getPartNumber(),
+                                        'manufacturer' => $part->getManufacturer(),
+                                        'supplier' => $part->getSupplier(),
+                                        'cost' => $part->getCost(),
+                                        'category' => $part->getCategory(),
+                                        'purchaseDate' => $part->getPurchaseDate()?->format('Y-m-d'),
+                                        'installationDate' => $part->getInstallationDate()?->format('Y-m-d'),
+                                        'mileageAtInstallation' => $part->getMileageAtInstallation(),
+                                        'notes' => $part->getNotes(),
+                                        'receiptAttachmentOriginalId' => $part->getReceiptAttachment()?->getId(),
+                                        'productUrl' => $part->getProductUrl(),
+                                        'createdAt' => $part->getCreatedAt()?->format('c'),
+                                    ] : null,
+                                    'consumable' => $consumable ? [
+                                        'id' => $consumable->getId(),
+                                        'consumableType' => $consumable->getConsumableType()->getName(),
+                                        'description' => $consumable->getDescription(),
+                                        'brand' => $consumable->getBrand(),
+                                        'partNumber' => $consumable->getPartNumber(),
+                                        'supplier' => $consumable->getSupplier(),
+                                        'replacementIntervalMiles' => $consumable->getReplacementIntervalMiles(),
+                                        'nextReplacementMileage' => $consumable->getNextReplacementMileage(),
+                                        'quantity' => $consumable->getQuantity(),
+                                        'lastChanged' => $consumable->getLastChanged()?->format('Y-m-d'),
+                                        'mileageAtChange' => $consumable->getMileageAtChange(),
+                                        'cost' => $consumable->getCost(),
+                                        'notes' => $consumable->getNotes(),
+                                        'receiptAttachmentOriginalId' => $consumable->getReceiptAttachment()?->getId(),
+                                        'productUrl' => $consumable->getProductUrl(),
+                                        'createdAt' => $consumable->getCreatedAt()?->format('c'),
+                                        'updatedAt' => $consumable->getUpdatedAt()?->format('c'),
+                                    ] : null,
+                                ];
+                            }, $svc->getItems()),
                             'notes' => $svc->getNotes(),
                             'receiptAttachmentId' => $svc->getReceiptAttachment()?->getId(),
                             'createdAt' => $svc->getCreatedAt()?->format('c'),
@@ -315,16 +411,30 @@ class VehicleImportExportController extends AbstractController
                     'stroke' => $spec->getStroke(),
                     'fuelSystem' => $spec->getFuelSystem(),
                     'cooling' => $spec->getCooling(),
+                    'sparkplugType' => $spec->getSparkplugType(),
+                    'coolantType' => $spec->getCoolantType(),
+                    'coolantCapacity' => $spec->getCoolantCapacity(),
                     'gearbox' => $spec->getGearbox(),
                     'transmission' => $spec->getTransmission(),
+                    'finalDrive' => $spec->getFinalDrive(),
                     'clutch' => $spec->getClutch(),
+                    'engineOilType' => $spec->getEngineOilType(),
+                    'engineOilCapacity' => $spec->getEngineOilCapacity(),
+                    'transmissionOilType' => $spec->getTransmissionOilType(),
+                    'transmissionOilCapacity' => $spec->getTransmissionOilCapacity(),
+                    'middleDriveOilType' => $spec->getMiddleDriveOilType(),
+                    'middleDriveOilCapacity' => $spec->getMiddleDriveOilCapacity(),
                     'frame' => $spec->getFrame(),
                     'frontSuspension' => $spec->getFrontSuspension(),
                     'rearSuspension' => $spec->getRearSuspension(),
+                    'staticSagFront' => $spec->getStaticSagFront(),
+                    'staticSagRear' => $spec->getStaticSagRear(),
                     'frontBrakes' => $spec->getFrontBrakes(),
                     'rearBrakes' => $spec->getRearBrakes(),
                     'frontTyre' => $spec->getFrontTyre(),
                     'rearTyre' => $spec->getRearTyre(),
+                    'frontTyrePressure' => $spec->getFrontTyrePressure(),
+                    'rearTyrePressure' => $spec->getRearTyrePressure(),
                     'frontWheelTravel' => $spec->getFrontWheelTravel(),
                     'rearWheelTravel' => $spec->getRearWheelTravel(),
                     'wheelbase' => $spec->getWheelbase(),
@@ -450,7 +560,7 @@ class VehicleImportExportController extends AbstractController
     }
 
     #[Route('/export-zip', name: 'vehicles_export_zip', methods: ['GET'])]
-    public function exportZip(EntityManagerInterface $entityManager): BinaryFileResponse|JsonResponse
+    public function exportZip(Request $request, EntityManagerInterface $entityManager): BinaryFileResponse|JsonResponse
     {
         $user = $this->getUserEntity();
         if (!$user) {
@@ -458,7 +568,7 @@ class VehicleImportExportController extends AbstractController
         }
 
         // reuse export() to get vehicles JSON
-        $exportResponse = $this->export($entityManager);
+        $exportResponse = $this->export($request, $entityManager);
         $vehiclesData = json_decode($exportResponse->getContent(), true);
 
         // gather attachments belonging to user
@@ -473,14 +583,28 @@ class VehicleImportExportController extends AbstractController
                 ->getResult();
         }
 
+        // gather vehicle images belonging to user
+        if ($this->isAdminForUser($user)) {
+            $vehicles = $entityManager->getRepository(Vehicle::class)->findAll();
+        } else {
+            $vehicles = $entityManager->getRepository(Vehicle::class)->findBy(['owner' => $user]);
+        }
+        $vehicleImages = [];
+        foreach ($vehicles as $vehicle) {
+            foreach ($vehicle->getImages() as $image) {
+                $vehicleImages[] = $image;
+            }
+        }
+
         $tempDir = sys_get_temp_dir() . '/vehicle-export-' . uniqid();
         mkdir($tempDir, 0755, true);
 
         $manifest = [];
-        $uploadDir = __DIR__ . '/../../../uploads';
+        $uploadDir = $this->getParameter('kernel.project_dir') . '/uploads';
 
         foreach ($attachments as $att) {
-            $filePath = $uploadDir . '/' . $att->getFilename();
+            $storagePath = $att->getStoragePath() ?: ('attachments/' . $att->getFilename());
+            $filePath = $uploadDir . '/' . ltrim($storagePath, '/');
             if (!file_exists($filePath)) {
                 continue;
             }
@@ -489,6 +613,7 @@ class VehicleImportExportController extends AbstractController
             copy($filePath, $targetPath);
 
             $manifest[] = [
+                'type' => 'attachment',
                 'originalId' => $att->getId(),
                 'filename' => $att->getFilename(),
                 'manifestName' => $safeName,
@@ -499,10 +624,55 @@ class VehicleImportExportController extends AbstractController
                 'entityType' => $att->getEntityType(),
                 'entityId' => $att->getEntityId(),
                 'description' => $att->getDescription(),
-                'storagePath' => $att->getStoragePath(),
+                'storagePath' => $storagePath,
                 'category' => $att->getCategory(),
-                'thumbnailPath' => $att->getThumbnailPath(),
                 'downloadUrl' => '/api/attachments/' . $att->getId(),
+            ];
+        }
+
+        foreach ($vehicleImages as $image) {
+            $path = $image->getPath();
+            if (!$path) {
+                continue;
+            }
+            $filePath = $this->getParameter('kernel.project_dir') . $path;
+            if (!file_exists($filePath)) {
+                // fallback to uploads root if path already trimmed
+                $filePath = $uploadDir . '/' . ltrim($path, '/');
+                if (!file_exists($filePath)) {
+                    continue;
+                }
+            }
+
+            $normalizedPath = $path;
+            if (str_starts_with($normalizedPath, '/uploads/')) {
+                $normalizedPath = substr($normalizedPath, strlen('/uploads/'));
+            }
+            $normalizedPath = ltrim($normalizedPath, '/');
+
+            $safeName = 'vehicle_image_' . $image->getId() . '_' . basename($path);
+            $targetPath = $tempDir . '/' . $safeName;
+            copy($filePath, $targetPath);
+
+            $manifest[] = [
+                'type' => 'vehicle_image',
+                'originalId' => $image->getId(),
+                'filename' => basename($path),
+                'manifestName' => $safeName,
+                'originalName' => basename($path),
+                'mimeType' => @mime_content_type($filePath) ?: null,
+                'fileSize' => @filesize($filePath) ?: null,
+                'uploadedAt' => $image->getUploadedAt()?->format('c'),
+                'entityType' => 'vehicle',
+                'entityId' => $image->getVehicle()?->getId(),
+                'vehicleRegistrationNumber' => $image->getVehicle()?->getRegistrationNumber(),
+                'description' => $image->getCaption(),
+                'caption' => $image->getCaption(),
+                'isPrimary' => $image->getIsPrimary(),
+                'displayOrder' => $image->getDisplayOrder(),
+                'storagePath' => $normalizedPath,
+                'category' => 'vehicle_image',
+                'downloadUrl' => $path,
             ];
         }
 
@@ -585,13 +755,27 @@ class VehicleImportExportController extends AbstractController
         $attachmentEntitiesByNewId = [];
         // import attachments first
         foreach ($manifest as $m) {
+            if (($m['type'] ?? 'attachment') !== 'attachment') {
+                continue;
+            }
             $src = $tmpDir . '/' . $m['manifestName'];
             if (!file_exists($src)) {
                 continue;
             }
+            $storagePath = $m['storagePath'] ?? ('attachments/' . ($m['filename'] ?? basename($m['manifestName'])));
+            $storagePath = ltrim($storagePath, '/');
+            $subDir = trim(dirname($storagePath), '.');
+            if ($subDir === '') {
+                $subDir = 'attachments';
+            }
+            $targetDir = $uploadDir . '/' . $subDir;
+            if (!file_exists($targetDir)) {
+                mkdir($targetDir, 0755, true);
+            }
+
             // generate safe filename to avoid collisions
-            $newFilename = uniqid('att_') . '_' . basename($m['filename']);
-            $dest = $uploadDir . '/' . $newFilename;
+            $newFilename = uniqid('att_') . '_' . basename($storagePath);
+            $dest = $targetDir . '/' . $newFilename;
             rename($src, $dest);
 
             $attachment = new \App\Entity\Attachment();
@@ -599,6 +783,7 @@ class VehicleImportExportController extends AbstractController
             $attachment->setOriginalName($m['originalName'] ?? $m['filename']);
             $attachment->setMimeType($m['mimeType'] ?? 'application/octet-stream');
             $attachment->setFileSize($m['fileSize'] ?? filesize($dest));
+            $attachment->setStoragePath($subDir . '/' . $newFilename);
             try {
                 if (!empty($m['uploadedAt'])) {
                     $attachment->setUploadedAt(new \DateTime($m['uploadedAt']));
@@ -652,6 +837,102 @@ class VehicleImportExportController extends AbstractController
         // call existing import logic by creating a synthetic Request
         $importRequest = new Request([], [], [], [], [], [], json_encode($vehicles));
         $result = $this->import($importRequest, $entityManager, $attachmentEntitiesByNewId);
+
+        // build registration -> vehicle map for image import
+        $vehiclesList = $vehicles;
+        $isSequential = array_keys($vehiclesList) === range(0, count($vehiclesList) - 1);
+        if (!$isSequential) {
+            if (!empty($vehiclesList['vehicles']) && is_array($vehiclesList['vehicles'])) {
+                $vehiclesList = $vehiclesList['vehicles'];
+            } elseif (!empty($vehiclesList['data']) && is_array($vehiclesList['data'])) {
+                $vehiclesList = $vehiclesList['data'];
+            } elseif (!empty($vehiclesList['results']) && is_array($vehiclesList['results'])) {
+                $vehiclesList = $vehiclesList['results'];
+            }
+        }
+
+        $vehicleByReg = [];
+        if (is_array($vehiclesList)) {
+            foreach ($vehiclesList as $vehicleData) {
+                $reg = $vehicleData['registrationNumber'] ?? $vehicleData['registration'] ?? null;
+                if (!$reg) {
+                    continue;
+                }
+                $vehicle = $entityManager->getRepository(Vehicle::class)
+                    ->findOneBy(['registrationNumber' => $reg, 'owner' => $user]);
+                if ($vehicle) {
+                    $vehicleByReg[$reg] = $vehicle;
+                }
+            }
+        }
+
+        // import vehicle images
+        foreach ($manifest as $m) {
+            if (($m['type'] ?? null) !== 'vehicle_image') {
+                continue;
+            }
+            $src = $tmpDir . '/' . ($m['manifestName'] ?? '');
+            if (!$src || !file_exists($src)) {
+                continue;
+            }
+
+            $reg = $m['vehicleRegistrationNumber'] ?? null;
+            if (!$reg) {
+                continue;
+            }
+            $vehicle = $vehicleByReg[$reg] ?? null;
+            if (!$vehicle) {
+                continue;
+            }
+
+            $storagePath = $m['storagePath'] ?? ('vehicles/' . ($m['filename'] ?? basename($m['manifestName'])));
+            $storagePath = ltrim((string) $storagePath, '/');
+            if (str_starts_with($storagePath, 'uploads/')) {
+                $storagePath = substr($storagePath, strlen('uploads/'));
+            }
+            $subDir = trim(dirname($storagePath), '.');
+            if ($subDir === '') {
+                $subDir = 'vehicles';
+            }
+            $targetDir = $uploadDir . '/' . $subDir;
+            if (!file_exists($targetDir)) {
+                mkdir($targetDir, 0755, true);
+            }
+
+            $filename = basename($storagePath);
+            $dest = $targetDir . '/' . $filename;
+            if (file_exists($dest)) {
+                $filename = uniqid('img_') . '_' . $filename;
+                $dest = $targetDir . '/' . $filename;
+            }
+
+            rename($src, $dest);
+
+            $image = new VehicleImage();
+            $image->setVehicle($vehicle);
+            $image->setPath('/uploads/' . $subDir . '/' . $filename);
+            if (!empty($m['caption'])) {
+                $image->setCaption($m['caption']);
+            } elseif (!empty($m['description'])) {
+                $image->setCaption($m['description']);
+            }
+            if (isset($m['isPrimary'])) {
+                $image->setIsPrimary((bool) $m['isPrimary']);
+            }
+            if (isset($m['displayOrder'])) {
+                $image->setDisplayOrder((int) $m['displayOrder']);
+            }
+            if (!empty($m['uploadedAt'])) {
+                try {
+                    $image->setUploadedAt(new \DateTime($m['uploadedAt']));
+                } catch (\Exception) {
+                    // ignore invalid date
+                }
+            }
+
+            $entityManager->persist($image);
+        }
+        $entityManager->flush();
 
         // cleanup tmp files
         @unlink($zipPath);
@@ -938,6 +1219,9 @@ class VehicleImportExportController extends AbstractController
             }
             $vehicle = $vehicleMap[$vehicleData['registrationNumber']];
 
+            $partImportMap = [];
+            $consumableImportMap = [];
+
             try {
                 // Import specification if provided
                 if (!empty($vehicleData['specification']) && is_array($vehicleData['specification'])) {
@@ -956,16 +1240,30 @@ class VehicleImportExportController extends AbstractController
                     if (!empty($s['stroke'])) { $spec->setStroke($s['stroke']); }
                     if (!empty($s['fuelSystem'])) { $spec->setFuelSystem($s['fuelSystem']); }
                     if (!empty($s['cooling'])) { $spec->setCooling($s['cooling']); }
+                    if (!empty($s['sparkplugType'])) { $spec->setSparkplugType($s['sparkplugType']); }
+                    if (!empty($s['coolantType'])) { $spec->setCoolantType($s['coolantType']); }
+                    if (!empty($s['coolantCapacity'])) { $spec->setCoolantCapacity($s['coolantCapacity']); }
                     if (!empty($s['gearbox'])) { $spec->setGearbox($s['gearbox']); }
                     if (!empty($s['transmission'])) { $spec->setTransmission($s['transmission']); }
+                    if (!empty($s['finalDrive'])) { $spec->setFinalDrive($s['finalDrive']); }
                     if (!empty($s['clutch'])) { $spec->setClutch($s['clutch']); }
+                    if (!empty($s['engineOilType'])) { $spec->setEngineOilType($s['engineOilType']); }
+                    if (!empty($s['engineOilCapacity'])) { $spec->setEngineOilCapacity($s['engineOilCapacity']); }
+                    if (!empty($s['transmissionOilType'])) { $spec->setTransmissionOilType($s['transmissionOilType']); }
+                    if (!empty($s['transmissionOilCapacity'])) { $spec->setTransmissionOilCapacity($s['transmissionOilCapacity']); }
+                    if (!empty($s['middleDriveOilType'])) { $spec->setMiddleDriveOilType($s['middleDriveOilType']); }
+                    if (!empty($s['middleDriveOilCapacity'])) { $spec->setMiddleDriveOilCapacity($s['middleDriveOilCapacity']); }
                     if (!empty($s['frame'])) { $spec->setFrame($s['frame']); }
                     if (!empty($s['frontSuspension'])) { $spec->setFrontSuspension($s['frontSuspension']); }
                     if (!empty($s['rearSuspension'])) { $spec->setRearSuspension($s['rearSuspension']); }
+                    if (!empty($s['staticSagFront'])) { $spec->setStaticSagFront($s['staticSagFront']); }
+                    if (!empty($s['staticSagRear'])) { $spec->setStaticSagRear($s['staticSagRear']); }
                     if (!empty($s['frontBrakes'])) { $spec->setFrontBrakes($s['frontBrakes']); }
                     if (!empty($s['rearBrakes'])) { $spec->setRearBrakes($s['rearBrakes']); }
                     if (!empty($s['frontTyre'])) { $spec->setFrontTyre($s['frontTyre']); }
                     if (!empty($s['rearTyre'])) { $spec->setRearTyre($s['rearTyre']); }
+                    if (!empty($s['frontTyrePressure'])) { $spec->setFrontTyrePressure($s['frontTyrePressure']); }
+                    if (!empty($s['rearTyrePressure'])) { $spec->setRearTyrePressure($s['rearTyrePressure']); }
                     if (!empty($s['frontWheelTravel'])) { $spec->setFrontWheelTravel($s['frontWheelTravel']); }
                     if (!empty($s['rearWheelTravel'])) { $spec->setRearWheelTravel($s['rearWheelTravel']); }
                     if (!empty($s['wheelbase'])) { $spec->setWheelbase($s['wheelbase']); }
@@ -1218,6 +1516,10 @@ class VehicleImportExportController extends AbstractController
                         }
 
                         $entityManager->persist($part);
+
+                        if (isset($partData['id']) && is_numeric($partData['id'])) {
+                            $partImportMap[(int) $partData['id']] = $part;
+                        }
                     }
                 }
 
@@ -1341,6 +1643,10 @@ class VehicleImportExportController extends AbstractController
                         }
 
                         $entityManager->persist($consumable);
+
+                        if (isset($consumableData['id']) && is_numeric($consumableData['id'])) {
+                            $consumableImportMap[(int) $consumableData['id']] = $consumable;
+                        }
                     }
                 }
 
@@ -1441,6 +1747,9 @@ class VehicleImportExportController extends AbstractController
                         if (isset($serviceData['partsCost'])) {
                             $serviceRecord->setPartsCost($serviceData['partsCost']);
                         }
+                        if (isset($serviceData['consumablesCost'])) {
+                            $serviceRecord->setConsumablesCost($serviceData['consumablesCost']);
+                        }
                         if (isset($serviceData['mileage'])) {
                             $serviceRecord->setMileage($serviceData['mileage']);
                         }
@@ -1515,6 +1824,178 @@ class VehicleImportExportController extends AbstractController
                                 }
                                 if (isset($itemData['quantity'])) {
                                     $item->setQuantity($itemData['quantity']);
+                                }
+
+                                if (!empty($itemData['consumable']) && is_array($itemData['consumable'])) {
+                                    $cData = $itemData['consumable'];
+                                    $consumableType = null;
+                                    if (!empty($cData['consumableType'])) {
+                                        $consumableType = $entityManager->getRepository(ConsumableType::class)
+                                            ->findOneBy(['name' => $cData['consumableType']]);
+                                        if (!$consumableType) {
+                                            $consumableType = new ConsumableType();
+                                            $consumableType->setName($cData['consumableType']);
+                                            $entityManager->persist($consumableType);
+                                            $entityManager->flush();
+                                        }
+                                    }
+
+                                    $consumable = new Consumable();
+                                    $consumable->setVehicle($vehicle);
+                                    if ($consumableType) {
+                                        $consumable->setConsumableType($consumableType);
+                                    }
+                                    if (!empty($cData['description'])) {
+                                        $consumable->setDescription($cData['description']);
+                                    }
+                                    if (!empty($cData['brand'])) {
+                                        $consumable->setBrand($cData['brand']);
+                                    }
+                                    if (!empty($cData['partNumber'])) {
+                                        $consumable->setPartNumber($cData['partNumber']);
+                                    }
+                                    if (!empty($cData['supplier'])) {
+                                        $consumable->setSupplier($cData['supplier']);
+                                    }
+                                    if (isset($cData['replacementIntervalMiles'])) {
+                                        $consumable->setReplacementInterval((int) $cData['replacementIntervalMiles']);
+                                    }
+                                    if (isset($cData['nextReplacementMileage'])) {
+                                        $consumable->setNextReplacementMileage((int) $cData['nextReplacementMileage']);
+                                    }
+                                    if (isset($cData['quantity'])) {
+                                        $consumable->setQuantity($cData['quantity']);
+                                    }
+                                    if (!empty($cData['lastChanged'])) {
+                                        try {
+                                            $consumable->setLastChanged(new \DateTime($cData['lastChanged']));
+                                        } catch (\Exception $e) {
+                                            // ignore
+                                        }
+                                    }
+                                    if (isset($cData['mileageAtChange'])) {
+                                        $consumable->setMileageAtChange($cData['mileageAtChange']);
+                                    }
+                                    if (isset($cData['cost'])) {
+                                        $consumable->setCost($cData['cost']);
+                                    }
+                                    if (!empty($cData['notes'])) {
+                                        $consumable->setNotes($cData['notes']);
+                                    }
+                                    if (!empty($cData['productUrl'])) {
+                                        $consumable->setProductUrl($cData['productUrl']);
+                                    }
+                                    if (isset($cData['receiptAttachmentOriginalId'])) {
+                                        $rid = $cData['receiptAttachmentOriginalId'];
+                                        $att = null;
+                                        if ($attachmentMap !== null && isset($attachmentMap[$rid])) {
+                                            $att = $attachmentMap[$rid];
+                                        } else {
+                                            $att = $entityManager->getRepository(\App\Entity\Attachment::class)->find($rid);
+                                        }
+                                        if ($att) {
+                                            $consumable->setReceiptAttachment($att);
+                                        }
+                                    }
+
+                                    $consumable->setServiceRecord($serviceRecord);
+                                    $entityManager->persist($consumable);
+                                    $item->setConsumable($consumable);
+
+                                    if (isset($cData['id']) && is_numeric($cData['id'])) {
+                                        $consumableImportMap[(int) $cData['id']] = $consumable;
+                                    }
+                                }
+
+                                if (!empty($itemData['part']) && is_array($itemData['part'])) {
+                                    $pData = $itemData['part'];
+                                    $part = new Part();
+                                    $part->setVehicle($vehicle);
+                                    $part->setServiceRecord($serviceRecord);
+                                    if (empty($pData['purchaseDate'])) {
+                                        $part->setPurchaseDate(new \DateTime());
+                                    }
+                                    if (empty($pData['category'])) {
+                                        $part->setCategory('other');
+                                    }
+                                    if (!empty($pData['description'])) {
+                                        $part->setDescription($pData['description']);
+                                    }
+                                    if (!empty($pData['partNumber'])) {
+                                        $part->setPartNumber($pData['partNumber']);
+                                    }
+                                    if (!empty($pData['manufacturer'])) {
+                                        $part->setManufacturer($pData['manufacturer']);
+                                    }
+                                    if (!empty($pData['supplier'])) {
+                                        $part->setSupplier($pData['supplier']);
+                                    }
+                                    if (isset($pData['cost'])) {
+                                        $part->setCost((string) $pData['cost']);
+                                    }
+                                    if (!empty($pData['category'])) {
+                                        $part->setCategory($pData['category']);
+                                    }
+                                    if (!empty($pData['purchaseDate'])) {
+                                        try {
+                                            $part->setPurchaseDate(new \DateTime($pData['purchaseDate']));
+                                        } catch (\Exception $e) {
+                                            // ignore
+                                        }
+                                    }
+                                    if (!empty($pData['installationDate'])) {
+                                        try {
+                                            $part->setInstallationDate(new \DateTime($pData['installationDate']));
+                                        } catch (\Exception $e) {
+                                            // ignore
+                                        }
+                                    }
+                                    if (isset($pData['mileageAtInstallation'])) {
+                                        $part->setMileageAtInstallation($pData['mileageAtInstallation']);
+                                    }
+                                    if (!empty($pData['notes'])) {
+                                        $part->setNotes($pData['notes']);
+                                    }
+                                    if (!empty($pData['productUrl'])) {
+                                        $part->setProductUrl($pData['productUrl']);
+                                    }
+                                    if (isset($pData['receiptAttachmentOriginalId'])) {
+                                        $rid = $pData['receiptAttachmentOriginalId'];
+                                        $att = null;
+                                        if ($attachmentMap !== null && isset($attachmentMap[$rid])) {
+                                            $att = $attachmentMap[$rid];
+                                        } else {
+                                            $att = $entityManager->getRepository(\App\Entity\Attachment::class)->find($rid);
+                                        }
+                                        if ($att) {
+                                            $part->setReceiptAttachment($att);
+                                        }
+                                    }
+
+                                    $entityManager->persist($part);
+                                    $item->setPart($part);
+
+                                    if (isset($pData['id']) && is_numeric($pData['id'])) {
+                                        $partImportMap[(int) $pData['id']] = $part;
+                                    }
+                                }
+
+                                if (isset($itemData['consumableId']) && is_numeric($itemData['consumableId'])) {
+                                    $cid = (int) $itemData['consumableId'];
+                                    $consumable = $consumableImportMap[$cid] ?? null;
+                                    if ($consumable) {
+                                        $item->setConsumable($consumable);
+                                        $consumable->setServiceRecord($serviceRecord);
+                                    }
+                                }
+
+                                if (isset($itemData['partId']) && is_numeric($itemData['partId'])) {
+                                    $pid = (int) $itemData['partId'];
+                                    $part = $partImportMap[$pid] ?? null;
+                                    if ($part) {
+                                        $item->setPart($part);
+                                        $part->setServiceRecord($serviceRecord);
+                                    }
                                 }
                                 $serviceRecord->addItem($item);
                             }
@@ -1782,6 +2263,12 @@ class VehicleImportExportController extends AbstractController
 
                                 if ($existingConsumable) {
                                     $existingConsumable->setMotRecord($motRecord);
+                                    if (!empty($consumableData['brand'])) {
+                                        $existingConsumable->setBrand($consumableData['brand']);
+                                    }
+                                    if (!empty($consumableData['partNumber'])) {
+                                        $existingConsumable->setPartNumber($consumableData['partNumber']);
+                                    }
                                     if (!empty($consumableData['supplier'])) {
                                         $existingConsumable->setSupplier($consumableData['supplier']);
                                     }
@@ -1824,6 +2311,12 @@ class VehicleImportExportController extends AbstractController
 // temporary to support legay files
                                 if (!empty($consumableData['specification'])) {
                                     $consumable->setDescription($consumableData['specification']);
+                                }
+                                if (!empty($consumableData['brand'])) {
+                                    $consumable->setBrand($consumableData['brand']);
+                                }
+                                if (!empty($consumableData['partNumber'])) {
+                                    $consumable->setPartNumber($consumableData['partNumber']);
                                 }
                                 if (isset($consumableData['quantity'])) {
                                     $consumable->setQuantity($consumableData['quantity']);
@@ -1922,6 +2415,9 @@ class VehicleImportExportController extends AbstractController
                                         if (isset($svcData['additionalCosts'])) {
                                             $existingSvc->setAdditionalCosts($svcData['additionalCosts']);
                                         }
+                                        if (isset($svcData['consumablesCost'])) {
+                                            $existingSvc->setConsumablesCost($svcData['consumablesCost']);
+                                        }
                                         if (!empty($svcData['nextServiceDate'])) {
                                             try {
                                                 $existingSvc->setNextServiceDate(new \DateTime($svcData['nextServiceDate']));
@@ -1958,6 +2454,9 @@ class VehicleImportExportController extends AbstractController
                                 }
                                 if (isset($svcData['partsCost'])) {
                                     $svc->setPartsCost($svcData['partsCost']);
+                                }
+                                if (isset($svcData['consumablesCost'])) {
+                                    $svc->setConsumablesCost($svcData['consumablesCost']);
                                 }
                                 if (isset($svcData['mileage'])) {
                                     $svc->setMileage($svcData['mileage']);
@@ -2006,6 +2505,160 @@ class VehicleImportExportController extends AbstractController
                                         }
                                         if (isset($itemData['quantity'])) {
                                             $item->setQuantity($itemData['quantity']);
+                                        }
+
+                                        if (!empty($itemData['consumable']) && is_array($itemData['consumable'])) {
+                                            $cData = $itemData['consumable'];
+                                            $consumableType = null;
+                                            if (!empty($cData['consumableType'])) {
+                                                $consumableType = $entityManager->getRepository(ConsumableType::class)
+                                                    ->findOneBy(['name' => $cData['consumableType']]);
+                                                if (!$consumableType) {
+                                                    $consumableType = new ConsumableType();
+                                                    $consumableType->setName($cData['consumableType']);
+                                                    $entityManager->persist($consumableType);
+                                                    $entityManager->flush();
+                                                }
+                                            }
+
+                                            $consumable = new Consumable();
+                                            $consumable->setVehicle($vehicle);
+                                            if ($consumableType) {
+                                                $consumable->setConsumableType($consumableType);
+                                            }
+                                            if (!empty($cData['description'])) {
+                                                $consumable->setDescription($cData['description']);
+                                            }
+                                            if (!empty($cData['brand'])) {
+                                                $consumable->setBrand($cData['brand']);
+                                            }
+                                            if (!empty($cData['partNumber'])) {
+                                                $consumable->setPartNumber($cData['partNumber']);
+                                            }
+                                            if (!empty($cData['supplier'])) {
+                                                $consumable->setSupplier($cData['supplier']);
+                                            }
+                                            if (isset($cData['replacementIntervalMiles'])) {
+                                                $consumable->setReplacementInterval((int) $cData['replacementIntervalMiles']);
+                                            }
+                                            if (isset($cData['nextReplacementMileage'])) {
+                                                $consumable->setNextReplacementMileage((int) $cData['nextReplacementMileage']);
+                                            }
+                                            if (isset($cData['quantity'])) {
+                                                $consumable->setQuantity($cData['quantity']);
+                                            }
+                                            if (!empty($cData['lastChanged'])) {
+                                                try {
+                                                    $consumable->setLastChanged(new \DateTime($cData['lastChanged']));
+                                                } catch (\Exception $e) {
+                                                    // ignore
+                                                }
+                                            }
+                                            if (isset($cData['mileageAtChange'])) {
+                                                $consumable->setMileageAtChange($cData['mileageAtChange']);
+                                            }
+                                            if (isset($cData['cost'])) {
+                                                $consumable->setCost($cData['cost']);
+                                            }
+                                            if (!empty($cData['notes'])) {
+                                                $consumable->setNotes($cData['notes']);
+                                            }
+                                            if (!empty($cData['productUrl'])) {
+                                                $consumable->setProductUrl($cData['productUrl']);
+                                            }
+                                            if (isset($cData['receiptAttachmentOriginalId'])) {
+                                                $rid = $cData['receiptAttachmentOriginalId'];
+                                                $att = null;
+                                                if ($attachmentMap !== null && isset($attachmentMap[$rid])) {
+                                                    $att = $attachmentMap[$rid];
+                                                } else {
+                                                    $att = $entityManager->getRepository(\App\Entity\Attachment::class)->find($rid);
+                                                }
+                                                if ($att) {
+                                                    $consumable->setReceiptAttachment($att);
+                                                }
+                                            }
+
+                                            $consumable->setServiceRecord($svc);
+                                            $entityManager->persist($consumable);
+                                            $item->setConsumable($consumable);
+
+                                            if (isset($cData['id']) && is_numeric($cData['id'])) {
+                                                $consumableImportMap[(int) $cData['id']] = $consumable;
+                                            }
+                                        }
+
+                                        if (!empty($itemData['part']) && is_array($itemData['part'])) {
+                                            $pData = $itemData['part'];
+                                            $part = new Part();
+                                            $part->setVehicle($vehicle);
+                                            $part->setServiceRecord($svc);
+                                            if (empty($pData['purchaseDate'])) {
+                                                $part->setPurchaseDate(new \DateTime());
+                                            }
+                                            if (empty($pData['category'])) {
+                                                $part->setCategory('other');
+                                            }
+                                            if (!empty($pData['description'])) {
+                                                $part->setDescription($pData['description']);
+                                            }
+                                            if (!empty($pData['partNumber'])) {
+                                                $part->setPartNumber($pData['partNumber']);
+                                            }
+                                            if (!empty($pData['manufacturer'])) {
+                                                $part->setManufacturer($pData['manufacturer']);
+                                            }
+                                            if (!empty($pData['supplier'])) {
+                                                $part->setSupplier($pData['supplier']);
+                                            }
+                                            if (isset($pData['cost'])) {
+                                                $part->setCost((string) $pData['cost']);
+                                            }
+                                            if (!empty($pData['category'])) {
+                                                $part->setCategory($pData['category']);
+                                            }
+                                            if (!empty($pData['purchaseDate'])) {
+                                                try {
+                                                    $part->setPurchaseDate(new \DateTime($pData['purchaseDate']));
+                                                } catch (\Exception $e) {
+                                                    // ignore
+                                                }
+                                            }
+                                            if (!empty($pData['installationDate'])) {
+                                                try {
+                                                    $part->setInstallationDate(new \DateTime($pData['installationDate']));
+                                                } catch (\Exception $e) {
+                                                    // ignore
+                                                }
+                                            }
+                                            if (isset($pData['mileageAtInstallation'])) {
+                                                $part->setMileageAtInstallation($pData['mileageAtInstallation']);
+                                            }
+                                            if (!empty($pData['notes'])) {
+                                                $part->setNotes($pData['notes']);
+                                            }
+                                            if (!empty($pData['productUrl'])) {
+                                                $part->setProductUrl($pData['productUrl']);
+                                            }
+                                            if (isset($pData['receiptAttachmentOriginalId'])) {
+                                                $rid = $pData['receiptAttachmentOriginalId'];
+                                                $att = null;
+                                                if ($attachmentMap !== null && isset($attachmentMap[$rid])) {
+                                                    $att = $attachmentMap[$rid];
+                                                } else {
+                                                    $att = $entityManager->getRepository(\App\Entity\Attachment::class)->find($rid);
+                                                }
+                                                if ($att) {
+                                                    $part->setReceiptAttachment($att);
+                                                }
+                                            }
+
+                                            $entityManager->persist($part);
+                                            $item->setPart($part);
+
+                                            if (isset($pData['id']) && is_numeric($pData['id'])) {
+                                                $partImportMap[(int) $pData['id']] = $part;
+                                            }
                                         }
                                         $svc->addItem($item);
                                     }

@@ -8,13 +8,13 @@ import {
   TextField,
   Grid,
   MenuItem,
-  CircularProgress
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { useDistance } from '../hooks/useDistance';
 import ReceiptUpload from './ReceiptUpload';
 import UrlScraper from './UrlScraper';
+import KnightRiderLoader from './KnightRiderLoader';
 
 export default function ConsumableDialog({ open, onClose, consumable, vehicleId }) {
   const { t } = useTranslation();
@@ -22,6 +22,7 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
   const { convert, toKm, getLabel } = useDistance();
   const [formData, setFormData] = useState({
     consumableTypeId: '',
+    consumableTypeName: '',
     description: '',
     quantity: '',
     lastChanged: '',
@@ -52,6 +53,7 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
     if (consumable) {
       setFormData({
         consumableTypeId: consumable.consumableType?.id || '',
+        consumableTypeName: '',
         description: consumable.description || '',
         quantity: consumable.quantity || '',
         lastChanged: consumable.lastChanged || '',
@@ -69,6 +71,7 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
     } else {
       setFormData({
         consumableTypeId: '',
+        consumableTypeName: '',
         description: '',
         quantity: '',
         lastChanged: '',
@@ -93,7 +96,10 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
         const resp = await api.get('/mot-records', { params: { vehicleId } });
         setMotRecords(resp.data || []);
         const serv = await api.get('/service-records', { params: { vehicleId } });
-        setServiceRecords(serv.data || []);
+        const sdata = serv.data;
+        if (Array.isArray(sdata)) setServiceRecords(sdata);
+        else if (sdata && Array.isArray(sdata.serviceRecords)) setServiceRecords(sdata.serviceRecords);
+        else setServiceRecords([]);
       } catch (e) {
         console.error('Failed to load MOT or service records', e);
       }
@@ -167,6 +173,11 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
         motRecordId,
         serviceRecordId
       };
+
+      if (formData.consumableTypeId === 'other') {
+        data.consumableTypeId = null;
+        data.consumableTypeName = (formData.consumableTypeName || '').trim();
+      }
       // send `description` only
 
       let resp;
@@ -191,7 +202,7 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
       <form onSubmit={handleSubmit}>
         <DialogContent>
           {loadingTypes ? (
-            <CircularProgress />
+            <KnightRiderLoader size={28} />
           ) : (
             <Grid container spacing={2}>
               <Grid item xs={12}>
@@ -240,13 +251,29 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
                   onChange={handleChange}
                 >
                   <MenuItem value="">{t('consumables.selectType')}</MenuItem>
-                  {consumableTypes.map((type) => (
-                    <MenuItem key={type.id} value={type.id}>
-                      {type.name} ({type.unit})
-                    </MenuItem>
-                  ))}
+                  <MenuItem value="other">{t('service.other')}</MenuItem>
+                  {consumableTypes
+                    .slice()
+                    .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+                    .map((type) => (
+                      <MenuItem key={type.id} value={type.id}>
+                        {type.name} ({type.unit})
+                      </MenuItem>
+                    ))}
                 </TextField>
               </Grid>
+              {formData.consumableTypeId === 'other' && (
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    required
+                    name="consumableTypeName"
+                    label={`${t('service.other')} ${t('common.type')}`}
+                    value={formData.consumableTypeName}
+                    onChange={handleChange}
+                  />
+                </Grid>
+              )}
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth

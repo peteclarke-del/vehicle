@@ -3,6 +3,7 @@ import { Outlet } from 'react-router-dom';
 import {
   AppBar,
   Box,
+  Button,
   Drawer,
   IconButton,
   List,
@@ -58,6 +59,7 @@ import NotificationMenu from './NotificationMenu';
 import { Tooltip, IconButton as MuiIconButton, Snackbar, Alert } from '@mui/material';
 import PreferencesDialog from '../components/PreferencesDialog';
 import { Settings as SettingsIcon } from '@mui/icons-material';
+import { useNotifications } from '../hooks/useNotifications';
 
 const drawerWidth = 240;
 
@@ -74,6 +76,7 @@ const Layout = () => {
   const location = useLocation();
   const [preferencesOpen, setPreferencesOpen] = React.useState(false);
   const [snack, setSnack] = React.useState({ open: false, message: '', severity: 'error' });
+  const { notifications, dismissNotification, snoozeNotification, clearAllNotifications } = useNotifications();
 
   // Listen for global notifications dispatched from other components
   React.useEffect(() => {
@@ -318,7 +321,12 @@ const Layout = () => {
             </Typography>
           </Box>
 
-          <NotificationMenu />
+          <NotificationMenu
+            notifications={notifications}
+            dismissNotification={dismissNotification}
+            snoozeNotification={snoozeNotification}
+            clearAllNotifications={clearAllNotifications}
+          />
           <IconButton
             color="inherit"
             onClick={async () => {

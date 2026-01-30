@@ -176,16 +176,30 @@ class SpecificationController extends AbstractController
             'stroke' => $spec->getStroke(),
             'fuelSystem' => $spec->getFuelSystem(),
             'cooling' => $spec->getCooling(),
+            'sparkplugType' => $spec->getSparkplugType(),
+            'coolantType' => $spec->getCoolantType(),
+            'coolantCapacity' => $spec->getCoolantCapacity(),
             'gearbox' => $spec->getGearbox(),
             'transmission' => $spec->getTransmission(),
+            'finalDrive' => $spec->getFinalDrive(),
             'clutch' => $spec->getClutch(),
+            'engineOilType' => $spec->getEngineOilType(),
+            'engineOilCapacity' => $spec->getEngineOilCapacity(),
+            'transmissionOilType' => $spec->getTransmissionOilType(),
+            'transmissionOilCapacity' => $spec->getTransmissionOilCapacity(),
+            'middleDriveOilType' => $spec->getMiddleDriveOilType(),
+            'middleDriveOilCapacity' => $spec->getMiddleDriveOilCapacity(),
             'frame' => $spec->getFrame(),
             'frontSuspension' => $spec->getFrontSuspension(),
             'rearSuspension' => $spec->getRearSuspension(),
+            'staticSagFront' => $spec->getStaticSagFront(),
+            'staticSagRear' => $spec->getStaticSagRear(),
             'frontBrakes' => $spec->getFrontBrakes(),
             'rearBrakes' => $spec->getRearBrakes(),
             'frontTyre' => $spec->getFrontTyre(),
             'rearTyre' => $spec->getRearTyre(),
+            'frontTyrePressure' => $spec->getFrontTyrePressure(),
+            'rearTyrePressure' => $spec->getRearTyrePressure(),
             'frontWheelTravel' => $spec->getFrontWheelTravel(),
             'rearWheelTravel' => $spec->getRearWheelTravel(),
             'wheelbase' => $spec->getWheelbase(),
@@ -231,14 +245,44 @@ class SpecificationController extends AbstractController
         if (!$existing->getCooling()) {
             $existing->setCooling($scraped->getCooling());
         }
+        if (!$existing->getSparkplugType()) {
+            $existing->setSparkplugType($scraped->getSparkplugType());
+        }
+        if (!$existing->getCoolantType()) {
+            $existing->setCoolantType($scraped->getCoolantType());
+        }
+        if (!$existing->getCoolantCapacity()) {
+            $existing->setCoolantCapacity($scraped->getCoolantCapacity());
+        }
         if (!$existing->getGearbox()) {
             $existing->setGearbox($scraped->getGearbox());
         }
         if (!$existing->getTransmission()) {
             $existing->setTransmission($scraped->getTransmission());
         }
+        if (!$existing->getFinalDrive()) {
+            $existing->setFinalDrive($scraped->getFinalDrive());
+        }
         if (!$existing->getClutch()) {
             $existing->setClutch($scraped->getClutch());
+        }
+        if (!$existing->getEngineOilType()) {
+            $existing->setEngineOilType($scraped->getEngineOilType());
+        }
+        if (!$existing->getEngineOilCapacity()) {
+            $existing->setEngineOilCapacity($scraped->getEngineOilCapacity());
+        }
+        if (!$existing->getTransmissionOilType()) {
+            $existing->setTransmissionOilType($scraped->getTransmissionOilType());
+        }
+        if (!$existing->getTransmissionOilCapacity()) {
+            $existing->setTransmissionOilCapacity($scraped->getTransmissionOilCapacity());
+        }
+        if (!$existing->getMiddleDriveOilType()) {
+            $existing->setMiddleDriveOilType($scraped->getMiddleDriveOilType());
+        }
+        if (!$existing->getMiddleDriveOilCapacity()) {
+            $existing->setMiddleDriveOilCapacity($scraped->getMiddleDriveOilCapacity());
         }
         if (!$existing->getFrame()) {
             $existing->setFrame($scraped->getFrame());
@@ -248,6 +292,12 @@ class SpecificationController extends AbstractController
         }
         if (!$existing->getRearSuspension()) {
             $existing->setRearSuspension($scraped->getRearSuspension());
+        }
+        if (!$existing->getStaticSagFront()) {
+            $existing->setStaticSagFront($scraped->getStaticSagFront());
+        }
+        if (!$existing->getStaticSagRear()) {
+            $existing->setStaticSagRear($scraped->getStaticSagRear());
         }
         if (!$existing->getFrontBrakes()) {
             $existing->setFrontBrakes($scraped->getFrontBrakes());
@@ -260,6 +310,12 @@ class SpecificationController extends AbstractController
         }
         if (!$existing->getRearTyre()) {
             $existing->setRearTyre($scraped->getRearTyre());
+        }
+        if (!$existing->getFrontTyrePressure()) {
+            $existing->setFrontTyrePressure($scraped->getFrontTyrePressure());
+        }
+        if (!$existing->getRearTyrePressure()) {
+            $existing->setRearTyrePressure($scraped->getRearTyrePressure());
         }
         if (!$existing->getFrontWheelTravel()) {
             $existing->setFrontWheelTravel($scraped->getFrontWheelTravel());
@@ -322,14 +378,44 @@ class SpecificationController extends AbstractController
         if (isset($data['cooling'])) {
             $spec->setCooling($data['cooling']);
         }
+        if (isset($data['sparkplugType'])) {
+            $spec->setSparkplugType($data['sparkplugType']);
+        }
+        if (isset($data['coolantType'])) {
+            $spec->setCoolantType($data['coolantType']);
+        }
+        if (isset($data['coolantCapacity'])) {
+            $spec->setCoolantCapacity($data['coolantCapacity']);
+        }
         if (isset($data['gearbox'])) {
             $spec->setGearbox($data['gearbox']);
         }
         if (isset($data['transmission'])) {
             $spec->setTransmission($data['transmission']);
         }
+        if (isset($data['finalDrive'])) {
+            $spec->setFinalDrive($data['finalDrive']);
+        }
         if (isset($data['clutch'])) {
             $spec->setClutch($data['clutch']);
+        }
+        if (isset($data['engineOilType'])) {
+            $spec->setEngineOilType($data['engineOilType']);
+        }
+        if (isset($data['engineOilCapacity'])) {
+            $spec->setEngineOilCapacity($data['engineOilCapacity']);
+        }
+        if (isset($data['transmissionOilType'])) {
+            $spec->setTransmissionOilType($data['transmissionOilType']);
+        }
+        if (isset($data['transmissionOilCapacity'])) {
+            $spec->setTransmissionOilCapacity($data['transmissionOilCapacity']);
+        }
+        if (isset($data['middleDriveOilType'])) {
+            $spec->setMiddleDriveOilType($data['middleDriveOilType']);
+        }
+        if (isset($data['middleDriveOilCapacity'])) {
+            $spec->setMiddleDriveOilCapacity($data['middleDriveOilCapacity']);
         }
         if (isset($data['frame'])) {
             $spec->setFrame($data['frame']);
@@ -339,6 +425,12 @@ class SpecificationController extends AbstractController
         }
         if (isset($data['rearSuspension'])) {
             $spec->setRearSuspension($data['rearSuspension']);
+        }
+        if (isset($data['staticSagFront'])) {
+            $spec->setStaticSagFront($data['staticSagFront']);
+        }
+        if (isset($data['staticSagRear'])) {
+            $spec->setStaticSagRear($data['staticSagRear']);
         }
         if (isset($data['frontBrakes'])) {
             $spec->setFrontBrakes($data['frontBrakes']);
@@ -351,6 +443,12 @@ class SpecificationController extends AbstractController
         }
         if (isset($data['rearTyre'])) {
             $spec->setRearTyre($data['rearTyre']);
+        }
+        if (isset($data['frontTyrePressure'])) {
+            $spec->setFrontTyrePressure($data['frontTyrePressure']);
+        }
+        if (isset($data['rearTyrePressure'])) {
+            $spec->setRearTyrePressure($data['rearTyrePressure']);
         }
         if (isset($data['frontWheelTravel'])) {
             $spec->setFrontWheelTravel($data['frontWheelTravel']);

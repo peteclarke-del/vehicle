@@ -7,7 +7,6 @@ import {
   Button,
   TextField,
   Grid,
-  CircularProgress,
   FormControlLabel,
   Checkbox,
   MenuItem,
@@ -17,6 +16,7 @@ import {
 } from '@mui/material';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
+import KnightRiderLoader from './KnightRiderLoader';
 
 const RoadTaxDialog = ({ open, roadTaxRecord, vehicleId, vehicles, onClose }) => {
   const [formData, setFormData] = useState({
@@ -169,7 +169,7 @@ const RoadTaxDialog = ({ open, roadTaxRecord, vehicleId, vehicles, onClose }) =>
         <DialogActions>
           <Button onClick={() => onClose(false)}>{t('common.cancel')}</Button>
           <Button type="submit" variant="contained" disabled={loading}>
-            {loading ? <CircularProgress size={24} /> : t('common.save')}
+            {loading ? <KnightRiderLoader size={18} /> : t('common.save')}
           </Button>
         </DialogActions>
       </form>

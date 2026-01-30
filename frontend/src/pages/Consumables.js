@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Box, Button, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, IconButton, CircularProgress, Tooltip, TableSortLabel } from '@mui/material';
+import { Box, Button, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, IconButton, Tooltip, TableSortLabel } from '@mui/material';
 import { Add, Edit, Delete } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
@@ -7,7 +7,10 @@ import { useUserPreferences } from '../contexts/UserPreferencesContext';
 import formatCurrency from '../utils/formatCurrency';
 import { fetchArrayData } from '../hooks/useApiData';
 import { useDistance } from '../hooks/useDistance';
+import useTablePagination from '../hooks/useTablePagination';
 import ConsumableDialog from '../components/ConsumableDialog';
+import KnightRiderLoader from '../components/KnightRiderLoader';
+import TablePaginationBar from '../components/TablePaginationBar';
 import VehicleSelector from '../components/VehicleSelector';
 
 const Consumables = () => {
@@ -91,12 +94,14 @@ const Consumables = () => {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm(t('consumables.deleteConfirm') || t('common.confirmDelete'))) {
+    if (!id) return;
+    if (window.confirm(t('common.confirmDelete'))) {
       try {
         await api.delete(`/consumables/${id}`);
         loadConsumables();
       } catch (error) {
         console.error('Error deleting consumable:', error);
+        window.alert(t('common.deleteFailed'));
       }
     }
   };
@@ -150,6 +155,8 @@ const Consumables = () => {
     return [...consumables].sort(comparator);
   }, [consumables, order, orderBy]);
 
+  const { page, rowsPerPage, paginatedRows: paginatedConsumables, handleChangePage, handleChangeRowsPerPage } = useTablePagination(sortedConsumables);
+
   const calculateTotalCost = () => {
     return consumables.reduce((sum, consumable) => sum + (parseFloat(consumable.cost) || 0), 0);
   };
@@ -157,7 +164,7 @@ const Consumables = () => {
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
-        <CircularProgress />
+        <KnightRiderLoader size={32} />
       </Box>
     );
   }
@@ -206,6 +213,13 @@ const Consumables = () => {
           </Box>
       )}
 
+      <TablePaginationBar
+        count={sortedConsumables.length}
+        page={page}
+        rowsPerPage={rowsPerPage}
+        onPageChange={handleChangePage}
+        onRowsPerPageChange={handleChangeRowsPerPage}
+      />
       <TableContainer component={Paper} sx={{ maxHeight: 'calc(100vh - 180px)', overflow: 'auto' }}>
         <Table stickyHeader>
           <TableHead>
@@ -300,7 +314,7 @@ const Consumables = () => {
                 </TableCell>
               </TableRow>
             ) : (
-              sortedConsumables.map((consumable) => (
+              paginatedConsumables.map((consumable) => (
                 <TableRow key={consumable.id} sx={{ '&:nth-of-type(odd)': { backgroundColor: 'action.hover' } }}>
                   <TableCell>{vehicles.find(v => String(v.id) === String(consumable.vehicleId))?.registrationNumber || '-'}</TableCell>
                   <TableCell>
@@ -322,7 +336,13 @@ const Consumables = () => {
                         </IconButton>
                       </Tooltip>
                       <Tooltip title={t('common.delete')}>
-                        <IconButton size="small" onClick={() => handleDelete(consumable.id)}>
+                        <IconButton
+                          size="small"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(consumable.id);
+                          }}
+                        >
                           <Delete />
                         </IconButton>
                       </Tooltip>
@@ -333,6 +353,13 @@ const Consumables = () => {
           </TableBody>
         </Table>
       </TableContainer>
+      <TablePaginationBar
+        count={sortedConsumables.length}
+        page={page}
+        rowsPerPage={rowsPerPage}
+        onPageChange={handleChangePage}
+        onRowsPerPageChange={handleChangeRowsPerPage}
+      />
 
       <ConsumableDialog
         open={dialogOpen}

@@ -8,7 +8,6 @@ import {
   Typography,
   Grid,
   MenuItem,
-  CircularProgress,
   Alert,
   Divider,
 } from '@mui/material';
@@ -17,6 +16,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../contexts/ThemeContext';
 import PasswordChangeDialog from '../components/PasswordChangeDialog';
+import KnightRiderLoader from '../components/KnightRiderLoader';
 
 const Profile = () => {
   const { user, updateProfile } = useAuth();
@@ -122,7 +122,7 @@ const Profile = () => {
                   disabled={loading}
                   fullWidth
                 >
-                  {loading ? <CircularProgress size={24} /> : t('profile.updateProfile')}
+                  {loading ? <KnightRiderLoader size={18} /> : t('profile.updateProfile')}
                 </Button>
               </Grid>
             </Grid>

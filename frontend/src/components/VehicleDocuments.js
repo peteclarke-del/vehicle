@@ -7,15 +7,10 @@ import {
   Typography,
   Grid,
   IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   List,
   ListItem,
   ListItemText,
   ListItemSecondaryAction,
-  CircularProgress,
   Alert,
   Chip,
   TextField,
@@ -32,6 +27,8 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
+import KnightRiderLoader from './KnightRiderLoader';
+import AttachmentViewerDialog from './AttachmentViewerDialog';
 
 const VehicleDocuments = ({ vehicle, category }) => {
   const { api } = useAuth();
@@ -39,10 +36,10 @@ const VehicleDocuments = ({ vehicle, category }) => {
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
-  const [viewDialog, setViewDialog] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState(null);
   const [error, setError] = useState(null);
   const [description, setDescription] = useState('');
+  const [viewerOpen, setViewerOpen] = useState(false);
 
   const loadDocuments = useCallback(async () => {
     setLoading(true);
@@ -117,7 +114,12 @@ const VehicleDocuments = ({ vehicle, category }) => {
 
   const handleView = (document) => {
     setSelectedDocument(document);
-    setViewDialog(true);
+    setViewerOpen(true);
+  };
+
+  const handleCloseViewer = () => {
+    setViewerOpen(false);
+    setSelectedDocument(null);
   };
 
   const handleDownload = async (document) => {
@@ -167,7 +169,7 @@ const VehicleDocuments = ({ vehicle, category }) => {
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" p={3}>
-        <CircularProgress />
+        <KnightRiderLoader size={28} />
       </Box>
     );
   }
@@ -188,7 +190,7 @@ const VehicleDocuments = ({ vehicle, category }) => {
             <Button
               variant="contained"
               component="label"
-              startIcon={uploading ? <CircularProgress size={20} /> : <UploadIcon />}
+              startIcon={uploading ? <KnightRiderLoader size={16} /> : <UploadIcon />}
               disabled={uploading}
             >
               {t('common.upload')}
@@ -274,68 +276,26 @@ const VehicleDocuments = ({ vehicle, category }) => {
         )}
       </CardContent>
 
-      {/* View Dialog */}
-      <Dialog
-        open={viewDialog}
-        onClose={() => setViewDialog(false)}
-        maxWidth="lg"
-        fullWidth
-      >
-        <DialogTitle>
-          {selectedDocument?.originalName}
-          <Chip
-            label={selectedDocument?.fileSizeFormatted}
-            size="small"
-            sx={{ ml: 2 }}
-          />
-        </DialogTitle>
-        <DialogContent>
-          {selectedDocument && (
-            <Box>
-              {selectedDocument.isImage ? (
-                <img
-                  src={`${process.env.REACT_APP_API_URL || 'http://localhost:8081/api'}/attachments/${selectedDocument.id}`}
-                  alt={selectedDocument.originalName}
-                  style={{ width: '100%', height: 'auto' }}
-                />
-              ) : selectedDocument.isPdf ? (
-                <iframe
-                  src={`${process.env.REACT_APP_API_URL || 'http://localhost:8081/api'}/attachments/${selectedDocument.id}`}
-                  style={{ width: '100%', height: '600px', border: 'none' }}
-                  title={selectedDocument.originalName}
-                />
-              ) : (
-                <Box textAlign="center" py={4}>
-                  <FileIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
-                  <Typography color="textSecondary" gutterBottom>
-                    Preview not available for this file type
-                  </Typography>
-                  <Button
-                    variant="contained"
-                    startIcon={<DownloadIcon />}
-                    onClick={() => handleDownload(selectedDocument)}
-                    sx={{ mt: 2 }}
-                  >
-                    {t('common.download')}
-                  </Button>
-                </Box>
-              )}
+      <AttachmentViewerDialog
+        open={viewerOpen}
+        onClose={handleCloseViewer}
+        attachmentId={selectedDocument?.id}
+        title={
+          selectedDocument ? (
+            <Box display="flex" alignItems="center" gap={2}>
+              <Typography variant="inherit">{selectedDocument.originalName}</Typography>
+              <Chip label={selectedDocument.fileSizeFormatted} size="small" />
             </Box>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setViewDialog(false)}>{t('common.close')}</Button>
-          {selectedDocument && (
-            <Button
-              variant="contained"
-              startIcon={<DownloadIcon />}
-              onClick={() => handleDownload(selectedDocument)}
-            >
-              {t('common.download')}
-            </Button>
-          )}
-        </DialogActions>
-      </Dialog>
+          ) : (
+            t('common.view')
+          )
+        }
+        mimeType={selectedDocument?.mimeType}
+        showDownload
+        onDownload={
+          selectedDocument ? () => handleDownload(selectedDocument) : undefined
+        }
+      />
     </Card>
   );
 };
