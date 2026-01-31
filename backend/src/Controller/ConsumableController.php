@@ -19,7 +19,9 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\String\Slugger\SluggerInterface;
 use App\Controller\Trait\UserSecurityTrait;
+use App\Controller\Trait\AttachmentFileOrganizerTrait;
 
 #[Route('/api/consumables')]
 
@@ -29,6 +31,7 @@ use App\Controller\Trait\UserSecurityTrait;
 class ConsumableController extends AbstractController
 {
     use UserSecurityTrait;
+    use AttachmentFileOrganizerTrait;
 
     /**
      * function __construct
@@ -47,7 +50,8 @@ class ConsumableController extends AbstractController
         private UrlScraperService $scraperService,
         private LoggerInterface $logger,
         private RepairCostCalculator $repairCostCalculator,
-        private EntitySerializerService $serializer
+        private EntitySerializerService $serializer,
+        private SluggerInterface $slugger
     ) {
     }
 
@@ -353,6 +357,7 @@ class ConsumableController extends AbstractController
                     // Update attachment's entity_id to link it to this consumable
                     $att->setEntityId($consumable->getId());
                     $att->setEntityType('consumable');
+                    $this->reorganizeReceiptFile($att, $consumable->getVehicle());
                 } else {
                     $consumable->setReceiptAttachment(null);
                 }

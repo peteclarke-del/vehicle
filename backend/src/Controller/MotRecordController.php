@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Controller\Trait\UserSecurityTrait;
+use App\Controller\Trait\AttachmentFileOrganizerTrait;
 use App\Entity\MotRecord;
 use App\Entity\Vehicle;
 use App\Entity\Part;
@@ -18,18 +19,21 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\String\Slugger\SluggerInterface;
 
 #[Route('/api')]
 class MotRecordController extends AbstractController
 {
     use UserSecurityTrait;
+    use AttachmentFileOrganizerTrait;
 
     public function __construct(
         private EntityManagerInterface $entityManager,
         private DvsaApiService $dvsaService,
         private LoggerInterface $logger,
         private RepairCostCalculator $repairCostCalculator,
-        private EntitySerializerService $serializer
+        private EntitySerializerService $serializer,
+        private SluggerInterface $slugger
     ) {
     }
 
@@ -426,6 +430,7 @@ class MotRecordController extends AbstractController
                     // Update attachment's entity_id to link it to this MOT record
                     $att->setEntityId($mot->getId());
                     $att->setEntityType('mot');
+                    $this->reorganizeReceiptFile($att, $mot->getVehicle());
                 } else {
                     $mot->setReceiptAttachment(null);
                 }

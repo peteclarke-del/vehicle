@@ -21,19 +21,23 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
+use Symfony\Component\String\Slugger\SluggerInterface;
 use App\Controller\Trait\UserSecurityTrait;
+use App\Controller\Trait\AttachmentFileOrganizerTrait;
 
 #[Route('/api')]
 class ServiceRecordController extends AbstractController
 {
     use UserSecurityTrait;
+    use AttachmentFileOrganizerTrait;
 
     public function __construct(
         private EntityManagerInterface $entityManager,
         private LoggerInterface $logger,
         private RepairCostCalculator $repairCostCalculator,
         private ValidatorInterface $validator,
-        private EntitySerializerService $serializer
+        private EntitySerializerService $serializer,
+        private SluggerInterface $slugger
     ) {
     }
 
@@ -520,6 +524,7 @@ class ServiceRecordController extends AbstractController
                     // Update attachment's entity_id to link it to this service
                     $att->setEntityId($service->getId());
                     $att->setEntityType('service');
+                    $this->reorganizeReceiptFile($att, $service->getVehicle());
                 } else {
                     $service->setReceiptAttachment(null);
                     $this->logger->warning('Attachment not found', ['attachmentId' => $data['receiptAttachmentId']]);
