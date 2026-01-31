@@ -22,6 +22,7 @@ use App\Controller\Trait\UserSecurityTrait;
 class TodoController extends AbstractController
 {
     use UserSecurityTrait;
+
     private EntityManagerInterface $em;
     private ValidatorInterface $validator;
 

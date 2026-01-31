@@ -28,6 +28,7 @@ use App\Controller\Trait\UserSecurityTrait;
 class AttachmentController extends AbstractController
 {
     use UserSecurityTrait;
+
     private const ALLOWED_MIME_TYPES = [
         'image/jpeg',
         'image/png',

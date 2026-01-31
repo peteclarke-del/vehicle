@@ -19,6 +19,7 @@ use App\Controller\Trait\UserSecurityTrait;
 class FuelRecordController extends AbstractController
 {
     use UserSecurityTrait;
+
     private const FUEL_TYPES = [
         'Biodiesel',
         'Diesel',

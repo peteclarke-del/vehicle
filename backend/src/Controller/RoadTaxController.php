@@ -17,6 +17,7 @@ use Symfony\Component\Routing\Annotation\Route;
 class RoadTaxController extends AbstractController
 {
     use UserSecurityTrait;
+
     private EntityManagerInterface $entityManager;
 
     public function __construct(EntityManagerInterface $entityManager)

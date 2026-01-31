@@ -768,7 +768,7 @@ class VehicleImportExportController extends AbstractController
                 // Determine entity type and ID from either explicit fields or vehicle relationship
                 $entityType = $att->getEntityType();
                 $entityId = $att->getEntityId();
-                
+
                 // If no explicit entityType but vehicle relationship exists, use that
                 if (!$entityType && $att->getVehicle()) {
                     $entityType = 'vehicle';

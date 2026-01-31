@@ -28,6 +28,7 @@ use App\Controller\Trait\UserSecurityTrait;
 class NotificationController extends AbstractController
 {
     use UserSecurityTrait;
+
     private const DEFAULT_SETTINGS = [
         'dueSoonDays' => 30,
         'todoDueSoonDays' => 30,
