@@ -14,6 +14,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Contracts\Cache\TagAwareCacheInterface;
 
 #[Route('/api')]
 class AuthController extends AbstractController
@@ -22,7 +23,8 @@ class AuthController extends AbstractController
         private EntityManagerInterface $entityManager,
         private UserPasswordHasherInterface $passwordHasher,
         private JWTTokenManagerInterface $jwtManager,
-        private JWTEncoderInterface $jwtEncoder
+        private JWTEncoderInterface $jwtEncoder,
+        private TagAwareCacheInterface $cache
     ) {
     }
 
@@ -35,6 +37,14 @@ class AuthController extends AbstractController
 
         if (!$user instanceof \App\Entity\User) {
             return $this->json(['error' => 'Authentication required'], 401);
+        }
+
+        // Invalidate all user-specific caches on login to ensure fresh data
+        try {
+            $this->cache->invalidateTags(['user.' . $user->getId(), 'vehicles', 'dashboard']);
+        } catch (\Throwable $e) {
+            // Log but don't fail login if cache invalidation fails
+            error_log('Cache invalidation failed on login: ' . $e->getMessage());
         }
 
         return $this->json([
@@ -394,6 +404,14 @@ class AuthController extends AbstractController
             $qb = $this->entityManager->createQueryBuilder();
             $qb->delete(RefreshToken::class, 'r')->where('r.user = :user')->setParameter('user', $user);
             $qb->getQuery()->execute();
+        }
+
+        // Invalidate all user-specific caches on logout to ensure clean state
+        try {
+            $this->cache->invalidateTags(['user.' . $user->getId(), 'vehicles', 'dashboard']);
+        } catch (\Throwable $e) {
+            // Log but don't fail logout if cache invalidation fails
+            error_log('Cache invalidation failed on logout: ' . $e->getMessage());
         }
 
         return $this->json(['message' => 'Refresh token(s) revoked']);
