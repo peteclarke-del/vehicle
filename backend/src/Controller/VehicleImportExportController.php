@@ -3349,6 +3349,8 @@ class VehicleImportExportController extends AbstractController
             // Remap attachment entityIds: update attachments to use the NEW entity IDs
             // Attachments were created with OLD entityIds from the export manifest
             if (!empty($attachmentEntitiesByNewId) && !empty($vehicleIdMap)) {
+                $logger->info('[import] Remapping attachment entity IDs', ['count' => count($attachmentEntitiesByNewId)]);
+                $remappedCount = 0;
                 foreach ($attachmentEntitiesByNewId as $attachmentId => $attachment) {
                     $entityType = $attachment->getEntityType();
                     $oldEntityId = $attachment->getEntityId();
@@ -3357,12 +3359,15 @@ class VehicleImportExportController extends AbstractController
                     if ($entityType === 'vehicle' && $oldEntityId && isset($vehicleIdMap[$oldEntityId])) {
                         $newVehicle = $vehicleIdMap[$oldEntityId];
                         $attachment->setEntityId($newVehicle->getId());
-                        // Set the vehicle relationship to maintain proper entity association
+                        // Set the vehicle relationship to maintain proper entity association and enable CASCADE delete
                         $attachment->setVehicle($newVehicle);
-                        $entityManager->persist($attachment);
+                        $remappedCount++;
                     }
                 }
-                $entityManager->flush();
+                if ($remappedCount > 0) {
+                    $entityManager->flush();
+                    $logger->info('[import] Remapped vehicle attachments', ['count' => $remappedCount]);
+                }
             }
 
         // Commit transaction on success
