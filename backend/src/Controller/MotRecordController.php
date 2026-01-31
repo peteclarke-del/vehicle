@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Controller\Trait\UserSecurityTrait;
 use App\Entity\MotRecord;
 use App\Entity\Vehicle;
 use App\Entity\Part;
@@ -20,6 +21,7 @@ use Symfony\Component\Routing\Annotation\Route;
 #[Route('/api')]
 class MotRecordController extends AbstractController
 {
+    use UserSecurityTrait;
     public function __construct(
         private EntityManagerInterface $entityManager,
         private DvsaApiService $dvsaService,

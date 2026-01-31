@@ -15,11 +15,13 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\IsGranted;
+use App\Controller\Trait\UserSecurityTrait;
 
 #[Route('/api/todos')]
 #[IsGranted('ROLE_USER')]
 class TodoController extends AbstractController
 {
+    use UserSecurityTrait;
     private EntityManagerInterface $em;
     private ValidatorInterface $validator;
 
@@ -278,15 +280,6 @@ class TodoController extends AbstractController
         $this->em->flush();
 
         return new JsonResponse(null, Response::HTTP_NO_CONTENT);
-    }
-
-    private function isAdminForUser(?User $user): bool
-    {
-        if (!$user) {
-            return false;
-        }
-        $roles = $user->getRoles() ?: [];
-        return in_array('ROLE_ADMIN', $roles, true);
     }
 
     private function serializeTodo(Todo $todo): array

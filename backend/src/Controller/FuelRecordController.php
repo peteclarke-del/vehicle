@@ -13,10 +13,12 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
+use App\Controller\Trait\UserSecurityTrait;
 
 #[Route('/api/fuel-records')]
 class FuelRecordController extends AbstractController
 {
+    use UserSecurityTrait;
     private const FUEL_TYPES = [
         'Biodiesel',
         'Diesel',
@@ -168,15 +170,6 @@ class FuelRecordController extends AbstractController
         if (!$record || (!$this->isAdminForUser($user) && $record->getVehicle()->getOwner()->getId() !== $user->getId())) {
             return $this->json(['error' => 'Fuel record not found'], 404);
         }
-    }
-
-    private function isAdminForUser(?User $user): bool
-    {
-        if (!$user) {
-            return false;
-        }
-        $roles = $user->getRoles() ?: [];
-        return in_array('ROLE_ADMIN', $roles, true);
 
         $this->entityManager->remove($record);
         $this->entityManager->flush();
