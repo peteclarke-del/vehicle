@@ -43,7 +43,6 @@ class EntitySerializerService
                 'partNumber' => $part->getPartNumber(),
                 'manufacturer' => $part->getManufacturer(),
                 'supplier' => $part->getSupplier(),
-                'category' => $part->getCategory(),
                 'partCategory' => $part->getPartCategory() ? [
                     'id' => $part->getPartCategory()->getId(),
                     'name' => $part->getPartCategory()->getName(),
