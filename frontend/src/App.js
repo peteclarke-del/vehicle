@@ -26,6 +26,7 @@ import ImportExport from './pages/ImportExport';
 import { Box } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import KnightRiderLoader from './components/KnightRiderLoader';
+import ErrorBoundary from './components/ErrorBoundary';
 
 const PrivateRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -95,33 +96,35 @@ function AppRoutes() {
 
   return (
     <>
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route
-          path="/"
-          element={
-            <PrivateRoute>
-              <Layout />
-            </PrivateRoute>
-          }
-        >
-          <Route index element={<Dashboard />} />
-          <Route path="vehicles" element={<Vehicles />} />
-          <Route path="vehicles/:id" element={<VehicleDetails />} />
-          <Route path="fuel" element={<FuelRecords />} />
-          <Route path="parts" element={<Parts />} />
-          <Route path="consumables" element={<Consumables />} />
-          <Route path="insurance" element={<Insurance />} />
-          <Route path="mot-records" element={<MotRecords />} />
-          <Route path="service-records" element={<ServiceRecords />} />
-          <Route path="road-tax" element={<RoadTax />} />
-          <Route path="todo" element={<Todo />} />
-          <Route path="reports" element={<Reports />} />
-          <Route path="profile" element={<Profile />} />
-          <Route path="tools/import-export" element={<ImportExport />} />
-        </Route>
-      </Routes>
+      <ErrorBoundary>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route
+            path="/"
+            element={
+              <PrivateRoute>
+                <Layout />
+              </PrivateRoute>
+            }
+          >
+            <Route index element={<Dashboard />} />
+            <Route path="vehicles" element={<Vehicles />} />
+            <Route path="vehicles/:id" element={<VehicleDetails />} />
+            <Route path="fuel" element={<FuelRecords />} />
+            <Route path="parts" element={<Parts />} />
+            <Route path="consumables" element={<Consumables />} />
+            <Route path="insurance" element={<Insurance />} />
+            <Route path="mot-records" element={<MotRecords />} />
+            <Route path="service-records" element={<ServiceRecords />} />
+            <Route path="road-tax" element={<RoadTax />} />
+            <Route path="todo" element={<Todo />} />
+            <Route path="reports" element={<Reports />} />
+            <Route path="profile" element={<Profile />} />
+            <Route path="tools/import-export" element={<ImportExport />} />
+          </Route>
+        </Routes>
+      </ErrorBoundary>
       <PasswordChangeDialog 
         open={showPasswordChange} 
         onClose={() => {}} 
