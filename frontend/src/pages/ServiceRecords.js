@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  Container,
   Typography,
   Button,
   Table,
@@ -31,10 +30,13 @@ import useTablePagination from '../hooks/useTablePagination';
 import ServiceDialog from '../components/ServiceDialog';
 import TablePaginationBar from '../components/TablePaginationBar';
 import VehicleSelector from '../components/VehicleSelector';
+import ViewAttachmentIconButton from '../components/ViewAttachmentIconButton';
+import KnightRiderLoader from '../components/KnightRiderLoader';
 
 const ServiceRecords = () => {
   const [serviceRecords, setServiceRecords] = useState([]);
   const [selectedVehicle, setSelectedVehicle] = useState('');
+  const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingService, setEditingService] = useState(null);
   const { vehicles, fetchVehicles } = useVehicles();
@@ -51,6 +53,7 @@ const ServiceRecords = () => {
   const { convert, format, getLabel } = useDistance();
 
   const loadServiceRecords = useCallback(async () => {
+    setLoading(true);
     try {
       const url = !selectedVehicle || selectedVehicle === '__all__' ? '/service-records' : `/service-records?vehicleId=${selectedVehicle}`;
       const response = await api.get(url);
@@ -61,6 +64,8 @@ const ServiceRecords = () => {
       else setServiceRecords([]);
     } catch (error) {
       console.error('Error loading service records:', error);
+    } finally {
+      setLoading(false);
     }
   }, [api, selectedVehicle]);
 
@@ -205,14 +210,22 @@ const ServiceRecords = () => {
     return new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP' }).format(amount);
   };
 
+  if (loading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
+        <KnightRiderLoader size={32} />
+      </Box>
+    );
+  }
+
   if (vehicles.length === 0) {
     return (
-      <Container>
+      <Box>
         <Typography variant="h4" gutterBottom>
           {t('service.title')}
         </Typography>
         <Typography>{t('common.noVehicles')}</Typography>
-      </Container>
+      </Box>
     );
   }
 
@@ -223,7 +236,7 @@ const ServiceRecords = () => {
   const totalAdditionalCost = _svc.reduce((sum, svc) => sum + parseFloat(svc.additionalCosts || 0), 0);
 
   return (
-    <Container maxWidth="xl">
+    <Box>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Typography variant="h4">{t('service.title')}</Typography>
         <Box display="flex" gap={2}>
@@ -369,6 +382,7 @@ const ServiceRecords = () => {
                     <TableCell>{service.motTestNumber ? `${service.motTestNumber}${service.motTestDate ? ' (' + service.motTestDate + ')' : ''}` : '-'}</TableCell>
                   <TableCell>{service.serviceProvider || '-'}</TableCell>
                   <TableCell align="center">
+                    <ViewAttachmentIconButton record={service} />
                     <Tooltip title={t('common.edit')}>
                       <IconButton size="small" onClick={() => handleEdit(service)}>
                         <EditIcon />
@@ -415,7 +429,7 @@ const ServiceRecords = () => {
         vehicleId={selectedVehicle}
         onClose={handleDialogClose}
       />
-    </Container>
+    </Box>
   );
 };
 

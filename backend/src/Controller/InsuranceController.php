@@ -30,7 +30,9 @@ class InsuranceController extends AbstractController
 
     private function isAdminForUser(?\App\Entity\User $user): bool
     {
-        if (!$user) return false;
+        if (!$user) {
+            return false;
+        }
         $roles = $user->getRoles() ?: [];
         return in_array('ROLE_ADMIN', $roles, true);
     }
@@ -122,7 +124,8 @@ class InsuranceController extends AbstractController
         $this->entityManager->flush();
 
         // Link any pending attachments to the newly created policy
-        if (!empty($data['pendingAttachmentIds'])
+        if (
+            !empty($data['pendingAttachmentIds'])
             && is_array($data['pendingAttachmentIds'])
         ) {
             foreach ($data['pendingAttachmentIds'] as $aid) {
@@ -293,7 +296,8 @@ class InsuranceController extends AbstractController
         $this->entityManager->flush();
 
         // Link any pending attachments to the updated policy
-        if (!empty($data['pendingAttachmentIds'])
+        if (
+            !empty($data['pendingAttachmentIds'])
             && is_array($data['pendingAttachmentIds'])
         ) {
             foreach ($data['pendingAttachmentIds'] as $aid) {

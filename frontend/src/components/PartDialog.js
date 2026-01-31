@@ -23,8 +23,9 @@ export default function PartDialog({ open, onClose, part, vehicleId }) {
     description: '',
     partNumber: '',
     manufacturer: '',
-    category: '',
-    cost: '',
+    partCategoryId: '',
+    price: '',
+    quantity: 1,
     purchaseDate: '',
     installationDate: '',
     mileageAtInstallation: '',
@@ -46,8 +47,9 @@ export default function PartDialog({ open, onClose, part, vehicleId }) {
         description: part.description || '',
         partNumber: part.partNumber || '',
         manufacturer: part.manufacturer || '',
-        category: part.category || '',
-        cost: part.cost || '',
+        partCategoryId: part.partCategoryId ?? part.partCategory?.id ?? '',
+        price: part.price ?? part.cost ?? '',
+        quantity: part.quantity ?? 1,
         purchaseDate: part.purchaseDate || '',
         installationDate: part.installationDate || '',
         mileageAtInstallation: part.mileageAtInstallation ? Math.round(convert(part.mileageAtInstallation)) : '',
@@ -64,8 +66,9 @@ export default function PartDialog({ open, onClose, part, vehicleId }) {
         description: '',
         partNumber: '',
         manufacturer: '',
-        category: '',
-        cost: '',
+        partCategoryId: '',
+        price: '',
+        quantity: 1,
         purchaseDate: '',
         installationDate: '',
         mileageAtInstallation: '',
@@ -80,31 +83,66 @@ export default function PartDialog({ open, onClose, part, vehicleId }) {
     }
   }, [part, open]);
 
+  const [partCategories, setPartCategories] = useState([]);
+  const [vehicleTypeId, setVehicleTypeId] = useState(null);
+  
+  // Determine the actual vehicle ID - use part's vehicleId if available, otherwise use prop
+  const actualVehicleId = part?.vehicleId || vehicleId;
+  
+  // Fetch vehicle to get vehicleTypeId
+  useEffect(() => {
+    const loadVehicle = async () => {
+      if (!actualVehicleId) return;
+      try {
+        const resp = await api.get(`/vehicles/${actualVehicleId}`);
+        setVehicleTypeId(resp.data?.vehicleTypeId || null);
+      } catch (e) {
+        console.error('Failed to load vehicle', e);
+      }
+    };
+    if (open) loadVehicle();
+  }, [open, actualVehicleId, api]);
+
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const params = vehicleTypeId ? { vehicleTypeId } : {};
+        const resp = await api.get('/part-categories', { params });
+        setPartCategories(resp.data || []);
+      } catch (e) {
+        console.error('Failed to load part categories', e);
+      }
+    };
+    if (open) loadCategories();
+  }, [open, vehicleTypeId, api]);
+
   useEffect(() => {
     const load = async () => {
-      if (!vehicleId) return;
+      if (!actualVehicleId) return;
       try {
-        const resp = await api.get('/mot-records', { params: { vehicleId } });
-        setMotRecords(resp.data || []);
+        const resp = await api.get('/mot-records', { params: { vehicleId: actualVehicleId } });
+        setMotRecords(Array.isArray(resp.data) ? resp.data : []);
       } catch (e) {
         console.error('Failed to load MOT records', e);
+        setMotRecords([]);
       }
     };
     if (open) load();
-  }, [open, vehicleId, api]);
+  }, [open, actualVehicleId, api]);
 
   useEffect(() => {
     const loadSvc = async () => {
-      if (!vehicleId) return;
+      if (!actualVehicleId) return;
       try {
-        const resp = await api.get('/service-records', { params: { vehicleId } });
-        setServiceRecords(resp.data || []);
+        const resp = await api.get('/service-records', { params: { vehicleId: actualVehicleId } });
+        setServiceRecords(Array.isArray(resp.data) ? resp.data : []);
       } catch (e) {
         console.error('Failed to load service records', e);
+        setServiceRecords([]);
       }
     };
     if (open) loadSvc();
-  }, [open, vehicleId, api]);
+  }, [open, actualVehicleId, api]);
 
   const handleChange = (e) => {
     setFormData({
@@ -117,7 +155,7 @@ export default function PartDialog({ open, onClose, part, vehicleId }) {
     setReceiptAttachmentId(attachmentId);
     const updates = {};
     if (ocrData.name) updates.description = ocrData.name;
-    if (ocrData.price) updates.cost = ocrData.price;
+    if (ocrData.price) updates.price = ocrData.price;
     if (ocrData.partNumber) updates.partNumber = ocrData.partNumber;
     if (ocrData.manufacturer) updates.manufacturer = ocrData.manufacturer;
     if (ocrData.supplier) updates.supplier = ocrData.supplier;
@@ -131,7 +169,7 @@ export default function PartDialog({ open, onClose, part, vehicleId }) {
     setProductUrl(url);
     const updates = {};
     if (scrapedData.name) updates.description = scrapedData.name;
-    if (scrapedData.price) updates.cost = scrapedData.price;
+    if (scrapedData.price) updates.price = scrapedData.price;
     if (scrapedData.partNumber) updates.partNumber = scrapedData.partNumber;
     if (scrapedData.manufacturer) updates.manufacturer = scrapedData.manufacturer;
     if (scrapedData.supplier) updates.supplier = scrapedData.supplier;
@@ -145,14 +183,27 @@ export default function PartDialog({ open, onClose, part, vehicleId }) {
     setLoading(true);
 
     try {
+      const price = parseFloat(formData.price) || 0;
+      const quantity = parseInt(formData.quantity || 0, 10) || 0;
+      const computedCost = +(price * quantity).toFixed(2);
+      const normalizedCategoryId = (() => {
+        if (formData.partCategoryId === '' || formData.partCategoryId === null || formData.partCategoryId === undefined) {
+          return '';
+        }
+        const parsed = Number(formData.partCategoryId);
+        return Number.isFinite(parsed) ? parsed : '';
+      })();
+
       const data = {
         ...formData,
-        vehicleId,
-        cost: parseFloat(formData.cost) || 0,
+        partCategoryId: normalizedCategoryId,
+        vehicleId: actualVehicleId,
+        price: price,
+        quantity: quantity,
+        cost: computedCost,
         mileageAtInstallation: formData.mileageAtInstallation ? Math.round(toKm(parseFloat(formData.mileageAtInstallation))) : null,
         receiptAttachmentId,
-        productUrl
-      ,
+        productUrl,
         motRecordId,
         serviceRecordId
       };
@@ -217,35 +268,47 @@ export default function PartDialog({ open, onClose, part, vehicleId }) {
               <TextField
                 fullWidth
                 select
-                name="category"
+                name="partCategoryId"
                 label={t('parts.category')}
-                value={formData.category}
-                onChange={handleChange}
+                value={formData.partCategoryId ?? ''}
+                onChange={(e) => {
+                  setFormData(prev => ({ ...prev, partCategoryId: e.target.value }));
+                }}
               >
                 <MenuItem value="">{t('partCategories.selectCategory')}</MenuItem>
-                <MenuItem value="Engine">{t('partCategories.Engine')}</MenuItem>
-                <MenuItem value="Transmission">{t('partCategories.Transmission')}</MenuItem>
-                <MenuItem value="Brakes">{t('partCategories.Brakes')}</MenuItem>
-                <MenuItem value="Suspension">{t('partCategories.Suspension')}</MenuItem>
-                <MenuItem value="Electrical">{t('partCategories.Electrical')}</MenuItem>
-                <MenuItem value="Body">{t('partCategories.Body')}</MenuItem>
-                <MenuItem value="Interior">{t('partCategories.Interior')}</MenuItem>
-                <MenuItem value="Exhaust">{t('partCategories.Exhaust')}</MenuItem>
-                <MenuItem value="Cooling">{t('partCategories.Cooling')}</MenuItem>
-                <MenuItem value="Other">{t('partCategories.Other')}</MenuItem>
+                {partCategories.map(pc => (
+                  <MenuItem key={pc.id} value={pc.id}>{pc.name}</MenuItem>
+                ))}
+                <MenuItem value="other">{t('partCategories.Other')}</MenuItem>
               </TextField>
             </Grid>
             <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                required
-                type="number"
-                name="cost"
-                label={t('parts.cost')}
-                value={formData.cost}
-                onChange={handleChange}
-                inputProps={{ step: '0.01', min: '0' }}
-              />
+              <Grid container spacing={1}>
+                <Grid item xs={6}>
+                  <TextField
+                    fullWidth
+                    required
+                    type="number"
+                    name="price"
+                    label={t('parts.price') || 'Price'}
+                    value={formData.price}
+                    onChange={handleChange}
+                    inputProps={{ step: '0.01', min: '0' }}
+                  />
+                </Grid>
+                <Grid item xs={6}>
+                  <TextField
+                    fullWidth
+                    required
+                    type="number"
+                    name="quantity"
+                    label={t('common.quantity') || 'Quantity'}
+                    value={formData.quantity}
+                    onChange={handleChange}
+                    inputProps={{ step: '1', min: '0' }}
+                  />
+                </Grid>
+              </Grid>
             </Grid>
             <Grid item xs={12} sm={4}>
               <TextField

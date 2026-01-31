@@ -30,30 +30,6 @@ class ConsumableType
     #[ORM\Column(type: 'text', nullable: true)]
     private ?string $description = null;
 
-    #[ORM\Column(type: 'string', length: 50, nullable: true)]
-    private ?string $category = null;
-
-    #[ORM\Column(type: 'integer', nullable: true)]
-    private ?int $defaultIntervalMiles = null;
-
-    #[ORM\Column(type: 'integer', nullable: true)]
-    private ?int $defaultIntervalMonths = null;
-
-    #[ORM\Column(type: 'decimal', precision: 10, scale: 2, nullable: true)]
-    private ?string $typicalCost = null;
-
-    #[ORM\Column(type: 'string', length: 50, nullable: true)]
-    private ?string $iconName = null;
-
-    #[ORM\Column(type: 'boolean', options: ['default' => false])]
-    private bool $isCommon = false;
-
-    #[ORM\Column(type: 'boolean', options: ['default' => false])]
-    private bool $requiresSpecialization = false;
-
-    #[ORM\Column(type: 'text', nullable: true)]
-    private ?string $manufacturerRecommendation = null;
-
     #[ORM\OneToMany(mappedBy: 'consumableType', targetEntity: Consumable::class)]
     private Collection $consumables;
 
@@ -116,98 +92,6 @@ class ConsumableType
         return $this->consumables;
     }
 
-    public function getCategory(): ?string
-    {
-        return $this->category;
-    }
-
-    public function setCategory(?string $category): self
-    {
-        $this->category = $category;
-        return $this;
-    }
-
-    public function getDefaultIntervalMiles(): ?int
-    {
-        return $this->defaultIntervalMiles;
-    }
-
-    public function setDefaultIntervalMiles(?int $defaultIntervalMiles): self
-    {
-        $this->defaultIntervalMiles = $defaultIntervalMiles;
-        return $this;
-    }
-
-    public function getDefaultIntervalMonths(): ?int
-    {
-        return $this->defaultIntervalMonths;
-    }
-
-    public function setDefaultIntervalMonths(?int $defaultIntervalMonths): self
-    {
-        $this->defaultIntervalMonths = $defaultIntervalMonths;
-        return $this;
-    }
-
-    public function getTypicalCost(): ?string
-    {
-        return $this->typicalCost;
-    }
-
-    public function setTypicalCost($typicalCost): self
-    {
-        if ($typicalCost !== null) {
-            $this->typicalCost = (string) $typicalCost;
-        } else {
-            $this->typicalCost = null;
-        }
-        return $this;
-    }
-
-    public function getIconName(): ?string
-    {
-        return $this->iconName;
-    }
-
-    public function setIconName(?string $iconName): self
-    {
-        $this->iconName = $iconName;
-        return $this;
-    }
-
-    public function getIsCommon(): bool
-    {
-        return $this->isCommon;
-    }
-
-    public function setIsCommon(bool $isCommon): self
-    {
-        $this->isCommon = $isCommon;
-        return $this;
-    }
-
-    public function getRequiresSpecialization(): bool
-    {
-        return $this->requiresSpecialization;
-    }
-
-    public function setRequiresSpecialization(bool $requiresSpecialization): self
-    {
-        $this->requiresSpecialization = $requiresSpecialization;
-        return $this;
-    }
-
-    public function getManufacturerRecommendation(): ?string
-    {
-        return $this->manufacturerRecommendation;
-    }
-
-    public function setManufacturerRecommendation(?string $manufacturerRecommendation): self
-    {
-        $this->manufacturerRecommendation = $manufacturerRecommendation;
-        return $this;
-    }
-
     public function addConsumable(Consumable $consumable): self
     {
         if (!$this->consumables->contains($consumable)) {
@@ -221,16 +105,6 @@ class ConsumableType
     {
         $this->consumables->removeElement($consumable);
         return $this;
-    }
-
-    public function isCommon(): bool
-    {
-        return $this->isCommon;
-    }
-
-    public function requiresSpecialization(): bool
-    {
-        return $this->requiresSpecialization;
     }
 
     public function __toString(): string

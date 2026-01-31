@@ -39,7 +39,7 @@ services:
     networks:
       - vehicle_network
     restart: unless-stopped
-    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy noeviction
     volumes:
       - redis_data:/data
     security_opt:

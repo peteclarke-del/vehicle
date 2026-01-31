@@ -238,9 +238,22 @@ class NotificationController extends AbstractController
         $serviceDueSoonDate = $today->modify('+' . $serviceDueSoonDays . ' days');
 
         $vehicleRepo = $this->entityManager->getRepository(Vehicle::class);
-        $vehicles = $this->isAdminForUser($user)
-            ? $vehicleRepo->findAll()
-            : $vehicleRepo->findBy(['owner' => $user]);
+
+        // Eager load vehicles with all required relationships to avoid N+1 queries
+        $qb = $this->entityManager->createQueryBuilder()
+            ->select('v', 'rt', 'mot', 'sr')
+            ->from(Vehicle::class, 'v')
+            ->leftJoin('v.roadTaxRecords', 'rt')
+            ->leftJoin('v.motRecords', 'mot')
+            ->leftJoin('v.serviceRecords', 'sr');
+
+        if ($this->isAdminForUser($user)) {
+            // Admin sees all vehicles
+        } else {
+            $qb->where('v.owner = :user')->setParameter('user', $user);
+        }
+
+        $vehicles = $qb->getQuery()->getResult();
 
         $vehicles = array_values(array_filter(
             $vehicles,
@@ -453,8 +466,12 @@ class NotificationController extends AbstractController
             }
         }
 
+        // Eager load consumables with their types to avoid N+1
         $consumables = $this->entityManager->getRepository(Consumable::class)
             ->createQueryBuilder('c')
+            ->select('c', 'ct', 'v')
+            ->leftJoin('c.consumableType', 'ct')
+            ->leftJoin('c.vehicle', 'v')
             ->where('c.vehicle IN (:vehicles)')
             ->setParameter('vehicles', $vehicles)
             ->getQuery()
@@ -512,8 +529,11 @@ class NotificationController extends AbstractController
             }
         }
 
+        // Eager load todos with vehicles
         $todos = $this->entityManager->getRepository(Todo::class)
             ->createQueryBuilder('t')
+            ->select('t', 'v')
+            ->leftJoin('t.vehicle', 'v')
             ->where('t.vehicle IN (:vehicles)')
             ->andWhere('t.done = :done')
             ->setParameter('vehicles', $vehicles)

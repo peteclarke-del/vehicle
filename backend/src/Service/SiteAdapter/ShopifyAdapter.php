@@ -108,16 +108,20 @@ class ShopifyAdapter implements SiteAdapterInterface
 
     private function parseEmbeddedJson(string $html): array
     {
-        if (!preg_match(
-            '/ShopifyAnalytics\.meta\.product\s*=\s*(\{.*?\});/s',
-            $html,
-            $m
-        )) {
+        if (
+            !preg_match(
+                '/ShopifyAnalytics\.meta\.product\s*=\s*(\{.*?\});/s',
+                $html,
+                $m
+            )
+        ) {
             return [];
         }
 
         $data = json_decode($m[1], true);
-        if (!$data) return [];
+        if (!$data) {
+            return [];
+        }
 
         $variant = $data['variants'][0] ?? [];
 

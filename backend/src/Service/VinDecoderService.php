@@ -9,7 +9,7 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 /**
  * VIN Decoder Service using API Ninjas VIN Lookup API
- * 
+ *
  * Decodes Vehicle Identification Numbers (VIN) to extract:
  * - Manufacturer/Make
  * - Model
@@ -58,7 +58,7 @@ class VinDecoderService
 
         try {
             $apiUrl = 'https://api.api-ninjas.com/v1/vinlookup?vin=' . urlencode($vin);
-            
+
             $this->logger->info('Decoding VIN', ['vin' => $vin]);
 
             $response = $this->httpClient->request('GET', $apiUrl, [
@@ -69,7 +69,7 @@ class VinDecoderService
             ]);
 
             $data = $response->toArray();
-            
+
             if (empty($data) || !isset($data['vin'])) {
                 $this->logger->warning('No data returned for VIN', ['vin' => $vin]);
                 return null;

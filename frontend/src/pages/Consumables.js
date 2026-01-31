@@ -9,7 +9,9 @@ import { fetchArrayData } from '../hooks/useApiData';
 import { useDistance } from '../hooks/useDistance';
 import useTablePagination from '../hooks/useTablePagination';
 import ConsumableDialog from '../components/ConsumableDialog';
+import ServiceDialog from '../components/ServiceDialog';
 import KnightRiderLoader from '../components/KnightRiderLoader';
+import ViewAttachmentIconButton from '../components/ViewAttachmentIconButton';
 import TablePaginationBar from '../components/TablePaginationBar';
 import VehicleSelector from '../components/VehicleSelector';
 
@@ -20,6 +22,8 @@ const Consumables = () => {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedConsumable, setSelectedConsumable] = useState(null);
+  const [openServiceDialog, setOpenServiceDialog] = useState(false);
+  const [selectedServiceRecord, setSelectedServiceRecord] = useState(null);
   const [orderBy, setOrderBy] = useState(() => localStorage.getItem('consumablesSortBy') || 'description');
   const [order, setOrder] = useState(() => localStorage.getItem('consumablesSortOrder') || 'asc');
   const { api } = useAuth();
@@ -224,7 +228,7 @@ const Consumables = () => {
         <Table stickyHeader>
           <TableHead>
             <TableRow>
-                <TableCell>
+                <TableCell sx={{ width: 120 }}>
                   <TableSortLabel
                     active={orderBy === 'registration'}
                     direction={orderBy === 'registration' ? order : 'asc'}
@@ -236,7 +240,7 @@ const Consumables = () => {
                     </div>
                   </TableSortLabel>
                 </TableCell>
-                <TableCell sx={{ width: '22%' }}>
+                <TableCell sx={{ width: 180 }}>
                       <TableSortLabel
                         active={orderBy === 'consumableType'}
                         direction={orderBy === 'consumableType' ? order : 'asc'}
@@ -245,7 +249,7 @@ const Consumables = () => {
                         {t('common.type')}
                       </TableSortLabel>
                     </TableCell>
-              <TableCell>
+              <TableCell sx={{ minWidth: 240 }}>
                 <TableSortLabel
                   active={orderBy === 'description'}
                   direction={orderBy === 'description' ? order : 'asc'}
@@ -254,34 +258,25 @@ const Consumables = () => {
                   {t('consumables.name')}
                 </TableSortLabel>
               </TableCell>
-              <TableCell>
-                <TableSortLabel
-                  active={orderBy === 'quantity'}
-                  direction={orderBy === 'quantity' ? order : 'asc'}
-                  onClick={() => handleRequestSort('quantity')}
-                >
-                  {t('consumables.quantity')}
-                </TableSortLabel>
-              </TableCell>
-              <TableCell>
-                <TableSortLabel
-                  active={orderBy === 'brand'}
-                  direction={orderBy === 'brand' ? order : 'asc'}
-                  onClick={() => handleRequestSort('brand')}
-                >
-                  {t('common.brand')}
-                </TableSortLabel>
-              </TableCell>
-              <TableCell>
-                <TableSortLabel
-                  active={orderBy === 'cost'}
-                  direction={orderBy === 'cost' ? order : 'asc'}
-                  onClick={() => handleRequestSort('cost')}
-                >
-                  {t('consumables.cost')}
-                </TableSortLabel>
-              </TableCell>
-              <TableCell>
+                <TableCell sx={{ width: 140 }}>
+                  <TableSortLabel
+                    active={orderBy === 'cost'}
+                    direction={orderBy === 'cost' ? order : 'asc'}
+                    onClick={() => handleRequestSort('cost')}
+                  >
+                    {t('consumables.cost')}
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell sx={{ width: 140 }}>
+                  <TableSortLabel
+                    active={orderBy === 'quantity'}
+                    direction={orderBy === 'quantity' ? order : 'asc'}
+                    onClick={() => handleRequestSort('quantity')}
+                  >
+                    {t('consumables.quantity')}
+                  </TableSortLabel>
+                </TableCell>
+              <TableCell sx={{ width: 160 }}>
                 <TableSortLabel
                   active={orderBy === 'lastChanged'}
                   direction={orderBy === 'lastChanged' ? order : 'asc'}
@@ -290,7 +285,7 @@ const Consumables = () => {
                   {t('consumables.lastChanged')}
                 </TableSortLabel>
               </TableCell>
-              <TableCell>
+              <TableCell sx={{ width: 180 }}>
                 <TableSortLabel
                   active={orderBy === 'mileageAtChange'}
                   direction={orderBy === 'mileageAtChange' ? order : 'asc'}
@@ -302,14 +297,14 @@ const Consumables = () => {
                   </div>
                 </TableSortLabel>
               </TableCell>
-              <TableCell>{t('mot.title') || 'MOT'}</TableCell>
-              <TableCell>{t('common.actions')}</TableCell>
+              <TableCell sx={{ minWidth: 200 }}>{t('common.linkedRecords') || 'Linked Records'}</TableCell>
+              <TableCell sx={{ width: 140 }}>{t('common.actions')}</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {sortedConsumables.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} align="center">
+                <TableCell colSpan={9} align="center">
                   <Typography color="textSecondary">{t('common.noRecords')}</Typography>
                 </TableCell>
               </TableRow>
@@ -321,31 +316,44 @@ const Consumables = () => {
                     {consumable.consumableType?.name || '-'}
                   </TableCell>
                   <TableCell>{consumable.description || '-'}</TableCell>
+                  <TableCell>{formatCurrency(parseFloat(consumable.cost) || 0, 'GBP', i18n.language)}</TableCell>
                   <TableCell>
                     {consumable.quantity} {consumable.consumableType?.unit || ''}
                   </TableCell>
-                  <TableCell>{consumable.brand || '-'}</TableCell>
-                  <TableCell>{formatCurrency(parseFloat(consumable.cost) || 0, 'GBP', i18n.language)}</TableCell>
                   <TableCell>{consumable.lastChanged || '-'}</TableCell>
                   <TableCell>{consumable.mileageAtChange ? format(convert(consumable.mileageAtChange)) : '-'}</TableCell>
-                      <TableCell>{consumable.motTestNumber ? `${consumable.motTestNumber}${consumable.motTestDate ? ' (' + consumable.motTestDate + ')' : ''}` : '-'}</TableCell>
-                      <TableCell>
-                      <Tooltip title={t('common.edit')}>
-                        <IconButton size="small" onClick={() => handleEdit(consumable)}>
-                          <Edit />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title={t('common.delete')}>
-                        <IconButton
-                          size="small"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDelete(consumable.id);
-                          }}
-                        >
-                          <Delete />
-                        </IconButton>
-                      </Tooltip>
+                  <TableCell>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      <div>
+                        {consumable.motTestNumber ? `${consumable.motTestNumber}${consumable.motTestDate ? ' (' + consumable.motTestDate + ')' : ''}` : '-'}
+                      </div>
+                      <div>
+                        {consumable.serviceRecordId ? (
+                          <button onClick={async (e) => { e.preventDefault(); try { const resp = await api.get(`/service-records/${consumable.serviceRecordId}`); setSelectedServiceRecord(resp.data); setOpenServiceDialog(true); } catch (err) { console.error('Failed to load service record', err); } }} style={{ background: 'none', border: 'none', padding: 0, textDecoration: 'underline', cursor: 'pointer', color: 'inherit' }}>
+                            {consumable.serviceRecordDate ? t('service.serviceLabelDate', { date: consumable.serviceRecordDate }) : t('service.serviceLabelId', { id: consumable.serviceRecordId })}
+                          </button>
+                        ) : '-'}
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <ViewAttachmentIconButton record={consumable} />
+                    <Tooltip title={t('common.edit')}>
+                      <IconButton size="small" onClick={() => handleEdit(consumable)}>
+                        <Edit />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title={t('common.delete')}>
+                      <IconButton
+                        size="small"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(consumable.id);
+                        }}
+                      >
+                        <Delete />
+                      </IconButton>
+                    </Tooltip>
                   </TableCell>
                 </TableRow>
               ))
@@ -366,6 +374,16 @@ const Consumables = () => {
         onClose={handleDialogClose}
         consumable={selectedConsumable}
         vehicleId={selectedVehicle}
+      />
+      <ServiceDialog
+        open={openServiceDialog}
+        serviceRecord={selectedServiceRecord}
+        vehicleId={selectedVehicle}
+        onClose={(saved) => {
+          setOpenServiceDialog(false);
+          setSelectedServiceRecord(null);
+          if (saved) loadConsumables();
+        }}
       />
     </Box>
   );

@@ -182,17 +182,17 @@ class FuelRecord
         if (!$this->litres || $this->litres <= 0) {
             return null;
         }
-        
+
         // Calculate miles travelled
         $milesTravelled = null;
         if ($previousRecord && $this->mileage && $previousRecord->getMileage()) {
             $milesTravelled = $this->mileage - $previousRecord->getMileage();
         }
-        
+
         if (!$milesTravelled || $milesTravelled <= 0) {
             return null;
         }
-        
+
         // Convert litres to gallons (UK gallon = 4.54609 litres)
         $gallons = (float)$this->litres / 4.54609;
         return (float)$milesTravelled / $gallons;
@@ -211,17 +211,17 @@ class FuelRecord
         if (!$this->cost) {
             return null;
         }
-        
+
         // Calculate miles travelled
         $milesTravelled = null;
         if ($previousRecord && $this->mileage && $previousRecord->getMileage()) {
             $milesTravelled = $this->mileage - $previousRecord->getMileage();
         }
-        
+
         if (!$milesTravelled || $milesTravelled <= 0) {
             return null;
         }
-        
+
         return (float)$this->cost / (float)$milesTravelled;
     }
 

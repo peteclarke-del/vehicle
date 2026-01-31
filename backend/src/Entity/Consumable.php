@@ -115,7 +115,7 @@ class Consumable
         return $this;
     }
 
-    
+
     public function getQuantity(): ?string
     {
         return $this->quantity;
@@ -167,8 +167,6 @@ class Consumable
         }
         return $this;
     }
-
-    // Legacy `getName`/`setName` removed — use getDescription()/setDescription()
 
     public function getServiceRecord(): ?ServiceRecord
     {

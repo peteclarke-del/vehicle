@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  Container,
   Typography,
   Button,
   Table,
@@ -32,10 +31,13 @@ import useTablePagination from '../hooks/useTablePagination';
 import MotDialog from '../components/MotDialog';
 import TablePaginationBar from '../components/TablePaginationBar';
 import VehicleSelector from '../components/VehicleSelector';
+import ViewAttachmentIconButton from '../components/ViewAttachmentIconButton';
+import KnightRiderLoader from '../components/KnightRiderLoader';
 
 const MotRecords = () => {
   const [motRecords, setMotRecords] = useState([]);
   const [selectedVehicle, setSelectedVehicle] = useState('');
+  const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingMot, setEditingMot] = useState(null);
   const { vehicles, fetchVehicles } = useVehicles();
@@ -52,12 +54,15 @@ const MotRecords = () => {
   const [hasManualSelection, setHasManualSelection] = useState(false);
 
   const loadMotRecords = useCallback(async () => {
+    setLoading(true);
     try {
       const url = !selectedVehicle || selectedVehicle === '__all__' ? '/mot-records' : `/mot-records?vehicleId=${selectedVehicle}`;
       const response = await api.get(url);
       setMotRecords(response.data);
     } catch (error) {
       console.error('Error loading MOT records:', error);
+    } finally {
+      setLoading(false);
     }
   }, [api, selectedVehicle]);
 
@@ -170,14 +175,22 @@ const MotRecords = () => {
 
   
 
+  if (loading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
+        <KnightRiderLoader size={32} />
+      </Box>
+    );
+  }
+
   if (vehicles.length === 0) {
     return (
-      <Container>
+      <Box>
         <Typography variant="h4" gutterBottom>
           {t('mot.title')}
         </Typography>
         <Typography>{t('common.noVehicles')}</Typography>
-      </Container>
+      </Box>
     );
   }
 
@@ -185,7 +198,7 @@ const MotRecords = () => {
   const totalRepairCost = motRecords.reduce((sum, mot) => sum + parseFloat(mot.repairCost || 0), 0);
 
   return (
-    <Container maxWidth="xl">
+    <Box>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Typography variant="h4">{t('mot.title')}</Typography>
         <Box display="flex" gap={2}>
@@ -370,6 +383,7 @@ const MotRecords = () => {
                       const disabled = sel ? (sel.isMotExempt || sel.motExempt) : false;
                       return (
                         <>
+                          <ViewAttachmentIconButton record={mot} />
                           <Tooltip title={t('common.edit')}>
                             <span>
                               <IconButton size="small" onClick={() => handleEdit(mot)} disabled={disabled}>
@@ -421,7 +435,7 @@ const MotRecords = () => {
         vehicles={vehicles}
         onClose={handleDialogClose}
       />
-    </Container>
+    </Box>
   );
 };
 

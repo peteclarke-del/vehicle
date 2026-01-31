@@ -12,6 +12,7 @@ import useTablePagination from '../hooks/useTablePagination';
 import PartDialog from '../components/PartDialog';
 import ServiceDialog from '../components/ServiceDialog';
 import KnightRiderLoader from '../components/KnightRiderLoader';
+import ViewAttachmentIconButton from '../components/ViewAttachmentIconButton';
 import TablePaginationBar from '../components/TablePaginationBar';
 
 const Parts = () => {
@@ -260,15 +261,6 @@ const Parts = () => {
               </TableCell>
               <TableCell>
                 <TableSortLabel
-                  active={orderBy === 'manufacturer'}
-                  direction={orderBy === 'manufacturer' ? order : 'asc'}
-                  onClick={() => handleRequestSort('manufacturer')}
-                >
-                  {t('common.manufacturer')}
-                </TableSortLabel>
-              </TableCell>
-              <TableCell>
-                <TableSortLabel
                   active={orderBy === 'cost'}
                   direction={orderBy === 'cost' ? order : 'asc'}
                   onClick={() => handleRequestSort('cost')}
@@ -301,7 +293,7 @@ const Parts = () => {
           <TableBody>
             {sortedParts.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} align="center">
+                <TableCell colSpan={9} align="center">
                   <Typography color="textSecondary">{t('common.noRecords')}</Typography>
                 </TableCell>
               </TableRow>
@@ -311,8 +303,7 @@ const Parts = () => {
                   <TableCell>{vehicles.find(v => String(v.id) === String(part.vehicleId))?.registrationNumber || '-'}</TableCell>
                   <TableCell>{part.description}</TableCell>
                   <TableCell>{part.partNumber || '-'}</TableCell>
-                  <TableCell>{part.category || '-'}</TableCell>
-                  <TableCell>{part.manufacturer || '-'}</TableCell>
+                  <TableCell>{part.partCategory?.name || '-'}</TableCell>
                   <TableCell>{formatCurrency(parseFloat(part.cost) || 0, 'GBP', i18n.language)}</TableCell>
                   <TableCell>{part.purchaseDate || '-'}</TableCell>
                   <TableCell>{part.installationDate || '-'}</TableCell>
@@ -331,6 +322,7 @@ const Parts = () => {
                     </div>
                   </TableCell>
                   <TableCell>
+                        <ViewAttachmentIconButton record={part} />
                         <Tooltip title={t('common.edit')}>
                       <IconButton size="small" onClick={() => handleEdit(part)}>
                         <Edit />

@@ -41,7 +41,6 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { useDistance } from '../hooks/useDistance';
-import useTablePagination from '../hooks/useTablePagination';
 import formatCurrency from '../utils/formatCurrency';
 import VehicleSpecifications from '../components/VehicleSpecifications';
 import VehicleImages from '../components/VehicleImages';
@@ -49,7 +48,6 @@ import VehicleDocuments from '../components/VehicleDocuments';
 import VinDecoder from '../components/VinDecoder';
 import LicensePlate from '../components/LicensePlate';
 import KnightRiderLoader from '../components/KnightRiderLoader';
-import TablePaginationBar from '../components/TablePaginationBar';
 import { LineChart } from '@mui/x-charts/LineChart';
 import { PieChart } from '@mui/x-charts/PieChart';
 
@@ -65,7 +63,6 @@ const VehicleDetails = () => {
   const { api, user } = useAuth();
   const { t, i18n } = useTranslation();
   const { convert, format, getLabel, convertFuelConsumption, getFuelConsumptionLabel, userUnit } = useDistance();
-  const { page, rowsPerPage, paginatedRows: paginatedDepreciation, handleChangePage, handleChangeRowsPerPage } = useTablePagination(depreciationSchedule || []);
 
   const isExpired = (dateString) => {
     if (!dateString) return null;
@@ -609,13 +606,6 @@ const VehicleDetails = () => {
 
               <Grid item xs={12} md={2}>
                 <Typography variant="subtitle1" gutterBottom>{t('vehicleDetails.valuesTableTitle')}</Typography>
-                <TablePaginationBar
-                  count={(depreciationSchedule || []).length}
-                  page={page}
-                  rowsPerPage={rowsPerPage}
-                  onPageChange={handleChangePage}
-                  onRowsPerPageChange={handleChangeRowsPerPage}
-                />
                 <TableContainer component={Paper} sx={{ overflow: 'visible' }}>
                   <Table size="small">
                     <TableHead>
@@ -632,7 +622,7 @@ const VehicleDetails = () => {
                               </TableCell>
                             </TableRow>
                           ) : (
-                            paginatedDepreciation.map((s, idx) => {
+                            (depreciationSchedule || []).map((s, idx) => {
                             const baseYear = vehicle.purchaseDate
                               ? new Date(vehicle.purchaseDate).getFullYear()
                               : (vehicle.year || new Date().getFullYear());
@@ -650,13 +640,6 @@ const VehicleDetails = () => {
                         </TableBody>
                   </Table>
                 </TableContainer>
-                <TablePaginationBar
-                  count={(depreciationSchedule || []).length}
-                  page={page}
-                  rowsPerPage={rowsPerPage}
-                  onPageChange={handleChangePage}
-                  onRowsPerPageChange={handleChangeRowsPerPage}
-                />
               </Grid>
             </Grid>
           </CardContent>

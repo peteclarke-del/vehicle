@@ -85,7 +85,7 @@ class TodoController extends AbstractController
         $todo->setDone(!empty($payload['done']));
         $todo->setDueDate(!empty($payload['dueDate']) ? new \DateTime($payload['dueDate']) : null);
         $todo->setCompletedBy(!empty($payload['completedBy']) ? new \DateTime($payload['completedBy']) : null);
-        
+
         // attach parts if provided (expect array of ids)
         if (!empty($payload['parts']) && is_array($payload['parts'])) {
             foreach ($payload['parts'] as $pid) {
@@ -114,7 +114,7 @@ class TodoController extends AbstractController
         if (count($errors) > 0) {
             return new JsonResponse(['errors' => (string) $errors], Response::HTTP_BAD_REQUEST);
         }
-        
+
         // If this todo was created as completed, cascade completed date to linked parts/consumables
         if ($todo->isDone() && $todo->getCompletedBy() instanceof \DateTimeInterface) {
             $completedAt = $todo->getCompletedBy();
@@ -152,10 +152,16 @@ class TodoController extends AbstractController
         $payload = json_decode($request->getContent(), true);
         if (isset($payload['vehicleId'])) {
             $vehicle = $this->em->getRepository(Vehicle::class)->find($payload['vehicleId']);
-            if ($vehicle) $todo->setVehicle($vehicle);
+            if ($vehicle) {
+                $todo->setVehicle($vehicle);
+            }
         }
-        if (isset($payload['title'])) $todo->setTitle($payload['title']);
-        if (array_key_exists('description', $payload)) $todo->setDescription($payload['description']);
+        if (isset($payload['title'])) {
+            $todo->setTitle($payload['title']);
+        }
+        if (array_key_exists('description', $payload)) {
+            $todo->setDescription($payload['description']);
+        }
         if (array_key_exists('parts', $payload)) {
             foreach ($todo->getParts() as $existing) {
                 $todo->removePart($existing);
@@ -188,9 +194,15 @@ class TodoController extends AbstractController
                 }
             }
         }
-        if (isset($payload['done'])) $todo->setDone((bool)$payload['done']);
-        if (array_key_exists('dueDate', $payload)) $todo->setDueDate($payload['dueDate'] ? new \DateTime($payload['dueDate']) : null);
-        if (array_key_exists('completedBy', $payload)) $todo->setCompletedBy($payload['completedBy'] ? new \DateTime($payload['completedBy']) : null);
+        if (isset($payload['done'])) {
+            $todo->setDone((bool)$payload['done']);
+        }
+        if (array_key_exists('dueDate', $payload)) {
+            $todo->setDueDate($payload['dueDate'] ? new \DateTime($payload['dueDate']) : null);
+        }
+        if (array_key_exists('completedBy', $payload)) {
+            $todo->setCompletedBy($payload['completedBy'] ? new \DateTime($payload['completedBy']) : null);
+        }
 
         $todo->setUpdatedAt(new \DateTime());
 
@@ -270,7 +282,9 @@ class TodoController extends AbstractController
 
     private function isAdminForUser(?User $user): bool
     {
-        if (!$user) return false;
+        if (!$user) {
+            return false;
+        }
         $roles = $user->getRoles() ?: [];
         return in_array('ROLE_ADMIN', $roles, true);
     }

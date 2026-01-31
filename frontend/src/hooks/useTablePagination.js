@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 
-const useTablePagination = (rows = [], initialRowsPerPage = 25) => {
+const useTablePagination = (rows = [], initialRowsPerPage = 10) => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(initialRowsPerPage);
 

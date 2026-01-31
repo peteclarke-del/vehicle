@@ -1,0 +1,67 @@
+[
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Engine",
+    "description": "Motorcycle engine assembly including crankcases, cylinder heads, and internal components."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Intake",
+    "description": "Intake system components such as throttle bodies, carburetors, and performance intake kits."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Fuelling",
+    "description": "Fuel delivery components including injectors, fuel pumps, and fuel system upgrades."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Exhaust",
+    "description": "Exhaust headers, silencers, and full aftermarket exhaust systems."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Transmission",
+    "description": "Gearbox, clutch assemblies, and primary drive components."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Body",
+    "description": "Bodywork, fairings, panels, screens, mirrors, and related hardware."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Chassis",
+    "description": "Frame, subframe, and structural motorcycle components."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Suspension & Steering",
+    "description": "Front and rear suspension assemblies including forks and rear shocks."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Braking System",
+    "description": "Brake hardware such as calipers, master cylinders, and brake system upgrades."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Wheels & Tyres",
+    "description": "Wheels, tyres, wheel bearings, hubs, and related mounting hardware."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Cables & Controls",
+    "description": "Control cables and levers including throttle, clutch, brake, and choke assemblies."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Ignition",
+    "description": "Ignition system components including coils, plugs, leads, and ignition modules."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Electrical & Control",
+    "description": "ECUs, ignition systems, regulators, and electronic control components."
+  }
+]

@@ -99,7 +99,7 @@ class EbayAdapter implements SiteAdapterInterface
 
             // Call Browse API
             $this->logger->info('eBay: Fetching item via API', ['item_id' => $itemId]);
-            
+
             $response = $this->httpClient->request('GET', "https://api.ebay.com/buy/browse/v1/item/v1|{$itemId}|0", [
                 'headers' => [
                     'Authorization' => 'Bearer ' . $token,
@@ -139,12 +139,12 @@ class EbayAdapter implements SiteAdapterInterface
             // Calculate total price (item price + shipping cost)
             $itemPrice = isset($data['price']['value']) ? (float)$data['price']['value'] : 0;
             $shippingCost = 0;
-            
+
             // Get the cheapest shipping option
             if (!empty($data['shippingOptions'])) {
                 $shippingCost = (float)($data['shippingOptions'][0]['shippingCost']['value'] ?? 0);
             }
-            
+
             $totalPrice = $itemPrice + $shippingCost;
 
             // Try to get manufacturer/brand from multiple sources
@@ -160,7 +160,7 @@ class EbayAdapter implements SiteAdapterInterface
 
             // Part number: use MPN if available, otherwise use eBay item ID
             $partNumber = $data['mpn'] ?? $data['legacyItemId'] ?? null;
-            
+
             // Supplier: always use seller username
             $supplier = $data['seller']['username'] ?? null;
 
@@ -177,7 +177,7 @@ class EbayAdapter implements SiteAdapterInterface
                 'item_price' => $itemPrice,
                 'shipping_cost' => $shippingCost,
             ]));
-            
+
             // Filter out only null values, keep empty strings and 0
             return array_filter($result, fn($value) => $value !== null);
         } catch (\Exception $e) {
@@ -207,7 +207,7 @@ class EbayAdapter implements SiteAdapterInterface
 
         try {
             $credentials = base64_encode($this->clientId . ':' . $this->clientSecret);
-            
+
             $response = $this->httpClient->request('POST', 'https://api.ebay.com/identity/v1/oauth2/token', [
                 'headers' => [
                     'Content-Type' => 'application/x-www-form-urlencoded',

@@ -317,11 +317,21 @@ class MotRecordController extends AbstractController
                 foreach (['result','expiryDate','mileage','motTestNumber','testCenter'] as $k) {
                     $existingVal = null;
                     switch ($k) {
-                        case 'mileage': $existingVal = $existing->getMileage(); break;
-                        case 'motTestNumber': $existingVal = $existing->getMotTestNumber(); break;
-                        case 'testCenter': $existingVal = $existing->getTestCenter(); break;
-                        case 'expiryDate': $existingVal = $existing->getExpiryDate()?->format('Y-m-d'); break;
-                        case 'result': $existingVal = $existing->getResult(); break;
+                        case 'mileage':
+                            $existingVal = $existing->getMileage();
+                            break;
+                        case 'motTestNumber':
+                            $existingVal = $existing->getMotTestNumber();
+                            break;
+                        case 'testCenter':
+                            $existingVal = $existing->getTestCenter();
+                            break;
+                        case 'expiryDate':
+                            $existingVal = $existing->getExpiryDate()?->format('Y-m-d');
+                            break;
+                        case 'result':
+                            $existingVal = $existing->getResult();
+                            break;
                     }
                     $newVal = $newData[$k] ?? null;
                     if ($k === 'mileage') {
@@ -438,8 +448,14 @@ class MotRecordController extends AbstractController
             'partNumber' => $part->getPartNumber(),
             'manufacturer' => $part->getManufacturer(),
             'supplier' => $part->getSupplier(),
+            'price' => $part->getPrice(),
+            'quantity' => $part->getQuantity(),
             'cost' => $part->getCost(),
             'category' => $part->getCategory(),
+            'partCategory' => $part->getPartCategory() ? [
+                'id' => $part->getPartCategory()->getId(),
+                'name' => $part->getPartCategory()->getName(),
+            ] : null,
             'installationDate' => $part->getInstallationDate()?->format('Y-m-d'),
             'mileageAtInstallation' => $part->getMileageAtInstallation(),
             'notes' => $part->getNotes(),
@@ -546,7 +562,9 @@ class MotRecordController extends AbstractController
 
     private function isAdminForUser(?\App\Entity\User $user): bool
     {
-        if (!$user) return false;
+        if (!$user) {
+            return false;
+        }
         $roles = $user->getRoles() ?: [];
         return in_array('ROLE_ADMIN', $roles, true);
     }

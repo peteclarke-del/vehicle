@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  Container,
   Typography,
   Button,
   Table,
@@ -25,6 +24,7 @@ import useTablePagination from '../hooks/useTablePagination';
 import PolicyDialog from '../components/PolicyDialog';
 import TablePaginationBar from '../components/TablePaginationBar';
 import VehicleSelector from '../components/VehicleSelector';
+import KnightRiderLoader from '../components/KnightRiderLoader';
 
 const Insurance = () => {
   const { api } = useAuth();
@@ -33,6 +33,7 @@ const Insurance = () => {
   // Policies state
   const [policies, setPolicies] = useState([]);
   const [selectedVehicle, setSelectedVehicle] = useState('');
+  const [loading, setLoading] = useState(true);
   const [policyDialogOpen, setPolicyDialogOpen] = useState(false);
   const [editingPolicy, setEditingPolicy] = useState(null);
   const { vehicles, fetchVehicles } = useVehicles();
@@ -40,6 +41,7 @@ const Insurance = () => {
   const [order, setOrder] = useState(() => localStorage.getItem('insuranceSortOrder') || 'desc');
 
   const loadPolicies = useCallback(async () => {
+    setLoading(true);
     const url = !selectedVehicle || selectedVehicle === '__all__' ? '/insurance/policies' : `/insurance?vehicleId=${selectedVehicle}`;
     try {
       const response = await api.get(url);
@@ -47,6 +49,8 @@ const Insurance = () => {
     } catch (error) {
       console.error('Error loading policies:', error);
       setPolicies([]);
+    } finally {
+      setLoading(false);
     }
   }, [api, selectedVehicle]);
 
@@ -141,8 +145,16 @@ const Insurance = () => {
     }
   };
 
+  if (loading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
+        <KnightRiderLoader size={32} />
+      </Box>
+    );
+  }
+
   return (
-    <Container maxWidth="xl">
+    <Box>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Typography variant="h4">{t('insurance.policies.title')}</Typography>
         <Box display="flex" gap={2}>
@@ -276,7 +288,7 @@ const Insurance = () => {
           if (reload) loadPolicies(); 
         }} 
       />
-    </Container>
+    </Box>
   );
 };
 

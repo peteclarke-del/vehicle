@@ -63,7 +63,6 @@ const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose }) => {
           nextServiceDate: serviceRecord.nextServiceDate || '',
           nextServiceMileage: serviceRecord.nextServiceMileage || '',
           notes: serviceRecord.notes || '',
-          notes: serviceRecord.notes || '',
         });
         setReceiptAttachmentId(serviceRecord.receiptAttachmentId || null);
         setMotRecordId(serviceRecord.motRecordId || null);
@@ -80,7 +79,6 @@ const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose }) => {
           additionalCosts: '0.00',
           nextServiceDate: '',
           nextServiceMileage: '',
-          notes: '',
           notes: '',
         });
         setReceiptAttachmentId(null);
@@ -142,6 +140,9 @@ const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose }) => {
   const [confirmTarget, setConfirmTarget] = useState(null); // { type, id, name, index }
   const [openNestedServiceDialog, setOpenNestedServiceDialog] = useState(false);
   const [nestedServiceRecord, setNestedServiceRecord] = useState(null);
+  const [recentlyUpdatedItems, setRecentlyUpdatedItems] = useState(new Set());
+
+  // No current vs historical comparison shown in UI
 
   const removeItem = (index) => {
     const it = (formData.items || [])[index];
@@ -176,6 +177,18 @@ const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose }) => {
     if (!it) return;
     setEditingItemIndex(index);
     if (it.type === 'part') {
+      const partId = it.partId || it.id;
+      if (partId) {
+        try {
+          const resp = await api.get(`/parts/${partId}`);
+          setSelectedPart(resp.data);
+        } catch (err) {
+          console.error('Error loading part', err);
+          setSelectedPart(it);
+        }
+      } else {
+        setSelectedPart(it);
+      }
       setOpenPartDialog(true);
     } else if (it.type === 'consumable') {
       const consumableId = it.consumableId || it.id;
@@ -238,21 +251,117 @@ const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose }) => {
     }
   };
 
-  const handlePartSavedFromDialog = (savedPart) => {
+  const handlePartSavedFromDialog = async (savedPart) => {
     if (editingItemIndex === null) return;
     const items = [...(formData.items || [])];
-    items[editingItemIndex] = { ...items[editingItemIndex], description: savedPart.description || savedPart.name || items[editingItemIndex].description, cost: String(savedPart.cost || items[editingItemIndex].cost), id: savedPart.id };
+    const currentItem = items[editingItemIndex];
+    
+    // Fetch the full updated part data from the API
+    let fullPartData = null;
+    try {
+      const resp = await api.get(`/parts/${savedPart.id}`);
+      fullPartData = resp.data;
+      const unitPrice = fullPartData.price ?? fullPartData.cost ?? currentItem.cost;
+      const newQuantity = fullPartData.quantity ?? currentItem.quantity ?? 1;
+      const newCost = String(unitPrice ?? 0);
+      
+      items[editingItemIndex] = { 
+        ...currentItem, 
+        description: fullPartData.description || fullPartData.name || currentItem.description, 
+        cost: newCost,
+        quantity: newQuantity,
+        partId: fullPartData.id,
+        name: fullPartData.name
+      };
+      
+      // Update the ServiceItem in the database if it exists
+      if (currentItem.id) {
+        try {
+          await api.patch(`/service-items/${currentItem.id}`, {
+            cost: parseFloat(newCost),
+            quantity: parseFloat(newQuantity),
+            description: fullPartData.description || fullPartData.name
+          });
+        } catch (err) {
+          console.error('Error updating service item cost', err);
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching updated part data', err);
+      const fallbackQuantity = savedPart.quantity ?? currentItem.quantity ?? 1;
+      items[editingItemIndex] = { ...currentItem, description: savedPart.description || savedPart.name || currentItem.description, cost: String(savedPart.cost || currentItem.cost), quantity: fallbackQuantity, id: savedPart.id };
+    }
+    
     setFormData({ ...formData, items });
+    
+    // Mark as recently updated for highlighting
+    setRecentlyUpdatedItems(prev => new Set(prev).add(editingItemIndex));
+    setTimeout(() => {
+      setRecentlyUpdatedItems(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(editingItemIndex);
+        return newSet;
+      });
+    }, 3000);
+    
     setOpenPartDialog(false);
     setEditingItemIndex(null);
   };
 
-  const handleConsumableSavedFromDialog = (savedConsumable) => {
+  const handleConsumableSavedFromDialog = async (savedConsumable) => {
     if (editingItemIndex === null) return;
     const items = [...(formData.items || [])];
-    const desc = savedConsumable.description || items[editingItemIndex].description || '';
-    items[editingItemIndex] = { ...items[editingItemIndex], description: desc, cost: String(savedConsumable.cost || items[editingItemIndex].cost), consumableId: savedConsumable.id };
+    const currentItem = items[editingItemIndex];
+    
+    // Fetch the full updated consumable data from the API
+    let fullConsumableData = null;
+    try {
+      const resp = await api.get(`/consumables/${savedConsumable.id}`);
+      fullConsumableData = resp.data;
+      const unitPrice = fullConsumableData.cost ?? currentItem.cost;
+      const newQuantity = fullConsumableData.quantity ?? currentItem.quantity ?? 1;
+      const newCost = String(unitPrice ?? 0);
+      
+      items[editingItemIndex] = { 
+        ...currentItem, 
+        description: fullConsumableData.description || currentItem.description || '', 
+        cost: newCost,
+        quantity: newQuantity,
+        consumableId: fullConsumableData.id,
+        name: fullConsumableData.name || fullConsumableData.description
+      };
+      
+      // Update the ServiceItem in the database if it exists
+      if (currentItem.id) {
+        try {
+          await api.patch(`/service-items/${currentItem.id}`, {
+            cost: parseFloat(newCost),
+            quantity: parseFloat(newQuantity),
+            description: fullConsumableData.description
+          });
+        } catch (err) {
+          console.error('Error updating service item cost', err);
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching updated consumable data', err);
+      const desc = savedConsumable.description || currentItem.description || '';
+      const fallbackQuantity = savedConsumable.quantity ?? currentItem.quantity ?? 1;
+      items[editingItemIndex] = { ...currentItem, description: desc, cost: String(savedConsumable.cost || currentItem.cost), quantity: fallbackQuantity, consumableId: savedConsumable.id };
+    }
+    
     setFormData({ ...formData, items });
+    
+    // Mark as recently updated for highlighting
+    setRecentlyUpdatedItems(prev => new Set(prev).add(editingItemIndex));
+    setTimeout(() => {
+      setRecentlyUpdatedItems(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(editingItemIndex);
+        return newSet;
+      });
+    }, 3000);
+    
     setOpenConsumableDialog(false);
     setEditingItemIndex(null);
   };
@@ -315,11 +424,11 @@ const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose }) => {
         partId: it.type === 'part' ? (it.partId || it.id || null) : null,
       }));
       if (items.length > 0) {
-        laborTotal = items.filter(i => i.type === 'labour').reduce((s, i) => s + (parseFloat(i.cost || 0) * (parseInt(i.quantity || 1))), 0);
-        partsTotal = items.filter(i => i.type === 'part').reduce((s, i) => s + (parseFloat(i.cost || 0) * (parseInt(i.quantity || 1))), 0);
+        laborTotal = items.filter(i => i.type === 'labour').reduce((s, i) => s + (parseFloat(i.cost || 0) * (parseFloat(i.quantity || 1))), 0);
+        partsTotal = items.filter(i => i.type === 'part').reduce((s, i) => s + (parseFloat(i.cost || 0) * (parseFloat(i.quantity || 1))), 0);
       }
 
-      const consumablesTotal = (formData.items || []).filter(i => i.type === 'consumable').reduce((s, i) => s + (parseFloat(i.cost || 0) * (parseInt(i.quantity || 1))), 0);
+      const consumablesTotal = (formData.items || []).filter(i => i.type === 'consumable').reduce((s, i) => s + (parseFloat(i.cost || 0) * (parseFloat(i.quantity || 1))), 0);
 
       const data = { 
         ...formData, 
@@ -444,13 +553,37 @@ const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose }) => {
                 </Grid>
               </Grid>
               <div style={{ marginTop: 8 }}>
-                {(formData.items || []).map((it, idx) => (
-                  <div key={idx} style={{ padding: 6, borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                {(formData.items || []).map((it, idx) => {
+                  const historicalPrice = parseFloat(it.cost || 0);
+                  
+                  const isRecentlyUpdated = recentlyUpdatedItems.has(idx);
+                  return (
+                  <div key={idx} style={{ 
+                    padding: 6, 
+                    borderBottom: '1px solid #eee', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'space-between',
+                    backgroundColor: isRecentlyUpdated ? '#c8e6c9' : 'transparent',
+                    transition: 'background-color 0.3s ease'
+                  }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                       <Typography component="button" onClick={async (e) => {
                         e.preventDefault();
                         if (it.type === 'part') {
                           setEditingItemIndex(idx);
+                          const partId = it.partId || it.id;
+                          if (partId) {
+                            try {
+                              const resp = await api.get(`/parts/${partId}`);
+                              setSelectedPart(resp.data);
+                            } catch (err) {
+                              console.error('Error loading part', err);
+                              setSelectedPart(it);
+                            }
+                          } else {
+                            setSelectedPart(it);
+                          }
                           setOpenPartDialog(true);
                         } else if (it.type === 'consumable') {
                           setEditingItemIndex(idx);
@@ -492,7 +625,9 @@ const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose }) => {
                           return t('common.none');
                         })()}
                       </Typography>
-                      <span>{`— ${it.quantity || 1} × ${parseFloat(it.cost || 0).toFixed(2)}`}</span>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', fontSize: '0.9em' }}>
+                        <span>{`${it.quantity || 1} × ${historicalPrice.toFixed(2)}`}</span>
+                      </div>
                     </div>
                     <div>
                       <Tooltip title={t('common.delete')}>
@@ -515,7 +650,7 @@ const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose }) => {
                       </Tooltip>
                     </div>
                   </div>
-                ))}
+                )})}
               </div>
             </Grid>
             <Grid item xs={12} sm={4}>
@@ -616,43 +751,47 @@ const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose }) => {
       <PartDialog
         open={openPartDialog}
         onClose={async (saved) => {
-          setOpenPartDialog(false);
           const idx = editingItemIndex;
-          setEditingItemIndex(null);
           if (saved) {
-            const savedPart = saved;
-            if (idx !== null && idx !== undefined) {
-              const items = [...(formData.items || [])];
-              items[idx] = { ...items[idx], description: savedPart.description || savedPart.name || items[idx].description, cost: String(savedPart.cost || items[idx].cost), id: savedPart.id };
-              setFormData({ ...formData, items });
-            } else {
-              const newItem = { type: 'part', description: savedPart.description || savedPart.name || '', cost: String(savedPart.cost || 0), quantity: savedPart.quantity || 1, id: savedPart.id };
-              setFormData(prev => ({ ...prev, items: [...(prev.items || []), newItem] }));
+            // Existing item: update ServiceItem and refresh UI
+            if (idx !== null && idx !== undefined && saved.id) {
+              await handlePartSavedFromDialog(saved);
+              setSelectedPart(null);
+              return;
             }
+
+            // New item - add to items with historical snapshot
+            const newItem = { type: 'part', description: saved.description || saved.name || '', cost: String(saved.price || saved.cost || 0), quantity: saved.quantity || 1, partId: saved.id };
+            setFormData(prev => ({ ...prev, items: [...(prev.items || []), newItem] }));
           }
+
+          setOpenPartDialog(false);
+          setEditingItemIndex(null);
           setSelectedPart(null);
         }}
-        part={editingItemIndex !== null ? (formData.items || [])[editingItemIndex] : selectedPart}
+        part={selectedPart || (editingItemIndex !== null ? (formData.items || [])[editingItemIndex] : null)}
         vehicleId={vehicleId}
       />
       <ConsumableDialog
         open={openConsumableDialog}
         onClose={async (saved) => {
-          setOpenConsumableDialog(false);
           const idx = editingItemIndex;
-          setEditingItemIndex(null);
-            if (saved) {
-              const savedConsumable = saved;
-              const desc = savedConsumable.description || '';
-              if (idx !== null && idx !== undefined) {
-                const items = [...(formData.items || [])];
-                items[idx] = { ...items[idx], description: desc || items[idx].description, cost: String(savedConsumable.cost || items[idx].cost), consumableId: savedConsumable.id };
-                setFormData({ ...formData, items });
-              } else {
-                const newItem = { type: 'consumable', description: desc, cost: String(savedConsumable.cost || 0), quantity: savedConsumable.quantity || 1, consumableId: savedConsumable.id };
-                setFormData(prev => ({ ...prev, items: [...(prev.items || []), newItem] }));
-              }
+          if (saved) {
+            // Existing item: update ServiceItem and refresh UI
+            if (idx !== null && idx !== undefined && saved.id) {
+              await handleConsumableSavedFromDialog(saved);
+              setSelectedConsumable(null);
+              return;
             }
+
+            // New item - add to items with historical snapshot
+            const desc = saved.description || '';
+            const newItem = { type: 'consumable', description: desc, cost: String(saved.cost || 0), quantity: saved.quantity || 1, consumableId: saved.id };
+            setFormData(prev => ({ ...prev, items: [...(prev.items || []), newItem] }));
+          }
+
+          setOpenConsumableDialog(false);
+          setEditingItemIndex(null);
           setSelectedConsumable(null);
         }}
         consumable={selectedConsumable || (editingItemIndex !== null ? (formData.items || [])[editingItemIndex] : null)}

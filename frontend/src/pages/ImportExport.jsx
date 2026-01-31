@@ -12,9 +12,15 @@ import {
   Button,
   Autocomplete,
   Tooltip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  LinearProgress,
+  Alert,
 } from '@mui/material';
-import { Download, CloudUpload } from '@mui/icons-material';
+import { Download, CloudUpload, CheckCircle, Error as ErrorIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import ImportPreview from '../components/ImportPreview';
 import { buildUrl as helpersBuildUrl, authHeaders } from '../components/ImportHelpers';
 import { saveBlob, downloadJsonObject } from '../components/DownloadHelpers';
@@ -22,6 +28,7 @@ import { useVehicles } from '../contexts/VehiclesContext';
 
 const ImportExport = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { refreshVehicles } = useVehicles();
   const [status, setStatus] = useState('all');
   const [selectedVehicles, setSelectedVehicles] = useState([]);
@@ -32,6 +39,16 @@ const ImportExport = () => {
   const [importPreviewOpen, setImportPreviewOpen] = useState(false);
   const [importPreviewData, setImportPreviewData] = useState(null);
   const [importFileName, setImportFileName] = useState('');
+  const [importModalOpen, setImportModalOpen] = useState(false);
+  const [importProgress, setImportProgress] = useState(0);
+  const [importStatus, setImportStatus] = useState('uploading'); // 'uploading', 'processing', 'success', 'error'
+  const [importMessage, setImportMessage] = useState('');
+  const [importError, setImportError] = useState('');
+  const [exportModalOpen, setExportModalOpen] = useState(false);
+  const [exportProgress, setExportProgress] = useState(0);
+  const [exportStatus, setExportStatus] = useState('processing'); // 'processing', 'downloading', 'success', 'error'
+  const [exportMessage, setExportMessage] = useState('');
+  const [exportError, setExportError] = useState('');
 
   const apiBase = process.env.REACT_APP_API_URL || '';
   const auth = authHeaders;
@@ -82,10 +99,19 @@ const ImportExport = () => {
     { value: 'other', label: t('importExport.imgOther') },
   ];
 
-  async function exportJson(mode = 'select', filters = {}) {
+  async function exportJson(mode = 'select', filters = {}, options = {}) {
     try {
+      const { reuseModal = false } = options || {};
       const { status = 'all', vehicleIds = [], elements = [], images = false, receipts = false, imageTypes = [] } = filters || {};
       const isAll = mode === 'all';
+      if (!reuseModal) {
+        setExportModalOpen(true);
+      }
+      setExportStatus('processing');
+      setExportProgress(10);
+      setExportMessage(isAll
+        ? (t('importExport.modal.exportingAll') || 'Preparing full export...')
+        : (t('importExport.modal.exportingJson') || 'Preparing export...'));
       setOpStatus(isAll ? t('importExport.op.downloadingAll') : t('importExport.op.downloadingJson'));
       let url;
       if (isAll) {
@@ -102,31 +128,56 @@ const ImportExport = () => {
       }
       const resp = await fetch(url, { headers: auth() });
       if (!resp.ok) throw new Error('Export failed');
+      setExportProgress(60);
       const json = await resp.json();
+      setExportProgress(85);
       const filename = isAll
         ? `vehicles_export_all_${new Date().toISOString().split('T')[0]}.json`
         : `vehicles_export_${new Date().toISOString().split('T')[0]}.json`;
       downloadJsonObject(json, filename.replace(/\.json$/, ''));
+      setExportProgress(100);
+      setExportStatus('success');
+      setExportMessage(isAll
+        ? (t('importExport.modal.exportSuccessAll') || 'Full export downloaded')
+        : (t('importExport.modal.exportSuccess') || 'Export downloaded'));
+      setTimeout(() => setExportModalOpen(false), 1000);
       setOpStatus(isAll ? t('importExport.op.downloadedAll') : t('importExport.op.downloadedJson'));
     } catch (err) {
+      setExportProgress(0);
+      setExportStatus('error');
+      setExportError(err.message || 'Export failed');
       setOpStatus(t('importExport.op.error') + ': ' + err.message);
     }
   }
 
   async function downloadFullExport() {
     try {
+      setExportModalOpen(true);
+      setExportStatus('downloading');
+      setExportProgress(10);
+      setExportMessage(t('importExport.modal.exportingZip') || 'Downloading full export...');
       setOpStatus(t('importExport.op.downloadingAll'));
       const url = buildUrl('/vehicles/export-zip', { all: 1 });
       const resp = await fetch(url, { headers: auth() });
       if (resp.ok) {
+        setExportProgress(70);
         const blob = await resp.blob();
+        setExportProgress(90);
         saveBlob(blob, `vehicles_full_export_${new Date().toISOString().split('T')[0]}.zip`);
+        setExportProgress(100);
+        setExportStatus('success');
+        setExportMessage(t('importExport.modal.exportSuccessAll') || 'Full export downloaded');
+        setTimeout(() => setExportModalOpen(false), 1000);
         setOpStatus(t('importExport.op.downloadedAll'));
         return;
       }
       // fallback to JSON export if ZIP endpoint not available
-      await exportJson('all');
+      setExportMessage(t('importExport.modal.exportingFallback') || 'ZIP unavailable, exporting JSON...');
+      await exportJson('all', {}, { reuseModal: true });
     } catch (err) {
+      setExportProgress(0);
+      setExportStatus('error');
+      setExportError(err.message || 'Export failed');
       setOpStatus(t('importExport.op.error') + ': ' + err.message);
     }
   }
@@ -157,47 +208,109 @@ const ImportExport = () => {
   };
 
   const confirmJsonImport = async (data) => {
+    setImportPreviewOpen(false);
+    setImportModalOpen(true);
+    setImportStatus('processing');
+    setImportProgress(30);
+    setImportMessage(t('common.importing') || 'Importing...');
+    setImportError('');
+
     try {
-      setOpStatus(t('common.importing') || 'Importing...');
       const url = buildUrl('/vehicles/import');
+      setImportProgress(50);
       const resp = await fetch(url, { method: 'POST', headers: { ...auth(), 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
-      if (!resp.ok) throw new Error('Import failed');
+      
+      if (!resp.ok) {
+        const errorData = await resp.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Import failed');
+      }
+      
+      setImportProgress(80);
       const json = await resp.json();
       const importedCount = json ? (json.imported ?? json.count ?? json.total ?? 0) : 0;
       const successMsg = t('common.importSuccess', { count: importedCount });
+      
+      setImportProgress(100);
+      setImportStatus('success');
+      setImportMessage(successMsg);
       setOpStatus(successMsg);
+      
       // dispatch global notification for Layout to display
       try {
         window.dispatchEvent(new CustomEvent('app-notification', { detail: { message: successMsg, severity: 'success' } }));
       } catch (e) {
         // ignore
       }
+      
       await refreshVehicles();
-      setImportPreviewOpen(false);
+      
+      // Wait 1 second then redirect to dashboard
+      setTimeout(() => {
+        setImportModalOpen(false);
+        navigate('/');
+      }, 1000);
     } catch (err) {
+      setImportProgress(0);
+      setImportStatus('error');
+      setImportError(err.message || t('common.importFailed'));
       setOpStatus(t('common.importFailed'));
     }
   };
 
   const handleZipFileSelected = async (file) => {
     if (!file) return;
+    
+    setImportModalOpen(true);
+    setImportStatus('uploading');
+    setImportProgress(0);
+    setImportMessage(t('importExport.op.uploading') || 'Uploading...');
+    setImportError('');
+
     try {
-      setOpStatus(t('importExport.op.downloadingAll'));
       const url = buildUrl('/vehicles/import-zip');
       const fd = new FormData();
       fd.append('file', file, file.name);
+      
+      // Simulate upload progress
+      setImportProgress(20);
+      setImportMessage(t('importExport.op.uploadingZip') || 'Uploading ZIP file...');
+      
       const resp = await fetch(url, { method: 'POST', headers: auth(), body: fd });
-      if (!resp.ok) throw new Error('Zip import failed');
+      
+      if (!resp.ok) {
+        const errorData = await resp.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Zip import failed');
+      }
+      
+      setImportProgress(60);
+      setImportStatus('processing');
+      setImportMessage(t('importExport.op.processing') || 'Processing import...');
+      
       const json = await resp.json();
-      const successMsg2 = t('common.importSuccess', { count: (json && json.imported) || 0 });
-      setOpStatus(successMsg2);
+      
+      setImportProgress(100);
+      setImportStatus('success');
+      const successMsg = t('common.importSuccess', { count: (json && json.imported) || 0 });
+      setImportMessage(successMsg);
+      setOpStatus(successMsg);
+      
       try {
-        window.dispatchEvent(new CustomEvent('app-notification', { detail: { message: successMsg2, severity: 'success' } }));
+        window.dispatchEvent(new CustomEvent('app-notification', { detail: { message: successMsg, severity: 'success' } }));
       } catch (e) {
         // ignore
       }
+      
       await refreshVehicles();
+      
+      // Wait 1 second then redirect to dashboard
+      setTimeout(() => {
+        setImportModalOpen(false);
+        navigate('/');
+      }, 1000);
     } catch (err) {
+      setImportProgress(0);
+      setImportStatus('error');
+      setImportError(err.message || t('common.importFailed'));
       setOpStatus(t('common.importFailed'));
     }
   };
@@ -289,6 +402,134 @@ const ImportExport = () => {
         </Grid>
       </Paper>
       <ImportPreview open={importPreviewOpen} data={importPreviewData} fileName={importFileName} onClose={() => setImportPreviewOpen(false)} onConfirm={confirmJsonImport} />
+
+      {/* Import Progress Modal */}
+      <Dialog
+        open={importModalOpen}
+        onClose={(event, reason) => {
+          // Only allow closing on error status
+          if (importStatus === 'error') {
+            setImportModalOpen(false);
+          }
+        }}
+        maxWidth="sm"
+        fullWidth
+        disableEscapeKeyDown={importStatus !== 'error'}
+      >
+        <DialogTitle>
+          <Box display="flex" alignItems="center" gap={1}>
+            {importStatus === 'success' && <CheckCircle color="success" />}
+            {importStatus === 'error' && <ErrorIcon color="error" />}
+            <Typography variant="h6">
+              {importStatus === 'uploading' && (t('importExport.modal.uploading') || 'Uploading')}
+              {importStatus === 'processing' && (t('importExport.modal.processing') || 'Processing')}
+              {importStatus === 'success' && (t('importExport.modal.success') || 'Import Successful')}
+              {importStatus === 'error' && (t('importExport.modal.error') || 'Import Failed')}
+            </Typography>
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          <Box sx={{ width: '100%', mt: 2 }}>
+            {importStatus !== 'error' && (
+              <>
+                <LinearProgress
+                  variant="determinate"
+                  value={importProgress}
+                  sx={{ mb: 2, height: 8, borderRadius: 4 }}
+                />
+                <Typography variant="body2" color="text.secondary" align="center">
+                  {importMessage}
+                </Typography>
+              </>
+            )}
+            {importStatus === 'success' && (
+              <Alert severity="success" sx={{ mt: 2 }}>
+                {importMessage}
+                <br />
+                <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                  {t('importExport.modal.redirecting') || 'Redirecting to dashboard...'}
+                </Typography>
+              </Alert>
+            )}
+            {importStatus === 'error' && (
+              <>
+                <Alert severity="error" sx={{ mt: 2 }}>
+                  {importError}
+                </Alert>
+                <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end' }}>
+                  <Button
+                    variant="contained"
+                    onClick={() => setImportModalOpen(false)}
+                  >
+                    {t('common.close') || 'Close'}
+                  </Button>
+                </Box>
+              </>
+            )}
+          </Box>
+        </DialogContent>
+      </Dialog>
+
+      {/* Export Progress Modal */}
+      <Dialog
+        open={exportModalOpen}
+        onClose={(event, reason) => {
+          if (exportStatus === 'error' || exportStatus === 'success') {
+            setExportModalOpen(false);
+          }
+        }}
+        maxWidth="sm"
+        fullWidth
+        disableEscapeKeyDown={exportStatus === 'processing' || exportStatus === 'downloading'}
+      >
+        <DialogTitle>
+          <Box display="flex" alignItems="center" gap={1}>
+            {exportStatus === 'success' && <CheckCircle color="success" />}
+            {exportStatus === 'error' && <ErrorIcon color="error" />}
+            <Typography variant="h6">
+              {(exportStatus === 'processing' || exportStatus === 'downloading') && (t('importExport.modal.exporting') || 'Exporting')}
+              {exportStatus === 'success' && (t('importExport.modal.exportSuccess') || 'Export Successful')}
+              {exportStatus === 'error' && (t('importExport.modal.exportError') || 'Export Failed')}
+            </Typography>
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          <Box sx={{ width: '100%', mt: 2 }}>
+            {exportStatus !== 'error' && (
+              <>
+                <LinearProgress
+                  variant="determinate"
+                  value={exportProgress}
+                  sx={{ mb: 2, height: 8, borderRadius: 4 }}
+                />
+                <Typography variant="body2" color="text.secondary" align="center">
+                  {exportMessage}
+                </Typography>
+              </>
+            )}
+            {exportStatus === 'success' && (
+              <Alert severity="success" sx={{ mt: 2 }}>
+                {exportMessage}
+              </Alert>
+            )}
+            {exportStatus === 'error' && (
+              <>
+                <Alert severity="error" sx={{ mt: 2 }}>
+                  {exportError}
+                </Alert>
+                <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end' }}>
+                  <Button
+                    variant="contained"
+                    onClick={() => setExportModalOpen(false)}
+                  >
+                    {t('common.close') || 'Close'}
+                  </Button>
+                </Box>
+              </>
+            )}
+          </Box>
+        </DialogContent>
+      </Dialog>
 
       <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
           <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>

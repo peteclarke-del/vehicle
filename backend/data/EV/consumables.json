@@ -1,68 +1,350 @@
 [
-    {
-        "vehicleType": "EV",
-        "name": "Battery Pack Coolant",
-        "unit": "litres",
-        "description": "Coolant for battery thermal management systems."
-    },
-    {
-        "vehicleType": "EV",
-        "name": "12V Auxiliary Battery",
-        "unit": "unit",
-        "description": "12V battery used for accessories and vehicle electronics."
-    },
-    {
-        "vehicleType": "EV",
-        "name": "Indicator/Direction Lamp Bulb",
-        "unit": "unit",
-        "description": "Indicator / direction (turn signal) lamp bulb (LED or filament types). Specify fitting and polarity where applicable."
-    },
-    {
-        "vehicleType": "EV",
-        "name": "Brake Fluid",
-        "unit": "ml",
-        "description": "Hydraulic brake fluid (DOT 4/DOT 5.1) for regenerative braking systems."
-    },
-    {
-        "vehicleType": "EV",
-        "name": "Tyres/Tires",
-        "unit": "psi / bar",
-        "description": "Tyre specification and recommended pressures; low rolling resistance tyres common."
-    },
-    {
-        "vehicleType": "EV",
-        "name": "Cabin/Pollen Filter",
-        "unit": "unit",
-        "description": "Passenger compartment air filter."
-    },
-    {
-        "vehicleType": "EV",
-        "name": "Windscreen Washer Fluid",
-        "unit": "litres",
-        "description": "Washer fluid for windscreen/windshield."
-    },
-    {
-        "vehicleType": "EV",
-        "name": "Wiper Blades",
-        "unit": "set",
-        "description": "Front and rear wiper blades."
-    },
-    {
-        "vehicleType": "EV",
-        "name": "A/C Filter",
-        "unit": "unit",
-        "description": "Filter for HVAC and heat pump systems."
-    },
-    {
-        "vehicleType": "EV",
-        "name": "Coolant Pump",
-        "unit": "unit",
-        "description": "Pump for coolant circulation in battery/thermal systems."
-    },
-    {
-        "vehicleType": "EV",
-        "name": "Thermal Interface Materials",
-        "unit": "unit",
-        "description": "Gaskets, seals, or pads used in battery modules."
-    }
+  {
+    "vehicleType": "EV",
+    "name": "Battery Pack Coolant",
+    "unit": "litres",
+    "description": "Coolant for battery thermal management systems."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "12V Auxiliary Battery",
+    "unit": "unit",
+    "description": "12V battery used for accessories and vehicle electronics."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Indicator/Direction Lamp Bulb",
+    "unit": "unit",
+    "description": "Indicator / direction (turn signal) lamp bulb (LED or filament types). Specify fitting and polarity where applicable."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Brake Fluid",
+    "unit": "ml",
+    "description": "Hydraulic brake fluid (DOT 4/DOT 5.1) for regenerative braking systems."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Tyres/Tires",
+    "unit": "psi / bar",
+    "description": "Tyre specification and recommended pressures; low rolling resistance tyres common."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Cabin/Pollen Filter",
+    "unit": "unit",
+    "description": "Passenger compartment air filter."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Windscreen Washer Fluid",
+    "unit": "litres",
+    "description": "Washer fluid for windscreen/windshield."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Wiper Blades",
+    "unit": "set",
+    "description": "Front and rear wiper blades."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "A/C Filter",
+    "unit": "unit",
+    "description": "Filter for HVAC and heat pump systems."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Coolant Pump",
+    "unit": "unit",
+    "description": "Pump for coolant circulation in battery/thermal systems."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Thermal Interface Materials",
+    "unit": "unit",
+    "description": "Gaskets, seals, or pads used in battery modules."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Traction Battery Pack",
+    "unit": "unit",
+    "description": "High-voltage battery pack (modular or complete pack replacement)."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Battery Management System (BMS) Components",
+    "unit": "unit",
+    "description": "Sensors, controllers, or modules for battery monitoring and management."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Electric Motor Coolant",
+    "unit": "litres",
+    "description": "Coolant for electric motor(s) and power electronics."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Reduction Gear Oil",
+    "unit": "litres",
+    "description": "Oil for EV reduction gearbox (single-speed transmission)."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "On-Board Charger (OBC)",
+    "unit": "unit",
+    "description": "AC-to-DC charger integrated in the vehicle."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "DC-DC Converter",
+    "unit": "unit",
+    "description": "Converts high-voltage DC to 12V DC for auxiliary systems."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Charging Port / Inlet",
+    "unit": "unit",
+    "description": "Vehicle-side charging connector (Type 1, Type 2, CCS, CHAdeMO, Tesla)."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Charging Cable",
+    "unit": "unit",
+    "description": "Portable charging cable (Mode 2 or Mode 3)."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "High-Voltage Cables / Harnesses",
+    "unit": "unit",
+    "description": "Orange high-voltage wiring and connectors."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Inverter / Power Electronics Coolant",
+    "unit": "litres",
+    "description": "Coolant for the power inverter and control modules."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Heat Pump Refrigerant",
+    "unit": "grams",
+    "description": "Refrigerant for HVAC heat pump systems (often R-1234yf)."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Battery Cooling System Hoses",
+    "unit": "unit",
+    "description": "Coolant hoses for battery thermal management."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Brake Pads (Front)",
+    "unit": "set",
+    "description": "Front brake pads; often last longer due to regenerative braking."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Brake Pads (Rear)",
+    "unit": "set",
+    "description": "Rear brake pads."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Brake Discs/Rotors (Front)",
+    "unit": "pair",
+    "description": "Front brake discs/rotors."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Brake Discs/Rotors (Rear)",
+    "unit": "pair",
+    "description": "Rear brake discs/rotors."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Brake Caliper Seals / Rebuild Kits",
+    "unit": "kit",
+    "description": "Seal kits for brake calipers."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Headlight Bulbs",
+    "unit": "unit",
+    "description": "Headlight bulbs (often LED modules in modern EVs)."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Taillight/Brake Light Bulbs",
+    "unit": "unit",
+    "description": "Bulbs or LED modules for rear lights."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Interior Bulbs",
+    "unit": "unit",
+    "description": "Bulbs for interior lighting."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Number Plate/Registration Plate Bulbs",
+    "unit": "unit",
+    "description": "Bulbs for license plate illumination."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Shock Absorbers/Struts",
+    "unit": "pair",
+    "description": "Suspension dampers; some EVs have adaptive/smart suspension."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Wheel Bearings",
+    "unit": "unit",
+    "description": "Wheel bearing/hub assemblies."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Wheel Nuts/Bolts",
+    "unit": "set",
+    "description": "Wheel securing hardware."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Locking Wheel Nut Key",
+    "unit": "unit",
+    "description": "Security key for locking wheel nuts."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Fuses (High Voltage)",
+    "unit": "unit",
+    "description": "High-voltage fuses for battery and power systems."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Fuses (Low Voltage)",
+    "unit": "unit",
+    "description": "Standard 12V fuses."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Relays",
+    "unit": "unit",
+    "description": "12V relays for various systems."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Dielectric Grease",
+    "unit": "grams",
+    "description": "For electrical connectors and high-voltage connections."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Electrical Contact Cleaner",
+    "unit": "ml",
+    "description": "Cleaner for electrical connectors and sensors."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Battery Terminal Cleaner / Protector",
+    "unit": "unit",
+    "description": "For 12V battery terminals."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Thermal Paste / Compound",
+    "unit": "grams",
+    "description": "Thermal interface material for power electronics cooling."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Wheel Weights",
+    "unit": "grams",
+    "description": "Balancing weights for wheels."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Tire Valve Stems",
+    "unit": "unit",
+    "description": "Valve stems for tire pressure monitoring systems (TPMS)."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "TPMS Sensors",
+    "unit": "unit",
+    "description": "Tire pressure monitoring sensors and seals."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Car Wash Soap (EV-safe)",
+    "unit": "litres",
+    "description": "pH-balanced soap safe for EV charging ports and sensors."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Wax / Polish",
+    "unit": "ml",
+    "description": "Paint protection products."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Interior Cleaner",
+    "unit": "ml",
+    "description": "Cleaner for vegan leather, fabric, or other EV-specific materials."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Glass Cleaner",
+    "unit": "ml",
+    "description": "For windows and touchscreens."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Tire Shine",
+    "unit": "ml",
+    "description": "Tire dressing."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Microfiber Towels",
+    "unit": "unit",
+    "description": "Lint-free towels for cleaning."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Wash Mitt",
+    "unit": "unit",
+    "description": "Soft mitt for washing."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Charging Port Cover",
+    "unit": "unit",
+    "description": "Protective cover for charging port."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Charging Port Light Bulb",
+    "unit": "unit",
+    "description": "Light for charging port illumination."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "HVAC Desiccant Bags",
+    "unit": "unit",
+    "description": "Desiccant for heat pump/dryer systems."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Battery Cooling Plate",
+    "unit": "unit",
+    "description": "Cooling plate or cold plate for battery modules."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Pedestrian Warning Speaker",
+    "unit": "unit",
+    "description": "External speaker for AVAS (Acoustic Vehicle Alerting System)."
+  }
 ]

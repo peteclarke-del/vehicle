@@ -110,7 +110,7 @@ class Vehicle
 
     #[ORM\Column(type: 'boolean', nullable: true)]
     private ?bool $roadTaxExempt = null;
-    
+
     #[ORM\Column(type: 'boolean', nullable: true)]
     private ?bool $motExempt = null;
 
@@ -653,7 +653,7 @@ class Vehicle
         return $this->serviceRecords;
     }
 
-    
+
 
     public function getMotRecords(): Collection
     {

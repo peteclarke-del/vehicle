@@ -1,63 +1,470 @@
 [
-    {
-        "vehicleType": "Truck",
-        "name": "Engine Oil",
-        "unit": "litres",
-        "description": "Heavy-duty engine oil for truck diesel engines."
-    },
-    {
-        "vehicleType": "Truck",
-        "name": "Gear Oil/Differential Oil",
-        "unit": "litres",
-        "description": "High-viscosity gear oil for differentials and axles."
-    },
-    {
-        "vehicleType": "Truck",
-        "name": "Indicator/Direction Lamp Bulb",
-        "unit": "unit",
-        "description": "Indicator / direction (turn signal) lamp bulb for truck lighting circuits; include LED or filament types and fitting specs." 
-    },
-    {
-        "vehicleType": "Truck",
-        "name": "Brake Fluid",
-        "unit": "ml",
-        "description": "Hydraulic brake fluid; air brake systems use different components."
-    },
-    {
-        "vehicleType": "Truck",
-        "name": "Tyres/Tires",
-        "unit": "psi / bar",
-        "description": "Commercial truck tyre specifications and pressures."
-    },
-    {
-        "vehicleType": "Truck",
-        "name": "Fuel Filter",
-        "unit": "unit",
-        "description": "Heavy-duty fuel filter for diesel engines."
-    },
-    {
-        "vehicleType": "Truck",
-        "name": "Air Filter",
-        "unit": "unit",
-        "description": "Large-format engine air filter."
-    },
-    {
-        "vehicleType": "Truck",
-        "name": "AdBlue/DEF",
-        "unit": "litres",
-        "description": "Diesel Exhaust Fluid for SCR systems."
-    },
-    {
-        "vehicleType": "Truck",
-        "name": "Battery",
-        "unit": "unit",
-        "description": "Heavy-duty 12V battery with high CCA and Ah ratings."
-    }
-    ,
-    {
-        "vehicleType": "Truck",
-        "name": "Engine Flush/Catalytic Converter Cleaner",
-        "unit": "litres",
-        "description": "Engine flush and catalytic converter cleaner; specify product and application instructions."
-    }
+  {
+    "vehicleType": "Truck",
+    "name": "Engine Oil",
+    "unit": "litres",
+    "description": "Heavy-duty engine oil for truck diesel engines."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Gear Oil/Differential Oil",
+    "unit": "litres",
+    "description": "High-viscosity gear oil for differentials and axles."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Indicator/Direction Lamp Bulb",
+    "unit": "unit",
+    "description": "Indicator / direction (turn signal) lamp bulb for truck lighting circuits; include LED or filament types and fitting specs."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Brake Fluid",
+    "unit": "ml",
+    "description": "Hydraulic brake fluid; air brake systems use different components."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Tyres/Tires",
+    "unit": "psi / bar",
+    "description": "Commercial truck tyre specifications and pressures."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Fuel Filter",
+    "unit": "unit",
+    "description": "Heavy-duty fuel filter for diesel engines."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Air Filter",
+    "unit": "unit",
+    "description": "Large-format engine air filter."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "AdBlue/DEF",
+    "unit": "litres",
+    "description": "Diesel Exhaust Fluid for SCR systems."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Battery",
+    "unit": "unit",
+    "description": "Heavy-duty 12V battery with high CCA and Ah ratings."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Engine Flush/Catalytic Converter Cleaner",
+    "unit": "litres",
+    "description": "Engine flush and catalytic converter cleaner; specify product and application instructions."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Oil Filter",
+    "unit": "unit",
+    "description": "Heavy-duty spin-on or cartridge engine oil filter."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Oil Drain Plug Gasket",
+    "unit": "unit",
+    "description": "Crush washer or gasket for sump drain plug."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Coolant/Antifreeze",
+    "unit": "litres",
+    "description": "Heavy-duty coolant for diesel engines, often with supplemental coolant additives (SCA)."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Coolant Filter",
+    "unit": "unit",
+    "description": "Filter for cooling system with SCA additives."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Transmission Fluid",
+    "unit": "litres",
+    "description": "Automatic transmission fluid (ATF) or manual transmission oil for heavy-duty gearboxes."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Transfer Case Fluid",
+    "unit": "litres",
+    "description": "Gear oil for transfer case on 4WD/6WD trucks."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Power Steering Fluid",
+    "unit": "litres",
+    "description": "Hydraulic fluid for power steering systems."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Hydraulic Fluid",
+    "unit": "litres",
+    "description": "Hydraulic oil for dump beds, cranes, and other hydraulic systems."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Air Brake System Oil",
+    "unit": "ml",
+    "description": "Oil for air compressor lubrication in air brake systems."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Air Dryer Desiccant Cartridge",
+    "unit": "unit",
+    "description": "Desiccant cartridge for air brake system dryer."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Air Brake System Valves",
+    "unit": "unit",
+    "description": "Relay valves, quick release valves, and other air brake system components."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Brake Shoes (Drum Brakes)",
+    "unit": "set",
+    "description": "Brake shoes for heavy-duty drum brake systems."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Brake Drums",
+    "unit": "unit",
+    "description": "Heavy-duty brake drums."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Brake Pads (Disc Brakes)",
+    "unit": "set",
+    "description": "Heavy-duty brake pads for disc brake systems."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Brake Discs/Rotors",
+    "unit": "unit",
+    "description": "Brake discs/rotors for heavy-duty applications."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Brake Chambers",
+    "unit": "unit",
+    "description": "Air brake chambers (spring brake or service brake)."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Brake Slack Adjusters",
+    "unit": "unit",
+    "description": "Manual or automatic slack adjusters for brake adjustment."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Brake Linings",
+    "unit": "set",
+    "description": "Riveted or bonded brake linings for heavy-duty applications."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Glow Plugs",
+    "unit": "unit",
+    "description": "Heavy-duty glow plugs for diesel engine cold starts."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Fuel Water Separator Filter",
+    "unit": "unit",
+    "description": "Water separator filter for diesel fuel systems."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Fuel Primer Pump",
+    "unit": "unit",
+    "description": "Manual or electric fuel primer pump for diesel engines."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Cabin Air Filter",
+    "unit": "unit",
+    "description": "Filter for truck cab HVAC system."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Shock Absorbers",
+    "unit": "unit",
+    "description": "Heavy-duty shock absorbers for cab and chassis."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Leaf Springs",
+    "unit": "set",
+    "description": "Leaf spring assemblies for suspension."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Air Springs/Bags",
+    "unit": "unit",
+    "description": "Air suspension bags for cab or trailer suspension."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "King Pins",
+    "unit": "unit",
+    "description": "King pin sets for steering axles."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Wheel Bearings",
+    "unit": "set",
+    "description": "Tapered roller bearings for wheel hubs."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Wheel Seals",
+    "unit": "unit",
+    "description": "Oil seals for wheel hubs."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "U-Joints (Universal Joints)",
+    "unit": "unit",
+    "description": "Drive shaft universal joints."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Fifth Wheel Grease",
+    "unit": "grams",
+    "description": "Special grease for fifth wheel plates."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Headlight Bulbs",
+    "unit": "unit",
+    "description": "Heavy-duty headlight bulbs (often halogen or LED)."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Marker Light Bulbs",
+    "unit": "unit",
+    "description": "Bulbs for clearance and marker lights."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Stop/Tail Light Bulbs",
+    "unit": "unit",
+    "description": "Bulbs for brake and tail lights."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Interior Bulbs",
+    "unit": "unit",
+    "description": "Bulbs for cab interior lighting."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Fuses",
+    "unit": "unit",
+    "description": "Heavy-duty fuses for truck electrical systems."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Relays",
+    "unit": "unit",
+    "description": "Heavy-duty relays for various systems."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Alternator",
+    "unit": "unit",
+    "description": "High-output alternator for heavy-duty charging."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Starter Motor",
+    "unit": "unit",
+    "description": "Heavy-duty starter motor for diesel engines."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Turbocharger",
+    "unit": "unit",
+    "description": "Turbocharger assembly for diesel engines."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Exhaust Manifold Gaskets",
+    "unit": "unit",
+    "description": "Heavy-duty exhaust manifold gaskets."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Exhaust System Hangers",
+    "unit": "unit",
+    "description": "Heavy-duty hangers for exhaust systems."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "DPF (Diesel Particulate Filter)",
+    "unit": "unit",
+    "description": "Diesel particulate filter for emissions control."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "DPF Cleaning Solution",
+    "unit": "litres",
+    "description": "Cleaning solution for DPF regeneration or cleaning."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "EGR (Exhaust Gas Recirculation) Cooler",
+    "unit": "unit",
+    "description": "EGR cooler for diesel engines."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Windscreen Washer Fluid",
+    "unit": "litres",
+    "description": "Heavy-duty washer fluid with anti-freeze properties."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Wiper Blades",
+    "unit": "set",
+    "description": "Heavy-duty wiper blades for large windshields."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Grease (Multi-purpose)",
+    "unit": "grams",
+    "description": "Heavy-duty grease for chassis, fifth wheel, and components."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Anti-Seize Compound",
+    "unit": "grams",
+    "description": "High-temperature anti-seize for exhaust and high-heat areas."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Threadlocker",
+    "unit": "ml",
+    "description": "Thread locking compound for critical fasteners."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Gasket Maker/Sealant",
+    "unit": "ml",
+    "description": "High-temperature RTV sealant for gaskets."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Electrical Contact Cleaner",
+    "unit": "ml",
+    "description": "Cleaner for electrical connections and sensors."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Dielectric Grease",
+    "unit": "grams",
+    "description": "For electrical connectors and terminals."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Battery Terminal Cleaner/Protector",
+    "unit": "unit",
+    "description": "For 12V battery terminals."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Tire Valve Stems",
+    "unit": "unit",
+    "description": "Heavy-duty valve stems for truck tires."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Tire Valve Caps",
+    "unit": "unit",
+    "description": "Metal or plastic valve caps."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Wheel Weights",
+    "unit": "grams",
+    "description": "Heavy-duty balancing weights for truck wheels."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Wheel Lug Nuts",
+    "unit": "set",
+    "description": "Lug nuts for wheel mounting."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Locking Wheel Nut Key",
+    "unit": "unit",
+    "description": "Security key for locking wheel nuts."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Cab Air Suspension Seat",
+    "unit": "unit",
+    "description": "Replacement air suspension seat or components."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Truck Wash Soap",
+    "unit": "litres",
+    "description": "Heavy-duty soap for truck washing."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Degreaser",
+    "unit": "litres",
+    "description": "Heavy-duty degreaser for engine and chassis."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Wax/Polish",
+    "unit": "ml",
+    "description": "Paint protection for truck cab and body."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Interior Cleaner",
+    "unit": "ml",
+    "description": "Cleaner for truck cab interior surfaces."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Glass Cleaner",
+    "unit": "ml",
+    "description": "Cleaner for windows and mirrors."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Tire Shine",
+    "unit": "ml",
+    "description": "Dressing for tire sidewalls."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Microfiber Towels",
+    "unit": "unit",
+    "description": "Lint-free towels for cleaning."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Wash Mitt",
+    "unit": "unit",
+    "description": "Soft mitt for washing."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Hand Cleaner",
+    "unit": "ml",
+    "description": "Heavy-duty hand cleaner for mechanics."
+  }
 ]

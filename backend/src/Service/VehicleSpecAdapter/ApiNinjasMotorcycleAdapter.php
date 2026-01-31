@@ -11,7 +11,7 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 /**
  * API Ninjas adapter for motorcycle specifications
- * 
+ *
  * Fetches detailed motorcycle specifications from API Ninjas API
  * https://api-ninjas.com/api/motorcycles
  */
@@ -68,7 +68,7 @@ class ApiNinjasMotorcycleAdapter implements VehicleSpecAdapterInterface
                         return $spec;
                     }
                 }
-                
+
                 // If no match with model variations, try without model (get all for make/year)
                 if ($year) {
                     $allResults = $this->fetchAllForMakeYear($makeVariant, $year);
@@ -81,25 +81,25 @@ class ApiNinjasMotorcycleAdapter implements VehicleSpecAdapterInterface
                                 $params = ['make' => $makeVariant, 'year' => (string) $year];
                                 $spec->setScrapedAt(new \DateTime());
                                 $spec->setSourceUrl('https://api.api-ninjas.com/v1/motorcycles?' . http_build_query($params));
-                                
+
                                 $this->logger->info('Found best match using fuzzy matching', [
                                     'original_model' => $model,
                                     'matched_model' => $bestMatch['model'] ?? 'unknown',
                                     'similarity_score' => $this->calculateSimilarity($model, $bestMatch['model'] ?? '')
                                 ]);
-                                
+
                                 return $spec;
                             }
                         }
                     }
-                    
+
                     // Try nearby years (+/- 2 years) if exact year didn't work
                     $nearbyYears = [$year + 1, $year - 1, $year + 2, $year - 2];
                     $this->logger->info('Trying nearby years', [
                         'original_year' => $year,
                         'nearby_years' => $nearbyYears
                     ]);
-                    
+
                     foreach ($nearbyYears as $nearYear) {
                         $allResults = $this->fetchAllForMakeYear($makeVariant, $nearYear);
                         if (!empty($allResults)) {
@@ -110,14 +110,14 @@ class ApiNinjasMotorcycleAdapter implements VehicleSpecAdapterInterface
                                     $params = ['make' => $makeVariant, 'year' => (string) $nearYear];
                                     $spec->setScrapedAt(new \DateTime());
                                     $spec->setSourceUrl('https://api.api-ninjas.com/v1/motorcycles?' . http_build_query($params));
-                                    
+
                                     $this->logger->info('Found match using nearby year', [
                                         'original_year' => $year,
                                         'matched_year' => $nearYear,
                                         'original_model' => $model,
                                         'matched_model' => $bestMatch['model'] ?? 'unknown'
                                     ]);
-                                    
+
                                     return $spec;
                                 }
                             }
@@ -133,7 +133,7 @@ class ApiNinjasMotorcycleAdapter implements VehicleSpecAdapterInterface
                 'make_variations_tried' => count($makeVariations),
                 'model_variations_tried' => count($modelVariations)
             ]);
-            
+
             return null;
         } catch (\Exception $e) {
             $this->logger->error('Failed to fetch motorcycle specs from API', [
@@ -148,40 +148,40 @@ class ApiNinjasMotorcycleAdapter implements VehicleSpecAdapterInterface
     private function generateMakeVariations(string $make): array
     {
         $variations = [$make]; // Original
-        
+
         // Add hyphenated version (Harley Davidson -> Harley-Davidson)
         if (strpos($make, ' ') !== false) {
             $variations[] = str_replace(' ', '-', $make);
         }
-        
+
         // Add space version (Harley-Davidson -> Harley Davidson)
         if (strpos($make, '-') !== false) {
             $variations[] = str_replace('-', ' ', $make);
         }
-        
+
         // Try lowercase versions
         foreach (array_unique($variations) as $variation) {
             $variations[] = strtolower($variation);
         }
-        
+
         return array_unique($variations);
     }
 
     private function generateModelVariations(string $model): array
     {
         $variations = [$model]; // Original
-        
+
         // Try without model code prefix (e.g., "FXLR Low Rider" -> "Low Rider")
         if (preg_match('/^[A-Z0-9]{3,5}\s+(.+)$/', $model, $matches)) {
             $variations[] = $matches[1];
         }
-        
+
         // Try just the first significant word(s)
         $words = explode(' ', $model);
         if (count($words) > 1) {
             // Try first word only (e.g., "Z1000 JHF R" -> "Z1000")
             $variations[] = $words[0];
-            
+
             if (count($words) > 2) {
                 // Try first two words (e.g., "Z1000 JHF R" -> "Z1000 JHF")
                 $variations[] = implode(' ', array_slice($words, 0, 2));
@@ -189,7 +189,7 @@ class ApiNinjasMotorcycleAdapter implements VehicleSpecAdapterInterface
                 $variations[] = implode(' ', array_slice($words, -2));
             }
         }
-        
+
         return array_unique($variations);
     }
 
@@ -200,17 +200,17 @@ class ApiNinjasMotorcycleAdapter implements VehicleSpecAdapterInterface
         }
 
         $params = ['make' => $make];
-        
+
         if ($model) {
             $params['model'] = $model;
         }
-        
+
         if ($year) {
             $params['year'] = (string) $year;
         }
-        
+
         $apiUrl = 'https://api.api-ninjas.com/v1/motorcycles?' . http_build_query($params);
-        
+
         $this->logger->info('Trying API Ninjas with variation', [
             'make' => $make,
             'model' => $model,
@@ -226,7 +226,7 @@ class ApiNinjasMotorcycleAdapter implements VehicleSpecAdapterInterface
         ]);
 
         $data = $response->toArray();
-        
+
         if (empty($data)) {
             return null;
         }
@@ -238,12 +238,12 @@ class ApiNinjasMotorcycleAdapter implements VehicleSpecAdapterInterface
             'response_count' => count($data),
             'matched_model' => $data[0]['model'] ?? 'unknown'
         ]);
-        
+
         // Use the first result (most relevant)
         $motorcycleData = $data[0];
-        
+
         $spec = $this->parseApiData($motorcycleData);
-        
+
         if ($spec) {
             $spec->setScrapedAt(new \DateTime());
             $spec->setSourceUrl($apiUrl);
@@ -257,7 +257,7 @@ class ApiNinjasMotorcycleAdapter implements VehicleSpecAdapterInterface
         try {
             $params = ['make' => $make, 'year' => (string) $year];
             $apiUrl = 'https://api.api-ninjas.com/v1/motorcycles?' . http_build_query($params);
-            
+
             $response = $this->httpClient->request('GET', $apiUrl, [
                 'headers' => ['X-Api-Key' => $this->apiKey],
                 'timeout' => 10
@@ -281,7 +281,7 @@ class ApiNinjasMotorcycleAdapter implements VehicleSpecAdapterInterface
         foreach ($results as $result) {
             $apiModel = $result['model'] ?? '';
             $apiMake = $result['make'] ?? '';
-            
+
             // Skip if make doesn't match (filters out bad API data like "620 Duke" listed under Kawasaki)
             if (stripos(strtolower($apiMake), strtolower($expectedMake)) === false) {
                 $this->logger->debug('Skipping result due to make mismatch', [
@@ -291,15 +291,15 @@ class ApiNinjasMotorcycleAdapter implements VehicleSpecAdapterInterface
                 ]);
                 continue;
             }
-            
+
             $similarity = $this->calculateSimilarity($targetModel, $apiModel);
-            
+
             $this->logger->debug('Comparing models', [
                 'target' => $targetModel,
                 'api_model' => $apiModel,
                 'similarity' => $similarity
             ]);
-            
+
             if ($similarity > $bestScore) {
                 $bestScore = $similarity;
                 $bestMatch = $result;
@@ -323,13 +323,13 @@ class ApiNinjasMotorcycleAdapter implements VehicleSpecAdapterInterface
         $str2Original = $str2;
         $str1 = strtolower(trim($str1));
         $str2 = strtolower(trim($str2));
-        
+
         // Extract numbers from both strings for comparison
         preg_match_all('/\d+/', $str1, $matches1);
         preg_match_all('/\d+/', $str2, $matches2);
         $numbers1 = $matches1[0] ?? [];
         $numbers2 = $matches2[0] ?? [];
-        
+
         // If both have numbers, check if they match
         // Heavily penalize number mismatches (e.g., ZX6R vs ZX9R)
         if (!empty($numbers1) && !empty($numbers2)) {
@@ -339,30 +339,30 @@ class ApiNinjasMotorcycleAdapter implements VehicleSpecAdapterInterface
                 return 0.0;
             }
         }
-        
+
         // Remove common separators and spaces
         $str1 = preg_replace('/[\s\-]+/', '', $str1);
         $str2 = preg_replace('/[\s\-]+/', '', $str2);
-        
+
         // Check for exact match after normalization
         if ($str1 === $str2) {
             return 100.0;
         }
-        
+
         // Check if one contains the other
         if (strpos($str1, $str2) !== false || strpos($str2, $str1) !== false) {
             return 90.0;
         }
-        
+
         // Calculate Levenshtein distance
         $maxLen = max(strlen($str1), strlen($str2));
         if ($maxLen === 0) {
             return 0.0;
         }
-        
+
         $distance = levenshtein($str1, $str2);
         $similarity = (1 - ($distance / $maxLen)) * 100;
-        
+
         return max(0.0, $similarity);
     }
 
@@ -375,7 +375,7 @@ class ApiNinjasMotorcycleAdapter implements VehicleSpecAdapterInterface
             }
 
             $apiUrl = 'https://api.api-ninjas.com/v1/motorcyclemodels?make=' . urlencode($make);
-            
+
             $response = $this->httpClient->request('GET', $apiUrl, [
                 'headers' => [
                     'X-Api-Key' => $this->apiKey
@@ -384,14 +384,14 @@ class ApiNinjasMotorcycleAdapter implements VehicleSpecAdapterInterface
             ]);
 
             $models = $response->toArray();
-            
+
             // Filter by model name if provided
             if ($model) {
                 $models = array_filter($models, function ($modelName) use ($model) {
                     return stripos($modelName, $model) !== false;
                 });
             }
-            
+
             return array_values($models);
         } catch (\Exception $e) {
             $this->logger->error('Failed to search models', [
@@ -405,7 +405,7 @@ class ApiNinjasMotorcycleAdapter implements VehicleSpecAdapterInterface
     private function parseApiData(array $data): Specification
     {
         $spec = new Specification();
-        
+
         // Extract engine specifications
         if (isset($data['engine'])) {
             $spec->setEngineType($data['engine']);
@@ -502,7 +502,7 @@ class ApiNinjasMotorcycleAdapter implements VehicleSpecAdapterInterface
         if (isset($data['top_speed'])) {
             $spec->setTopSpeed($data['top_speed']);
         }
-        
+
         // Store additional info (only type/category, not make/model/year)
         $additionalInfo = [];
         if (isset($data['type'])) {

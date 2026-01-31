@@ -1,62 +1,386 @@
 [
   {
     "vehicleType": "Motorcycle",
-    "name": "Air Filter",
-    "unit": "unit",
-    "description": "Engine air filter element."
-  },
-  {
-    "vehicleType": "Motorcycle",
-    "name": "Battery",
-    "unit": "unit",
-    "description": "12V motorcycle battery (AGM or lead-acid)."
-  },
-  {
-    "vehicleType": "Motorcycle",
-    "name": "Brake Fluid",
-    "unit": "ml",
-    "description": "DOT 3/4/5.1 hydraulic brake fluid for brake and clutch hydraulics."
-  },
-  {
-    "vehicleType": "Motorcycle",
-    "name": "Chain Lube",
-    "unit": "ml",
-    "description": "Lubricant for motorcycle drive chain."
-  },
-  {
-    "vehicleType": "Motorcycle",
-    "name": "Engine Flush/Catalytic Converter Cleaner",
-    "unit": "litres",
-    "description": "Engine flush and catalytic converter cleaner; specify product and application instructions."
-  },
-  {
-    "vehicleType": "Motorcycle",
     "name": "Engine Oil",
     "unit": "litres",
-    "description": "Motorcycle-specific engine oil (may require JASO MA/MA2 rating)."
+    "description": "Motorcycle-specific engine oil; mineral, semi-synthetic, or full synthetic. Must meet manufacturer spec (e.g. JASO MA/MA2)."
   },
   {
     "vehicleType": "Motorcycle",
-    "name": "Fork Oil",
-    "unit": "ml",
-    "description": "Suspension fork oil with specified viscosity."
-  },
-  {
-    "vehicleType": "Motorcycle",
-    "name": "Indicator/Direction Lamp Bulb",
+    "name": "Oil Filter",
     "unit": "unit",
-    "description": "Indicator / direction (turn signal) lamp bulb suitable for motorcycle fittings; LED or filament types."
+    "description": "Spin-on or cartridge oil filter element."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Oil Filter O-Rings / Seals",
+    "unit": "unit",
+    "description": "Replacement O-rings or seals for oil filter housing or oil passages."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Drain Plug",
+    "unit": "unit",
+    "description": "Engine oil drain plug."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Drain Plug Washer",
+    "unit": "unit",
+    "description": "Crush washer or sealing washer for engine oil drain plug."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Air Filter",
+    "unit": "unit",
+    "description": "Paper, foam, or performance air filter element."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Air Filter Oil",
+    "unit": "ml",
+    "description": "Special oil for foam air filters (off-road and older motorcycles)."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Fuel",
+    "unit": "litres",
+    "description": "Petrol used for testing, tuning, and post-service checks."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Fuel Filter",
+    "unit": "unit",
+    "description": "Inline or in-tank fuel filter."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Fuel Injector Cleaner",
+    "unit": "ml",
+    "description": "Cleaner additive for fuel-injected motorcycles."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Carburetor Cleaner",
+    "unit": "ml",
+    "description": "Solvent cleaner for carburetors and throttle bodies."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Carburetor / Throttle Body Synchronization Fluid",
+    "unit": "unit",
+    "description": "Mercury-free manometer fluid or tools for carb/EFI sync."
   },
   {
     "vehicleType": "Motorcycle",
     "name": "Spark Plugs",
     "unit": "unit",
-    "description": "Spark plug type and gap."
+    "description": "Correct heat range and type spark plugs; gap per specification."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Spark Plug Caps / NGK Resistor Caps",
+    "unit": "unit",
+    "description": "Replacement spark plug terminal caps with resistor."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Battery",
+    "unit": "unit",
+    "description": "12V motorcycle battery; lead-acid, AGM, gel, or lithium."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Coolant",
+    "unit": "litres",
+    "description": "Ethylene glycol or motorcycle-specific coolant for water-cooled engines."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Coolant Additive / Corrosion Inhibitor",
+    "unit": "ml",
+    "description": "Additive to protect cooling system components and improve heat transfer."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Brake Fluid",
+    "unit": "ml",
+    "description": "DOT 3, DOT 4, or DOT 5.1 brake fluid for brake and hydraulic clutch systems."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Brake Cleaner",
+    "unit": "ml",
+    "description": "Solvent cleaner for brake discs, calipers, and pads."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Brake Pads",
+    "unit": "set",
+    "description": "Front and rear brake pads; organic, sintered, or ceramic compound."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Brake Discs / Rotors",
+    "unit": "unit",
+    "description": "Replacement front and/or rear brake discs/rotors."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Brake Caliper Seals / Rebuild Kits",
+    "unit": "kit",
+    "description": "Seal and piston kits for rebuilding brake calipers."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Brake Master Cylinder Rebuild Kits",
+    "unit": "kit",
+    "description": "Seal and diaphragm kits for rebuilding brake master cylinders."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Clutch Fluid",
+    "unit": "ml",
+    "description": "Hydraulic clutch fluid; usually DOT brake fluid or mineral oil depending on system."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Clutch Plates",
+    "unit": "set",
+    "description": "Friction and steel drive plates for wet or dry clutches."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Clutch Springs",
+    "unit": "set",
+    "description": "Clutch pressure plate springs; standard or heavy-duty."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Fork Oil",
+    "unit": "ml",
+    "description": "Suspension fork oil of specified viscosity (e.g. 5W, 10W)."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Fork Seals",
+    "unit": "unit",
+    "description": "Oil and dust seals for front suspension forks."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Shock Absorber Oil",
+    "unit": "ml",
+    "description": "Oil used in serviceable rear shock absorbers."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Steering Head Bearings",
+    "unit": "set",
+    "description": "Tapered roller or ball bearing sets for the steering stem."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Wheel Bearings",
+    "unit": "set",
+    "description": "Sealed ball or roller bearings for front and rear wheels."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Swingarm Pivot Bearings / Bushings",
+    "unit": "set",
+    "description": "Needle bearings or bushings for the rear swingarm pivot."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Chain Lubricant",
+    "unit": "ml",
+    "description": "Lubricant for O-ring, X-ring, or standard drive chains."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Chain Cleaner",
+    "unit": "ml",
+    "description": "Cleaner for removing dirt and old lubricant from chains."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Chain Wax / Spray Lube",
+    "unit": "ml",
+    "description": "Alternative to standard chain lube; often less fling-off."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Drive Chain",
+    "unit": "unit",
+    "description": "Replacement final drive chain."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Master Link",
+    "unit": "unit",
+    "description": "Riveted or clip-type master link for drive chains."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Sprockets",
+    "unit": "unit",
+    "description": "Front and rear drive sprockets."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Belt Drive",
+    "unit": "unit",
+    "description": "Replacement final drive belt for belt-driven motorcycles."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Drive Shaft Fluid",
+    "unit": "litres",
+    "description": "Hypoid gear oil for shaft drive final drive units."
   },
   {
     "vehicleType": "Motorcycle",
     "name": "Tyres/Tires",
-    "unit": "psi / bar",
-    "description": "Front and rear tyre sizes and pressures."
+    "unit": "unit",
+    "description": "Front and rear motorcycle tyres; correct size and rating."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Inner Tubes",
+    "unit": "unit",
+    "description": "Inner tubes for tube-type wheels."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Wheel Weights",
+    "unit": "grams",
+    "description": "Adhesive or clip-on weights for wheel balancing."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Cables (Throttle / Clutch / Choke)",
+    "unit": "unit",
+    "description": "Control cables for throttle, clutch, or choke."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Cable Lubricant",
+    "unit": "ml",
+    "description": "Lubricant for throttle, clutch, and control cables."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Gaskets",
+    "unit": "unit",
+    "description": "Engine, exhaust, rocker cover, or side cover gaskets."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Sealant / Gasket Maker",
+    "unit": "ml",
+    "description": "Liquid gasket or RTV sealant for engine assembly."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Exhaust Packing",
+    "unit": "unit",
+    "description": "Fiberglass or equivalent packing material for silencers."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Grease",
+    "unit": "grams",
+    "description": "Multi-purpose or lithium grease for bearings and pivots."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Anti-Seize Compound",
+    "unit": "grams",
+    "description": "Compound to prevent fastener seizure, commonly used on exhaust bolts and spark plugs."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Threadlocker",
+    "unit": "ml",
+    "description": "Medium or high strength thread locking compound."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Electrical Contact Cleaner",
+    "unit": "ml",
+    "description": "Cleaner for electrical connectors and switches."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Fuses",
+    "unit": "unit",
+    "description": "Blade-type or other standard fuses of various amperages."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Relays",
+    "unit": "unit",
+    "description": "Standard automotive/motorcycle relays (e.g., for headlights, fuel pump)."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Dielectric Grease",
+    "unit": "grams",
+    "description": "Silicone grease for waterproofing and protecting electrical connectors."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Battery Terminal Cleaner / Protector",
+    "unit": "unit",
+    "description": "Wire brush and anti-corrosion gel for battery terminals."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Bulbs / LEDs",
+    "unit": "unit",
+    "description": "Headlight, indicator, tail light, and instrument bulbs or LED replacements."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Helmet Visor Cleaner / Anti-Fog",
+    "unit": "ml",
+    "description": "Spray or liquid for cleaning and preventing fog on helmet visors."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Motorcycle Wash / Degreaser",
+    "unit": "litres",
+    "description": "pH-balanced cleaner specifically for motorcycle surfaces."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Spray Cleaner & Polish",
+    "unit": "ml",
+    "description": "All-in-one cleaner, polish, and protectant for paint, plastic, and metal."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Paint Touch-Up Pen",
+    "unit": "unit",
+    "description": "Small paint applicator for repairing chips and scratches."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Shop Towels / Rags",
+    "unit": "unit",
+    "description": "Lint-free shop towels for general cleaning and fluid absorption."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Hand Cleaner",
+    "unit": "ml",
+    "description": "Mechanics' hand cleaner (with or without pumice)."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Valve Shim",
+    "unit": "unit",
+    "description": "Hardened steel disc used to adjust valve clearance in shim-under-bucket or shim-over-bucket valve trains. Measured in precise thickness increments (e.g., 0.05mm steps)."
   }
 ]

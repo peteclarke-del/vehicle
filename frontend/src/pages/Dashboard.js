@@ -232,10 +232,17 @@ const Dashboard = () => {
   const fetchRoadTaxData = useCallback(async () => {
     try {
       const resp = await api.get('/road-tax');
-      setRoadTaxData(resp.data || []);
+      const data = Array.isArray(resp.data)
+        ? resp.data
+        : Array.isArray(resp.data?.records)
+          ? resp.data.records
+          : Array.isArray(resp.data?.roadTaxRecords)
+            ? resp.data.roadTaxRecords
+            : [];
+      setRoadTaxData(data);
       // Count unique vehicles with SORN status (latest record per vehicle, only Live vehicles)
       const vehicleLatestRecord = {};
-      (resp.data || []).forEach(record => {
+      (data || []).forEach(record => {
         const vId = record.vehicleId;
         if (!vehicleLatestRecord[vId] || new Date(record.startDate) > new Date(vehicleLatestRecord[vId].startDate)) {
           vehicleLatestRecord[vId] = record;
@@ -498,7 +505,8 @@ const Dashboard = () => {
 
   // Helper to get latest road tax record for a vehicle
   const getLatestRoadTaxRecord = (vehicleId) => {
-    const vehicleRecords = roadTaxData.filter(r => r.vehicleId === vehicleId);
+    const safeRoadTaxData = Array.isArray(roadTaxData) ? roadTaxData : [];
+    const vehicleRecords = safeRoadTaxData.filter(r => r.vehicleId === vehicleId);
     if (vehicleRecords.length === 0) return null;
     return vehicleRecords.reduce((latest, current) => 
       new Date(current.startDate) > new Date(latest.startDate) ? current : latest

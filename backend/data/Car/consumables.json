@@ -298,5 +298,269 @@
     "name": "Windscreen/Windshield Wiper Blades (Front)",
     "unit": "set",
     "description": "Front wiper blades with hook, pin, or bayonet attachment."
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Oil Filter O-Rings / Seals",
+    "unit": "unit",
+    "description": "Replacement O-rings or seals for oil filter housing."
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Oil Drain Plug",
+    "unit": "unit",
+    "description": "Engine oil drain plug."
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Glow Plugs",
+    "unit": "unit",
+    "description": "Heating elements for diesel engine cold starts."
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Brake Caliper Seals / Rebuild Kits",
+    "unit": "kit",
+    "description": "Seal and piston kits for rebuilding brake calipers."
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Brake Master Cylinder Rebuild Kits",
+    "unit": "kit",
+    "description": "Seal kits for rebuilding brake master cylinders."
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Brake Shoes",
+    "unit": "set",
+    "description": "Rear brake shoes for drum brake systems."
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Brake Drums",
+    "unit": "unit",
+    "description": "Rear brake drums for drum brake systems."
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Clutch Master/Slave Cylinder Rebuild Kits",
+    "unit": "kit",
+    "description": "Seal kits for hydraulic clutch cylinders."
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Transmission Filter",
+    "unit": "unit",
+    "description": "Filter for automatic transmissions."
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Transmission Pan Gasket",
+    "unit": "unit",
+    "description": "Gasket or seal for automatic transmission oil pan."
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Power Steering Hose",
+    "unit": "unit",
+    "description": "High pressure or return hose for power steering system."
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Struts (Complete)",
+    "unit": "unit",
+    "description": "Complete strut assemblies (spring and shock)."
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Strut Mounts",
+    "unit": "unit",
+    "description": "Upper strut mounts and bearings."
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Sway Bar Links",
+    "unit": "unit",
+    "description": "Front and/or rear stabilizer bar links."
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Control Arm Bushings",
+    "unit": "unit",
+    "description": "Bushings for front or rear control arms."
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Ball Joints",
+    "unit": "unit",
+    "description": "Upper and/or lower ball joints."
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Tie Rod Ends",
+    "unit": "unit",
+    "description": "Inner and/or outer tie rod ends."
+  },
+  {
+    "vehicleType": "Car",
+    "name": "CV Joint Boot Kit",
+    "unit": "kit",
+    "description": "CV joint boot, clamps, and grease."
+  },
+  {
+    "vehicleType": "Car",
+    "name": "CV Axle",
+    "unit": "unit",
+    "description": "Complete front-wheel drive CV axle assembly."
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Timing Belt Tensioner & Idlers",
+    "unit": "kit",
+    "description": "Timing belt tensioner and idler pulley kit."
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Water Pump",
+    "unit": "unit",
+    "description": "Engine coolant water pump."
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Radiator Hose",
+    "unit": "unit",
+    "description": "Upper and/or lower radiator hoses."
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Heater Hose",
+    "unit": "unit",
+    "description": "Hoses for the heater core circuit."
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Radiator",
+    "unit": "unit",
+    "description": "Engine coolant radiator."
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Catalytic Converter",
+    "unit": "unit",
+    "description": "Emission control catalytic converter."
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Muffler",
+    "unit": "unit",
+    "description": "Exhaust muffler or silencer."
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Exhaust Hangers",
+    "unit": "unit",
+    "description": "Rubber mounts for supporting the exhaust system."
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Tire Valve Stems",
+    "unit": "unit",
+    "description": "Rubber or metal tire valve stems."
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Tire Valve Caps",
+    "unit": "unit",
+    "description": "Plastic or metal caps for tire valves."
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Wheel Cylinders",
+    "unit": "unit",
+    "description": "Cylinders for drum brake systems."
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Sealing Compounds",
+    "unit": "ml",
+    "description": "RTV silicone or anaerobic sealant for gaskets."
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Electrical Contact Cleaner",
+    "unit": "ml",
+    "description": "Cleaner for electrical connectors and switches."
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Dielectric Grease",
+    "unit": "grams",
+    "description": "Silicone grease for waterproofing electrical connectors."
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Battery Terminal Cleaner / Protector",
+    "unit": "unit",
+    "description": "Wire brush and anti-corrosion gel for battery terminals."
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Car Wash Soap",
+    "unit": "litres",
+    "description": "pH-balanced soap for car exterior washing."
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Wax / Polish",
+    "unit": "ml",
+    "description": "Car wax, polish, or sealant for paint protection."
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Interior Cleaner",
+    "unit": "ml",
+    "description": "Cleaner for upholstery, carpets, and plastics."
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Glass Cleaner",
+    "unit": "ml",
+    "description": "Ammonia-free cleaner for windows and mirrors."
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Tire Shine",
+    "unit": "ml",
+    "description": "Dressing for tire sidewalls."
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Trim Restorer",
+    "unit": "ml",
+    "description": "Product to restore faded plastic and rubber trim."
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Leather Conditioner",
+    "unit": "ml",
+    "description": "Conditioner for leather seats and surfaces."
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Clay Bar",
+    "unit": "unit",
+    "description": "Detailing clay for removing embedded surface contaminants."
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Microfiber Towels",
+    "unit": "unit",
+    "description": "Lint-free towels for cleaning and drying."
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Wash Mitt",
+    "unit": "unit",
+    "description": "Soft mitt for washing the car exterior."
   }
 ]

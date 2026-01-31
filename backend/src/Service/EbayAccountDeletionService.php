@@ -9,7 +9,7 @@ use Psr\Log\LoggerInterface;
 
 /**
  * Service to handle eBay marketplace account deletion requests
- * 
+ *
  * @see https://developer.ebay.com/develop/guides-v2/marketplace-user-account-deletion/marketplace-user-account-deletion
  */
 class EbayAccountDeletionService
@@ -22,13 +22,13 @@ class EbayAccountDeletionService
 
     /**
      * Process eBay user account deletion
-     * 
+     *
      * This method should:
      * 1. Find all data associated with the eBay user
      * 2. Delete or anonymize personal data
      * 3. Log the deletion for audit purposes
      * 4. Ensure deletion is irreversible
-     * 
+     *
      * @param string|null $username eBay username (may be null for US users after Sept 2025)
      * @param string $userId eBay immutable user ID
      * @param string $eiasToken eBay EIAS token
@@ -44,15 +44,15 @@ class EbayAccountDeletionService
 
         try {
             // TODO: Implement actual deletion logic based on your data model
-            
+
             // Example: If you store eBay user data in your database, delete it here
             // This is application-specific and depends on what eBay data you persist
-            
+
             // Example queries (adjust to your schema):
             // $this->deleteByEbayUsername($username);
             // $this->deleteByEbayUserId($userId);
             // $this->deleteByEiasToken($eiasToken);
-            
+
             // For now, we just log that we received the notification
             $this->logger->notice('EbayAccountDeletion: Deletion processed', [
                 'username' => $username,
@@ -64,7 +64,6 @@ class EbayAccountDeletionService
             $this->createAuditLog($username, $userId, $eiasToken);
 
             return true;
-            
         } catch (\Exception $e) {
             $this->logger->error('EbayAccountDeletion: Failed to delete user data', [
                 'username' => $username,
@@ -72,14 +71,14 @@ class EbayAccountDeletionService
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
-            
+
             return false;
         }
     }
 
     /**
      * Create an audit log entry for the deletion request
-     * 
+     *
      * This is important for compliance and audit purposes
      */
     private function createAuditLog(?string $username, string $userId, string $eiasToken): void
@@ -87,7 +86,7 @@ class EbayAccountDeletionService
         // TODO: Implement audit logging to a dedicated audit table
         // This should be in a separate table that is not automatically deleted
         // and serves as a record that the deletion was performed
-        
+
         $this->logger->info('EbayAccountDeletion: Audit log created', [
             'username' => $username,
             'user_id' => $userId,
@@ -98,7 +97,7 @@ class EbayAccountDeletionService
 
     /**
      * Check if this application stores any eBay user data
-     * 
+     *
      * @return bool True if the application stores eBay data
      */
     public function storesEbayData(): bool
@@ -106,11 +105,11 @@ class EbayAccountDeletionService
         // TODO: Update this based on your actual implementation
         // Return false if you want to opt out of notifications (if you don't store eBay data)
         // Return true if you store any eBay user data
-        
+
         // Current implementation uses eBay Browse API to fetch product information
         // but doesn't appear to store eBay user personal data
         // You should review your data model and update this accordingly
-        
+
         return false; // Change to true if you store eBay user data
     }
 

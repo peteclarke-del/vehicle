@@ -149,7 +149,7 @@ class AttachmentController extends AbstractController
         error_log('Upload directory: ' . $uploadDir);
         error_log('Directory exists: ' . (is_dir($uploadDir) ? 'yes' : 'no'));
         error_log('Directory writable: ' . (is_writable(dirname($uploadDir)) ? 'yes' : 'no'));
-        
+
         if (!is_dir($uploadDir)) {
             if (!@mkdir($uploadDir, 0755, true) && !is_dir($uploadDir)) {
                 error_log('Failed to create directory: ' . $uploadDir);
@@ -178,7 +178,7 @@ class AttachmentController extends AbstractController
         if ($vehicle) {
             $attachment->setVehicle($vehicle);
         }
-        
+
         if ($entityType) {
             $attachment->setEntityType($entityType);
         }

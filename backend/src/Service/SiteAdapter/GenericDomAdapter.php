@@ -82,7 +82,7 @@ class GenericDomAdapter implements SiteAdapterInterface
     private function extractJsonLd(string $html): array
     {
         $data = [];
-        
+
         if (!preg_match_all('/<script[^>]*type=["\']application\/ld\+json["\'][^>]*>(.*?)<\/script>/s', $html, $matches)) {
             return $data;
         }
@@ -92,28 +92,28 @@ class GenericDomAdapter implements SiteAdapterInterface
             if (!$jsonData) {
                 continue;
             }
-            
+
             if (isset($jsonData['name']) && !isset($data['name'])) {
                 $data['name'] = $jsonData['name'];
             }
-            
+
             if (isset($jsonData['offers']['price']) && !isset($data['price'])) {
                 $data['price'] = $jsonData['offers']['price'];
             } elseif (isset($jsonData['offers'][0]['price']) && !isset($data['price'])) {
                 $data['price'] = $jsonData['offers'][0]['price'];
             }
-            
+
             if (isset($jsonData['description']) && !isset($data['description'])) {
                 $data['description'] = $jsonData['description'];
             }
-            
+
             if (isset($jsonData['brand']['name']) && !isset($data['manufacturer'])) {
                 $data['manufacturer'] = $jsonData['brand']['name'];
             } elseif (isset($jsonData['brand']) && is_string($jsonData['brand']) && !isset($data['manufacturer'])) {
                 $data['manufacturer'] = $jsonData['brand'];
             }
         }
-        
+
         return $data;
     }
 

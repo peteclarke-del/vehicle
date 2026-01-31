@@ -1,0 +1,62 @@
+[
+   {
+    "vehicleType": "EV",
+    "name": "Electric Drive System",
+    "description": "Electric motors, reduction gearsets, and drive unit assemblies."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Energy Storage",
+    "description": "High-voltage battery packs, modules, and structural enclosures."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Power Electronics",
+    "description": "Inverters, converters, and high-voltage control electronics."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Charging System",
+    "description": "Onboard chargers, charge ports, and charging interface components."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Thermal Management",
+    "description": "Cooling and heating systems for batteries and drive units."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Body",
+    "description": "Body panels, exterior trim, bumpers, glass, mirrors, and related hardware."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Chassis",
+    "description": "Vehicle structural components and battery-integrated frames."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Suspension & Steering",
+    "description": "Suspension systems supporting vehicle weight and dynamics."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Braking System",
+    "description": "Brake hardware integrated with regenerative braking systems."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Wheels & Tyres",
+    "description": "Wheels, tyres, wheel bearings, hubs, and related mounting hardware."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Ignition",
+    "description": "Start/enable and control components such as relays, sensors, and control modules."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Electrical & Control",
+    "description": "Vehicle control units, sensors, and low-voltage electrical systems."
+  }
+]

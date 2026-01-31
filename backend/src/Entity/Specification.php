@@ -8,12 +8,12 @@ use Doctrine\ORM\Mapping as ORM;
 
 /**
  * Vehicle Specification Entity
- * 
+ *
  * This entity stores technical specifications for all vehicle types including:
  * - Motorcycles (engine, suspension, brakes, etc.)
  * - Cars (engine, transmission, dimensions, etc.)
  * - Trucks, Vans, and other vehicles
- * 
+ *
  * Fields are kept generic to accommodate different vehicle types.
  * Not all fields will be applicable to every vehicle type.
  */

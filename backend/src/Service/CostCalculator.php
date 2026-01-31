@@ -17,37 +17,35 @@ class CostCalculator
 
     public function calculateTotalFuelCost(Vehicle $vehicle): float
     {
-        $total = 0;
-        foreach ($vehicle->getFuelRecords() as $record) {
-            $total += (float) $record->getCost();
-        }
-        return $total;
+        $dql = 'SELECT COALESCE(SUM(fr.cost), 0) FROM App\Entity\FuelRecord fr WHERE fr.vehicle = :vehicle';
+
+        return (float) $this->entityManager->createQuery($dql)
+            ->setParameter('vehicle', $vehicle)
+            ->getSingleScalarResult();
     }
 
     public function calculateTotalPartsCost(Vehicle $vehicle): float
     {
-        $total = 0;
-        foreach ($vehicle->getParts() as $part) {
-            if ($part->getServiceRecord() || $part->getMotRecord()) {
-                continue;
-            }
-            $total += (float) $part->getCost();
-        }
-        return $total;
+        $dql = 'SELECT COALESCE(SUM(p.cost), 0) FROM App\Entity\Part p 
+                WHERE p.vehicle = :vehicle 
+                AND p.serviceRecord IS NULL 
+                AND p.motRecord IS NULL';
+
+        return (float) $this->entityManager->createQuery($dql)
+            ->setParameter('vehicle', $vehicle)
+            ->getSingleScalarResult();
     }
 
     public function calculateTotalConsumablesCost(Vehicle $vehicle): float
     {
-        $total = 0;
-        foreach ($vehicle->getConsumables() as $consumable) {
-            if ($consumable->getServiceRecord() || $consumable->getMotRecord()) {
-                continue;
-            }
-            if ($consumable->getCost()) {
-                $total += (float) $consumable->getCost();
-            }
-        }
-        return $total;
+        $dql = 'SELECT COALESCE(SUM(c.cost), 0) FROM App\Entity\Consumable c 
+                WHERE c.vehicle = :vehicle 
+                AND c.serviceRecord IS NULL 
+                AND c.motRecord IS NULL';
+
+        return (float) $this->entityManager->createQuery($dql)
+            ->setParameter('vehicle', $vehicle)
+            ->getSingleScalarResult();
     }
 
     public function calculateTotalRunningCost(Vehicle $vehicle): float
@@ -59,7 +57,7 @@ class CostCalculator
     }
 
     public function calculateTotalCostToDate(Vehicle $vehicle): float
-    {       
+    {
         $purchaseCost = (float) $vehicle->getPurchaseCost();
         $runningCost = $this->calculateTotalRunningCost($vehicle);
 
@@ -198,24 +196,45 @@ class CostCalculator
 
     public function calculateTotalServiceCost(Vehicle $vehicle): float
     {
-        $total = 0.0;
-        $linkedMotIds = [];
-        foreach ($vehicle->getServiceRecords() as $sr) {
-            $total += (float) $sr->getTotalCost();
-            $mot = $sr->getMotRecord();
-            if ($mot && $mot->getId()) {
-                $linkedMotIds[$mot->getId()] = true;
-            }
+        // Sum of service record costs
+        $serviceDql = 'SELECT COALESCE(SUM(sr.laborCost + sr.partsCost + sr.consumablesCost + sr.additionalCosts), 0) 
+                       FROM App\Entity\ServiceRecord sr 
+                       WHERE sr.vehicle = :vehicle';
+
+        $serviceTotal = (float) $this->entityManager->createQuery($serviceDql)
+            ->setParameter('vehicle', $vehicle)
+            ->getSingleScalarResult();
+
+        // Get IDs of MOT records linked to service records
+        $linkedMotIdsDql = 'SELECT IDENTITY(sr.motRecord) 
+                            FROM App\Entity\ServiceRecord sr 
+                            WHERE sr.vehicle = :vehicle 
+                            AND sr.motRecord IS NOT NULL';
+
+        $linkedMotIds = $this->entityManager->createQuery($linkedMotIdsDql)
+            ->setParameter('vehicle', $vehicle)
+            ->getResult();
+
+        $linkedMotIdsArray = array_column($linkedMotIds, 1);
+
+        // Sum of MOT costs not linked to service records
+        $motDql = 'SELECT COALESCE(SUM(m.testCost + m.repairCost), 0) 
+                   FROM App\Entity\MotRecord m 
+                   WHERE m.vehicle = :vehicle';
+
+        if (!empty($linkedMotIdsArray)) {
+            $motDql .= ' AND m.id NOT IN (:linkedIds)';
+            $motTotal = (float) $this->entityManager->createQuery($motDql)
+                ->setParameter('vehicle', $vehicle)
+                ->setParameter('linkedIds', $linkedMotIdsArray)
+                ->getSingleScalarResult();
+        } else {
+            $motTotal = (float) $this->entityManager->createQuery($motDql)
+                ->setParameter('vehicle', $vehicle)
+                ->getSingleScalarResult();
         }
 
-        foreach ($vehicle->getMotRecords() as $mot) {
-            $motId = $mot->getId();
-            if ($motId && isset($linkedMotIds[$motId])) {
-                continue;
-            }
-            $total += (float) $mot->getTotalCost();
-        }
-        return $total;
+        return $serviceTotal + $motTotal;
     }
 
     private function determineMilesSincePurchase(Vehicle $vehicle): ?int
