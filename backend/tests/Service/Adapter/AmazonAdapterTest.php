@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Service\Adapter;
 
-use App\Service\Adapter\AmazonAdapter;
+use App\Service\SiteAdapter\AmazonAdapter;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpClient\MockHttpClient;
 use Symfony\Component\HttpClient\Response\MockResponse;
@@ -23,7 +23,7 @@ class AmazonAdapterTest extends TestCase
     protected function setUp(): void
     {
         $this->httpClient = new MockHttpClient();
-        $this->adapter = new AmazonAdapter($this->httpClient, new NullLogger());
+        $this->adapter = new AmazonAdapter(new NullLogger(), $this->httpClient);
     }
 
     public function testSupportsAmazonUrl(): void

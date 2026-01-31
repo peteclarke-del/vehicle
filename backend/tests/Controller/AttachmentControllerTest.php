@@ -28,7 +28,17 @@ class AttachmentControllerTest extends WebTestCase
             'password' => 'password123',
         ]));
 
-        return json_decode($client->getResponse()->getContent(), true)['token'];
+        $response = $client->getResponse();
+        if ($response->getStatusCode() !== 200) {
+            $this->fail('Failed to authenticate test user: ' . $response->getContent());
+        }
+
+        $data = json_decode($response->getContent(), true);
+        if (!isset($data['token'])) {
+            $this->fail('No token in authentication response');
+        }
+
+        return $data['token'];
     }
 
     public function testUploadAttachmentRequiresAuthentication(): void

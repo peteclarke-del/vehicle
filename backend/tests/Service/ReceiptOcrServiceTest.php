@@ -6,8 +6,6 @@ namespace App\Tests\Service;
 
 use App\Service\ReceiptOcrService;
 use PHPUnit\Framework\TestCase;
-use Symfony\Component\HttpClient\MockHttpClient;
-use Symfony\Component\HttpClient\Response\MockResponse;
 use Psr\Log\NullLogger;
 
 /**
@@ -18,12 +16,10 @@ use Psr\Log\NullLogger;
 class ReceiptOcrServiceTest extends TestCase
 {
     private ReceiptOcrService $service;
-    private MockHttpClient $httpClient;
 
     protected function setUp(): void
     {
-        $this->httpClient = new MockHttpClient();
-        $this->service = new ReceiptOcrService($this->httpClient, new NullLogger());
+        $this->service = new ReceiptOcrService(new NullLogger(), sys_get_temp_dir());
     }
 
     public function testExtractsDateFromReceipt(): void

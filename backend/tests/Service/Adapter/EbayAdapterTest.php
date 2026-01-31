@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Service\Adapter;
 
-use App\Service\Adapter\EbayAdapter;
+use App\Service\SiteAdapter\EbayAdapter;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpClient\MockHttpClient;
 use Symfony\Component\HttpClient\Response\MockResponse;
@@ -23,7 +23,7 @@ class EbayAdapterTest extends TestCase
     protected function setUp(): void
     {
         $this->httpClient = new MockHttpClient();
-        $this->adapter = new EbayAdapter($this->httpClient, new NullLogger());
+        $this->adapter = new EbayAdapter(new NullLogger(), $this->httpClient);
     }
 
     public function testSupportsEbayUrl(): void

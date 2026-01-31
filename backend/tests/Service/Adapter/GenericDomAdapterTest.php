@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Service\Adapter;
 
-use App\Service\Adapter\GenericDomAdapter;
+use App\Service\SiteAdapter\GenericDomAdapter;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpClient\MockHttpClient;
 use Symfony\Component\HttpClient\Response\MockResponse;
@@ -23,7 +23,7 @@ class GenericDomAdapterTest extends TestCase
     protected function setUp(): void
     {
         $this->httpClient = new MockHttpClient();
-        $this->adapter = new GenericDomAdapter($this->httpClient, new NullLogger());
+        $this->adapter = new GenericDomAdapter(new NullLogger(), $this->httpClient);
     }
 
     public function testExtractsProductNameFromH1(): void
