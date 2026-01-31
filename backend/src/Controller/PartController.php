@@ -14,6 +14,7 @@ use App\Service\ReceiptOcrService;
 use App\Service\UrlScraperService;
 use Psr\Log\LoggerInterface;
 use App\Service\RepairCostCalculator;
+use App\Service\EntitySerializerService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -25,12 +26,14 @@ use App\Controller\Trait\UserSecurityTrait;
 class PartController extends AbstractController
 {
     use UserSecurityTrait;
+
     public function __construct(
         private EntityManagerInterface $entityManager,
         private ReceiptOcrService $ocrService,
         private UrlScraperService $scraperService,
         private LoggerInterface $logger,
-        private RepairCostCalculator $repairCostCalculator
+        private RepairCostCalculator $repairCostCalculator,
+        private EntitySerializerService $serializer
     ) {
     }
 
@@ -72,7 +75,7 @@ class PartController extends AbstractController
             }
         }
 
-        $data = array_map(fn($p) => $this->serializePart($p), $parts);
+        $data = array_map(fn($p) => $this->serializer->serializePart($p), $parts);
 
         return $this->json($data);
     }
@@ -91,7 +94,7 @@ class PartController extends AbstractController
             return $this->json(['error' => 'Part not found'], 404);
         }
 
-        return $this->json($this->serializePart($part));
+        return $this->json($this->serializer->serializePart($part));
     }
 
     #[Route('', name: 'api_parts_create', methods: ['POST'])]
@@ -124,7 +127,7 @@ class PartController extends AbstractController
         $this->entityManager->persist($part);
         $this->entityManager->flush();
 
-        return $this->json($this->serializePart($part), 201);
+        return $this->json($this->serializer->serializePart($part), 201);
     }
 
     #[Route('/{id}', name: 'api_parts_update', methods: ['PUT'])]
@@ -182,7 +185,7 @@ class PartController extends AbstractController
             $this->logger->error('Error recalculating repair cost after Part update', ['exception' => $e->getMessage()]);
         }
 
-        return $this->json($this->serializePart($part));
+        return $this->json($this->serializer->serializePart($part));
     }
 
     #[Route('/{id}', name: 'api_parts_delete', methods: ['DELETE'])]
@@ -216,41 +219,6 @@ class PartController extends AbstractController
         }
 
         return $this->json(['message' => 'Part deleted successfully']);
-    }
-
-    private function serializePart(Part $part): array
-    {
-        return [
-            'id' => $part->getId(),
-            'vehicleId' => $part->getVehicle()->getId(),
-            'purchaseDate' => $part->getPurchaseDate()?->format('Y-m-d'),
-            'description' => $part->getDescription(),
-            'partNumber' => $part->getPartNumber(),
-            'manufacturer' => $part->getManufacturer(),
-            'supplier' => $part->getSupplier(),
-            'price' => $part->getPrice(),
-            'quantity' => $part->getQuantity(),
-            'cost' => $part->getCost(),
-            'installationDate' => $part->getInstallationDate()?->format('Y-m-d'),
-            'mileageAtInstallation' => $part->getMileageAtInstallation(),
-            'notes' => $part->getNotes(),
-            'motRecordId' => $part->getMotRecord()?->getId(),
-            'motTestNumber' => $part->getMotRecord()?->getMotTestNumber(),
-            'motTestDate' => $part->getMotRecord()?->getTestDate()?->format('Y-m-d'),
-            'serviceRecordId' => $part->getServiceRecord()?->getId(),
-            'serviceRecordDate' => $part->getServiceRecord()?->getServiceDate()?->format('Y-m-d'),
-            'serviceRecordSummary' => $part->getServiceRecord() ? (
-                ($part->getServiceRecord()->getWorkPerformed() ?? $part->getServiceRecord()->getServiceProvider() ?? null)
-            ) : null,
-            'warranty' => $part->getWarranty(),
-            'receiptAttachmentId' => $part->getReceiptAttachment()?->getId(),
-            'productUrl' => $part->getProductUrl(),
-            'createdAt' => $part->getCreatedAt()?->format('c'),
-            'partCategory' => $part->getPartCategory() ? [
-                'id' => $part->getPartCategory()->getId(),
-                'name' => $part->getPartCategory()->getName(),
-            ] : null
-        ];
     }
 
     private function updatePartFromData(Part $part, array $data): void

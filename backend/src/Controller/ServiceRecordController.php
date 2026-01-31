@@ -15,6 +15,7 @@ use App\Entity\User;
 use Psr\Log\LoggerInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use App\Service\RepairCostCalculator;
+use App\Service\EntitySerializerService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -31,7 +32,8 @@ class ServiceRecordController extends AbstractController
         private EntityManagerInterface $entityManager,
         private LoggerInterface $logger,
         private RepairCostCalculator $repairCostCalculator,
-        private ValidatorInterface $validator
+        private ValidatorInterface $validator,
+        private EntitySerializerService $serializer
     ) {
     }
 
@@ -287,7 +289,7 @@ class ServiceRecordController extends AbstractController
         $consumables = $this->entityManager->getRepository(Consumable::class)
             ->findBy(['serviceRecord' => $serviceRecord]);
 
-        $serializedConsumables = array_map(fn($c) => $this->serializeConsumable($c), $consumables);
+        $serializedConsumables = array_map(fn($c) => $this->serializer->serializeConsumable($c, false), $consumables);
         $serviceData = $this->serializeServiceRecord($serviceRecord, true);
 
         // Normalize items list
@@ -323,7 +325,7 @@ class ServiceRecordController extends AbstractController
             ];
         }
 
-        $serializedParts = array_map(fn($p) => $this->serializePart($p), $parts);
+        $serializedParts = array_map(fn($p) => $this->serializer->serializePart($p, false), $parts);
 
         return new JsonResponse([
             'serviceRecord' => $serviceData,
@@ -400,31 +402,6 @@ class ServiceRecordController extends AbstractController
         }
 
         return $data;
-    }
-
-    private function serializePart(Part $part): array
-    {
-        return [
-            'id' => $part->getId(),
-            'description' => $part->getDescription(),
-            'price' => $part->getPrice(),
-            'quantity' => $part->getQuantity(),
-            'cost' => $part->getCost(),
-            'partCategory' => $part->getPartCategory() ? [
-                'id' => $part->getPartCategory()->getId(),
-                'name' => $part->getPartCategory()->getName(),
-            ] : null,
-        ];
-    }
-
-    private function serializeConsumable(Consumable $consumable): array
-    {
-        return [
-            'id' => $consumable->getId(),
-            'description' => $consumable->getDescription(),
-            'cost' => $consumable->getCost(),
-            'quantity' => $consumable->getQuantity() ?? 1,
-        ];
     }
 
     private function serializeItem(ServiceItem $item): array

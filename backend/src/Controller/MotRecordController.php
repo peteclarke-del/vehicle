@@ -13,6 +13,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use App\Service\DvsaApiService;
 use App\Service\RepairCostCalculator;
+use App\Service\EntitySerializerService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -22,19 +23,16 @@ use Symfony\Component\Routing\Annotation\Route;
 class MotRecordController extends AbstractController
 {
     use UserSecurityTrait;
+
     public function __construct(
         private EntityManagerInterface $entityManager,
         private DvsaApiService $dvsaService,
         private LoggerInterface $logger,
-        private RepairCostCalculator $repairCostCalculator
+        private RepairCostCalculator $repairCostCalculator,
+        private EntitySerializerService $serializer
     ) {
     }
 
-    private function getUserEntity(): ?\App\Entity\User
-    {
-        $user = $this->getUser();
-        return $user instanceof \App\Entity\User ? $user : null;
-    }
     #[Route('/mot-records', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {
@@ -53,7 +51,7 @@ class MotRecordController extends AbstractController
         $this->entityManager->persist($motRecord);
         $this->entityManager->flush();
 
-        return new JsonResponse($this->serializeMotRecord($motRecord), 201);
+        return new JsonResponse($this->serializer->serializeMotRecord($motRecord), 201);
     }
 
     #[Route('/mot-records/{id}', methods: ['PUT'])]
@@ -76,7 +74,7 @@ class MotRecordController extends AbstractController
             $this->logger->error('Error recalculating repair cost after MOT update', ['exception' => $e->getMessage()]);
         }
 
-        return new JsonResponse($this->serializeMotRecord($motRecord));
+        return new JsonResponse($this->serializer->serializeMotRecord($motRecord));
     }
 
     #[Route('/mot-records/{id}', methods: ['DELETE'])]
@@ -113,9 +111,9 @@ class MotRecordController extends AbstractController
             ->findBy(['motRecord' => $motRecord]);
 
         return new JsonResponse([
-            'motRecord' => $this->serializeMotRecord($motRecord),
-            'parts' => array_map(fn($p) => $this->serializePart($p), $parts),
-            'consumables' => array_map(fn($c) => $this->serializeConsumable($c), $consumables),
+            'motRecord' => $this->serializer->serializeMotRecord($motRecord),
+            'parts' => array_map(fn($p) => $this->serializer->serializePart($p), $parts),
+            'consumables' => array_map(fn($c) => $this->serializer->serializeConsumable($c), $consumables),
             'serviceRecords' => array_map(fn($s) => [
                 'id' => $s->getId(),
                 'laborCost' => $s->getLaborCost(),
@@ -182,7 +180,7 @@ class MotRecordController extends AbstractController
             $records = $qb->getQuery()->getResult();
         }
 
-        $out = array_map(fn($r) => $this->serializeMotRecord($r), $records);
+        $out = array_map(fn($r) => $this->serializer->serializeMotRecord($r), $records);
         return new JsonResponse($out);
     }
 
@@ -384,116 +382,6 @@ class MotRecordController extends AbstractController
         $importedIds = array_map(fn($m) => $m->getId(), $importedIds);
 
         return new JsonResponse(['imported' => $imported, 'importedIds' => $importedIds]);
-    }
-
-    private function serializeMotRecord(MotRecord $mot, bool $detailed = false): array
-    {
-        // Normalize result and advisory/failure items for frontend form consumption
-        $result = $mot->getResult();
-        $upper = strtoupper((string)$result);
-        if (str_contains($upper, 'PASS')) {
-            $result = 'Pass';
-        } elseif (str_contains($upper, 'FAIL')) {
-            $result = 'Fail';
-        } else {
-            $result = 'Advisory';
-        }
-
-        $advisoryItems = $mot->getAdvisoryItems();
-        if (is_array($advisoryItems)) {
-            $advisoriesText = implode("\n", array_map(fn($a) => is_array($a) ? ($a['text'] ?? json_encode($a)) : (string)$a, $advisoryItems));
-        } else {
-            $advisoriesText = $mot->getAdvisories();
-        }
-
-        $failureItems = $mot->getFailureItems();
-        if (is_array($failureItems)) {
-            $failuresText = implode("\n", array_map(fn($a) => is_array($a) ? ($a['text'] ?? json_encode($a)) : (string)$a, $failureItems));
-        } else {
-            $failuresText = $mot->getFailures();
-        }
-
-        $data = [
-            'id' => $mot->getId(),
-            'vehicleId' => $mot->getVehicle()->getId(),
-            'testDate' => $mot->getTestDate()?->format('Y-m-d'),
-            'result' => $result,
-            'expiryDate' => $mot->getExpiryDate()?->format('Y-m-d'),
-            'motTestNumber' => $mot->getMotTestNumber(),
-            'testerName' => $mot->getTesterName(),
-            'isRetest' => $mot->getIsRetest(),
-            'testCost' => $mot->getTestCost(),
-            'repairCost' => $mot->getRepairCost(),
-            'totalCost' => $mot->getTotalCost(),
-            'mileage' => $mot->getMileage(),
-            'testCenter' => $mot->getTestCenter() ?? 'Unknown',
-            'advisories' => $advisoriesText,
-            'failures' => $failuresText,
-            'advisoryItems' => $advisoryItems,
-            'failureItems' => $failureItems,
-            'receiptAttachmentId' => $mot->getReceiptAttachment()?->getId(),
-            'repairDetails' => $mot->getRepairDetails(),
-            'notes' => $mot->getNotes(),
-            'createdAt' => $mot->getCreatedAt()?->format('c'),
-        ];
-
-        return $data;
-    }
-
-    private function serializePart(Part $part): array
-    {
-        return [
-            'id' => $part->getId(),
-            'vehicleId' => $part->getVehicle()?->getId(),
-            'purchaseDate' => $part->getPurchaseDate()?->format('Y-m-d'),
-            'description' => $part->getDescription(),
-            'partNumber' => $part->getPartNumber(),
-            'manufacturer' => $part->getManufacturer(),
-            'supplier' => $part->getSupplier(),
-            'price' => $part->getPrice(),
-            'quantity' => $part->getQuantity(),
-            'cost' => $part->getCost(),
-            'category' => $part->getCategory(),
-            'partCategory' => $part->getPartCategory() ? [
-                'id' => $part->getPartCategory()->getId(),
-                'name' => $part->getPartCategory()->getName(),
-            ] : null,
-            'installationDate' => $part->getInstallationDate()?->format('Y-m-d'),
-            'mileageAtInstallation' => $part->getMileageAtInstallation(),
-            'notes' => $part->getNotes(),
-            'motRecordId' => $part->getMotRecord()?->getId(),
-            'motTestNumber' => $part->getMotRecord()?->getMotTestNumber(),
-            'motTestDate' => $part->getMotRecord()?->getTestDate()?->format('Y-m-d'),
-            'warranty' => $part->getWarranty(),
-            'receiptAttachmentId' => $part->getReceiptAttachment()?->getId(),
-            'productUrl' => $part->getProductUrl(),
-            'createdAt' => $part->getCreatedAt()?->format('c')
-        ];
-    }
-
-    private function serializeConsumable(Consumable $consumable): array
-    {
-        return [
-            'id' => $consumable->getId(),
-            'vehicleId' => $consumable->getVehicle()?->getId(),
-            'consumableType' => $consumable->getConsumableType() ? [
-                'id' => $consumable->getConsumableType()->getId(),
-                'name' => $consumable->getConsumableType()->getName(),
-                'unit' => $consumable->getConsumableType()->getUnit()
-            ] : null,
-                'description' => $consumable->getDescription(),
-            'quantity' => $consumable->getQuantity(),
-            'lastChanged' => $consumable->getLastChanged()?->format('Y-m-d'),
-            'mileageAtChange' => $consumable->getMileageAtChange(),
-            'cost' => $consumable->getCost(),
-            'notes' => $consumable->getNotes(),
-            'receiptAttachmentId' => $consumable->getReceiptAttachment()?->getId(),
-            'productUrl' => $consumable->getProductUrl(),
-            'motRecordId' => $consumable->getMotRecord()?->getId(),
-            'motTestNumber' => $consumable->getMotRecord()?->getMotTestNumber(),
-            'motTestDate' => $consumable->getMotRecord()?->getTestDate()?->format('Y-m-d'),
-            'createdAt' => $consumable->getCreatedAt()?->format('c')
-        ];
     }
 
     private function updateMotRecordFromData(MotRecord $mot, array $data): void
