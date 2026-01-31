@@ -204,6 +204,40 @@ END
 WHERE entity_type = 'vehicle' AND category IS NULL;
 ```
 
+### Issue: vehicle_id is NULL after import
+
+**Symptoms**: Imported vehicle attachments have `entity_id` set correctly but `vehicle_id` is NULL
+
+**Cause**: Doctrine doesn't track relationship changes on already-persisted entities by default
+
+**Why it matters**: 
+- Without `vehicle_id`, database-level CASCADE delete won't work
+- ORM cascade still works (via `entity_type`/`entity_id`), but direct SQL deletes would leave orphans
+- Belt-and-suspenders approach: both ORM and DB cascade = maximum data safety
+
+**Solution**: Force Doctrine to recognize the relationship change during import:
+
+```php
+// In VehicleImportExportController::import() remapping phase
+$attachment->setVehicle($newVehicle);
+// Force Doctrine UnitOfWork to compute changeset for this entity
+$entityManager->getUnitOfWork()->recomputeSingleEntityChangeSet(
+    $entityManager->getClassMetadata(\App\Entity\Attachment::class),
+    $attachment
+);
+$entityManager->flush();
+```
+
+**Fix existing NULL vehicle_id records**:
+
+```sql
+UPDATE attachments 
+SET vehicle_id = entity_id 
+WHERE entity_type = 'vehicle' 
+  AND vehicle_id IS NULL 
+  AND entity_id IS NOT NULL;
+```
+
 ### Issue: Orphaned attachments after delete
 
 **Symptoms**: Attachment files remain after deleting parent entity
@@ -228,6 +262,7 @@ private ?Vehicle $vehicle = null;
 3. **Use entity_type + entity_id for filtering** - more flexible than FK relationships
 4. **Keep vehicle_id for cascade deletes** - proper cleanup when vehicle deleted
 5. **Export/Import category** - maintain document organization across systems
+6. **Use recomputeSingleEntityChangeSet for relationship changes** - ensures Doctrine tracks updates on already-persisted entities
 
 ## Future Improvements
 
