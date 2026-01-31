@@ -62,7 +62,7 @@ class MotRecord
     #[ORM\Column(type: 'text', nullable: true)]
     private ?string $notes = null;
 
-    #[ORM\ManyToOne(targetEntity: Attachment::class)]
+    #[ORM\ManyToOne(targetEntity: Attachment::class, cascade: ['remove'])]
     #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
     private ?Attachment $receiptAttachment = null;
 
