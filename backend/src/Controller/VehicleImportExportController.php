@@ -31,6 +31,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 use Symfony\Contracts\Cache\TagAwareCacheInterface;
+use App\Controller\Trait\UserSecurityTrait;
 
 #[Route('/api/vehicles')]
 #[IsGranted('ROLE_USER')]
