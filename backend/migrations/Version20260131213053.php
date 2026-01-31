@@ -10,7 +10,7 @@ use Doctrine\Migrations\AbstractMigration;
 /**
  * Auto-generated Migration: Please modify to your needs!
  */
-final class Version20260131210046 extends AbstractMigration
+final class Version20260131213053 extends AbstractMigration
 {
     public function getDescription(): string
     {
@@ -48,20 +48,20 @@ final class Version20260131210046 extends AbstractMigration
         $this->addSql('ALTER TABLE attachments ADD CONSTRAINT FK_47C4FAD6545317D1 FOREIGN KEY (vehicle_id) REFERENCES vehicles (id) ON DELETE CASCADE');
         $this->addSql('ALTER TABLE attachments ADD CONSTRAINT FK_47C4FAD6A76ED395 FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE');
         $this->addSql('ALTER TABLE consumable_types ADD CONSTRAINT FK_FDE5C7B3DA3FD1FC FOREIGN KEY (vehicle_type_id) REFERENCES vehicle_types (id)');
-        $this->addSql('ALTER TABLE consumables ADD CONSTRAINT FK_9B2FDD30545317D1 FOREIGN KEY (vehicle_id) REFERENCES vehicles (id)');
+        $this->addSql('ALTER TABLE consumables ADD CONSTRAINT FK_9B2FDD30545317D1 FOREIGN KEY (vehicle_id) REFERENCES vehicles (id) ON DELETE CASCADE');
         $this->addSql('ALTER TABLE consumables ADD CONSTRAINT FK_9B2FDD3044868F59 FOREIGN KEY (consumable_type_id) REFERENCES consumable_types (id)');
         $this->addSql('ALTER TABLE consumables ADD CONSTRAINT FK_9B2FDD30156C4F46 FOREIGN KEY (service_record_id) REFERENCES service_records (id) ON DELETE SET NULL');
         $this->addSql('ALTER TABLE consumables ADD CONSTRAINT FK_9B2FDD30EA1EBC33 FOREIGN KEY (todo_id) REFERENCES todos (id) ON DELETE SET NULL');
         $this->addSql('ALTER TABLE consumables ADD CONSTRAINT FK_9B2FDD30B17D92CD FOREIGN KEY (mot_record_id) REFERENCES mot_records (id) ON DELETE SET NULL');
         $this->addSql('ALTER TABLE consumables ADD CONSTRAINT FK_9B2FDD3079F22B74 FOREIGN KEY (receipt_attachment_id) REFERENCES attachments (id) ON DELETE SET NULL');
-        $this->addSql('ALTER TABLE fuel_records ADD CONSTRAINT FK_33A12AE0545317D1 FOREIGN KEY (vehicle_id) REFERENCES vehicles (id)');
+        $this->addSql('ALTER TABLE fuel_records ADD CONSTRAINT FK_33A12AE0545317D1 FOREIGN KEY (vehicle_id) REFERENCES vehicles (id) ON DELETE CASCADE');
         $this->addSql('ALTER TABLE fuel_records ADD CONSTRAINT FK_33A12AE079F22B74 FOREIGN KEY (receipt_attachment_id) REFERENCES attachments (id) ON DELETE SET NULL');
         $this->addSql('ALTER TABLE insurance_policy_vehicles ADD CONSTRAINT FK_5D859BD9B55D920C FOREIGN KEY (insurance_policy_id) REFERENCES insurance_policies (id) ON DELETE CASCADE');
         $this->addSql('ALTER TABLE insurance_policy_vehicles ADD CONSTRAINT FK_5D859BD9545317D1 FOREIGN KEY (vehicle_id) REFERENCES vehicles (id) ON DELETE CASCADE');
         $this->addSql('ALTER TABLE mot_records ADD CONSTRAINT FK_F093C1A5545317D1 FOREIGN KEY (vehicle_id) REFERENCES vehicles (id) ON DELETE CASCADE');
         $this->addSql('ALTER TABLE mot_records ADD CONSTRAINT FK_F093C1A579F22B74 FOREIGN KEY (receipt_attachment_id) REFERENCES attachments (id) ON DELETE SET NULL');
         $this->addSql('ALTER TABLE part_categories ADD CONSTRAINT FK_F86C3ACDA3FD1FC FOREIGN KEY (vehicle_type_id) REFERENCES vehicle_types (id)');
-        $this->addSql('ALTER TABLE parts ADD CONSTRAINT FK_6940A7FE545317D1 FOREIGN KEY (vehicle_id) REFERENCES vehicles (id)');
+        $this->addSql('ALTER TABLE parts ADD CONSTRAINT FK_6940A7FE545317D1 FOREIGN KEY (vehicle_id) REFERENCES vehicles (id) ON DELETE CASCADE');
         $this->addSql('ALTER TABLE parts ADD CONSTRAINT FK_6940A7FE8E7AEECE FOREIGN KEY (part_category_id) REFERENCES part_categories (id) ON DELETE SET NULL');
         $this->addSql('ALTER TABLE parts ADD CONSTRAINT FK_6940A7FE156C4F46 FOREIGN KEY (service_record_id) REFERENCES service_records (id) ON DELETE SET NULL');
         $this->addSql('ALTER TABLE parts ADD CONSTRAINT FK_6940A7FEEA1EBC33 FOREIGN KEY (todo_id) REFERENCES todos (id) ON DELETE SET NULL');
@@ -69,7 +69,7 @@ final class Version20260131210046 extends AbstractMigration
         $this->addSql('ALTER TABLE parts ADD CONSTRAINT FK_6940A7FE79F22B74 FOREIGN KEY (receipt_attachment_id) REFERENCES attachments (id) ON DELETE SET NULL');
         $this->addSql('ALTER TABLE refresh_tokens ADD CONSTRAINT FK_9BACE7E1A76ED395 FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE');
         $this->addSql('ALTER TABLE reports ADD CONSTRAINT FK_F11FA745A76ED395 FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE');
-        $this->addSql('ALTER TABLE road_tax ADD CONSTRAINT FK_BB1D046A545317D1 FOREIGN KEY (vehicle_id) REFERENCES vehicles (id)');
+        $this->addSql('ALTER TABLE road_tax ADD CONSTRAINT FK_BB1D046A545317D1 FOREIGN KEY (vehicle_id) REFERENCES vehicles (id) ON DELETE CASCADE');
         $this->addSql('ALTER TABLE security_features ADD CONSTRAINT FK_DCAB5BC1DA3FD1FC FOREIGN KEY (vehicle_type_id) REFERENCES vehicle_types (id) ON DELETE CASCADE');
         $this->addSql('ALTER TABLE service_items ADD CONSTRAINT FK_486C04AA156C4F46 FOREIGN KEY (service_record_id) REFERENCES service_records (id) ON DELETE CASCADE');
         $this->addSql('ALTER TABLE service_items ADD CONSTRAINT FK_486C04AAA94ADB61 FOREIGN KEY (consumable_id) REFERENCES consumables (id) ON DELETE SET NULL');
