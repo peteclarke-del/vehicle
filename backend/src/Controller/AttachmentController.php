@@ -6,6 +6,7 @@ namespace App\Controller;
 
 use App\Entity\Attachment;
 use Doctrine\ORM\EntityManagerInterface;
+use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\File\Exception\FileException;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -50,7 +51,8 @@ class AttachmentController extends AbstractController
         private EntityManagerInterface $entityManager,
         private SluggerInterface $slugger,
         private ReceiptOcrService $ocrService,
-        private int $uploadMaxBytes
+        private int $uploadMaxBytes,
+        private LoggerInterface $logger
     ) {
     }
 
@@ -115,7 +117,7 @@ class AttachmentController extends AbstractController
 
         // Log upload attempt
         $fileSize = $file->getSize();
-        error_log('Upload attempt - File: ' . $file->getClientOriginalName() . ', Size: ' . $fileSize);
+        $this->logger->info('Upload attempt', ['filename' => $file->getClientOriginalName(), 'size' => $fileSize]);
 
         // Validate file size
         $contentLength = (int) $request->server->get('CONTENT_LENGTH', 0);
@@ -146,23 +148,23 @@ class AttachmentController extends AbstractController
         }
 
         $uploadDir = $uploadDir . '/' . $storageSubDir;
-        error_log('Upload directory: ' . $uploadDir);
-        error_log('Directory exists: ' . (is_dir($uploadDir) ? 'yes' : 'no'));
-        error_log('Directory writable: ' . (is_writable(dirname($uploadDir)) ? 'yes' : 'no'));
+        $this->logger->debug('Upload directory', ['path' => $uploadDir]);
+        $this->logger->debug('Directory status', ['exists' => is_dir($uploadDir), 'writable' => is_writable(dirname($uploadDir))]);
+        // Logged above with directory status
 
         if (!is_dir($uploadDir)) {
             if (!@mkdir($uploadDir, 0755, true) && !is_dir($uploadDir)) {
-                error_log('Failed to create directory: ' . $uploadDir);
+                $this->logger->error('Failed to create directory', ['path' => $uploadDir]);
                 return $this->json(['error' => 'Failed to create upload directory: ' . $uploadDir], 500);
             }
-            error_log('Created directory: ' . $uploadDir);
+            $this->logger->info('Created directory', ['path' => $uploadDir]);
         }
 
         try {
             $file->move($uploadDir, $newFilename);
-            error_log('File uploaded successfully: ' . $uploadDir . '/' . $newFilename);
+            $this->logger->info('File uploaded successfully', ['path' => $uploadDir . '/' . $newFilename]);
         } catch (FileException $e) {
-            error_log('Upload failed: ' . $e->getMessage());
+            $this->logger->error('Upload failed', ['error' => $e->getMessage()]);
             return $this->json(['error' => 'Failed to upload file: ' . $e->getMessage()], 500);
         }
 

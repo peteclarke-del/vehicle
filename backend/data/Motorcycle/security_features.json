@@ -1,0 +1,62 @@
+[
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Disc Lock",
+    "description": "Brake disc lock to prevent wheel rotation"
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Chain and Padlock",
+    "description": "Heavy-duty chain and padlock security"
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "U-Lock",
+    "description": "U-shaped lock for securing motorcycle"
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Alarm System",
+    "description": "Electronic alarm system to deter theft"
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "GPS Tracking",
+    "description": "GPS tracking device for vehicle location monitoring"
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Immobiliser",
+    "description": "Electronic immobiliser to prevent unauthorized starting"
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Ground Anchor",
+    "description": "Ground-mounted anchor point for chain security"
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Bike Cover",
+    "description": "Security cover to conceal motorcycle"
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Kill Switch",
+    "description": "Hidden switch to disable ignition"
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Steering Lock",
+    "description": "Built-in steering lock mechanism"
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Datatag/Security Marking",
+    "description": "Security marking or microdot identification system"
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Brake Lever Lock",
+    "description": "Lock mechanism for brake lever"
+  }
+]
