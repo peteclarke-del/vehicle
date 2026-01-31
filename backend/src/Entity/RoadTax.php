@@ -17,7 +17,7 @@ class RoadTax
     private ?int $id = null;
 
     #[ORM\ManyToOne(targetEntity: Vehicle::class, inversedBy: 'roadTaxRecords')]
-    #[ORM\JoinColumn(nullable: false)]
+    #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
     private ?Vehicle $vehicle = null;
 
     #[ORM\Column(type: 'date', nullable: true)]
