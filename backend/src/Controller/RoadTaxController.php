@@ -24,7 +24,7 @@ class RoadTaxController extends AbstractController
         $this->entityManager = $entityManager;
     }
 
-    #[Route('/road-tax', methods: ['GET'])]
+    #[Route('', methods: ['GET'])]
     public function list(Request $request): JsonResponse
     {
         $vehicleId = $request->query->get('vehicleId');
@@ -62,7 +62,7 @@ class RoadTaxController extends AbstractController
         return new JsonResponse(array_map(fn($r) => $this->serializeRoadTax($r), $records));
     }
 
-    #[Route('/road-tax', methods: ['POST'])]
+    #[Route('', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
@@ -87,7 +87,7 @@ class RoadTaxController extends AbstractController
         return new JsonResponse($this->serializeRoadTax($rt), 201);
     }
 
-    #[Route('/road-tax/{id}', methods: ['PUT'])]
+    #[Route('/{id}', methods: ['PUT'])]
     public function update(int $id, Request $request): JsonResponse
     {
         $rt = $this->entityManager->getRepository(RoadTax::class)->find($id);
@@ -108,7 +108,7 @@ class RoadTaxController extends AbstractController
         return new JsonResponse($this->serializeRoadTax($rt));
     }
 
-    #[Route('/road-tax/{id}', methods: ['DELETE'])]
+    #[Route('/{id}', methods: ['DELETE'])]
     public function delete(int $id): JsonResponse
     {
         $rt = $this->entityManager->getRepository(RoadTax::class)->find($id);
