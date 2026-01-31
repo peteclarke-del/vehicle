@@ -31,20 +31,22 @@ class VehicleTypeTest extends TestCase
         $this->assertSame('Sedan', $this->type->getName());
     }
 
-    public function testGetSetCategory(): void
-    {
-        $this->type->setCategory('Passenger Car');
-        
-        $this->assertSame('Passenger Car', $this->type->getCategory());
-    }
+    // Property removed - test disabled
+    // public function testGetSetCategory(): void
+    // {
+    //     $this->type->setCategory('Passenger Car');
+    //     
+    //     $this->assertSame('Passenger Car', $this->type->getCategory());
+    // }
 
-    public function testGetSetDescription(): void
-    {
-        $description = 'A sedan is a passenger car with a three-box configuration';
-        $this->type->setDescription($description);
-
-        $this->assertSame($description, $this->type->getDescription());
-    }
+    // Property removed - test disabled
+    // public function testGetSetDescription(): void
+    // {
+    //     $description = 'A sedan is a passenger car with a three-box configuration';
+    //     $this->type->setDescription($description);
+    //
+    //     $this->assertSame($description, $this->type->getDescription());
+    // }
 
     public function testAddVehicle(): void
     {
@@ -79,19 +81,21 @@ class VehicleTypeTest extends TestCase
         $this->assertCount(1, $this->type->getVehicles());
     }
 
-    public function testGetSetTypicalSeatingCapacity(): void
-    {
-        $this->type->setTypicalSeatingCapacity(5);
-        
-        $this->assertSame(5, $this->type->getTypicalSeatingCapacity());
-    }
+    // Property removed - test disabled
+    // public function testGetSetTypicalSeatingCapacity(): void
+    // {
+    //     $this->type->setTypicalSeatingCapacity(5);
+    //     
+    //     $this->assertSame(5, $this->type->getTypicalSeatingCapacity());
+    // }
 
-    public function testGetSetTypicalDoors(): void
-    {
-        $this->type->setTypicalDoors(4);
-        
-        $this->assertSame(4, $this->type->getTypicalDoors());
-    }
+    // Property removed - test disabled
+    // public function testGetSetTypicalDoors(): void
+    // {
+    //     $this->type->setTypicalDoors(4);
+    //     
+    //     $this->assertSame(4, $this->type->getTypicalDoors());
+    // }
 
     public function testToString(): void
     {
@@ -114,31 +118,35 @@ class VehicleTypeTest extends TestCase
         $this->assertSame(2, $this->type->getVehicleCount());
     }
 
-    public function testGetSetIconName(): void
-    {
-        $this->type->setIconName('directions_car');
-        
-        $this->assertSame('directions_car', $this->type->getIconName());
-    }
+    // Property removed - test disabled
+    // public function testGetSetIconName(): void
+    // {
+    //     $this->type->setIconName('directions_car');
+    //     
+    //     $this->assertSame('directions_car', $this->type->getIconName());
+    // }
 
-    public function testGetSetIsPopular(): void
-    {
-        $this->type->setIsPopular(true);
-        
-        $this->assertTrue($this->type->isPopular());
-    }
+    // Property removed - test disabled
+    // public function testGetSetIsPopular(): void
+    // {
+    //     $this->type->setIsPopular(true);
+    //     
+    //     $this->assertTrue($this->type->isPopular());
+    // }
 
-    public function testGetSetAvgInsuranceGroup(): void
-    {
-        $this->type->setAvgInsuranceGroup(15);
-        
-        $this->assertSame(15, $this->type->getAvgInsuranceGroup());
-    }
+    // Property removed - test disabled
+    // public function testGetSetAvgInsuranceGroup(): void
+    // {
+    //     $this->type->setAvgInsuranceGroup(15);
+    //     
+    //     $this->assertSame(15, $this->type->getAvgInsuranceGroup());
+    // }
 
-    public function testGetSetFuelEfficiencyRating(): void
-    {
-        $this->type->setFuelEfficiencyRating(3.5);
-        
-        $this->assertSame('3.5', $this->type->getFuelEfficiencyRating());
-    }
+    // Property removed - test disabled
+    // public function testGetSetFuelEfficiencyRating(): void
+    // {
+    //     $this->type->setFuelEfficiencyRating(3.5);
+    //     
+    //     $this->assertSame('3.5', $this->type->getFuelEfficiencyRating());
+    // }
 }

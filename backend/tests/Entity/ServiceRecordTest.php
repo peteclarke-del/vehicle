@@ -53,9 +53,9 @@ class ServiceRecordTest extends TestCase
     public function testSetAndGetLabourCost(): void
     {
         $record = new ServiceRecord();
-        $record->setLabourCost(150.00);
+        $record->setLaborCost(150.00);
         
-        $this->assertSame('150', $record->getLabourCost());
+        $this->assertSame('150', $record->getLaborCost());
     }
 
     public function testSetAndGetPartsCost(): void
@@ -77,13 +77,13 @@ class ServiceRecordTest extends TestCase
     public function testCalculateTotalCost(): void
     {
         $record = new ServiceRecord();
-        $record->setLabourCost(150.00);
+        $record->setLaborCost(150.00);
         $record->setPartsCost(100);
         $record->setAdditionalCosts(50);
         
-        // getTotalCost() only adds laborCost + partsCost (not additionalCosts)
+        // getTotalCost() adds laborCost + partsCost + additionalCosts
         $total = (float)$record->getTotalCost();
-        $this->assertEqualsWithDelta(250.0, $total, 0.01);
+        $this->assertEqualsWithDelta(300.0, $total, 0.01);
     }
 
     public function testSetAndGetMileage(): void
