@@ -17,7 +17,7 @@ class Consumable
     private ?int $id = null;
 
     #[ORM\ManyToOne(targetEntity: Vehicle::class, inversedBy: 'consumables')]
-    #[ORM\JoinColumn(nullable: false)]
+    #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
     private ?Vehicle $vehicle = null;
 
     #[ORM\ManyToOne(targetEntity: ConsumableType::class, inversedBy: 'consumables')]
