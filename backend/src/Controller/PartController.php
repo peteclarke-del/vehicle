@@ -20,12 +20,15 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\String\Slugger\SluggerInterface;
 use App\Controller\Trait\UserSecurityTrait;
+use App\Controller\Trait\AttachmentFileOrganizerTrait;
 
 #[Route('/api/parts')]
 class PartController extends AbstractController
 {
     use UserSecurityTrait;
+    use AttachmentFileOrganizerTrait;
 
     public function __construct(
         private EntityManagerInterface $entityManager,
@@ -33,7 +36,8 @@ class PartController extends AbstractController
         private UrlScraperService $scraperService,
         private LoggerInterface $logger,
         private RepairCostCalculator $repairCostCalculator,
-        private EntitySerializerService $serializer
+        private EntitySerializerService $serializer,
+        private SluggerInterface $slugger
     ) {
     }
 
@@ -375,6 +379,9 @@ class PartController extends AbstractController
                 // Update attachment's entity_id to link it to this part
                 $att->setEntityId($part->getId());
                 $att->setEntityType('part');
+                
+                // Reorganize file into proper directory structure
+                $this->reorganizeReceiptFile($att, $part->getVehicle());
             }
         }
         if (isset($data['productUrl'])) {

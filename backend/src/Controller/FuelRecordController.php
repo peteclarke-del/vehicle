@@ -9,16 +9,20 @@ use App\Entity\User;
 use App\Entity\Vehicle;
 use App\Entity\Attachment;
 use Doctrine\ORM\EntityManagerInterface;
+use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\String\Slugger\SluggerInterface;
 use App\Controller\Trait\UserSecurityTrait;
+use App\Controller\Trait\AttachmentFileOrganizerTrait;
 
 #[Route('/api/fuel-records')]
 class FuelRecordController extends AbstractController
 {
     use UserSecurityTrait;
+    use AttachmentFileOrganizerTrait;
 
     private const FUEL_TYPES = [
         'Biodiesel',
@@ -33,8 +37,11 @@ class FuelRecordController extends AbstractController
         'Super Unleaded',
     ];
 
-    public function __construct(private EntityManagerInterface $entityManager)
-    {
+    public function __construct(
+        private EntityManagerInterface $entityManager,
+        private LoggerInterface $logger,
+        private SluggerInterface $slugger
+    ) {
     }
 
     #[Route('/fuel-types', name: 'api_fuel_types', methods: ['GET'])]
@@ -225,6 +232,7 @@ class FuelRecordController extends AbstractController
                 // Update attachment's entity_id to link it to this fuel record
                 $att->setEntityId($record->getId());
                 $att->setEntityType('fuel');
+                $this->reorganizeReceiptFile($att, $record->getVehicle());
             }
         }
     }

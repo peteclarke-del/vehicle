@@ -80,6 +80,81 @@ class AttachmentController extends AbstractController
         return $this->getUploadDir() . '/' . $attachment->getFilename();
     }
 
+    /**
+     * Reorganize attachment file into proper directory structure based on vehicle and entity type
+     * Moves file from misc/ to <regno>/<entity_type>/ structure
+     *
+     * @param Attachment $attachment The attachment to reorganize
+     * @param Vehicle $vehicle The vehicle to organize under
+     * @return bool True if file was moved, false if already in correct location or error
+     */
+    private function reorganizeAttachmentFile(Attachment $attachment, Vehicle $vehicle): bool
+    {
+        $currentPath = $this->getAttachmentFilePath($attachment);
+        if (!file_exists($currentPath)) {
+            $this->logger->warning('Cannot reorganize - file not found', ['path' => $currentPath]);
+            return false;
+        }
+
+        $entityType = $attachment->getEntityType();
+        if (!$entityType) {
+            $this->logger->debug('No entity type set, skipping reorganization');
+            return false;
+        }
+
+        $reg = $vehicle->getRegistrationNumber() ?: $vehicle->getName() ?: ('vehicle-' . $vehicle->getId());
+        $regSlug = strtolower((string) $this->slugger->slug($reg));
+        
+        // New structure: <regno>/<entity_type>/
+        $newSubDir = $regSlug . '/' . $entityType;
+        $newDir = $this->getUploadDir() . '/' . $newSubDir;
+
+        // Check if already in correct location
+        $currentStoragePath = $attachment->getStoragePath();
+        if ($currentStoragePath && str_contains($currentStoragePath, $newSubDir . '/')) {
+            $this->logger->debug('File already in correct location', ['path' => $currentStoragePath]);
+            return false;
+        }
+
+        // Create new directory
+        if (!is_dir($newDir)) {
+            if (!@mkdir($newDir, 0755, true) && !is_dir($newDir)) {
+                $this->logger->error('Failed to create directory for reorganization', ['path' => $newDir]);
+                return false;
+            }
+        }
+
+        $filename = $attachment->getFilename();
+        $newPath = $newDir . '/' . $filename;
+
+        // Move the file
+        try {
+            if (!rename($currentPath, $newPath)) {
+                $this->logger->error('Failed to move file', ['from' => $currentPath, 'to' => $newPath]);
+                return false;
+            }
+
+            // Update storage path in attachment
+            $newStoragePath = 'attachments/' . $newSubDir . '/' . $filename;
+            $attachment->setStoragePath($newStoragePath);
+            
+            $this->logger->info('Reorganized attachment file', [
+                'from' => $currentStoragePath,
+                'to' => $newStoragePath,
+                'vehicle' => $reg
+            ]);
+
+            return true;
+        } catch (\Exception $e) {
+            $this->logger->error('Error reorganizing file', [
+                'error' => $e->getMessage(),
+                'from' => $currentPath,
+                'to' => $newPath
+            ]);
+            return false;
+        }
+    }
+
     #[Route('', methods: ['POST'])]
 
     /**
