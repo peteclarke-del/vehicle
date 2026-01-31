@@ -16,47 +16,18 @@ class VehicleImportExportControllerTest extends BaseWebTestCase
 {
     private string $token;
 
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->token = $this->getAuthToken();
-        // Ensure the schema is created for this test class to avoid
-        // intermittent SQLite 'no such column' errors in CI/local.
-        try {
-            static::bootKernel();
-            $container = static::getContainer();
-            if ($container->has('doctrine')) {
-                $doctrine = $container->get('doctrine');
-                $em = $doctrine->getManager();
-                $metadata = $em->getMetadataFactory()->getAllMetadata();
-                if (!empty($metadata)) {
-                    $schemaTool = new \Doctrine\ORM\Tools\SchemaTool($em);
-                    $schemaTool->dropSchema($metadata);
-                    $schemaTool->createSchema($metadata);
-                }
-            }
-        } catch (\Throwable) {
-            // allow the test to continue; failures will be surfaced by assertions
-        } finally {
-            try {
-                static::ensureKernelShutdown();
-            } catch (\Throwable) {
-            }
-        }
-        // Ensure client is available after kernel lifecycle operations
-        $this->client = static::createClient();
-    }
-
     public function testExportVehiclesRequiresAuthentication(): void
     {
-        $this->client->request('GET', '/api/vehicles/export');
+        $client = static::createClient();
+$client->request('GET', '/api/vehicles/export');
 
-        $this->assertTrue(in_array($this->client->getResponse()->getStatusCode(), [Response::HTTP_UNAUTHORIZED, Response::HTTP_FORBIDDEN]));
+        $this->assertTrue(in_array($client->getResponse()->getStatusCode(), [Response::HTTP_UNAUTHORIZED, Response::HTTP_FORBIDDEN]));
     }
 
     public function testExportVehiclesToCsv(): void
     {
-        $this->client->request('GET', '/api/vehicles/export?format=csv', [], [], [
+        $client = static::createClient();
+$client->request('GET', '/api/vehicles/export?format=csv', [], [], [
             'HTTP_X_TEST_MOCK_AUTH' => $this->getAuthToken(),
         ]);
 
@@ -67,21 +38,23 @@ class VehicleImportExportControllerTest extends BaseWebTestCase
 
     public function testExportVehiclesToJson(): void
     {
-        $this->client->request('GET', '/api/vehicles/export?format=json', [], [], [
+        $client = static::createClient();
+$client->request('GET', '/api/vehicles/export?format=json', [], [], [
             'HTTP_X_TEST_MOCK_AUTH' => $this->getAuthToken(),
         ]);
 
         $this->assertResponseIsSuccessful();
         $this->assertResponseHeaderSame('Content-Type', 'application/json');
         
-        $data = json_decode($this->client->getResponse()->getContent(), true);
+        $data = json_decode($client->getResponse()->getContent(), true);
         $this->assertArrayHasKey('vehicles', $data);
         $this->assertIsArray($data['vehicles']);
     }
 
     public function testExportVehiclesToExcel(): void
     {
-        $this->client->request('GET', '/api/vehicles/export?format=xlsx', [], [], [
+        $client = static::createClient();
+$client->request('GET', '/api/vehicles/export?format=xlsx', [], [], [
             'HTTP_X_TEST_MOCK_AUTH' => $this->getAuthToken(),
         ]);
 
@@ -91,11 +64,12 @@ class VehicleImportExportControllerTest extends BaseWebTestCase
 
     public function testExportIncludesAllVehicleFields(): void
     {
-        $this->client->request('GET', '/api/vehicles/export?format=csv', [], [], [
+        $client = static::createClient();
+$client->request('GET', '/api/vehicles/export?format=csv', [], [], [
             'HTTP_X_TEST_MOCK_AUTH' => $this->getAuthToken(),
         ]);
 
-        $content = $this->client->getResponse()->getContent();
+        $content = $client->getResponse()->getContent();
         $this->assertStringContainsString('registration', $content);
         $this->assertStringContainsString('make', $content);
         $this->assertStringContainsString('model', $content);
@@ -104,23 +78,25 @@ class VehicleImportExportControllerTest extends BaseWebTestCase
 
     public function testImportVehiclesRequiresAuthentication(): void
     {
-        $this->client->request('POST', '/api/vehicles/import');
+        $client = static::createClient();
+$client->request('POST', '/api/vehicles/import');
 
-        $this->assertTrue(in_array($this->client->getResponse()->getStatusCode(), [Response::HTTP_UNAUTHORIZED, Response::HTTP_FORBIDDEN]));
+        $this->assertTrue(in_array($client->getResponse()->getStatusCode(), [Response::HTTP_UNAUTHORIZED, Response::HTTP_FORBIDDEN]));
     }
 
     public function testImportVehiclesFromCsv(): void
     {
-        $csvContent = "registration,make,model,year,colour\nAB12 CDE,Toyota,Corolla,2020,Blue";
+        $client = static::createClient();
+$csvContent = "registration,make,model,year,colour\nAB12 CDE,Toyota,Corolla,2020,Blue";
         
-        $this->client->request('POST', '/api/vehicles/import', [], [], [
+        $client->request('POST', '/api/vehicles/import', [], [], [
             'HTTP_X_TEST_MOCK_AUTH' => $this->getAuthToken(),
             'CONTENT_TYPE' => 'text/csv',
         ], $csvContent);
 
         $this->assertResponseIsSuccessful();
         
-        $data = json_decode($this->client->getResponse()->getContent(), true);
+        $data = json_decode($client->getResponse()->getContent(), true);
         $this->assertArrayHasKey('imported', $data);
         $this->assertArrayHasKey('failed', $data);
         $this->assertSame(1, $data['imported']);
@@ -128,14 +104,15 @@ class VehicleImportExportControllerTest extends BaseWebTestCase
 
     public function testImportValidatesRequiredFields(): void
     {
-        $csvContent = "registration,make\nAB12 CDE,Toyota";
+        $client = static::createClient();
+$csvContent = "registration,make\nAB12 CDE,Toyota";
         
-        $this->client->request('POST', '/api/vehicles/import', [], [], [
+        $client->request('POST', '/api/vehicles/import', [], [], [
             'HTTP_X_TEST_MOCK_AUTH' => $this->getAuthToken(),
             'CONTENT_TYPE' => 'text/csv',
         ], $csvContent);
 
-        $data = json_decode($this->client->getResponse()->getContent(), true);
+        $data = json_decode($client->getResponse()->getContent(), true);
         $this->assertSame(0, $data['imported']);
         $this->assertSame(1, $data['failed']);
         $this->assertStringContainsString('model', $data['errors'][0]);
@@ -143,9 +120,10 @@ class VehicleImportExportControllerTest extends BaseWebTestCase
 
     public function testImportHandlesDuplicateRegistrations(): void
     {
-        $csvContent = "registration,make,model,year\nAB12 CDE,Toyota,Corolla,2020\nAB12 CDE,Honda,Civic,2021";
+        $client = static::createClient();
+$csvContent = "registration,make,model,year\nAB12 CDE,Toyota,Corolla,2020\nAB12 CDE,Honda,Civic,2021";
         
-        $this->client->request('POST', '/api/vehicles/import', [], [], [
+        $client->request('POST', '/api/vehicles/import', [], [], [
             'HTTP_X_TEST_MOCK_AUTH' => $this->getAuthToken(),
             'CONTENT_TYPE' => 'text/csv',
         ], $csvContent);
@@ -157,9 +135,10 @@ class VehicleImportExportControllerTest extends BaseWebTestCase
 
     public function testImportSupportsUpdateMode(): void
     {
-        $csvContent = "registration,make,model,year,colour\nAB12 CDE,Toyota,Corolla,2020,Blue";
+        $client = static::createClient();
+$csvContent = "registration,make,model,year,colour\nAB12 CDE,Toyota,Corolla,2020,Blue";
         
-        $this->client->request('POST', '/api/vehicles/import?mode=update', [], [], [
+        $client->request('POST', '/api/vehicles/import?mode=update', [], [], [
             'HTTP_X_TEST_MOCK_AUTH' => $this->getAuthToken(),
             'CONTENT_TYPE' => 'text/csv',
         ], $csvContent);
@@ -170,7 +149,8 @@ class VehicleImportExportControllerTest extends BaseWebTestCase
 
     public function testExportFiltersByDateRange(): void
     {
-        $this->client->request('GET', '/api/vehicles/export?format=csv&from=2020-01-01&to=2024-12-31', [], [], [
+        $client = static::createClient();
+$client->request('GET', '/api/vehicles/export?format=csv&from=2020-01-01&to=2024-12-31', [], [], [
             'HTTP_X_TEST_MOCK_AUTH' => $this->getAuthToken(),
         ]);
 
@@ -179,11 +159,12 @@ class VehicleImportExportControllerTest extends BaseWebTestCase
 
     public function testExportIncludesRelatedData(): void
     {
-        $this->client->request('GET', '/api/vehicles/export?format=json&include=records', [], [], [
+        $client = static::createClient();
+$client->request('GET', '/api/vehicles/export?format=json&include=records', [], [], [
             'HTTP_X_TEST_MOCK_AUTH' => $this->getAuthToken(),
         ]);
 
-        $data = json_decode($this->client->getResponse()->getContent(), true);
+        $data = json_decode($client->getResponse()->getContent(), true);
         $firstVehicle = $data['vehicles'][0] ?? null;
         
         if ($firstVehicle) {
@@ -193,9 +174,10 @@ class VehicleImportExportControllerTest extends BaseWebTestCase
 
     public function testImportValidatesFileSize(): void
     {
-        $largeContent = str_repeat("registration,make,model,year\nAB12 CDE,Toyota,Corolla,2020\n", 10000);
+        $client = static::createClient();
+$largeContent = str_repeat("registration,make,model,year\nAB12 CDE,Toyota,Corolla,2020\n", 10000);
         
-        $this->client->request('POST', '/api/vehicles/import', [], [], [
+        $client->request('POST', '/api/vehicles/import', [], [], [
             'HTTP_X_TEST_MOCK_AUTH' => $this->getAuthToken(),
             'CONTENT_TYPE' => 'text/csv',
         ], $largeContent);
@@ -205,25 +187,27 @@ class VehicleImportExportControllerTest extends BaseWebTestCase
 
     public function testExportGeneratesFilename(): void
     {
-        $this->client->request('GET', '/api/vehicles/export?format=csv', [], [], [
+        $client = static::createClient();
+$client->request('GET', '/api/vehicles/export?format=csv', [], [], [
             'HTTP_X_TEST_MOCK_AUTH' => $this->getAuthToken(),
         ]);
 
-        $contentDisposition = $this->client->getResponse()->headers->get('Content-Disposition');
+        $contentDisposition = $client->getResponse()->headers->get('Content-Disposition');
         $this->assertStringContainsString('vehicles_', $contentDisposition);
         $this->assertStringContainsString('.csv', $contentDisposition);
     }
 
     public function testImportReturnsDetailedReport(): void
     {
-        $csvContent = "registration,make,model,year\nAB12 CDE,Toyota,Corolla,2020";
+        $client = static::createClient();
+$csvContent = "registration,make,model,year\nAB12 CDE,Toyota,Corolla,2020";
         
-        $this->client->request('POST', '/api/vehicles/import', [], [], [
+        $client->request('POST', '/api/vehicles/import', [], [], [
             'HTTP_X_TEST_MOCK_AUTH' => $this->getAuthToken(),
             'CONTENT_TYPE' => 'text/csv',
         ], $csvContent);
 
-        $data = json_decode($this->client->getResponse()->getContent(), true);
+        $data = json_decode($client->getResponse()->getContent(), true);
         $this->assertArrayHasKey('imported', $data);
         $this->assertArrayHasKey('failed', $data);
         $this->assertArrayHasKey('total', $data);
@@ -231,7 +215,8 @@ class VehicleImportExportControllerTest extends BaseWebTestCase
 
     public function testImportCreatesTodosAndLinksParts(): void
     {
-        $vehiclesPayload = [
+        $client = static::createClient();
+$vehiclesPayload = [
             [
                 'name' => 'Import Todo Vehicle',
                 'vehicleType' => 'Car',
@@ -258,21 +243,21 @@ class VehicleImportExportControllerTest extends BaseWebTestCase
             ]
         ];
 
-        $this->client->request('POST', '/api/vehicles/import', [], [], [
+        $client->request('POST', '/api/vehicles/import', [], [], [
             'HTTP_X_TEST_MOCK_AUTH' => $this->getAuthToken(),
             'CONTENT_TYPE' => 'application/json',
         ], json_encode($vehiclesPayload));
 
         $this->assertResponseIsSuccessful();
-        $result = json_decode($this->client->getResponse()->getContent(), true);
+        $result = json_decode($client->getResponse()->getContent(), true);
         $this->assertArrayHasKey('imported', $result);
 
         // Now export JSON and assert the todo and linked part appear with installationDate applied
-        $this->client->request('GET', '/api/vehicles/export?format=json', [], [], [
+        $client->request('GET', '/api/vehicles/export?format=json', [], [], [
             'HTTP_X_TEST_MOCK_AUTH' => $this->getAuthToken(),
         ]);
         $this->assertResponseIsSuccessful();
-        $data = json_decode($this->client->getResponse()->getContent(), true);
+        $data = json_decode($client->getResponse()->getContent(), true);
         $found = null;
         foreach ($data['vehicles'] ?? [] as $v) {
             if (!empty($v['registrationNumber']) && $v['registrationNumber'] === 'IMP-TODO-1') {

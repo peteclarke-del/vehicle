@@ -18,14 +18,6 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class InsuranceControllerTest extends WebTestCase
 {
-    private ?KernelBrowser $client = null;
-    private ?string $token = null;
-
-    protected function setUp(): void
-    {
-        $this->client = static::createClient();
-        $this->token = $this->getAuthToken();
-    }
 
     /**
      * Get authentication token for testing
@@ -34,7 +26,7 @@ class InsuranceControllerTest extends WebTestCase
      */
     private function getAuthToken(): string
     {
-        $this->client->request(
+        $client->request(
             'POST',
             '/api/login',
             [],
@@ -46,7 +38,7 @@ class InsuranceControllerTest extends WebTestCase
             ])
         );
 
-        $data = json_decode($this->client->getResponse()->getContent(), true);
+        $data = json_decode($client->getResponse()->getContent(), true);
         return $data['token'] ?? '';
     }
 
@@ -55,11 +47,12 @@ class InsuranceControllerTest extends WebTestCase
      */
     public function testListInsuranceRequiresAuthentication(): void
     {
-        $this->client->request('GET', '/api/insurance?vehicleId=1');
+        $client = static::createClient();
+$client->request('GET', '/api/insurance?vehicleId=1');
         
         $this->assertEquals(
             Response::HTTP_UNAUTHORIZED,
-            $this->client->getResponse()->getStatusCode()
+            $client->getResponse()->getStatusCode()
         );
     }
 
@@ -68,15 +61,16 @@ class InsuranceControllerTest extends WebTestCase
      */
     public function testListInsuranceRequiresVehicleId(): void
     {
-        $this->client->request(
+        $client = static::createClient();
+$client->request(
             'GET',
             '/api/insurance',
             [],
             [],
-            ['HTTP_AUTHORIZATION' => 'Bearer ' . $this->token]
+            ['HTTP_AUTHORIZATION' => 'Bearer ' . $token]
         );
 
-        $response = $this->client->getResponse();
+        $response = $client->getResponse();
         $this->assertEquals(Response::HTTP_BAD_REQUEST, $response->getStatusCode());
         
         $data = json_decode($response->getContent(), true);
@@ -89,15 +83,16 @@ class InsuranceControllerTest extends WebTestCase
      */
     public function testListInsuranceForInvalidVehicle(): void
     {
-        $this->client->request(
+        $client = static::createClient();
+$client->request(
             'GET',
             '/api/insurance?vehicleId=99999',
             [],
             [],
-            ['HTTP_AUTHORIZATION' => 'Bearer ' . $this->token]
+            ['HTTP_AUTHORIZATION' => 'Bearer ' . $token]
         );
 
-        $response = $this->client->getResponse();
+        $response = $client->getResponse();
         $this->assertEquals(Response::HTTP_NOT_FOUND, $response->getStatusCode());
     }
 
@@ -106,7 +101,8 @@ class InsuranceControllerTest extends WebTestCase
      */
     public function testCreateInsurance(): void
     {
-        $insuranceData = [
+        $client = static::createClient();
+$insuranceData = [
             'vehicleId' => 1,
             'provider' => 'Test Insurance Co',
             'policyNumber' => 'POL123456',
@@ -117,19 +113,19 @@ class InsuranceControllerTest extends WebTestCase
             'notes' => 'Test policy notes'
         ];
 
-        $this->client->request(
+        $client->request(
             'POST',
             '/api/insurance',
             [],
             [],
             [
-                'HTTP_AUTHORIZATION' => 'Bearer ' . $this->token,
+                'HTTP_AUTHORIZATION' => 'Bearer ' . $token,
                 'CONTENT_TYPE' => 'application/json'
             ],
             json_encode($insuranceData)
         );
 
-        $response = $this->client->getResponse();
+        $response = $client->getResponse();
         $this->assertEquals(Response::HTTP_CREATED, $response->getStatusCode());
 
         $data = json_decode($response->getContent(), true);
@@ -145,24 +141,25 @@ class InsuranceControllerTest extends WebTestCase
      */
     public function testUpdateInsurance(): void
     {
-        $updatedData = [
+        $client = static::createClient();
+$updatedData = [
             'provider' => 'Updated Insurance Co',
             'annualCost' => 700.00
         ];
 
-        $this->client->request(
+        $client->request(
             'PUT',
             '/api/insurance/1',
             [],
             [],
             [
-                'HTTP_AUTHORIZATION' => 'Bearer ' . $this->token,
+                'HTTP_AUTHORIZATION' => 'Bearer ' . $token,
                 'CONTENT_TYPE' => 'application/json'
             ],
             json_encode($updatedData)
         );
 
-        $response = $this->client->getResponse();
+        $response = $client->getResponse();
         $this->assertEquals(Response::HTTP_OK, $response->getStatusCode());
 
         $data = json_decode($response->getContent(), true);
@@ -175,19 +172,20 @@ class InsuranceControllerTest extends WebTestCase
      */
     public function testUpdateNonExistentInsurance(): void
     {
-        $this->client->request(
+        $client = static::createClient();
+$client->request(
             'PUT',
             '/api/insurance/99999',
             [],
             [],
             [
-                'HTTP_AUTHORIZATION' => 'Bearer ' . $this->token,
+                'HTTP_AUTHORIZATION' => 'Bearer ' . $token,
                 'CONTENT_TYPE' => 'application/json'
             ],
             json_encode(['provider' => 'Test'])
         );
 
-        $response = $this->client->getResponse();
+        $response = $client->getResponse();
         $this->assertEquals(Response::HTTP_NOT_FOUND, $response->getStatusCode());
     }
 
@@ -196,15 +194,16 @@ class InsuranceControllerTest extends WebTestCase
      */
     public function testDeleteInsurance(): void
     {
-        $this->client->request(
+        $client = static::createClient();
+$client->request(
             'DELETE',
             '/api/insurance/1',
             [],
             [],
-            ['HTTP_AUTHORIZATION' => 'Bearer ' . $this->token]
+            ['HTTP_AUTHORIZATION' => 'Bearer ' . $token]
         );
 
-        $response = $this->client->getResponse();
+        $response = $client->getResponse();
         $this->assertEquals(Response::HTTP_OK, $response->getStatusCode());
 
         $data = json_decode($response->getContent(), true);
@@ -217,15 +216,16 @@ class InsuranceControllerTest extends WebTestCase
      */
     public function testDeleteNonExistentInsurance(): void
     {
-        $this->client->request(
+        $client = static::createClient();
+$client->request(
             'DELETE',
             '/api/insurance/99999',
             [],
             [],
-            ['HTTP_AUTHORIZATION' => 'Bearer ' . $this->token]
+            ['HTTP_AUTHORIZATION' => 'Bearer ' . $token]
         );
 
-        $response = $this->client->getResponse();
+        $response = $client->getResponse();
         $this->assertEquals(Response::HTTP_NOT_FOUND, $response->getStatusCode());
     }
 
@@ -234,8 +234,9 @@ class InsuranceControllerTest extends WebTestCase
      */
     public function testUserCannotAccessOtherUsersInsurance(): void
     {
-        // Create second user and get their token
-        $this->client->request(
+        $client = static::createClient();
+// Create second user and get their token
+        $client->request(
             'POST',
             '/api/register',
             [],
@@ -252,7 +253,7 @@ class InsuranceControllerTest extends WebTestCase
         $otherToken = $this->getAuthToken();
 
         // Try to access first user's insurance
-        $this->client->request(
+        $client->request(
             'GET',
             '/api/insurance?vehicleId=1',
             [],
@@ -260,14 +261,14 @@ class InsuranceControllerTest extends WebTestCase
             ['HTTP_AUTHORIZATION' => 'Bearer ' . $otherToken]
         );
 
-        $response = $this->client->getResponse();
+        $response = $client->getResponse();
         $this->assertEquals(Response::HTTP_NOT_FOUND, $response->getStatusCode());
     }
 
     protected function tearDown(): void
     {
         parent::tearDown();
-        $this->client = null;
-        $this->token = null;
+        $client = null;
+        $token = null;
     }
 }

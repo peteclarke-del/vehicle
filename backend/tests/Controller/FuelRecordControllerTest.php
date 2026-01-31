@@ -14,13 +14,6 @@ use Symfony\Bundle\FrameworkBundle\KernelBrowser;
  */
 class FuelRecordControllerTest extends WebTestCase
 {
-    private KernelBrowser $client;
-
-    protected function setUp(): void
-    {
-        $this->client = static::createClient();
-    }
-
     private function getAuthToken(): string
     {
         return 'Bearer mock-jwt-token-12345';
@@ -28,13 +21,15 @@ class FuelRecordControllerTest extends WebTestCase
 
     public function testListFuelRecordsRequiresAuthentication(): void
     {
-        $this->client->request('GET', '/api/fuel-records');
+        $client = static::createClient();
+        $client->request('GET', '/api/fuel-records');
         $this->assertResponseStatusCodeSame(401);
     }
 
     public function testListFuelRecordsForVehicle(): void
     {
-        $this->client->request(
+        $client = static::createClient();
+        $client->request(
             'GET',
             '/api/fuel-records?vehicleId=1',
             [],
@@ -48,6 +43,7 @@ class FuelRecordControllerTest extends WebTestCase
 
     public function testCreateFuelRecord(): void
     {
+        $client = static::createClient();
         $fuelData = [
             'vehicleId' => 1,
             'date' => '2026-01-15',
@@ -60,7 +56,7 @@ class FuelRecordControllerTest extends WebTestCase
             'fullTank' => true,
         ];
 
-        $this->client->request(
+        $client->request(
             'POST',
             '/api/fuel-records',
             [],
@@ -73,7 +69,7 @@ class FuelRecordControllerTest extends WebTestCase
         );
 
         $this->assertResponseStatusCodeSame(201);
-        $data = json_decode($this->client->getResponse()->getContent(), true);
+        $data = json_decode($client->getResponse()->getContent(), true);
         
         $this->assertArrayHasKey('id', $data);
         $this->assertSame(45.5, $data['litres']);
@@ -82,7 +78,8 @@ class FuelRecordControllerTest extends WebTestCase
 
     public function testCalculateFuelEconomy(): void
     {
-        // First fill-up
+        $client = static::createClient();
+// First fill-up
         $fuel1 = [
             'vehicleId' => 1,
             'date' => '2026-01-01',
@@ -92,7 +89,7 @@ class FuelRecordControllerTest extends WebTestCase
             'fullTank' => true,
         ];
 
-        $this->client->request(
+        $client->request(
             'POST',
             '/api/fuel-records',
             [],
@@ -114,7 +111,7 @@ class FuelRecordControllerTest extends WebTestCase
             'fullTank' => true,
         ];
 
-        $this->client->request(
+        $client->request(
             'POST',
             '/api/fuel-records',
             [],
@@ -126,7 +123,7 @@ class FuelRecordControllerTest extends WebTestCase
             json_encode($fuel2)
         );
 
-        $this->client->request(
+        $client->request(
             'GET',
             '/api/fuel-records/economy?vehicleId=1',
             [],
@@ -135,7 +132,7 @@ class FuelRecordControllerTest extends WebTestCase
         );
 
         $this->assertResponseIsSuccessful();
-        $data = json_decode($this->client->getResponse()->getContent(), true);
+        $data = json_decode($client->getResponse()->getContent(), true);
         
         $this->assertArrayHasKey('averageMpg', $data);
         $this->assertArrayHasKey('averageLitresPer100km', $data);
@@ -144,7 +141,8 @@ class FuelRecordControllerTest extends WebTestCase
 
     public function testUpdateFuelRecord(): void
     {
-        $createData = [
+        $client = static::createClient();
+$createData = [
             'vehicleId' => 1,
             'date' => '2026-01-10',
             'mileage' => 48000,
@@ -152,7 +150,7 @@ class FuelRecordControllerTest extends WebTestCase
             'cost' => 75.00,
         ];
 
-        $this->client->request(
+        $client->request(
             'POST',
             '/api/fuel-records',
             [],
@@ -164,7 +162,7 @@ class FuelRecordControllerTest extends WebTestCase
             json_encode($createData)
         );
 
-        $createResponse = json_decode($this->client->getResponse()->getContent(), true);
+        $createResponse = json_decode($client->getResponse()->getContent(), true);
         $fuelId = $createResponse['id'];
 
         $updateData = [
@@ -172,7 +170,7 @@ class FuelRecordControllerTest extends WebTestCase
             'station' => 'BP Station',
         ];
 
-        $this->client->request(
+        $client->request(
             'PUT',
             '/api/fuel-records/' . $fuelId,
             [],
@@ -185,7 +183,7 @@ class FuelRecordControllerTest extends WebTestCase
         );
 
         $this->assertResponseIsSuccessful();
-        $data = json_decode($this->client->getResponse()->getContent(), true);
+        $data = json_decode($client->getResponse()->getContent(), true);
         
         $this->assertSame(72.50, $data['cost']);
         $this->assertSame('BP Station', $data['station']);
@@ -193,7 +191,8 @@ class FuelRecordControllerTest extends WebTestCase
 
     public function testDeleteFuelRecord(): void
     {
-        $createData = [
+        $client = static::createClient();
+$createData = [
             'vehicleId' => 1,
             'date' => '2026-01-10',
             'mileage' => 45000,
@@ -201,7 +200,7 @@ class FuelRecordControllerTest extends WebTestCase
             'cost' => 60.00,
         ];
 
-        $this->client->request(
+        $client->request(
             'POST',
             '/api/fuel-records',
             [],
@@ -213,10 +212,10 @@ class FuelRecordControllerTest extends WebTestCase
             json_encode($createData)
         );
 
-        $createResponse = json_decode($this->client->getResponse()->getContent(), true);
+        $createResponse = json_decode($client->getResponse()->getContent(), true);
         $fuelId = $createResponse['id'];
 
-        $this->client->request(
+        $client->request(
             'DELETE',
             '/api/fuel-records/' . $fuelId,
             [],
@@ -229,7 +228,8 @@ class FuelRecordControllerTest extends WebTestCase
 
     public function testGetTotalFuelCost(): void
     {
-        $this->client->request(
+        $client = static::createClient();
+$client->request(
             'GET',
             '/api/fuel-records/total-cost?vehicleId=1',
             [],
@@ -238,7 +238,7 @@ class FuelRecordControllerTest extends WebTestCase
         );
 
         $this->assertResponseIsSuccessful();
-        $data = json_decode($this->client->getResponse()->getContent(), true);
+        $data = json_decode($client->getResponse()->getContent(), true);
         
         $this->assertArrayHasKey('totalCost', $data);
         $this->assertArrayHasKey('totalLitres', $data);
@@ -247,7 +247,8 @@ class FuelRecordControllerTest extends WebTestCase
 
     public function testGetFuelEconomyTrend(): void
     {
-        $this->client->request(
+        $client = static::createClient();
+$client->request(
             'GET',
             '/api/fuel-records/economy-trend?vehicleId=1',
             [],
@@ -256,7 +257,7 @@ class FuelRecordControllerTest extends WebTestCase
         );
 
         $this->assertResponseIsSuccessful();
-        $data = json_decode($this->client->getResponse()->getContent(), true);
+        $data = json_decode($client->getResponse()->getContent(), true);
         
         $this->assertArrayHasKey('trend', $data);
         $this->assertIsArray($data['trend']);
@@ -264,7 +265,8 @@ class FuelRecordControllerTest extends WebTestCase
 
     public function testFilterByDateRange(): void
     {
-        $this->client->request(
+        $client = static::createClient();
+$client->request(
             'GET',
             '/api/fuel-records?vehicleId=1&startDate=2026-01-01&endDate=2026-12-31',
             [],
@@ -277,7 +279,8 @@ class FuelRecordControllerTest extends WebTestCase
 
     public function testCalculateCostPerMile(): void
     {
-        $this->client->request(
+        $client = static::createClient();
+$client->request(
             'GET',
             '/api/fuel-records/cost-per-mile?vehicleId=1',
             [],
@@ -286,7 +289,7 @@ class FuelRecordControllerTest extends WebTestCase
         );
 
         $this->assertResponseIsSuccessful();
-        $data = json_decode($this->client->getResponse()->getContent(), true);
+        $data = json_decode($client->getResponse()->getContent(), true);
         
         $this->assertArrayHasKey('costPerMile', $data);
         $this->assertIsFloat($data['costPerMile']);
@@ -294,7 +297,8 @@ class FuelRecordControllerTest extends WebTestCase
 
     public function testGetMonthlyCostAverage(): void
     {
-        $this->client->request(
+        $client = static::createClient();
+$client->request(
             'GET',
             '/api/fuel-records/monthly-average?vehicleId=1',
             [],
@@ -303,14 +307,15 @@ class FuelRecordControllerTest extends WebTestCase
         );
 
         $this->assertResponseIsSuccessful();
-        $data = json_decode($this->client->getResponse()->getContent(), true);
+        $data = json_decode($client->getResponse()->getContent(), true);
         
         $this->assertArrayHasKey('monthlyAverage', $data);
     }
 
     public function testUserCannotAccessOtherUsersFuelRecords(): void
     {
-        $createData = [
+        $client = static::createClient();
+$createData = [
             'vehicleId' => 1,
             'date' => '2026-01-10',
             'mileage' => 45000,
@@ -318,7 +323,7 @@ class FuelRecordControllerTest extends WebTestCase
             'cost' => 60.00,
         ];
 
-        $this->client->request(
+        $client->request(
             'POST',
             '/api/fuel-records',
             [],
@@ -330,12 +335,12 @@ class FuelRecordControllerTest extends WebTestCase
             json_encode($createData)
         );
 
-        $createResponse = json_decode($this->client->getResponse()->getContent(), true);
+        $createResponse = json_decode($client->getResponse()->getContent(), true);
         $fuelId = $createResponse['id'];
 
         $differentUserToken = 'Bearer different-user-token';
 
-        $this->client->request(
+        $client->request(
             'GET',
             '/api/fuel-records/' . $fuelId,
             [],
