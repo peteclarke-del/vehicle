@@ -19,10 +19,12 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
+use App\Controller\Trait\UserSecurityTrait;
 
 #[Route('/api/parts')]
 class PartController extends AbstractController
 {
+    use UserSecurityTrait;
     public function __construct(
         private EntityManagerInterface $entityManager,
         private ReceiptOcrService $ocrService,
@@ -196,15 +198,6 @@ class PartController extends AbstractController
         if (!$part || (!$this->isAdminForUser($user) && $part->getVehicle()->getOwner()->getId() !== $user->getId())) {
             return $this->json(['error' => 'Part not found'], 404);
         }
-    }
-
-    private function isAdminForUser(?User $user): bool
-    {
-        if (!$user) {
-            return false;
-        }
-        $roles = $user->getRoles() ?: [];
-        return in_array('ROLE_ADMIN', $roles, true);
 
         $motId = $part->getMotRecord()?->getId();
 

@@ -20,22 +20,19 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
+use App\Controller\Trait\UserSecurityTrait;
 
 #[Route('/api')]
 class ServiceRecordController extends AbstractController
 {
+    use UserSecurityTrait;
+
     public function __construct(
         private EntityManagerInterface $entityManager,
         private LoggerInterface $logger,
         private RepairCostCalculator $repairCostCalculator,
         private ValidatorInterface $validator
     ) {
-    }
-
-    private function getUserEntity(): ?User
-    {
-        $user = $this->getUser();
-        return $user instanceof User ? $user : null;
     }
 
     #[Route('/service-records', methods: ['GET'])]

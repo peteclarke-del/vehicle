@@ -11,23 +11,17 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
+use App\Controller\Trait\UserSecurityTrait;
 
 #[Route('/api/vehicles')]
 class VinDecoderController extends AbstractController
 {
+    use UserSecurityTrait;
+
     public function __construct(
         private EntityManagerInterface $entityManager,
         private VinDecoderService $vinDecoderService
     ) {
-    }
-
-    private function isAdminForUser(?\App\Entity\User $user): bool
-    {
-        if (!$user) {
-            return false;
-        }
-        $roles = $user->getRoles() ?: [];
-        return in_array('ROLE_ADMIN', $roles, true);
     }
 
     #[Route('/{id}/vin-decode', name: 'api_vehicle_vin_decode', methods: ['GET'])]

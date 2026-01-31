@@ -18,6 +18,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
+use App\Controller\Trait\UserSecurityTrait;
 
 #[Route('/api/consumables')]
 
@@ -26,6 +27,7 @@ use Symfony\Component\Routing\Annotation\Route;
  */
 class ConsumableController extends AbstractController
 {
+    use UserSecurityTrait;
     /**
      * function __construct
      *
@@ -276,22 +278,6 @@ class ConsumableController extends AbstractController
         }
 
         return $this->json(['message' => 'Consumable deleted successfully']);
-    }
-
-    /**
-     * function isAdminForUser
-     *
-     * @param User $user
-     *
-     * @return bool
-     */
-    private function isAdminForUser(?User $user): bool
-    {
-        if (!$user) {
-            return false;
-        }
-        $roles = $user->getRoles() ?: [];
-        return in_array('ROLE_ADMIN', $roles, true);
     }
 
     /**

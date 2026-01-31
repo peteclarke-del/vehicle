@@ -18,6 +18,7 @@ use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\String\Slugger\SluggerInterface;
 use App\Service\ReceiptOcrService;
 use App\Entity\Vehicle;
+use App\Controller\Trait\UserSecurityTrait;
 
 #[Route('/api/attachments')]
 
@@ -26,6 +27,7 @@ use App\Entity\Vehicle;
  */
 class AttachmentController extends AbstractController
 {
+    use UserSecurityTrait;
     private const ALLOWED_MIME_TYPES = [
         'image/jpeg',
         'image/png',
@@ -75,17 +77,6 @@ class AttachmentController extends AbstractController
         }
 
         return $this->getUploadDir() . '/' . $attachment->getFilename();
-    }
-
-    /**
-     * function getUserEntity
-     *
-     * @return \App\Entity\User
-     */
-    private function getUserEntity(): ?\App\Entity\User
-    {
-        $user = $this->getUser();
-        return $user instanceof \App\Entity\User ? $user : null;
     }
 
     #[Route('', methods: ['POST'])]

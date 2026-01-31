@@ -40,32 +40,7 @@ use Symfony\Contracts\Cache\TagAwareCacheInterface;
  */
 class VehicleImportExportController extends AbstractController
 {
-    /**
-     * function getUserEntity
-     *
-     * @return \App\Entity\User
-     */
-    private function getUserEntity(): ?\App\Entity\User
-    {
-        $user = $this->getUser();
-        return $user instanceof \App\Entity\User ? $user : null;
-    }
-
-    /**
-     * function isAdminForUser
-     *
-     * @param \App\Entity\User $user
-     *
-     * @return bool
-     */
-    private function isAdminForUser(?\App\Entity\User $user): bool
-    {
-        if (!$user) {
-            return false;
-        }
-        $roles = $user->getRoles() ?: [];
-        return in_array('ROLE_ADMIN', $roles, true);
-    }
+    use UserSecurityTrait;
 
     #[Route('/export', name: 'vehicles_export', methods: ['GET'])]
 

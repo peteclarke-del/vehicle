@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Controller\Trait\UserSecurityTrait;
 use App\Entity\InsurancePolicy;
 use App\Entity\Vehicle;
 use Doctrine\ORM\EntityManagerInterface;
@@ -15,26 +16,12 @@ use Symfony\Component\Routing\Annotation\Route;
 #[Route('/api')]
 class InsuranceController extends AbstractController
 {
+    use UserSecurityTrait;
     private EntityManagerInterface $entityManager;
 
     public function __construct(EntityManagerInterface $entityManager)
     {
         $this->entityManager = $entityManager;
-    }
-
-    private function getUserEntity(): ?\App\Entity\User
-    {
-        $user = $this->getUser();
-        return $user instanceof \App\Entity\User ? $user : null;
-    }
-
-    private function isAdminForUser(?\App\Entity\User $user): bool
-    {
-        if (!$user) {
-            return false;
-        }
-        $roles = $user->getRoles() ?: [];
-        return in_array('ROLE_ADMIN', $roles, true);
     }
 
     #[Route('/insurance/policies', methods: ['GET'])]

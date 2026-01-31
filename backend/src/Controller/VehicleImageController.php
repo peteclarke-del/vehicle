@@ -15,6 +15,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\String\Slugger\SluggerInterface;
+use App\Controller\Trait\UserSecurityTrait;
 
 #[Route('/api')]
 
@@ -23,6 +24,7 @@ use Symfony\Component\String\Slugger\SluggerInterface;
  */
 class VehicleImageController extends AbstractController
 {
+    use UserSecurityTrait;
     /**
      * function __construct
      *
@@ -311,17 +313,6 @@ class VehicleImageController extends AbstractController
     }
 
     /**
-     * function getUserEntity
-     *
-     * @return User
-     */
-    private function getUserEntity(): ?User
-    {
-        $user = $this->getUser();
-        return $user instanceof User ? $user : null;
-    }
-
-    /**
      * function canAccessVehicle
      *
      * @param User $user
@@ -337,17 +328,5 @@ class VehicleImageController extends AbstractController
 
         $owner = $vehicle->getOwner();
         return $owner instanceof User && $owner->getId() === $user->getId();
-    }
-
-    /**
-     * function isAdminForUser
-     *
-     * @param User $user
-     *
-     * @return bool
-     */
-    private function isAdminForUser(User $user): bool
-    {
-        return in_array('ROLE_ADMIN', $user->getRoles(), true);
     }
 }

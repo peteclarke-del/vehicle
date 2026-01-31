@@ -18,6 +18,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\Routing\Annotation\Route;
+use App\Controller\Trait\UserSecurityTrait;
 
 #[Route('/api/notifications')]
 
@@ -26,6 +27,7 @@ use Symfony\Component\Routing\Annotation\Route;
  */
 class NotificationController extends AbstractController
 {
+    use UserSecurityTrait;
     private const DEFAULT_SETTINGS = [
         'dueSoonDays' => 30,
         'todoDueSoonDays' => 30,
@@ -655,22 +657,5 @@ class NotificationController extends AbstractController
         }
 
         return $label !== '' ? $label : $name;
-    }
-
-    /**
-     * function isAdminForUser
-     *
-     * @param User $user
-     *
-     * @return bool
-     */
-    private function isAdminForUser(?User $user): bool
-    {
-        if (!($user instanceof User)) {
-            return false;
-        }
-
-        $roles = $user->getRoles();
-        return in_array('ROLE_ADMIN', $roles, true);
     }
 }
