@@ -122,7 +122,7 @@ const response = await api.get('/attachments', {
 
 ### Export (ZIP)
 
-Attachments are exported in the manifest with all metadata:
+Attachments are exported in the manifest with all metadata including the organized storage path:
 
 ```json
 {
@@ -134,48 +134,115 @@ Attachments are exported in the manifest with all metadata:
   "mimeType": "application/pdf",
   "fileSize": 5242880,
   "uploadedAt": "2026-01-30T12:34:56+00:00",
-  "entityType": "vehicle",
-  "entityId": 1,
-  "description": "Official service manual",
-  "storagePath": "attachments/vehicle-1/service_manual.pdf",
-  "category": "service_manual"
+  "entityType": "part",
+  "entityId": 456,
+  "description": "Receipt for oil filter",
+  "storagePath": "attachments/bt14-udj/part/receipt_xyz.jpg",
+  "category": "receipt"
 }
 ```
+
+Files are exported with their current organized structure (`<regno>/<entity_type>/`).
 
 ### Import (ZIP)
 
-When importing, the system:
+The import process handles ID remapping and file reorganization:
 
-1. **Creates new attachment entities** from manifest
-2. **Sets all fields including category** (was missing before fix)
-3. **Maps old IDs to new IDs** for reference integrity
-4. **Remaps entity_id** after vehicles/parts/services are created with new IDs
+1. **Extract files and create attachment entities**
+   - Files extracted from ZIP with temporary `uniqid()` filenames
+   - Initial storage in flat structure (e.g., `attachments/att_abc123_receipt.jpg`)
+   - Attachment entities created with OLD entity_id from export
+
+2. **Import vehicles, parts, services, etc.**
+   - New entities created with NEW IDs
+   - Receipt attachments linked via receiptAttachmentId mapping
+
+3. **Remap entity_id and reorganize files**
+   - Scan all imported attachments
+   - For vehicle attachments: Update entity_id to NEW vehicle ID
+   - For receipts: Find parent entity (part/service/MOT/fuel/consumable) and update entity_id
+   - Call `reorganizeReceiptFile()` to move files into proper structure
+   - Files moved from flat structure to `<regno>/<entity_type>/`
 
 ```php
-// Import creates attachment with OLD entityId first
-$attachment->setEntityId($manifestData['entityId']); // OLD ID
-
-// After vehicles are created, remap to NEW IDs
-if ($entityType === 'vehicle' && isset($vehicleIdMap[$oldEntityId])) {
-    $newVehicle = $vehicleIdMap[$oldEntityId];
-    $attachment->setEntityId($newVehicle->getId());  // NEW ID
-    $attachment->setVehicle($newVehicle);            // Set FK relationship
+// After import creates new vehicle with new ID
+foreach ($attachmentEntitiesByNewId as $attachment) {
+    $entityType = $attachment->getEntityType();
+    $oldEntityId = $attachment->getEntityId();
+    
+    // Remap vehicle attachments
+    if ($entityType === 'vehicle' && isset($vehicleIdMap[$oldEntityId])) {
+        $newVehicle = $vehicleIdMap[$oldEntityId];
+        $attachment->setEntityId($newVehicle->getId());  // NEW ID
+        $attachment->setVehicle($newVehicle);            // Set FK
+        $this->reorganizeReceiptFile($attachment, $newVehicle);
+    }
+    
+    // Remap receipt attachments (part, service, mot, fuel, consumable)
+    if ($entityType === 'part') {
+        // Find the part that owns this receipt
+        foreach ($vehicleIdMap as $newVehicle) {
+            foreach ($newVehicle->getParts() as $part) {
+                if ($part->getReceiptAttachment()?->getId() === $attachment->getId()) {
+                    $attachment->setEntityId($part->getId());  // NEW part ID
+                    $this->reorganizeReceiptFile($attachment, $newVehicle);
+                }
+            }
+        }
+    }
+    // Similar logic for service, mot, fuel, consumable...
 }
 ```
+
+**Result**: After import, all files are organized in the proper directory structure matching the original export, with entity_id correctly mapped to new IDs.
 
 ## Storage Structure
 
 ```
 uploads/
   attachments/
-    vehicle-1/           # Organized by vehicle
-      manual_abc123.pdf
-      spec_def456.pdf
-    vehicle-2/
-      manual_ghi789.pdf
-    misc/                # Non-vehicle attachments
-      receipt_jkl012.jpg
+    bt14-udj/              # Vehicle registration as slug
+      part/                # Parts receipts
+        receipt_abc123.jpg
+      service/             # Service receipts
+        invoice_def456.pdf
+      mot/                 # MOT receipts
+        mot_cert_ghi789.pdf
+      fuel/                # Fuel receipts
+        fuel_jkl012.jpg
+      consumable/          # Consumable receipts
+        oil_mno345.jpg
+      manual_pqr678.pdf    # Vehicle documents (flat in vehicle dir)
+      spec_stu901.pdf
+    wp18-gso/              # Another vehicle
+      part/
+        receipt_vwx234.jpg
+    misc/                  # Temporary for unlinked uploads
+      orphan_receipt.jpg
 ```
+
+### File Organization Rules
+
+1. **Initial Upload**: Files go to `misc/` (no entity_id yet)
+2. **After Linking**: Automatically reorganized to `<regno>/<entity_type>/`
+3. **Import**: Initially flat, then reorganized during entity_id remapping
+4. **Vehicle Documents**: Stored flat in vehicle directory (no subdirectory)
+5. **Receipts**: Always in subdirectory by entity type
+
+### Automatic Reorganization
+
+Files are automatically moved when:
+- Receipt is attached to a part/service/MOT/fuel record/consumable
+- Import completes and entity_id is remapped
+- Entity is saved with `receiptAttachmentId` set
+
+This is handled by `AttachmentFileOrganizerTrait::reorganizeReceiptFile()` in:
+- PartController
+- ServiceRecordController
+- MotRecordController
+- FuelRecordController
+- ConsumableController
+- VehicleImportExportController (during import)
 
 ## Common Issues and Solutions
 
