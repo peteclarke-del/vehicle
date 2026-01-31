@@ -78,11 +78,19 @@ class VehicleImportExportController extends AbstractController
                 return new JsonResponse(['error' => 'Unauthorized'], 401);
             }
 
-            $logger->info('[export] JSON started', ['userId' => $user->getId()]);
+            // Check if this export is for ZIP/full export (includes attachment references)
+            // or JSON-only export (excludes attachment references)
+            $includeAttachmentRefs = $request->query->getBoolean('includeAttachmentRefs', false);
+
+            $logger->info('[export] JSON started', [
+                'userId' => $user->getId(),
+                'includeAttachmentRefs' => $includeAttachmentRefs
+            ]);
 
             $logger->info('Export JSON started', [
                 'userId' => $user->getId(),
-                'query' => $request->query->all()
+                'query' => $request->query->all(),
+                'includeAttachmentRefs' => $includeAttachmentRefs
             ]);
 
             // Fetch vehicle IDs first to avoid heavy eager-loading joins
@@ -135,17 +143,20 @@ class VehicleImportExportController extends AbstractController
                 // Export fuel records
                     $fuelRecords = [];
                     foreach ($vehicle->getFuelRecords() as $fuelRecord) {
-                        $fuelRecords[] = [
-                        'date' => $fuelRecord->getDate()?->format('Y-m-d'),
-                        'litres' => $fuelRecord->getLitres(),
-                        'cost' => $fuelRecord->getCost(),
-                        'mileage' => $fuelRecord->getMileage(),
-                        'fuelType' => $fuelRecord->getFuelType(),
-                        'station' => $fuelRecord->getStation(),
-                        'notes' => $fuelRecord->getNotes(),
-                        'receiptAttachmentOriginalId' => $fuelRecord->getReceiptAttachment()?->getId(),
-                        'createdAt' => $fuelRecord->getCreatedAt()?->format('c'),
+                        $record = [
+                            'date' => $fuelRecord->getDate()?->format('Y-m-d'),
+                            'litres' => $fuelRecord->getLitres(),
+                            'cost' => $fuelRecord->getCost(),
+                            'mileage' => $fuelRecord->getMileage(),
+                            'fuelType' => $fuelRecord->getFuelType(),
+                            'station' => $fuelRecord->getStation(),
+                            'notes' => $fuelRecord->getNotes(),
+                            'createdAt' => $fuelRecord->getCreatedAt()?->format('c'),
                         ];
+                        if ($includeAttachmentRefs) {
+                            $record['receiptAttachmentOriginalId'] = $fuelRecord->getReceiptAttachment()?->getId();
+                        }
+                        $fuelRecords[] = $record;
                     }
 
                 // Export parts
@@ -155,29 +166,32 @@ class VehicleImportExportController extends AbstractController
                         if ($part->getMotRecord() || $part->getServiceRecord()) {
                             continue;
                         }
-                        $parts[] = [
-                        'id' => $part->getId(),
-                        'name' => $part->getName(),
-                        'price' => $part->getPrice(),
-                        'sku' => $part->getSku(),
-                        'quantity' => $part->getQuantity(),
-                        'warrantyMonths' => $part->getWarranty(),
-                        'imageUrl' => $part->getImageUrl(),
-                        'purchaseDate' => $part->getPurchaseDate()?->format('Y-m-d'),
-                        'description' => $part->getDescription(),
-                        'partNumber' => $part->getPartNumber(),
-                        'manufacturer' => $part->getManufacturer(),
-                        'supplier' => $part->getSupplier(),
-                        'cost' => $part->getCost(),
-                        'partCategory' => $part->getPartCategory()?->getName(),
-                        'partCategoryId' => $part->getPartCategory()?->getId(),
-                        'installationDate' => $part->getInstallationDate()?->format('Y-m-d'),
-                        'mileageAtInstallation' => $part->getMileageAtInstallation(),
-                        'notes' => $part->getNotes(),
-                        'receiptAttachmentOriginalId' => $part->getReceiptAttachment()?->getId(),
-                        'productUrl' => $part->getProductUrl(),
-                        'createdAt' => $part->getCreatedAt()?->format('c'),
+                        $partData = [
+                            'id' => $part->getId(),
+                            'name' => $part->getName(),
+                            'price' => $part->getPrice(),
+                            'sku' => $part->getSku(),
+                            'quantity' => $part->getQuantity(),
+                            'warrantyMonths' => $part->getWarranty(),
+                            'imageUrl' => $part->getImageUrl(),
+                            'purchaseDate' => $part->getPurchaseDate()?->format('Y-m-d'),
+                            'description' => $part->getDescription(),
+                            'partNumber' => $part->getPartNumber(),
+                            'manufacturer' => $part->getManufacturer(),
+                            'supplier' => $part->getSupplier(),
+                            'cost' => $part->getCost(),
+                            'partCategory' => $part->getPartCategory()?->getName(),
+                            'partCategoryId' => $part->getPartCategory()?->getId(),
+                            'installationDate' => $part->getInstallationDate()?->format('Y-m-d'),
+                            'mileageAtInstallation' => $part->getMileageAtInstallation(),
+                            'notes' => $part->getNotes(),
+                            'productUrl' => $part->getProductUrl(),
+                            'createdAt' => $part->getCreatedAt()?->format('c'),
                         ];
+                        if ($includeAttachmentRefs) {
+                            $partData['receiptAttachmentOriginalId'] = $part->getReceiptAttachment()?->getId();
+                        }
+                        $parts[] = $partData;
                     }
 
                 // Export consumables
@@ -187,7 +201,7 @@ class VehicleImportExportController extends AbstractController
                         if ($consumable->getMotRecord() || $consumable->getServiceRecord()) {
                             continue;
                         }
-                        $consumables[] = [
+                        $consumableData = [
                         'id' => $consumable->getId(),
                         'description' => $consumable->getDescription(),
                         'brand' => $consumable->getBrand(),
@@ -201,11 +215,14 @@ class VehicleImportExportController extends AbstractController
                         'mileageAtChange' => $consumable->getMileageAtChange(),
                         'cost' => $consumable->getCost(),
                         'notes' => $consumable->getNotes(),
-                        'receiptAttachmentOriginalId' => $consumable->getReceiptAttachment()?->getId(),
                         'productUrl' => $consumable->getProductUrl(),
                         'createdAt' => $consumable->getCreatedAt()?->format('c'),
                         'updatedAt' => $consumable->getUpdatedAt()?->format('c'),
                         ];
+                        if ($includeAttachmentRefs) {
+                            $consumableData['receiptAttachmentOriginalId'] = $consumable->getReceiptAttachment()?->getId();
+                        }
+                        $consumables[] = $consumableData;
                     }
 
                 // Export service records - already loaded via JOIN
@@ -215,7 +232,7 @@ class VehicleImportExportController extends AbstractController
                         if ($serviceRecord->getMotRecord()) {
                             continue;
                         }
-                        $serviceRecordsData[] = [
+                        $serviceData = [
                         'serviceDate' => $serviceRecord->getServiceDate()?->format('Y-m-d'),
                         'serviceType' => $serviceRecord->getServiceType(),
                         'laborCost' => $serviceRecord->getLaborCost(),
@@ -228,9 +245,59 @@ class VehicleImportExportController extends AbstractController
                         'nextServiceMileage' => $serviceRecord->getNextServiceMileage(),
                         'workPerformed' => $serviceRecord->getWorkPerformed(),
                         'notes' => $serviceRecord->getNotes(),
-                        'items' => array_map(function ($it) {
+                        'items' => array_map(function ($it) use ($includeAttachmentRefs) {
                             $part = $it->getPart();
                             $consumable = $it->getConsumable();
+
+                            $partData = null;
+                            if ($part) {
+                                $partData = [
+                                    'price' => $part->getPrice(),
+                                    'quantity' => $part->getQuantity(),
+                                    'id' => $part->getId(),
+                                    'description' => $part->getDescription(),
+                                    'partNumber' => $part->getPartNumber(),
+                                    'manufacturer' => $part->getManufacturer(),
+                                    'supplier' => $part->getSupplier(),
+                                    'cost' => $part->getCost(),
+                                    'partCategory' => $part->getPartCategory()?->getName(),
+                                    'partCategoryId' => $part->getPartCategory()?->getId(),
+                                    'purchaseDate' => $part->getPurchaseDate()?->format('Y-m-d'),
+                                    'installationDate' => $part->getInstallationDate()?->format('Y-m-d'),
+                                    'mileageAtInstallation' => $part->getMileageAtInstallation(),
+                                    'notes' => $part->getNotes(),
+                                    'productUrl' => $part->getProductUrl(),
+                                    'createdAt' => $part->getCreatedAt()?->format('c'),
+                                ];
+                                if ($includeAttachmentRefs) {
+                                    $partData['receiptAttachmentOriginalId'] = $part->getReceiptAttachment()?->getId();
+                                }
+                            }
+
+                            $consumableData = null;
+                            if ($consumable) {
+                                $consumableData = [
+                                    'id' => $consumable->getId(),
+                                    'consumableType' => $consumable->getConsumableType()->getName(),
+                                    'description' => $consumable->getDescription(),
+                                    'brand' => $consumable->getBrand(),
+                                    'partNumber' => $consumable->getPartNumber(),
+                                    'supplier' => $consumable->getSupplier(),
+                                    'replacementIntervalMiles' => $consumable->getReplacementIntervalMiles(),
+                                    'nextReplacementMileage' => $consumable->getNextReplacementMileage(),
+                                    'quantity' => $consumable->getQuantity(),
+                                    'lastChanged' => $consumable->getLastChanged()?->format('Y-m-d'),
+                                    'mileageAtChange' => $consumable->getMileageAtChange(),
+                                    'cost' => $consumable->getCost(),
+                                    'notes' => $consumable->getNotes(),
+                                    'productUrl' => $consumable->getProductUrl(),
+                                    'createdAt' => $consumable->getCreatedAt()?->format('c'),
+                                    'updatedAt' => $consumable->getUpdatedAt()?->format('c'),
+                                ];
+                                if ($includeAttachmentRefs) {
+                                    $consumableData['receiptAttachmentOriginalId'] = $consumable->getReceiptAttachment()?->getId();
+                                }
+                            }
 
                             return [
                             'type' => $it->getType(),
@@ -239,49 +306,16 @@ class VehicleImportExportController extends AbstractController
                             'quantity' => $it->getQuantity(),
                             'consumableId' => $consumable?->getId(),
                             'partId' => $part?->getId(),
-                            'part' => $part ? [
-                                'price' => $part->getPrice(),
-                                'quantity' => $part->getQuantity(),
-                                'id' => $part->getId(),
-                                'description' => $part->getDescription(),
-                                'partNumber' => $part->getPartNumber(),
-                                'manufacturer' => $part->getManufacturer(),
-                                'supplier' => $part->getSupplier(),
-                                'cost' => $part->getCost(),
-                                'partCategory' => $part->getPartCategory()?->getName(),
-                                'partCategoryId' => $part->getPartCategory()?->getId(),
-                                'purchaseDate' => $part->getPurchaseDate()?->format('Y-m-d'),
-                                'installationDate' => $part->getInstallationDate()?->format('Y-m-d'),
-                                'mileageAtInstallation' => $part->getMileageAtInstallation(),
-                                'notes' => $part->getNotes(),
-                                'receiptAttachmentOriginalId' => $part->getReceiptAttachment()?->getId(),
-                                'productUrl' => $part->getProductUrl(),
-                                'createdAt' => $part->getCreatedAt()?->format('c'),
-                            ] : null,
-                            'consumable' => $consumable ? [
-                                'id' => $consumable->getId(),
-                                'consumableType' => $consumable->getConsumableType()->getName(),
-                                'description' => $consumable->getDescription(),
-                                'brand' => $consumable->getBrand(),
-                                'partNumber' => $consumable->getPartNumber(),
-                                'supplier' => $consumable->getSupplier(),
-                                'replacementIntervalMiles' => $consumable->getReplacementIntervalMiles(),
-                                'nextReplacementMileage' => $consumable->getNextReplacementMileage(),
-                                'quantity' => $consumable->getQuantity(),
-                                'lastChanged' => $consumable->getLastChanged()?->format('Y-m-d'),
-                                'mileageAtChange' => $consumable->getMileageAtChange(),
-                                'cost' => $consumable->getCost(),
-                                'notes' => $consumable->getNotes(),
-                                'receiptAttachmentOriginalId' => $consumable->getReceiptAttachment()?->getId(),
-                                'productUrl' => $consumable->getProductUrl(),
-                                'createdAt' => $consumable->getCreatedAt()?->format('c'),
-                                'updatedAt' => $consumable->getUpdatedAt()?->format('c'),
-                            ] : null,
+                            'part' => $partData,
+                            'consumable' => $consumableData,
                             ];
                         }, $serviceRecord->getItems()),
-                            'receiptAttachmentOriginalId' => $serviceRecord->getReceiptAttachment()?->getId(),
                             'createdAt' => $serviceRecord->getCreatedAt()?->format('c'),
                         ];
+                        if ($includeAttachmentRefs) {
+                            $serviceData['receiptAttachmentOriginalId'] = $serviceRecord->getReceiptAttachment()?->getId();
+                        }
+                        $serviceRecordsData[] = $serviceData;
                     }
 
                 // Export MOT records - already loaded via JOIN, no additional query needed
@@ -291,43 +325,49 @@ class VehicleImportExportController extends AbstractController
                         $motParts = [];
                         foreach ($vehicle->getParts() as $part) {
                             if ($part->getMotRecord() && $part->getMotRecord()->getId() === $motRecord->getId()) {
-                                $motParts[] = [
-                                'price' => $part->getPrice(),
-                                'quantity' => $part->getQuantity(),
-                                'purchaseDate' => $part->getPurchaseDate()?->format('Y-m-d'),
-                                'description' => $part->getDescription(),
-                                'partNumber' => $part->getPartNumber(),
-                                'manufacturer' => $part->getManufacturer(),
-                                'supplier' => $part->getSupplier(),
-                                'cost' => $part->getCost(),
-                                'installationDate' => $part->getInstallationDate()?->format('Y-m-d'),
-                                'mileageAtInstallation' => $part->getMileageAtInstallation(),
-                                'notes' => $part->getNotes(),
-                                'receiptAttachmentOriginalId' => $part->getReceiptAttachment()?->getId(),
-                                'productUrl' => $part->getProductUrl(),
-                                'createdAt' => $part->getCreatedAt()?->format('c'),
+                                $motPartData = [
+                                    'price' => $part->getPrice(),
+                                    'quantity' => $part->getQuantity(),
+                                    'purchaseDate' => $part->getPurchaseDate()?->format('Y-m-d'),
+                                    'description' => $part->getDescription(),
+                                    'partNumber' => $part->getPartNumber(),
+                                    'manufacturer' => $part->getManufacturer(),
+                                    'supplier' => $part->getSupplier(),
+                                    'cost' => $part->getCost(),
+                                    'installationDate' => $part->getInstallationDate()?->format('Y-m-d'),
+                                    'mileageAtInstallation' => $part->getMileageAtInstallation(),
+                                    'notes' => $part->getNotes(),
+                                    'productUrl' => $part->getProductUrl(),
+                                    'createdAt' => $part->getCreatedAt()?->format('c'),
                                 ];
+                                if ($includeAttachmentRefs) {
+                                    $motPartData['receiptAttachmentOriginalId'] = $part->getReceiptAttachment()?->getId();
+                                }
+                                $motParts[] = $motPartData;
                             }
                         }
 
                         $motConsumables = [];
                         foreach ($vehicle->getConsumables() as $consumable) {
                             if ($consumable->getMotRecord() && $consumable->getMotRecord()->getId() === $motRecord->getId()) {
-                                $motConsumables[] = [
-                                'consumableType' => $consumable->getConsumableType()->getName(),
-                                'description' => $consumable->getDescription(),
-                                'brand' => $consumable->getBrand(),
-                                'partNumber' => $consumable->getPartNumber(),
-                                'supplier' => $consumable->getSupplier(),
-                                'quantity' => $consumable->getQuantity(),
-                                'lastChanged' => $consumable->getLastChanged()?->format('Y-m-d'),
-                                'mileageAtChange' => $consumable->getMileageAtChange(),
-                                'cost' => $consumable->getCost(),
-                                'notes' => $consumable->getNotes(),
-                                'receiptAttachmentOriginalId' => $consumable->getReceiptAttachment()?->getId(),
-                                'productUrl' => $consumable->getProductUrl(),
-                                'createdAt' => $consumable->getCreatedAt()?->format('c'),
+                                $motConsumableData = [
+                                    'consumableType' => $consumable->getConsumableType()->getName(),
+                                    'description' => $consumable->getDescription(),
+                                    'brand' => $consumable->getBrand(),
+                                    'partNumber' => $consumable->getPartNumber(),
+                                    'supplier' => $consumable->getSupplier(),
+                                    'quantity' => $consumable->getQuantity(),
+                                    'lastChanged' => $consumable->getLastChanged()?->format('Y-m-d'),
+                                    'mileageAtChange' => $consumable->getMileageAtChange(),
+                                    'cost' => $consumable->getCost(),
+                                    'notes' => $consumable->getNotes(),
+                                    'productUrl' => $consumable->getProductUrl(),
+                                    'createdAt' => $consumable->getCreatedAt()?->format('c'),
                                 ];
+                                if ($includeAttachmentRefs) {
+                                    $motConsumableData['receiptAttachmentOriginalId'] = $consumable->getReceiptAttachment()?->getId();
+                                }
+                                $motConsumables[] = $motConsumableData;
                             }
                         }
 
@@ -335,95 +375,115 @@ class VehicleImportExportController extends AbstractController
                         // Use already-loaded service records instead of querying again
                         foreach ($vehicle->getServiceRecords() as $svc) {
                             if ($svc->getMotRecord() && $svc->getMotRecord()->getId() === $motRecord->getId()) {
-                                $motServiceRecords[] = [
-                                'serviceDate' => $svc->getServiceDate()?->format('Y-m-d'),
-                                'serviceType' => $svc->getServiceType(),
-                                'laborCost' => $svc->getLaborCost(),
-                                'partsCost' => $svc->getPartsCost(),
-                                'consumablesCost' => $svc->getConsumablesCost(),
-                                'mileage' => $svc->getMileage(),
-                                'serviceProvider' => $svc->getServiceProvider(),
-                                'workPerformed' => $svc->getWorkPerformed(),
-                                'additionalCosts' => $svc->getAdditionalCosts(),
-                                'nextServiceDate' => $svc->getNextServiceDate()?->format('Y-m-d'),
-                                'nextServiceMileage' => $svc->getNextServiceMileage(),
-                                'items' => array_map(function ($it) {
-                                    $part = $it->getPart();
-                                    $consumable = $it->getConsumable();
+                                $motSvcData = [
+                                    'serviceDate' => $svc->getServiceDate()?->format('Y-m-d'),
+                                    'serviceType' => $svc->getServiceType(),
+                                    'laborCost' => $svc->getLaborCost(),
+                                    'partsCost' => $svc->getPartsCost(),
+                                    'consumablesCost' => $svc->getConsumablesCost(),
+                                    'mileage' => $svc->getMileage(),
+                                    'serviceProvider' => $svc->getServiceProvider(),
+                                    'workPerformed' => $svc->getWorkPerformed(),
+                                    'additionalCosts' => $svc->getAdditionalCosts(),
+                                    'nextServiceDate' => $svc->getNextServiceDate()?->format('Y-m-d'),
+                                    'nextServiceMileage' => $svc->getNextServiceMileage(),
+                                    'items' => array_map(function ($it) use ($includeAttachmentRefs) {
+                                        $part = $it->getPart();
+                                        $consumable = $it->getConsumable();
 
-                                    return [
-                                    'type' => $it->getType(),
-                                    'description' => $it->getDescription(),
-                                    'cost' => $it->getCost(),
-                                    'quantity' => $it->getQuantity(),
-                                    'consumableId' => $consumable?->getId(),
-                                    'partId' => $part?->getId(),
-                                    'part' => $part ? [
-                                        'price' => $part->getPrice(),
-                                        'quantity' => $part->getQuantity(),
-                                        'id' => $part->getId(),
-                                        'description' => $part->getDescription(),
-                                        'partNumber' => $part->getPartNumber(),
-                                        'manufacturer' => $part->getManufacturer(),
-                                        'supplier' => $part->getSupplier(),
-                                        'cost' => $part->getCost(),
-                                        'purchaseDate' => $part->getPurchaseDate()?->format('Y-m-d'),
-                                        'installationDate' => $part->getInstallationDate()?->format('Y-m-d'),
-                                        'mileageAtInstallation' => $part->getMileageAtInstallation(),
-                                        'notes' => $part->getNotes(),
-                                        'receiptAttachmentOriginalId' => $part->getReceiptAttachment()?->getId(),
-                                        'productUrl' => $part->getProductUrl(),
-                                        'createdAt' => $part->getCreatedAt()?->format('c'),
-                                    ] : null,
-                                    'consumable' => $consumable ? [
-                                        'id' => $consumable->getId(),
-                                        'consumableType' => $consumable->getConsumableType()->getName(),
-                                        'description' => $consumable->getDescription(),
-                                        'brand' => $consumable->getBrand(),
-                                        'partNumber' => $consumable->getPartNumber(),
-                                        'supplier' => $consumable->getSupplier(),
-                                        'replacementIntervalMiles' => $consumable->getReplacementIntervalMiles(),
-                                        'nextReplacementMileage' => $consumable->getNextReplacementMileage(),
-                                        'quantity' => $consumable->getQuantity(),
-                                        'lastChanged' => $consumable->getLastChanged()?->format('Y-m-d'),
-                                        'mileageAtChange' => $consumable->getMileageAtChange(),
-                                        'cost' => $consumable->getCost(),
-                                        'notes' => $consumable->getNotes(),
-                                        'receiptAttachmentOriginalId' => $consumable->getReceiptAttachment()?->getId(),
-                                        'productUrl' => $consumable->getProductUrl(),
-                                        'createdAt' => $consumable->getCreatedAt()?->format('c'),
-                                        'updatedAt' => $consumable->getUpdatedAt()?->format('c'),
-                                    ] : null,
-                                    ];
-                                }, $svc->getItems()),
+                                        $partData = null;
+                                        if ($part) {
+                                            $partData = [
+                                                'price' => $part->getPrice(),
+                                                'quantity' => $part->getQuantity(),
+                                                'id' => $part->getId(),
+                                                'description' => $part->getDescription(),
+                                                'partNumber' => $part->getPartNumber(),
+                                                'manufacturer' => $part->getManufacturer(),
+                                                'supplier' => $part->getSupplier(),
+                                                'cost' => $part->getCost(),
+                                                'purchaseDate' => $part->getPurchaseDate()?->format('Y-m-d'),
+                                                'installationDate' => $part->getInstallationDate()?->format('Y-m-d'),
+                                                'mileageAtInstallation' => $part->getMileageAtInstallation(),
+                                                'notes' => $part->getNotes(),
+                                                'productUrl' => $part->getProductUrl(),
+                                                'createdAt' => $part->getCreatedAt()?->format('c'),
+                                            ];
+                                            if ($includeAttachmentRefs) {
+                                                $partData['receiptAttachmentOriginalId'] = $part->getReceiptAttachment()?->getId();
+                                            }
+                                        }
+
+                                        $consumableData = null;
+                                        if ($consumable) {
+                                            $consumableData = [
+                                                'id' => $consumable->getId(),
+                                                'consumableType' => $consumable->getConsumableType()->getName(),
+                                                'description' => $consumable->getDescription(),
+                                                'brand' => $consumable->getBrand(),
+                                                'partNumber' => $consumable->getPartNumber(),
+                                                'supplier' => $consumable->getSupplier(),
+                                                'replacementIntervalMiles' => $consumable->getReplacementIntervalMiles(),
+                                                'nextReplacementMileage' => $consumable->getNextReplacementMileage(),
+                                                'quantity' => $consumable->getQuantity(),
+                                                'lastChanged' => $consumable->getLastChanged()?->format('Y-m-d'),
+                                                'mileageAtChange' => $consumable->getMileageAtChange(),
+                                                'cost' => $consumable->getCost(),
+                                                'notes' => $consumable->getNotes(),
+                                                'productUrl' => $consumable->getProductUrl(),
+                                                'createdAt' => $consumable->getCreatedAt()?->format('c'),
+                                                'updatedAt' => $consumable->getUpdatedAt()?->format('c'),
+                                            ];
+                                            if ($includeAttachmentRefs) {
+                                                $consumableData['receiptAttachmentOriginalId'] = $consumable->getReceiptAttachment()?->getId();
+                                            }
+                                        }
+
+                                        return [
+                                        'type' => $it->getType(),
+                                        'description' => $it->getDescription(),
+                                        'cost' => $it->getCost(),
+                                        'quantity' => $it->getQuantity(),
+                                        'consumableId' => $consumable?->getId(),
+                                        'partId' => $part?->getId(),
+                                        'part' => $partData,
+                                        'consumable' => $consumableData,
+                                        ];
+                                    }, $svc->getItems()),
                                     'notes' => $svc->getNotes(),
-                                    'receiptAttachmentOriginalId' => $svc->getReceiptAttachment()?->getId(),
                                     'createdAt' => $svc->getCreatedAt()?->format('c'),
                                 ];
+                                if ($includeAttachmentRefs) {
+                                    $motSvcData['receiptAttachmentOriginalId'] = $svc->getReceiptAttachment()?->getId();
+                                }
+                                $motServiceRecords[] = $motSvcData;
                             }
                         }
 
-                        $motRecordsData[] = [
-                        'testDate' => $motRecord->getTestDate()?->format('Y-m-d'),
-                        'expiryDate' => $motRecord->getExpiryDate()?->format('Y-m-d'),
-                        'result' => $motRecord->getResult(),
-                        'testCost' => $motRecord->getTestCost(),
-                        'repairCost' => $motRecord->getRepairCost(),
-                        'mileage' => $motRecord->getMileage(),
-                        'testCenter' => $motRecord->getTestCenter(),
-                        'motTestNumber' => $motRecord->getMotTestNumber(),
-                        'testerName' => $motRecord->getTesterName(),
-                        'isRetest' => $motRecord->isRetest(),
-                        'receiptAttachmentOriginalId' => $motRecord->getReceiptAttachment()?->getId(),
-                        'advisories' => $motRecord->getAdvisories(),
-                        'failures' => $motRecord->getFailures(),
-                        'repairDetails' => $motRecord->getRepairDetails(),
-                        'notes' => $motRecord->getNotes(),
-                        'parts' => $motParts,
-                        'consumables' => $motConsumables,
-                        'serviceRecords' => $motServiceRecords,
-                        'createdAt' => $motRecord->getCreatedAt()?->format('c'),
+                        $motRecordData = [
+                            'testDate' => $motRecord->getTestDate()?->format('Y-m-d'),
+                            'expiryDate' => $motRecord->getExpiryDate()?->format('Y-m-d'),
+                            'result' => $motRecord->getResult(),
+                            'testCost' => $motRecord->getTestCost(),
+                            'repairCost' => $motRecord->getRepairCost(),
+                            'mileage' => $motRecord->getMileage(),
+                            'testCenter' => $motRecord->getTestCenter(),
+                            'motTestNumber' => $motRecord->getMotTestNumber(),
+                            'testerName' => $motRecord->getTesterName(),
+                            'isRetest' => $motRecord->isRetest(),
+                            'advisories' => $motRecord->getAdvisories(),
+                            'failures' => $motRecord->getFailures(),
+                            'repairDetails' => $motRecord->getRepairDetails(),
+                            'notes' => $motRecord->getNotes(),
+                            'parts' => $motParts,
+                            'consumables' => $motConsumables,
+                            'serviceRecords' => $motServiceRecords,
+                            'createdAt' => $motRecord->getCreatedAt()?->format('c'),
                         ];
+                        if ($includeAttachmentRefs) {
+                            $motRecordData['receiptAttachmentOriginalId'] = $motRecord->getReceiptAttachment()?->getId();
+                        }
+                        $motRecordsData[] = $motRecordData;
                     }
 
                 // Export insurance records
@@ -680,8 +740,12 @@ class VehicleImportExportController extends AbstractController
                 'query' => $request->query->all()
             ]);
 
+            // Add flag to include attachment references for ZIP export
+            $modifiedRequest = $request->duplicate();
+            $modifiedRequest->query->set('includeAttachmentRefs', '1');
+
             // reuse export() to get vehicles JSON
-            $exportResponse = $this->export($request, $entityManager, $logger);
+            $exportResponse = $this->export($modifiedRequest, $entityManager, $logger);
             if ($exportResponse->getStatusCode() >= 400) {
                 $logger->error('Export ZIP failed: export() returned error', [
                     'status' => $exportResponse->getStatusCode(),
