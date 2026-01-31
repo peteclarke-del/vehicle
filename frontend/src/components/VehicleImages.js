@@ -68,7 +68,8 @@ const VehicleImages = ({ vehicle }) => {
     const files = event.target.files;
     await processFiles(files);
     event.target.value = '';
-  };\n
+  };
+
   const processFiles = async (files) => {
     if (!files || files.length === 0) return;
 
