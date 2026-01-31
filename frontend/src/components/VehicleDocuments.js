@@ -29,6 +29,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import KnightRiderLoader from './KnightRiderLoader';
 import AttachmentViewerDialog from './AttachmentViewerDialog';
+import { useDragDrop } from '../hooks/useDragDrop';
 
 const VehicleDocuments = ({ vehicle, category }) => {
   const { api } = useAuth();
@@ -67,6 +68,22 @@ const VehicleDocuments = ({ vehicle, category }) => {
 
   const handleUpload = async (event) => {
     const file = event.target.files[0];
+    if (file) {
+      await processFile(file);
+      event.target.value = ''; // Reset file input
+    }
+  };
+
+  const handleFileDrop = async (files) => {
+    const file = files[0];
+    if (file) {
+      await processFile(file);
+    }
+  };
+
+  const { isDragging, dragHandlers } = useDragDrop(handleFileDrop);
+
+  const processFile = async (file) => {
     if (!file) return;
 
     setUploading(true);
@@ -88,7 +105,6 @@ const VehicleDocuments = ({ vehicle, category }) => {
         },
       });
       setDescription('');
-      event.target.value = ''; // Reset file input
       await loadDocuments();
     } catch (err) {
       console.error('Error uploading document:', err);
@@ -179,7 +195,20 @@ const VehicleDocuments = ({ vehicle, category }) => {
       <CardContent>
         <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
           <Typography variant="h6">{getCategoryLabel()}</Typography>
-          <Box display="flex" gap={2} alignItems="center">
+          <Box 
+            display="flex" 
+            gap={2} 
+            alignItems="center"
+            {...dragHandlers}
+            sx={{
+              p: 1,
+              borderRadius: 1,
+              border: '2px dashed',
+              borderColor: isDragging ? 'primary.main' : 'transparent',
+              bgcolor: isDragging ? 'action.hover' : 'transparent',
+              transition: 'all 0.2s ease'
+            }}
+          >
             <TextField
               size="small"
               placeholder={t('common.description')}
@@ -193,7 +222,7 @@ const VehicleDocuments = ({ vehicle, category }) => {
               startIcon={uploading ? <KnightRiderLoader size={16} /> : <UploadIcon />}
               disabled={uploading}
             >
-              {t('common.upload')}
+              {isDragging ? (t('attachment.dropHere') || 'Drop here') : t('common.upload')}
               <input
                 type="file"
                 hidden

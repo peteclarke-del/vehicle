@@ -26,6 +26,7 @@ import { useTranslation } from 'react-i18next';
 import { useDistance } from '../hooks/useDistance';
 import KnightRiderLoader from './KnightRiderLoader';
 import AttachmentViewerDialog from './AttachmentViewerDialog';
+import { useDragDrop } from '../hooks/useDragDrop';
 
 const FuelRecordDialog = ({ open, record, vehicleId, onClose }) => {
   const [formData, setFormData] = useState({
@@ -45,6 +46,15 @@ const FuelRecordDialog = ({ open, record, vehicleId, onClose }) => {
   const { api } = useAuth();
   const { t } = useTranslation();
   const { convert, toKm, getLabel } = useDistance();
+
+  const handleReceiptDrop = async (files) => {
+    const file = files[0];
+    if (file) {
+      await handleReceiptUpload({ target: { files: [file] } });
+    }
+  };
+
+  const { isDragging, dragHandlers } = useDragDrop(handleReceiptDrop);
 
   useEffect(() => {
     loadFuelTypes();
@@ -285,15 +295,18 @@ const FuelRecordDialog = ({ open, record, vehicleId, onClose }) => {
             </Grid>
             <Grid item xs={12}>
               <Box
+                {...dragHandlers}
                 sx={{
-                  border: '1px solid',
-                  borderColor: 'divider',
+                  border: '2px dashed',
+                  borderColor: isDragging ? 'primary.main' : 'divider',
                   borderRadius: 1,
                   height: '56px',
                   display: 'flex',
                   alignItems: 'center',
                   px: 2,
                   cursor: !formData.receiptAttachmentId && !receiptFile ? 'pointer' : 'default',
+                  bgcolor: isDragging ? 'action.hover' : 'transparent',
+                  transition: 'all 0.2s ease',
                   '&:hover': !formData.receiptAttachmentId && !receiptFile ? {
                     bgcolor: 'action.hover',
                     borderColor: 'primary.main'
@@ -321,7 +334,7 @@ const FuelRecordDialog = ({ open, record, vehicleId, onClose }) => {
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                       <UploadIcon color="action" />
                       <Typography variant="body2" color="textSecondary">
-                        {t('attachment.uploadReceipt')}
+                        {isDragging ? (t('attachment.dropHere') || 'Drop here') : t('attachment.uploadReceipt')}
                       </Typography>
                     </Box>
                   )

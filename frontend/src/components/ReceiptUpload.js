@@ -15,6 +15,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import KnightRiderLoader from './KnightRiderLoader';
 import AttachmentViewerDialog from './AttachmentViewerDialog';
+import { useDragDrop } from '../hooks/useDragDrop';
 
 export default function ReceiptUpload({ 
   entityType, 
@@ -28,8 +29,7 @@ export default function ReceiptUpload({
   const [processing, setProcessing] = useState(false);
   const [viewerOpen, setViewerOpen] = useState(false);
 
-  const handleFileSelect = async (e) => {
-    const file = e.target.files?.[0];
+  const processFile = async (file) => {
     if (!file) return;
 
     setUploading(true);
@@ -63,6 +63,18 @@ export default function ReceiptUpload({
     }
   };
 
+  const handleFileSelect = async (e) => {
+    const file = e.target.files?.[0];
+    await processFile(file);
+  };
+
+  const handleFileDrop = async (files) => {
+    const file = files[0];
+    await processFile(file);
+  };
+
+  const { isDragging, dragHandlers } = useDragDrop(handleFileDrop);
+
   const handleRemove = async () => {
     if (receiptAttachmentId) {
       try {
@@ -88,15 +100,18 @@ export default function ReceiptUpload({
     <Box>
       {!receiptAttachmentId ? (
         <Box
+          {...dragHandlers}
           sx={{
-            border: '1px solid',
-            borderColor: 'divider',
+            border: '2px dashed',
+            borderColor: isDragging ? 'primary.main' : 'divider',
             borderRadius: 1,
             height: '56px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             cursor: 'pointer',
+            bgcolor: isDragging ? 'action.hover' : 'transparent',
+            transition: 'all 0.2s ease',
             '&:hover': { 
               bgcolor: 'action.hover',
               borderColor: 'primary.main'
@@ -122,7 +137,7 @@ export default function ReceiptUpload({
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <UploadIcon color="action" />
               <Typography variant="body2" color="textSecondary">
-                {t('attachment.uploadReceipt')}
+                {isDragging ? t('attachment.dropHere') || 'Drop here' : t('attachment.uploadReceipt')}
               </Typography>
             </Box>
           )}

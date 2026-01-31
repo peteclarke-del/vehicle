@@ -28,6 +28,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import KnightRiderLoader from './KnightRiderLoader';
+import { useDragDrop } from '../hooks/useDragDrop';
 
 const VehicleImages = ({ vehicle }) => {
   const { api } = useAuth();
@@ -41,6 +42,12 @@ const VehicleImages = ({ vehicle }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [editingCaption, setEditingCaption] = useState(null);
   const [captionText, setCaptionText] = useState('');
+
+  const handleImageDrop = async (files) => {
+    await processFiles(files);
+  };
+
+  const { isDragging, dragHandlers } = useDragDrop(handleImageDrop);
 
   const loadImages = useCallback(async () => {
     try {
@@ -59,6 +66,10 @@ const VehicleImages = ({ vehicle }) => {
 
   const handleFileSelect = async (event) => {
     const files = event.target.files;
+    await processFiles(files);
+    event.target.value = '';
+  };\n
+  const processFiles = async (files) => {
     if (!files || files.length === 0) return;
 
     setUploading(true);
@@ -91,9 +102,10 @@ const VehicleImages = ({ vehicle }) => {
       setError('');
     }
     loadImages();
-    
-    // Clear the file input
-    event.target.value = '';
+  };
+
+  const handleImageDrop = async (files) => {
+    await processFiles(files);
   };
 
   const handleDelete = async (imageId) => {
@@ -176,7 +188,21 @@ const VehicleImages = ({ vehicle }) => {
   return (
     <Card>
       <CardContent>
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+        <Box 
+          display="flex" 
+          justifyContent="space-between" 
+          alignItems="center" 
+          mb={2}
+          {...dragHandlers}
+          sx={{
+            p: 1,
+            borderRadius: 1,
+            border: '2px dashed',
+            borderColor: isDragging ? 'primary.main' : 'transparent',
+            bgcolor: isDragging ? 'action.hover' : 'transparent',
+            transition: 'all 0.2s ease'
+          }}
+        >
           <Typography variant="h6">{t('vehicleImages.title')}</Typography>
           <Button
             variant="contained"
@@ -184,7 +210,7 @@ const VehicleImages = ({ vehicle }) => {
             startIcon={uploading ? <KnightRiderLoader size={16} /> : <UploadIcon />}
             disabled={uploading}
           >
-            {t('vehicleImages.upload')}
+            {isDragging ? (t('attachment.dropHere') || 'Drop here') : t('vehicleImages.upload')}
             <input
               type="file"
               hidden
