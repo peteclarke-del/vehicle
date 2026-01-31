@@ -517,6 +517,9 @@ class ServiceRecordController extends AbstractController
                 $att = $this->entityManager->getRepository(Attachment::class)->find($data['receiptAttachmentId']);
                 if ($att) {
                     $service->setReceiptAttachment($att);
+                    // Update attachment's entity_id to link it to this service
+                    $att->setEntityId($service->getId());
+                    $att->setEntityType('service');
                 } else {
                     $service->setReceiptAttachment(null);
                     $this->logger->warning('Attachment not found', ['attachmentId' => $data['receiptAttachmentId']]);

@@ -222,6 +222,9 @@ class FuelRecordController extends AbstractController
             $att = $this->entityManager->getRepository(Attachment::class)->find($data['receiptAttachmentId']);
             if ($att) {
                 $record->setReceiptAttachment($att);
+                // Update attachment's entity_id to link it to this fuel record
+                $att->setEntityId($record->getId());
+                $att->setEntityType('fuel');
             }
         }
     }

@@ -423,6 +423,9 @@ class MotRecordController extends AbstractController
                 $att = $this->entityManager->getRepository(\App\Entity\Attachment::class)->find($data['receiptAttachmentId']);
                 if ($att) {
                     $mot->setReceiptAttachment($att);
+                    // Update attachment's entity_id to link it to this MOT record
+                    $att->setEntityId($mot->getId());
+                    $att->setEntityType('mot');
                 } else {
                     $mot->setReceiptAttachment(null);
                 }
