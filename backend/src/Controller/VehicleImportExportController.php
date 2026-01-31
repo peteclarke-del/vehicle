@@ -3361,6 +3361,11 @@ class VehicleImportExportController extends AbstractController
                         $attachment->setEntityId($newVehicle->getId());
                         // Set the vehicle relationship to maintain proper entity association and enable CASCADE delete
                         $attachment->setVehicle($newVehicle);
+                        // Force Doctrine UnitOfWork to compute changeset for this entity
+                        $entityManager->getUnitOfWork()->recomputeSingleEntityChangeSet(
+                            $entityManager->getClassMetadata(\App\Entity\Attachment::class),
+                            $attachment
+                        );
                         $remappedCount++;
                     }
                 }
