@@ -105,10 +105,6 @@ const VehicleImages = ({ vehicle }) => {
     loadImages();
   };
 
-  const handleImageDrop = async (files) => {
-    await processFiles(files);
-  };
-
   const handleDelete = async (imageId) => {
     if (!window.confirm(t('vehicleImages.confirmDelete'))) return;
 
