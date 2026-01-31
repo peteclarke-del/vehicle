@@ -1,0 +1,72 @@
+[
+  {
+    "vehicleType": "EV",
+    "name": "Alarm System",
+    "description": "Electronic alarm system to deter theft"
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Immobiliser",
+    "description": "Electronic immobiliser to prevent unauthorized starting"
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Central Locking",
+    "description": "Central locking system for all doors"
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Steering Lock",
+    "description": "Mechanical steering wheel lock"
+  },
+  {
+    "vehicleType": "EV",
+    "name": "GPS Tracking",
+    "description": "GPS tracking device for vehicle location monitoring"
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Dash Cam",
+    "description": "Dashboard camera for recording while driving"
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Kill Switch",
+    "description": "Hidden switch to disable power system"
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Wheel Lock",
+    "description": "Locking wheel nuts to prevent wheel theft"
+  },
+  {
+    "vehicleType": "EV",
+    "name": "VIN Etching",
+    "description": "Vehicle Identification Number etched on windows"
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Deadlocks",
+    "description": "Additional deadlock mechanisms on doors"
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Anti-Theft Marking",
+    "description": "Security marking or microdot identification"
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Thatcham Approved Alarm",
+    "description": "Insurance-approved Thatcham category alarm system"
+  },
+  {
+    "vehicleType": "EV",
+    "name": "OBD Port Lock",
+    "description": "Lock for OBD diagnostic port to prevent hacking"
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Charging Port Lock",
+    "description": "Lock for electric charging port"
+  }
+]

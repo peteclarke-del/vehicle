@@ -704,7 +704,8 @@
     "wheelClamp": "Wheel Clamp",
     "loadSecurity": "Load Security",
     "trailerLock": "Trailer Lock",
-    "fifthWheelLock": "Fifth Wheel Lock"
+    "fifthWheelLock": "Fifth Wheel Lock",
+    "chargingPortLock": "Charging Port Lock"
   },
   "serviceTypes": {},
   "attachment": {

@@ -1,0 +1,67 @@
+[
+  {
+    "vehicleType": "Car",
+    "name": "Alarm System",
+    "description": "Electronic alarm system to deter theft"
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Immobiliser",
+    "description": "Electronic immobiliser to prevent unauthorized starting"
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Central Locking",
+    "description": "Central locking system for all doors"
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Steering Lock",
+    "description": "Mechanical steering wheel lock"
+  },
+  {
+    "vehicleType": "Car",
+    "name": "GPS Tracking",
+    "description": "GPS tracking device for vehicle location monitoring"
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Dash Cam",
+    "description": "Dashboard camera for recording while driving"
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Kill Switch",
+    "description": "Hidden switch to disable ignition or fuel pump"
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Wheel Lock",
+    "description": "Locking wheel nuts to prevent wheel theft"
+  },
+  {
+    "vehicleType": "Car",
+    "name": "VIN Etching",
+    "description": "Vehicle Identification Number etched on windows"
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Deadlocks",
+    "description": "Additional deadlock mechanisms on doors"
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Anti-Theft Marking",
+    "description": "Security marking or microdot identification"
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Thatcham Approved Alarm",
+    "description": "Insurance-approved Thatcham category alarm system"
+  },
+  {
+    "vehicleType": "Car",
+    "name": "OBD Port Lock",
+    "description": "Lock for OBD diagnostic port to prevent hacking"
+  }
+]

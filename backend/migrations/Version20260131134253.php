@@ -10,7 +10,7 @@ use Doctrine\Migrations\AbstractMigration;
 /**
  * Auto-generated Migration: Please modify to your needs!
  */
-final class Version20260131020108 extends AbstractMigration
+final class Version20260131134253 extends AbstractMigration
 {
     public function getDescription(): string
     {
@@ -32,6 +32,7 @@ final class Version20260131020108 extends AbstractMigration
         $this->addSql('CREATE TABLE refresh_tokens (id INT AUTO_INCREMENT NOT NULL, user_id INT NOT NULL, refresh_token VARCHAR(255) NOT NULL, expires_at DATETIME NOT NULL COMMENT \'(DC2Type:datetime_immutable)\', created_at DATETIME NOT NULL COMMENT \'(DC2Type:datetime_immutable)\', UNIQUE INDEX UNIQ_9BACE7E1C74F2195 (refresh_token), INDEX IDX_9BACE7E1A76ED395 (user_id), PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB');
         $this->addSql('CREATE TABLE reports (id INT AUTO_INCREMENT NOT NULL, user_id INT NOT NULL, name VARCHAR(255) NOT NULL, template_key VARCHAR(255) DEFAULT NULL, payload JSON DEFAULT NULL, vehicle_id INT DEFAULT NULL, generated_at DATETIME NOT NULL, INDEX IDX_F11FA745A76ED395 (user_id), PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB');
         $this->addSql('CREATE TABLE road_tax (id INT AUTO_INCREMENT NOT NULL, vehicle_id INT NOT NULL, start_date DATE DEFAULT NULL, expiry_date DATE DEFAULT NULL, amount NUMERIC(10, 2) DEFAULT NULL, notes LONGTEXT DEFAULT NULL, created_at DATETIME NOT NULL, frequency VARCHAR(10) DEFAULT \'annual\' NOT NULL, sorn TINYINT(1) DEFAULT 0 NOT NULL, INDEX IDX_BB1D046A545317D1 (vehicle_id), PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB');
+        $this->addSql('CREATE TABLE security_features (id INT AUTO_INCREMENT NOT NULL, vehicle_type_id INT NOT NULL, name VARCHAR(100) NOT NULL, description LONGTEXT DEFAULT NULL, created_at DATETIME DEFAULT NULL, INDEX IDX_DCAB5BC1DA3FD1FC (vehicle_type_id), PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB');
         $this->addSql('CREATE TABLE service_items (id INT AUTO_INCREMENT NOT NULL, service_record_id INT NOT NULL, consumable_id INT DEFAULT NULL, part_id INT DEFAULT NULL, type VARCHAR(20) NOT NULL, description VARCHAR(255) DEFAULT NULL, cost NUMERIC(10, 2) NOT NULL, quantity NUMERIC(10, 2) DEFAULT \'1.00\' NOT NULL, INDEX IDX_486C04AA156C4F46 (service_record_id), INDEX IDX_486C04AAA94ADB61 (consumable_id), INDEX IDX_486C04AA4CE34BEC (part_id), PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB');
         $this->addSql('CREATE TABLE service_records (id INT AUTO_INCREMENT NOT NULL, vehicle_id INT NOT NULL, receipt_attachment_id INT DEFAULT NULL, mot_record_id INT DEFAULT NULL, service_date DATE NOT NULL, service_type VARCHAR(50) NOT NULL, labor_cost NUMERIC(10, 2) NOT NULL, parts_cost NUMERIC(10, 2) DEFAULT \'0.00\' NOT NULL, consumables_cost NUMERIC(10, 2) DEFAULT NULL, mileage INT DEFAULT NULL, service_provider VARCHAR(100) DEFAULT NULL, work_performed LONGTEXT DEFAULT NULL, additional_costs NUMERIC(10, 2) DEFAULT \'0.00\' NOT NULL, next_service_date DATE DEFAULT NULL, next_service_mileage INT DEFAULT NULL, notes LONGTEXT DEFAULT NULL, created_at DATETIME NOT NULL, INDEX IDX_53190ADA545317D1 (vehicle_id), INDEX IDX_53190ADA79F22B74 (receipt_attachment_id), INDEX IDX_53190ADAB17D92CD (mot_record_id), PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB');
         $this->addSql('CREATE TABLE specifications (id INT AUTO_INCREMENT NOT NULL, vehicle_id INT NOT NULL, engine_type VARCHAR(100) DEFAULT NULL, displacement VARCHAR(50) DEFAULT NULL, power VARCHAR(50) DEFAULT NULL, torque VARCHAR(50) DEFAULT NULL, compression VARCHAR(50) DEFAULT NULL, bore VARCHAR(50) DEFAULT NULL, stroke VARCHAR(50) DEFAULT NULL, fuel_system VARCHAR(50) DEFAULT NULL, cooling VARCHAR(50) DEFAULT NULL, sparkplug_type VARCHAR(100) DEFAULT NULL, coolant_type VARCHAR(100) DEFAULT NULL, coolant_capacity VARCHAR(50) DEFAULT NULL, gearbox VARCHAR(100) DEFAULT NULL, transmission VARCHAR(100) DEFAULT NULL, final_drive VARCHAR(100) DEFAULT NULL, clutch VARCHAR(100) DEFAULT NULL, engine_oil_type VARCHAR(100) DEFAULT NULL, engine_oil_capacity VARCHAR(50) DEFAULT NULL, transmission_oil_type VARCHAR(100) DEFAULT NULL, transmission_oil_capacity VARCHAR(50) DEFAULT NULL, middle_drive_oil_type VARCHAR(100) DEFAULT NULL, middle_drive_oil_capacity VARCHAR(50) DEFAULT NULL, frame VARCHAR(50) DEFAULT NULL, front_suspension VARCHAR(100) DEFAULT NULL, rear_suspension VARCHAR(100) DEFAULT NULL, static_sag_front VARCHAR(50) DEFAULT NULL, static_sag_rear VARCHAR(50) DEFAULT NULL, front_brakes VARCHAR(100) DEFAULT NULL, rear_brakes VARCHAR(100) DEFAULT NULL, front_tyre VARCHAR(100) DEFAULT NULL, rear_tyre VARCHAR(100) DEFAULT NULL, front_tyre_pressure VARCHAR(50) DEFAULT NULL, rear_tyre_pressure VARCHAR(50) DEFAULT NULL, front_wheel_travel VARCHAR(50) DEFAULT NULL, rear_wheel_travel VARCHAR(50) DEFAULT NULL, wheelbase VARCHAR(100) DEFAULT NULL, seat_height VARCHAR(100) DEFAULT NULL, ground_clearance VARCHAR(100) DEFAULT NULL, dry_weight VARCHAR(100) DEFAULT NULL, wet_weight VARCHAR(100) DEFAULT NULL, fuel_capacity VARCHAR(50) DEFAULT NULL, top_speed VARCHAR(50) DEFAULT NULL, additional_info LONGTEXT DEFAULT NULL, scraped_at DATETIME DEFAULT NULL, source_url VARCHAR(255) DEFAULT NULL, UNIQUE INDEX UNIQ_BDA8A4B545317D1 (vehicle_id), PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB');
@@ -69,6 +70,7 @@ final class Version20260131020108 extends AbstractMigration
         $this->addSql('ALTER TABLE refresh_tokens ADD CONSTRAINT FK_9BACE7E1A76ED395 FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE');
         $this->addSql('ALTER TABLE reports ADD CONSTRAINT FK_F11FA745A76ED395 FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE');
         $this->addSql('ALTER TABLE road_tax ADD CONSTRAINT FK_BB1D046A545317D1 FOREIGN KEY (vehicle_id) REFERENCES vehicles (id)');
+        $this->addSql('ALTER TABLE security_features ADD CONSTRAINT FK_DCAB5BC1DA3FD1FC FOREIGN KEY (vehicle_type_id) REFERENCES vehicle_types (id) ON DELETE CASCADE');
         $this->addSql('ALTER TABLE service_items ADD CONSTRAINT FK_486C04AA156C4F46 FOREIGN KEY (service_record_id) REFERENCES service_records (id) ON DELETE CASCADE');
         $this->addSql('ALTER TABLE service_items ADD CONSTRAINT FK_486C04AAA94ADB61 FOREIGN KEY (consumable_id) REFERENCES consumables (id) ON DELETE SET NULL');
         $this->addSql('ALTER TABLE service_items ADD CONSTRAINT FK_486C04AA4CE34BEC FOREIGN KEY (part_id) REFERENCES parts (id) ON DELETE SET NULL');
@@ -116,6 +118,7 @@ final class Version20260131020108 extends AbstractMigration
         $this->addSql('ALTER TABLE refresh_tokens DROP FOREIGN KEY FK_9BACE7E1A76ED395');
         $this->addSql('ALTER TABLE reports DROP FOREIGN KEY FK_F11FA745A76ED395');
         $this->addSql('ALTER TABLE road_tax DROP FOREIGN KEY FK_BB1D046A545317D1');
+        $this->addSql('ALTER TABLE security_features DROP FOREIGN KEY FK_DCAB5BC1DA3FD1FC');
         $this->addSql('ALTER TABLE service_items DROP FOREIGN KEY FK_486C04AA156C4F46');
         $this->addSql('ALTER TABLE service_items DROP FOREIGN KEY FK_486C04AAA94ADB61');
         $this->addSql('ALTER TABLE service_items DROP FOREIGN KEY FK_486C04AA4CE34BEC');
@@ -145,6 +148,7 @@ final class Version20260131020108 extends AbstractMigration
         $this->addSql('DROP TABLE refresh_tokens');
         $this->addSql('DROP TABLE reports');
         $this->addSql('DROP TABLE road_tax');
+        $this->addSql('DROP TABLE security_features');
         $this->addSql('DROP TABLE service_items');
         $this->addSql('DROP TABLE service_records');
         $this->addSql('DROP TABLE specifications');

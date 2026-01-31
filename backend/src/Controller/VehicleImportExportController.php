@@ -90,7 +90,7 @@ class VehicleImportExportController extends AbstractController
                 return new JsonResponse(['error' => 'Unauthorized'], 401);
             }
 
-            error_log('[export] JSON started userId=' . $user->getId());
+            $logger->info('[export] JSON started', ['userId' => $user->getId()]);
 
             $logger->info('Export JSON started', [
                 'userId' => $user->getId(),
@@ -112,7 +112,7 @@ class VehicleImportExportController extends AbstractController
                 $idsQb->getQuery()->getScalarResult()
             );
 
-            error_log('[export] JSON vehicle ids count=' . count($vehicleIds));
+            $logger->info('[export] JSON vehicle ids', ['count' => count($vehicleIds)]);
             $logger->info('Export JSON vehicle ids loaded', [
                 'count' => count($vehicleIds),
                 'elapsedMs' => (int) ((microtime(true) - $t0) * 1000)
@@ -132,119 +132,119 @@ class VehicleImportExportController extends AbstractController
                     ->setParameter('ids', $batchIds);
 
                 $vehicles = $batchQb->getQuery()->getResult();
-                error_log('[export] JSON batch loaded offset=' . $offset . ' count=' . count($vehicles));
+                $logger->info('[export] JSON batch loaded', ['offset' => $offset, 'count' => count($vehicles)]);
 
                 foreach ($vehicles as $vehicle) {
                     $vehicleCount++;
 
                     if ($vehicleCount === 1 || ($vehicleCount % 10) === 0) {
-                        error_log('[export] JSON progress vehicleCount=' . $vehicleCount);
+                        $logger->info('[export] JSON progress', ['vehicleCount' => $vehicleCount]);
                         $logger->info('Export JSON progress', [
                             'vehicleCount' => $vehicleCount,
                             'elapsedMs' => (int) ((microtime(true) - $t0) * 1000)
                         ]);
                     }
                 // Export fuel records
-                $fuelRecords = [];
-                foreach ($vehicle->getFuelRecords() as $fuelRecord) {
-                    $fuelRecords[] = [
-                    'date' => $fuelRecord->getDate()?->format('Y-m-d'),
-                    'litres' => $fuelRecord->getLitres(),
-                    'cost' => $fuelRecord->getCost(),
-                    'mileage' => $fuelRecord->getMileage(),
-                    'fuelType' => $fuelRecord->getFuelType(),
-                    'station' => $fuelRecord->getStation(),
-                    'notes' => $fuelRecord->getNotes(),
-                    'receiptAttachmentOriginalId' => $fuelRecord->getReceiptAttachment()?->getId(),
-                    'createdAt' => $fuelRecord->getCreatedAt()?->format('c'),
-                    ];
-                }
+                    $fuelRecords = [];
+                    foreach ($vehicle->getFuelRecords() as $fuelRecord) {
+                        $fuelRecords[] = [
+                        'date' => $fuelRecord->getDate()?->format('Y-m-d'),
+                        'litres' => $fuelRecord->getLitres(),
+                        'cost' => $fuelRecord->getCost(),
+                        'mileage' => $fuelRecord->getMileage(),
+                        'fuelType' => $fuelRecord->getFuelType(),
+                        'station' => $fuelRecord->getStation(),
+                        'notes' => $fuelRecord->getNotes(),
+                        'receiptAttachmentOriginalId' => $fuelRecord->getReceiptAttachment()?->getId(),
+                        'createdAt' => $fuelRecord->getCreatedAt()?->format('c'),
+                        ];
+                    }
 
                 // Export parts
-                $parts = [];
-                foreach ($vehicle->getParts() as $part) {
-                    // Skip parts already linked to an MOT or ServiceRecord — they will be exported under that parent record
-                    if ($part->getMotRecord() || $part->getServiceRecord()) {
-                        continue;
+                    $parts = [];
+                    foreach ($vehicle->getParts() as $part) {
+                        // Skip parts already linked to an MOT or ServiceRecord — they will be exported under that parent record
+                        if ($part->getMotRecord() || $part->getServiceRecord()) {
+                            continue;
+                        }
+                        $parts[] = [
+                        'id' => $part->getId(),
+                        'name' => $part->getName(),
+                        'price' => $part->getPrice(),
+                        'sku' => $part->getSku(),
+                        'quantity' => $part->getQuantity(),
+                        'warrantyMonths' => $part->getWarranty(),
+                        'imageUrl' => $part->getImageUrl(),
+                        'purchaseDate' => $part->getPurchaseDate()?->format('Y-m-d'),
+                        'description' => $part->getDescription(),
+                        'partNumber' => $part->getPartNumber(),
+                        'manufacturer' => $part->getManufacturer(),
+                        'supplier' => $part->getSupplier(),
+                        'cost' => $part->getCost(),
+                        'partCategory' => $part->getPartCategory()?->getName(),
+                        'partCategoryId' => $part->getPartCategory()?->getId(),
+                        'installationDate' => $part->getInstallationDate()?->format('Y-m-d'),
+                        'mileageAtInstallation' => $part->getMileageAtInstallation(),
+                        'notes' => $part->getNotes(),
+                        'receiptAttachmentOriginalId' => $part->getReceiptAttachment()?->getId(),
+                        'productUrl' => $part->getProductUrl(),
+                        'createdAt' => $part->getCreatedAt()?->format('c'),
+                        ];
                     }
-                    $parts[] = [
-                    'id' => $part->getId(),
-                    'name' => $part->getName(),
-                    'price' => $part->getPrice(),
-                    'sku' => $part->getSku(),
-                    'quantity' => $part->getQuantity(),
-                    'warrantyMonths' => $part->getWarranty(),
-                    'imageUrl' => $part->getImageUrl(),
-                    'purchaseDate' => $part->getPurchaseDate()?->format('Y-m-d'),
-                    'description' => $part->getDescription(),
-                    'partNumber' => $part->getPartNumber(),
-                    'manufacturer' => $part->getManufacturer(),
-                    'supplier' => $part->getSupplier(),
-                    'cost' => $part->getCost(),
-                    'partCategory' => $part->getPartCategory()?->getName(),
-                    'partCategoryId' => $part->getPartCategory()?->getId(),
-                    'installationDate' => $part->getInstallationDate()?->format('Y-m-d'),
-                    'mileageAtInstallation' => $part->getMileageAtInstallation(),
-                    'notes' => $part->getNotes(),
-                    'receiptAttachmentOriginalId' => $part->getReceiptAttachment()?->getId(),
-                    'productUrl' => $part->getProductUrl(),
-                    'createdAt' => $part->getCreatedAt()?->format('c'),
-                    ];
-                }
 
                 // Export consumables
-                $consumables = [];
-                foreach ($vehicle->getConsumables() as $consumable) {
-                    // Skip consumables already linked to an MOT or ServiceRecord — they will be exported under that parent record
-                    if ($consumable->getMotRecord() || $consumable->getServiceRecord()) {
-                        continue;
+                    $consumables = [];
+                    foreach ($vehicle->getConsumables() as $consumable) {
+                        // Skip consumables already linked to an MOT or ServiceRecord — they will be exported under that parent record
+                        if ($consumable->getMotRecord() || $consumable->getServiceRecord()) {
+                            continue;
+                        }
+                        $consumables[] = [
+                        'id' => $consumable->getId(),
+                        'description' => $consumable->getDescription(),
+                        'brand' => $consumable->getBrand(),
+                        'partNumber' => $consumable->getPartNumber(),
+                        'supplier' => $consumable->getSupplier(),
+                        'replacementIntervalMiles' => $consumable->getReplacementIntervalMiles(),
+                        'nextReplacementMileage' => $consumable->getNextReplacementMileage(),
+                        'consumableType' => $consumable->getConsumableType()->getName(),
+                        'quantity' => $consumable->getQuantity(),
+                        'lastChanged' => $consumable->getLastChanged()?->format('Y-m-d'),
+                        'mileageAtChange' => $consumable->getMileageAtChange(),
+                        'cost' => $consumable->getCost(),
+                        'notes' => $consumable->getNotes(),
+                        'receiptAttachmentOriginalId' => $consumable->getReceiptAttachment()?->getId(),
+                        'productUrl' => $consumable->getProductUrl(),
+                        'createdAt' => $consumable->getCreatedAt()?->format('c'),
+                        'updatedAt' => $consumable->getUpdatedAt()?->format('c'),
+                        ];
                     }
-                    $consumables[] = [
-                    'id' => $consumable->getId(),
-                    'description' => $consumable->getDescription(),
-                    'brand' => $consumable->getBrand(),
-                    'partNumber' => $consumable->getPartNumber(),
-                    'supplier' => $consumable->getSupplier(),
-                    'replacementIntervalMiles' => $consumable->getReplacementIntervalMiles(),
-                    'nextReplacementMileage' => $consumable->getNextReplacementMileage(),
-                    'consumableType' => $consumable->getConsumableType()->getName(),
-                    'quantity' => $consumable->getQuantity(),
-                    'lastChanged' => $consumable->getLastChanged()?->format('Y-m-d'),
-                    'mileageAtChange' => $consumable->getMileageAtChange(),
-                    'cost' => $consumable->getCost(),
-                    'notes' => $consumable->getNotes(),
-                    'receiptAttachmentOriginalId' => $consumable->getReceiptAttachment()?->getId(),
-                    'productUrl' => $consumable->getProductUrl(),
-                    'createdAt' => $consumable->getCreatedAt()?->format('c'),
-                    'updatedAt' => $consumable->getUpdatedAt()?->format('c'),
-                    ];
-                }
 
                 // Export service records - already loaded via JOIN
-                $serviceRecordsData = [];
-                foreach ($vehicle->getServiceRecords() as $serviceRecord) {
-                    // Skip service records linked to an MOT — they will be exported under that MOT
-                    if ($serviceRecord->getMotRecord()) {
-                        continue;
-                    }
-                    $serviceRecordsData[] = [
-                    'serviceDate' => $serviceRecord->getServiceDate()?->format('Y-m-d'),
-                    'serviceType' => $serviceRecord->getServiceType(),
-                    'laborCost' => $serviceRecord->getLaborCost(),
-                    'partsCost' => $serviceRecord->getPartsCost(),
-                    'consumablesCost' => $serviceRecord->getConsumablesCost(),
-                    'mileage' => $serviceRecord->getMileage(),
-                    'serviceProvider' => $serviceRecord->getServiceProvider(),
-                    'additionalCosts' => $serviceRecord->getAdditionalCosts(),
-                    'nextServiceDate' => $serviceRecord->getNextServiceDate()?->format('Y-m-d'),
-                    'nextServiceMileage' => $serviceRecord->getNextServiceMileage(),
-                    'workPerformed' => $serviceRecord->getWorkPerformed(),
-                    'notes' => $serviceRecord->getNotes(),
-                    'items' => array_map(function ($it) {
-                        $part = $it->getPart();
-                        $consumable = $it->getConsumable();
+                    $serviceRecordsData = [];
+                    foreach ($vehicle->getServiceRecords() as $serviceRecord) {
+                        // Skip service records linked to an MOT — they will be exported under that MOT
+                        if ($serviceRecord->getMotRecord()) {
+                            continue;
+                        }
+                        $serviceRecordsData[] = [
+                        'serviceDate' => $serviceRecord->getServiceDate()?->format('Y-m-d'),
+                        'serviceType' => $serviceRecord->getServiceType(),
+                        'laborCost' => $serviceRecord->getLaborCost(),
+                        'partsCost' => $serviceRecord->getPartsCost(),
+                        'consumablesCost' => $serviceRecord->getConsumablesCost(),
+                        'mileage' => $serviceRecord->getMileage(),
+                        'serviceProvider' => $serviceRecord->getServiceProvider(),
+                        'additionalCosts' => $serviceRecord->getAdditionalCosts(),
+                        'nextServiceDate' => $serviceRecord->getNextServiceDate()?->format('Y-m-d'),
+                        'nextServiceMileage' => $serviceRecord->getNextServiceMileage(),
+                        'workPerformed' => $serviceRecord->getWorkPerformed(),
+                        'notes' => $serviceRecord->getNotes(),
+                        'items' => array_map(function ($it) {
+                            $part = $it->getPart();
+                            $consumable = $it->getConsumable();
 
-                        return [
+                            return [
                             'type' => $it->getType(),
                             'description' => $it->getDescription(),
                             'cost' => $it->getCost(),
@@ -289,81 +289,81 @@ class VehicleImportExportController extends AbstractController
                                 'createdAt' => $consumable->getCreatedAt()?->format('c'),
                                 'updatedAt' => $consumable->getUpdatedAt()?->format('c'),
                             ] : null,
+                            ];
+                        }, $serviceRecord->getItems()),
+                            'receiptAttachmentOriginalId' => $serviceRecord->getReceiptAttachment()?->getId(),
+                            'createdAt' => $serviceRecord->getCreatedAt()?->format('c'),
                         ];
-                    }, $serviceRecord->getItems()),
-                        'receiptAttachmentOriginalId' => $serviceRecord->getReceiptAttachment()?->getId(),
-                        'createdAt' => $serviceRecord->getCreatedAt()?->format('c'),
-                    ];
-                }
+                    }
 
                 // Export MOT records - already loaded via JOIN, no additional query needed
-                $motRecordsData = [];
-                foreach ($vehicle->getMotRecords() as $motRecord) {
-                    // gather parts/consumables/service records linked to this mot record
-                    $motParts = [];
-                    foreach ($vehicle->getParts() as $part) {
-                        if ($part->getMotRecord() && $part->getMotRecord()->getId() === $motRecord->getId()) {
-                            $motParts[] = [
-                            'price' => $part->getPrice(),
-                            'quantity' => $part->getQuantity(),
-                            'purchaseDate' => $part->getPurchaseDate()?->format('Y-m-d'),
-                            'description' => $part->getDescription(),
-                            'partNumber' => $part->getPartNumber(),
-                            'manufacturer' => $part->getManufacturer(),
-                            'supplier' => $part->getSupplier(),
-                            'cost' => $part->getCost(),
-                            'installationDate' => $part->getInstallationDate()?->format('Y-m-d'),
-                            'mileageAtInstallation' => $part->getMileageAtInstallation(),
-                            'notes' => $part->getNotes(),
-                            'receiptAttachmentOriginalId' => $part->getReceiptAttachment()?->getId(),
-                            'productUrl' => $part->getProductUrl(),
-                            'createdAt' => $part->getCreatedAt()?->format('c'),
-                            ];
+                    $motRecordsData = [];
+                    foreach ($vehicle->getMotRecords() as $motRecord) {
+                        // gather parts/consumables/service records linked to this mot record
+                        $motParts = [];
+                        foreach ($vehicle->getParts() as $part) {
+                            if ($part->getMotRecord() && $part->getMotRecord()->getId() === $motRecord->getId()) {
+                                $motParts[] = [
+                                'price' => $part->getPrice(),
+                                'quantity' => $part->getQuantity(),
+                                'purchaseDate' => $part->getPurchaseDate()?->format('Y-m-d'),
+                                'description' => $part->getDescription(),
+                                'partNumber' => $part->getPartNumber(),
+                                'manufacturer' => $part->getManufacturer(),
+                                'supplier' => $part->getSupplier(),
+                                'cost' => $part->getCost(),
+                                'installationDate' => $part->getInstallationDate()?->format('Y-m-d'),
+                                'mileageAtInstallation' => $part->getMileageAtInstallation(),
+                                'notes' => $part->getNotes(),
+                                'receiptAttachmentOriginalId' => $part->getReceiptAttachment()?->getId(),
+                                'productUrl' => $part->getProductUrl(),
+                                'createdAt' => $part->getCreatedAt()?->format('c'),
+                                ];
+                            }
                         }
-                    }
 
-                    $motConsumables = [];
-                    foreach ($vehicle->getConsumables() as $consumable) {
-                        if ($consumable->getMotRecord() && $consumable->getMotRecord()->getId() === $motRecord->getId()) {
-                            $motConsumables[] = [
-                            'consumableType' => $consumable->getConsumableType()->getName(),
-                            'description' => $consumable->getDescription(),
-                            'brand' => $consumable->getBrand(),
-                            'partNumber' => $consumable->getPartNumber(),
-                            'supplier' => $consumable->getSupplier(),
-                            'quantity' => $consumable->getQuantity(),
-                            'lastChanged' => $consumable->getLastChanged()?->format('Y-m-d'),
-                            'mileageAtChange' => $consumable->getMileageAtChange(),
-                            'cost' => $consumable->getCost(),
-                            'notes' => $consumable->getNotes(),
-                            'receiptAttachmentOriginalId' => $consumable->getReceiptAttachment()?->getId(),
-                            'productUrl' => $consumable->getProductUrl(),
-                            'createdAt' => $consumable->getCreatedAt()?->format('c'),
-                            ];
+                        $motConsumables = [];
+                        foreach ($vehicle->getConsumables() as $consumable) {
+                            if ($consumable->getMotRecord() && $consumable->getMotRecord()->getId() === $motRecord->getId()) {
+                                $motConsumables[] = [
+                                'consumableType' => $consumable->getConsumableType()->getName(),
+                                'description' => $consumable->getDescription(),
+                                'brand' => $consumable->getBrand(),
+                                'partNumber' => $consumable->getPartNumber(),
+                                'supplier' => $consumable->getSupplier(),
+                                'quantity' => $consumable->getQuantity(),
+                                'lastChanged' => $consumable->getLastChanged()?->format('Y-m-d'),
+                                'mileageAtChange' => $consumable->getMileageAtChange(),
+                                'cost' => $consumable->getCost(),
+                                'notes' => $consumable->getNotes(),
+                                'receiptAttachmentOriginalId' => $consumable->getReceiptAttachment()?->getId(),
+                                'productUrl' => $consumable->getProductUrl(),
+                                'createdAt' => $consumable->getCreatedAt()?->format('c'),
+                                ];
+                            }
                         }
-                    }
 
-                    $motServiceRecords = [];
-                    // Use already-loaded service records instead of querying again
-                    foreach ($vehicle->getServiceRecords() as $svc) {
-                        if ($svc->getMotRecord() && $svc->getMotRecord()->getId() === $motRecord->getId()) {
-                            $motServiceRecords[] = [
-                            'serviceDate' => $svc->getServiceDate()?->format('Y-m-d'),
-                            'serviceType' => $svc->getServiceType(),
-                            'laborCost' => $svc->getLaborCost(),
-                            'partsCost' => $svc->getPartsCost(),
-                            'consumablesCost' => $svc->getConsumablesCost(),
-                            'mileage' => $svc->getMileage(),
-                            'serviceProvider' => $svc->getServiceProvider(),
-                            'workPerformed' => $svc->getWorkPerformed(),
-                            'additionalCosts' => $svc->getAdditionalCosts(),
-                            'nextServiceDate' => $svc->getNextServiceDate()?->format('Y-m-d'),
-                            'nextServiceMileage' => $svc->getNextServiceMileage(),
-                            'items' => array_map(function ($it) {
-                                $part = $it->getPart();
-                                $consumable = $it->getConsumable();
+                        $motServiceRecords = [];
+                        // Use already-loaded service records instead of querying again
+                        foreach ($vehicle->getServiceRecords() as $svc) {
+                            if ($svc->getMotRecord() && $svc->getMotRecord()->getId() === $motRecord->getId()) {
+                                $motServiceRecords[] = [
+                                'serviceDate' => $svc->getServiceDate()?->format('Y-m-d'),
+                                'serviceType' => $svc->getServiceType(),
+                                'laborCost' => $svc->getLaborCost(),
+                                'partsCost' => $svc->getPartsCost(),
+                                'consumablesCost' => $svc->getConsumablesCost(),
+                                'mileage' => $svc->getMileage(),
+                                'serviceProvider' => $svc->getServiceProvider(),
+                                'workPerformed' => $svc->getWorkPerformed(),
+                                'additionalCosts' => $svc->getAdditionalCosts(),
+                                'nextServiceDate' => $svc->getNextServiceDate()?->format('Y-m-d'),
+                                'nextServiceMileage' => $svc->getNextServiceMileage(),
+                                'items' => array_map(function ($it) {
+                                    $part = $it->getPart();
+                                    $consumable = $it->getConsumable();
 
-                                return [
+                                    return [
                                     'type' => $it->getType(),
                                     'description' => $it->getDescription(),
                                     'cost' => $it->getCost(),
@@ -406,159 +406,159 @@ class VehicleImportExportController extends AbstractController
                                         'createdAt' => $consumable->getCreatedAt()?->format('c'),
                                         'updatedAt' => $consumable->getUpdatedAt()?->format('c'),
                                     ] : null,
+                                    ];
+                                }, $svc->getItems()),
+                                    'notes' => $svc->getNotes(),
+                                    'receiptAttachmentOriginalId' => $svc->getReceiptAttachment()?->getId(),
+                                    'createdAt' => $svc->getCreatedAt()?->format('c'),
                                 ];
-                            }, $svc->getItems()),
-                                'notes' => $svc->getNotes(),
-                                'receiptAttachmentOriginalId' => $svc->getReceiptAttachment()?->getId(),
-                                'createdAt' => $svc->getCreatedAt()?->format('c'),
-                            ];
+                            }
                         }
-                    }
 
-                    $motRecordsData[] = [
-                    'testDate' => $motRecord->getTestDate()?->format('Y-m-d'),
-                    'expiryDate' => $motRecord->getExpiryDate()?->format('Y-m-d'),
-                    'result' => $motRecord->getResult(),
-                    'testCost' => $motRecord->getTestCost(),
-                    'repairCost' => $motRecord->getRepairCost(),
-                    'mileage' => $motRecord->getMileage(),
-                    'testCenter' => $motRecord->getTestCenter(),
-                    'motTestNumber' => $motRecord->getMotTestNumber(),
-                    'testerName' => $motRecord->getTesterName(),
-                    'isRetest' => $motRecord->isRetest(),
-                    'receiptAttachmentOriginalId' => $motRecord->getReceiptAttachment()?->getId(),
-                    'advisories' => $motRecord->getAdvisories(),
-                    'failures' => $motRecord->getFailures(),
-                    'repairDetails' => $motRecord->getRepairDetails(),
-                    'notes' => $motRecord->getNotes(),
-                    'parts' => $motParts,
-                    'consumables' => $motConsumables,
-                    'serviceRecords' => $motServiceRecords,
-                    'createdAt' => $motRecord->getCreatedAt()?->format('c'),
-                    ];
-                }
+                        $motRecordsData[] = [
+                        'testDate' => $motRecord->getTestDate()?->format('Y-m-d'),
+                        'expiryDate' => $motRecord->getExpiryDate()?->format('Y-m-d'),
+                        'result' => $motRecord->getResult(),
+                        'testCost' => $motRecord->getTestCost(),
+                        'repairCost' => $motRecord->getRepairCost(),
+                        'mileage' => $motRecord->getMileage(),
+                        'testCenter' => $motRecord->getTestCenter(),
+                        'motTestNumber' => $motRecord->getMotTestNumber(),
+                        'testerName' => $motRecord->getTesterName(),
+                        'isRetest' => $motRecord->isRetest(),
+                        'receiptAttachmentOriginalId' => $motRecord->getReceiptAttachment()?->getId(),
+                        'advisories' => $motRecord->getAdvisories(),
+                        'failures' => $motRecord->getFailures(),
+                        'repairDetails' => $motRecord->getRepairDetails(),
+                        'notes' => $motRecord->getNotes(),
+                        'parts' => $motParts,
+                        'consumables' => $motConsumables,
+                        'serviceRecords' => $motServiceRecords,
+                        'createdAt' => $motRecord->getCreatedAt()?->format('c'),
+                        ];
+                    }
 
                 // Export insurance records
-                $insurancePolicies = $entityManager->getRepository(InsurancePolicy::class)->findAll();
-                $insuranceRecordsData = [];
-                foreach ($insurancePolicies as $policy) {
-                    if ($policy->getVehicles()->contains($vehicle)) {
-                        // Only export the policy under the vehicle with the smallest ID to avoid duplicates
-                        $vehicleIds = array_map(fn($v) => $v->getId(), $policy->getVehicles()->toArray());
-                        sort($vehicleIds);
-                        if ($vehicle->getId() === $vehicleIds[0]) {
-                            $insuranceRecordsData[] = [
-                            'provider' => $policy->getProvider(),
-                            'policyNumber' => $policy->getPolicyNumber(),
-                            'coverageType' => $policy->getCoverageType(),
-                            'annualCost' => $policy->getAnnualCost(),
-                            'startDate' => $policy->getStartDate()?->format('Y-m-d'),
-                            'expiryDate' => $policy->getExpiryDate()?->format('Y-m-d'),
-                            'excess' => $policy->getExcess(),
-                            'mileageLimit' => $policy->getMileageLimit(),
-                            'ncdYears' => $policy->getNcdYears(),
-                            'notes' => $policy->getNotes(),
-                            'autoRenewal' => $policy->getAutoRenewal(),
-                            'createdAt' => $policy->getCreatedAt()?->format('c'),
-                            'vehicleRegistrations' => array_map(fn($v) => $v->getRegistrationNumber(), $policy->getVehicles()->toArray()),
-                            ];
+                    $insurancePolicies = $entityManager->getRepository(InsurancePolicy::class)->findAll();
+                    $insuranceRecordsData = [];
+                    foreach ($insurancePolicies as $policy) {
+                        if ($policy->getVehicles()->contains($vehicle)) {
+                            // Only export the policy under the vehicle with the smallest ID to avoid duplicates
+                            $vehicleIds = array_map(fn($v) => $v->getId(), $policy->getVehicles()->toArray());
+                            sort($vehicleIds);
+                            if ($vehicle->getId() === $vehicleIds[0]) {
+                                $insuranceRecordsData[] = [
+                                'provider' => $policy->getProvider(),
+                                'policyNumber' => $policy->getPolicyNumber(),
+                                'coverageType' => $policy->getCoverageType(),
+                                'annualCost' => $policy->getAnnualCost(),
+                                'startDate' => $policy->getStartDate()?->format('Y-m-d'),
+                                'expiryDate' => $policy->getExpiryDate()?->format('Y-m-d'),
+                                'excess' => $policy->getExcess(),
+                                'mileageLimit' => $policy->getMileageLimit(),
+                                'ncdYears' => $policy->getNcdYears(),
+                                'notes' => $policy->getNotes(),
+                                'autoRenewal' => $policy->getAutoRenewal(),
+                                'createdAt' => $policy->getCreatedAt()?->format('c'),
+                                'vehicleRegistrations' => array_map(fn($v) => $v->getRegistrationNumber(), $policy->getVehicles()->toArray()),
+                                ];
+                            }
                         }
                     }
-                }
 
                 // Export road tax records - already loaded via JOIN
-                $roadTaxRecordsData = [];
-                foreach ($vehicle->getRoadTaxRecords() as $roadTax) {
-                    $roadTaxRecordsData[] = [
-                    'startDate' => $roadTax->getStartDate()?->format('Y-m-d'),
-                    'expiryDate' => $roadTax->getExpiryDate()?->format('Y-m-d'),
-                    'amount' => $roadTax->getAmount(),
-                    'frequency' => $roadTax->getFrequency(),
-                    'sorn' => $roadTax->getSorn(),
-                    'notes' => $roadTax->getNotes(),
-                    'createdAt' => $roadTax->getCreatedAt()?->format('c'),
-                    ];
-                }
+                    $roadTaxRecordsData = [];
+                    foreach ($vehicle->getRoadTaxRecords() as $roadTax) {
+                        $roadTaxRecordsData[] = [
+                        'startDate' => $roadTax->getStartDate()?->format('Y-m-d'),
+                        'expiryDate' => $roadTax->getExpiryDate()?->format('Y-m-d'),
+                        'amount' => $roadTax->getAmount(),
+                        'frequency' => $roadTax->getFrequency(),
+                        'sorn' => $roadTax->getSorn(),
+                        'notes' => $roadTax->getNotes(),
+                        'createdAt' => $roadTax->getCreatedAt()?->format('c'),
+                        ];
+                    }
 
                 // Export specification if present
-                $specData = null;
-                $spec = $entityManager->getRepository(\App\Entity\Specification::class)->findOneBy(['vehicle' => $vehicle]);
-                if ($spec instanceof \App\Entity\Specification) {
-                    $specData = [
-                    'engineType' => $spec->getEngineType(),
-                    'displacement' => $spec->getDisplacement(),
-                    'power' => $spec->getPower(),
-                    'torque' => $spec->getTorque(),
-                    'compression' => $spec->getCompression(),
-                    'bore' => $spec->getBore(),
-                    'stroke' => $spec->getStroke(),
-                    'fuelSystem' => $spec->getFuelSystem(),
-                    'cooling' => $spec->getCooling(),
-                    'sparkplugType' => $spec->getSparkplugType(),
-                    'coolantType' => $spec->getCoolantType(),
-                    'coolantCapacity' => $spec->getCoolantCapacity(),
-                    'gearbox' => $spec->getGearbox(),
-                    'transmission' => $spec->getTransmission(),
-                    'finalDrive' => $spec->getFinalDrive(),
-                    'clutch' => $spec->getClutch(),
-                    'engineOilType' => $spec->getEngineOilType(),
-                    'engineOilCapacity' => $spec->getEngineOilCapacity(),
-                    'transmissionOilType' => $spec->getTransmissionOilType(),
-                    'transmissionOilCapacity' => $spec->getTransmissionOilCapacity(),
-                    'middleDriveOilType' => $spec->getMiddleDriveOilType(),
-                    'middleDriveOilCapacity' => $spec->getMiddleDriveOilCapacity(),
-                    'frame' => $spec->getFrame(),
-                    'frontSuspension' => $spec->getFrontSuspension(),
-                    'rearSuspension' => $spec->getRearSuspension(),
-                    'staticSagFront' => $spec->getStaticSagFront(),
-                    'staticSagRear' => $spec->getStaticSagRear(),
-                    'frontBrakes' => $spec->getFrontBrakes(),
-                    'rearBrakes' => $spec->getRearBrakes(),
-                    'frontTyre' => $spec->getFrontTyre(),
-                    'rearTyre' => $spec->getRearTyre(),
-                    'frontTyrePressure' => $spec->getFrontTyrePressure(),
-                    'rearTyrePressure' => $spec->getRearTyrePressure(),
-                    'frontWheelTravel' => $spec->getFrontWheelTravel(),
-                    'rearWheelTravel' => $spec->getRearWheelTravel(),
-                    'wheelbase' => $spec->getWheelbase(),
-                    'seatHeight' => $spec->getSeatHeight(),
-                    'groundClearance' => $spec->getGroundClearance(),
-                    'dryWeight' => $spec->getDryWeight(),
-                    'wetWeight' => $spec->getWetWeight(),
-                    'fuelCapacity' => $spec->getFuelCapacity(),
-                    'topSpeed' => $spec->getTopSpeed(),
-                    'additionalInfo' => $spec->getAdditionalInfo(),
-                    'scrapedAt' => $spec->getScrapedAt()?->format('c'),
-                    'sourceUrl' => $spec->getSourceUrl(),
-                    ];
-                }
+                    $specData = null;
+                    $spec = $entityManager->getRepository(\App\Entity\Specification::class)->findOneBy(['vehicle' => $vehicle]);
+                    if ($spec instanceof \App\Entity\Specification) {
+                        $specData = [
+                        'engineType' => $spec->getEngineType(),
+                        'displacement' => $spec->getDisplacement(),
+                        'power' => $spec->getPower(),
+                        'torque' => $spec->getTorque(),
+                        'compression' => $spec->getCompression(),
+                        'bore' => $spec->getBore(),
+                        'stroke' => $spec->getStroke(),
+                        'fuelSystem' => $spec->getFuelSystem(),
+                        'cooling' => $spec->getCooling(),
+                        'sparkplugType' => $spec->getSparkplugType(),
+                        'coolantType' => $spec->getCoolantType(),
+                        'coolantCapacity' => $spec->getCoolantCapacity(),
+                        'gearbox' => $spec->getGearbox(),
+                        'transmission' => $spec->getTransmission(),
+                        'finalDrive' => $spec->getFinalDrive(),
+                        'clutch' => $spec->getClutch(),
+                        'engineOilType' => $spec->getEngineOilType(),
+                        'engineOilCapacity' => $spec->getEngineOilCapacity(),
+                        'transmissionOilType' => $spec->getTransmissionOilType(),
+                        'transmissionOilCapacity' => $spec->getTransmissionOilCapacity(),
+                        'middleDriveOilType' => $spec->getMiddleDriveOilType(),
+                        'middleDriveOilCapacity' => $spec->getMiddleDriveOilCapacity(),
+                        'frame' => $spec->getFrame(),
+                        'frontSuspension' => $spec->getFrontSuspension(),
+                        'rearSuspension' => $spec->getRearSuspension(),
+                        'staticSagFront' => $spec->getStaticSagFront(),
+                        'staticSagRear' => $spec->getStaticSagRear(),
+                        'frontBrakes' => $spec->getFrontBrakes(),
+                        'rearBrakes' => $spec->getRearBrakes(),
+                        'frontTyre' => $spec->getFrontTyre(),
+                        'rearTyre' => $spec->getRearTyre(),
+                        'frontTyrePressure' => $spec->getFrontTyrePressure(),
+                        'rearTyrePressure' => $spec->getRearTyrePressure(),
+                        'frontWheelTravel' => $spec->getFrontWheelTravel(),
+                        'rearWheelTravel' => $spec->getRearWheelTravel(),
+                        'wheelbase' => $spec->getWheelbase(),
+                        'seatHeight' => $spec->getSeatHeight(),
+                        'groundClearance' => $spec->getGroundClearance(),
+                        'dryWeight' => $spec->getDryWeight(),
+                        'wetWeight' => $spec->getWetWeight(),
+                        'fuelCapacity' => $spec->getFuelCapacity(),
+                        'topSpeed' => $spec->getTopSpeed(),
+                        'additionalInfo' => $spec->getAdditionalInfo(),
+                        'scrapedAt' => $spec->getScrapedAt()?->format('c'),
+                        'sourceUrl' => $spec->getSourceUrl(),
+                        ];
+                    }
 
-                $vehicleData = [
-                'originalId' => $vehicle->getId(),
-                'name' => $vehicle->getName(),
-                'vehicleType' => $vehicle->getVehicleType()->getName(),
-                'make' => $vehicle->getMake(),
-                'model' => $vehicle->getModel(),
-                'year' => $vehicle->getYear(),
-                'vin' => $vehicle->getVin(),
-                'vinDecodedData' => $vehicle->getVinDecodedData(),
-                'vinDecodedAt' => $vehicle->getVinDecodedAt()?->format('c'),
-                'registrationNumber' => $vehicle->getRegistrationNumber(),
-                'engineNumber' => $vehicle->getEngineNumber(),
-                'v5DocumentNumber' => $vehicle->getV5DocumentNumber(),
-                'createdAt' => $vehicle->getCreatedAt()?->format('c'),
-                'purchaseCost' => $vehicle->getPurchaseCost(),
-                'purchaseDate' => $vehicle->getPurchaseDate()?->format('Y-m-d'),
-                'purchaseMileage' => $vehicle->getPurchaseMileage(),
-                'status' => $vehicle->getStatus(),
-                'statusHistory' => array_map(fn($h) => [
+                    $vehicleData = [
+                    'originalId' => $vehicle->getId(),
+                    'name' => $vehicle->getName(),
+                    'vehicleType' => $vehicle->getVehicleType()->getName(),
+                    'make' => $vehicle->getMake(),
+                    'model' => $vehicle->getModel(),
+                    'year' => $vehicle->getYear(),
+                    'vin' => $vehicle->getVin(),
+                    'vinDecodedData' => $vehicle->getVinDecodedData(),
+                    'vinDecodedAt' => $vehicle->getVinDecodedAt()?->format('c'),
+                    'registrationNumber' => $vehicle->getRegistrationNumber(),
+                    'engineNumber' => $vehicle->getEngineNumber(),
+                    'v5DocumentNumber' => $vehicle->getV5DocumentNumber(),
+                    'createdAt' => $vehicle->getCreatedAt()?->format('c'),
+                    'purchaseCost' => $vehicle->getPurchaseCost(),
+                    'purchaseDate' => $vehicle->getPurchaseDate()?->format('Y-m-d'),
+                    'purchaseMileage' => $vehicle->getPurchaseMileage(),
+                    'status' => $vehicle->getStatus(),
+                    'statusHistory' => array_map(fn($h) => [
                     'oldStatus' => $h->getOldStatus(),
                     'newStatus' => $h->getNewStatus(),
                     'changeDate' => $h->getChangeDate()?->format('Y-m-d'),
                     'notes' => $h->getNotes(),
                     'userEmail' => $h->getUser()?->getEmail(),
                     'createdAt' => $h->getCreatedAt()?->format('c'),
-                ], $vehicle->getStatusHistory()->toArray()),
+                    ], $vehicle->getStatusHistory()->toArray()),
                     'roadTaxExempt' => $vehicle->getRoadTaxExempt(),
                     'motExempt' => $vehicle->getMotExempt(),
                     'securityFeatures' => $vehicle->getSecurityFeatures(),
@@ -603,13 +603,13 @@ class VehicleImportExportController extends AbstractController
                         }
                         return $todosData;
                     })(),
-                ];
-                $data[] = $vehicleData;
-            }
+                    ];
+                    $data[] = $vehicleData;
+                }
 
-            $entityManager->clear();
-            gc_collect_cycles();
-        }
+                $entityManager->clear();
+                gc_collect_cycles();
+            }
 
             $format = strtolower((string)$request->query->get('format', 'json'));
 
@@ -644,7 +644,7 @@ class VehicleImportExportController extends AbstractController
             }
 
         // Default JSON export wraps vehicles under a top-level key.
-            error_log('[export] JSON completed vehicleCount=' . $vehicleCount);
+            $logger->info('[export] JSON completed', ['vehicleCount' => $vehicleCount]);
             $logger->info('Export JSON completed', [
                 'vehicleCount' => $vehicleCount,
                 'elapsedMs' => (int) ((microtime(true) - $t0) * 1000)
@@ -686,7 +686,7 @@ class VehicleImportExportController extends AbstractController
                 return new JsonResponse(['error' => 'Unauthorized'], 401);
             }
 
-            error_log('[export] ZIP started userId=' . $user->getId());
+            $logger->info('Export ZIP started', ['userId' => $user->getId()]);
             $logger->info('Export ZIP started', [
                 'userId' => $user->getId(),
                 'query' => $request->query->all()
@@ -710,7 +710,7 @@ class VehicleImportExportController extends AbstractController
                 return new JsonResponse(['error' => 'Export failed: empty payload'], 500);
             }
 
-            error_log('[export] ZIP got vehicles JSON bytes=' . strlen($vehiclesJson));
+            $logger->info('[export] ZIP got vehicles JSON', ['bytes' => strlen($vehiclesJson)]);
 
             $logger->info('Export ZIP got vehicles JSON', [
                 'bytes' => strlen($vehiclesJson),
@@ -729,7 +729,7 @@ class VehicleImportExportController extends AbstractController
                 ->getResult();
             }
 
-            error_log('[export] ZIP attachments loaded count=' . (is_countable($attachments) ? count($attachments) : 'n/a'));
+            $logger->info('[export] ZIP attachments loaded', ['count' => is_countable($attachments) ? count($attachments) : 0]);
 
         // gather vehicle images belonging to user
             if ($this->isAdminForUser($user)) {
@@ -737,7 +737,7 @@ class VehicleImportExportController extends AbstractController
             } else {
                 $vehicles = $entityManager->getRepository(Vehicle::class)->findBy(['owner' => $user]);
             }
-            error_log('[export] ZIP vehicles loaded count=' . (is_countable($vehicles) ? count($vehicles) : 'n/a'));
+            $logger->info('[export] ZIP vehicles loaded', ['count' => is_countable($vehicles) ? count($vehicles) : 0]);
             $vehicleImages = [];
             foreach ($vehicles as $vehicle) {
                 foreach ($vehicle->getImages() as $image) {
@@ -745,7 +745,7 @@ class VehicleImportExportController extends AbstractController
                 }
             }
 
-            error_log('[export] ZIP vehicle images collected count=' . count($vehicleImages));
+            $logger->info('[export] ZIP vehicle images collected', ['count' => count($vehicleImages)]);
 
             $projectTmpRoot = $this->getParameter('kernel.project_dir') . '/var/tmp';
             if (!file_exists($projectTmpRoot)) {
@@ -769,7 +769,7 @@ class VehicleImportExportController extends AbstractController
                 'tempDir' => $tempDir,
                 'elapsedMs' => (int) ((microtime(true) - $t0) * 1000)
             ]);
-            error_log('[export] ZIP temp dir ready ' . $tempDir);
+            $logger->info('[export] ZIP temp dir ready', ['tempDir' => $tempDir]);
 
             $manifest = [];
             $uploadDir = $this->getParameter('kernel.project_dir') . '/uploads';
@@ -786,7 +786,17 @@ class VehicleImportExportController extends AbstractController
                 copy($filePath, $targetPath);
                 $attachmentCopied++;
                 if (($attachmentCopied % 200) === 0) {
-                    error_log('[export] ZIP attachments copied=' . $attachmentCopied);
+                    $logger->info('[export] ZIP attachments copied', ['count' => $attachmentCopied]);
+                }
+
+                // Determine entity type and ID from either explicit fields or vehicle relationship
+                $entityType = $att->getEntityType();
+                $entityId = $att->getEntityId();
+                
+                // If no explicit entityType but vehicle relationship exists, use that
+                if (!$entityType && $att->getVehicle()) {
+                    $entityType = 'vehicle';
+                    $entityId = $att->getVehicle()->getId();
                 }
 
                 $manifest[] = [
@@ -798,8 +808,8 @@ class VehicleImportExportController extends AbstractController
                 'mimeType' => $att->getMimeType(),
                 'fileSize' => $att->getFileSize(),
                 'uploadedAt' => $att->getUploadedAt()->format('c'),
-                'entityType' => $att->getEntityType(),
-                'entityId' => $att->getEntityId(),
+                'entityType' => $entityType,
+                'entityId' => $entityId,
                 'description' => $att->getDescription(),
                 'storagePath' => $storagePath,
                 'category' => $att->getCategory(),
@@ -838,7 +848,7 @@ class VehicleImportExportController extends AbstractController
                 copy($filePath, $targetPath);
                 $imageCopied++;
                 if (($imageCopied % 200) === 0) {
-                    error_log('[export] ZIP images copied=' . $imageCopied);
+                    $logger->info('[export] ZIP images copied', ['count' => $imageCopied]);
                 }
 
                 $manifest[] = [
@@ -872,7 +882,7 @@ class VehicleImportExportController extends AbstractController
             file_put_contents($tempDir . '/manifest.json', json_encode($manifest, JSON_PRETTY_PRINT));
             file_put_contents($tempDir . '/vehicles.json', $vehiclesJson);
 
-            error_log('[export] ZIP wrote manifest and vehicles.json');
+            $logger->info('[export] ZIP wrote manifest and vehicles.json');
 
             $logger->info('Export ZIP wrote manifest and vehicles.json', [
                 'tempDir' => $tempDir,
@@ -895,7 +905,7 @@ class VehicleImportExportController extends AbstractController
 
             $zip->close();
 
-            error_log('[export] ZIP archive created path=' . $zipPath);
+            $logger->info('[export] ZIP archive created', ['path' => $zipPath]);
 
             $logger->info('Export ZIP archive created', [
                 'zipPath' => $zipPath,
@@ -1516,7 +1526,7 @@ class VehicleImportExportController extends AbstractController
 
                     $entityManager->persist($vehicle);
                     $vehicleMap[$vehicleData['registrationNumber']] = $vehicle;
-                    
+
                     // Track old ID => new vehicle entity for later attachment remapping
                     if (isset($vehicleData['originalId'])) {
                         $vehicleIdMap[(int)$vehicleData['originalId']] = $vehicle;
@@ -3363,11 +3373,13 @@ class VehicleImportExportController extends AbstractController
                 foreach ($attachmentEntitiesByNewId as $attachmentId => $attachment) {
                     $entityType = $attachment->getEntityType();
                     $oldEntityId = $attachment->getEntityId();
-                    
-                    // Only remap vehicle attachments for now
+
+                    // Remap vehicle attachments (includes documents, manuals, etc.)
                     if ($entityType === 'vehicle' && $oldEntityId && isset($vehicleIdMap[$oldEntityId])) {
                         $newVehicle = $vehicleIdMap[$oldEntityId];
                         $attachment->setEntityId($newVehicle->getId());
+                        // Set the vehicle relationship to maintain proper entity association
+                        $attachment->setVehicle($newVehicle);
                         $entityManager->persist($attachment);
                     }
                 }

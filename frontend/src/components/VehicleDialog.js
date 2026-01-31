@@ -52,6 +52,7 @@ const VehicleDialog = ({ open, vehicle, onClose }) => {
   const [vehicleTypes, setVehicleTypes] = useState([]);
   const [makes, setMakes] = useState([]);
   const [models, setModels] = useState([]);
+  const [securityFeatures, setSecurityFeatures] = useState([]);
   const [loading, setLoading] = useState(false);
   const [lookingUpReg, setLookingUpReg] = useState(false);
   const { api } = useAuth();
@@ -133,68 +134,10 @@ const VehicleDialog = ({ open, vehicle, onClose }) => {
     return `colors.${colorMap[color] || color.toLowerCase()}`;
   };
 
-  // Security features by vehicle type
-  const securityFeaturesByType = {
-    'Car': [
-      'Alarm System',
-      'Immobiliser',
-      'Central Locking',
-      'Steering Lock',
-      'GPS Tracking',
-      'Dash Cam',
-      'Kill Switch',
-      'Wheel Lock',
-      'VIN Etching',
-      'Deadlocks',
-      'Anti-Theft Marking',
-      'Thatcham Approved Alarm',
-      'OBD Port Lock',
-    ],
-    'Motorcycle': [
-      'Disc Lock',
-      'Chain and Padlock',
-      'U-Lock',
-      'Alarm System',
-      'GPS Tracking',
-      'Immobiliser',
-      'Ground Anchor',
-      'Bike Cover',
-      'Kill Switch',
-      'Steering Lock',
-      'Datatag/Security Marking',
-      'Brake Lever Lock',
-    ],
-    'Van': [
-      'Alarm System',
-      'Immobiliser',
-      'Central Locking',
-      'Deadlocks',
-      'Slam Locks',
-      'Hook Locks',
-      'GPS Tracking',
-      'Steering Lock',
-      'Dash Cam',
-      'Load Area Alarm',
-      'Security Cages',
-      'Window Grills',
-      'OBD Port Lock',
-      'Catalytic Converter Lock',
-    ],
-    'Truck': [
-      'Alarm System',
-      'Immobiliser',
-      'GPS Tracking',
-      'Air Cuff Lock',
-      'Kingpin Lock',
-      'Glad Hand Lock',
-      'Wheel Clamp',
-      'Dash Cam',
-      'Load Security',
-      'Trailer Lock',
-      'Fifth Wheel Lock',
-      'OBD Port Lock',
-    ],
-  };
+  // Get available security features based on vehicle type
+  const availableSecurityFeatures = React.useMemo(() => {
+    return securityFeatures.map(sf => sf.name);
+  }, [securityFeatures]);
 
   // Map security feature values to translation keys
   const getSecurityFeatureTranslationKey = (feature) => {
@@ -232,18 +175,10 @@ const VehicleDialog = ({ open, vehicle, onClose }) => {
       'Load Security': 'loadSecurity',
       'Trailer Lock': 'trailerLock',
       'Fifth Wheel Lock': 'fifthWheelLock',
+      'Charging Port Lock': 'chargingPortLock',
     };
-    return `securityFeatureOptions.${featureMap[feature] || feature.toLowerCase()}`;
+    return `securityFeatureOptions.${featureMap[feature] || feature.toLowerCase().replace(/\s+/g, '')}`;
   };
-
-  // Get available security features based on vehicle type
-  const availableSecurityFeatures = React.useMemo(() => {
-    const vehicleType = vehicleTypes.find(vt => vt.id === formData.vehicleTypeId);
-    if (vehicleType && securityFeaturesByType[vehicleType.name]) {
-      return securityFeaturesByType[vehicleType.name];
-    }
-    return [];
-  }, [formData.vehicleTypeId, vehicleTypes]);
 
   useEffect(() => {
         if (open) {
@@ -271,8 +206,10 @@ const VehicleDialog = ({ open, vehicle, onClose }) => {
   useEffect(() => {
     if (formData.vehicleTypeId) {
       loadMakes(formData.vehicleTypeId);
+      loadSecurityFeatures(formData.vehicleTypeId);
     } else {
       setMakes([]);
+      setSecurityFeatures([]);
     }
   }, [formData.vehicleTypeId]);
 
@@ -291,6 +228,16 @@ const VehicleDialog = ({ open, vehicle, onClose }) => {
   const loadVehicleTypes = async () => {
     const data = await fetchArrayData(api, '/vehicle-types');
     setVehicleTypes(data);
+  };
+
+  const loadSecurityFeatures = async (vehicleTypeId) => {
+    try {
+      const response = await api.get(`/security-features?vehicleTypeId=${vehicleTypeId}`);
+      setSecurityFeatures(response.data || []);
+    } catch (error) {
+      console.error('Error loading security features:', error);
+      setSecurityFeatures([]);
+    }
   };
 
   const loadMakes = async (vehicleTypeId) => {

@@ -49,12 +49,12 @@ class InsuranceController extends AbstractController
         $visible = [];
         foreach ($policies as $p) {
             if ($this->isAdminForUser($user)) {
-                $visible[] = $this->_serializePolicy($p);
+                $visible[] = $this->serializePolicy($p);
                 continue;
             }
             foreach ($p->getVehicles() as $v) {
                 if ($v->getOwner()?->getId() === $user->getId()) {
-                    $visible[] = $this->_serializePolicy($p);
+                    $visible[] = $this->serializePolicy($p);
                     break;
                 }
             }
@@ -148,7 +148,7 @@ class InsuranceController extends AbstractController
             $this->entityManager->flush();
         }
 
-        return new JsonResponse($this->_serializePolicy($policy), 201);
+        return new JsonResponse($this->serializePolicy($policy), 201);
     }
 
     #[Route('/insurance/policies/{id}', methods: ['GET'])]
@@ -179,7 +179,7 @@ class InsuranceController extends AbstractController
             return new JsonResponse(['error' => 'Not found'], 404);
         }
 
-        return new JsonResponse($this->_serializePolicy($policy));
+        return new JsonResponse($this->serializePolicy($policy));
     }
 
     #[Route('/insurance/policies/{id}', methods: ['PUT'])]
@@ -320,7 +320,7 @@ class InsuranceController extends AbstractController
             $this->entityManager->flush();
         }
 
-        return new JsonResponse($this->_serializePolicy($policy));
+        return new JsonResponse($this->serializePolicy($policy));
     }
 
     #[Route('/insurance/policies/{id}', methods: ['DELETE'])]
@@ -393,7 +393,7 @@ class InsuranceController extends AbstractController
         $policy->addVehicle($vehicle);
         $this->entityManager->flush();
 
-        return new JsonResponse($this->_serializePolicy($policy));
+        return new JsonResponse($this->serializePolicy($policy));
     }
 
     #[Route('/insurance/policies/{id}/vehicles/{vehicleId}', methods: ['DELETE'])]
@@ -428,7 +428,7 @@ class InsuranceController extends AbstractController
         $policy->removeVehicle($vehicle);
         $this->entityManager->flush();
 
-        return new JsonResponse($this->_serializePolicy($policy));
+        return new JsonResponse($this->serializePolicy($policy));
     }
 
     #[Route('/insurance', methods: ['GET'])]
@@ -603,7 +603,7 @@ class InsuranceController extends AbstractController
      *
      * @return array
      */
-    private function _serializePolicy(InsurancePolicy $policy): array
+    private function serializePolicy(InsurancePolicy $policy): array
     {
         $vehicles = [];
         foreach ($policy->getVehicles() as $v) {

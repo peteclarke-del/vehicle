@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Controller\Trait\UserSecurityTrait;
 use App\Entity\User;
 use App\Entity\Vehicle;
 use App\Entity\VehicleStatusHistory;
@@ -15,13 +16,14 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Contracts\Cache\CacheInterface;
 use Symfony\Contracts\Cache\ItemInterface;
 use Symfony\Contracts\Cache\TagAwareCacheInterface;
 
 #[Route('/api/vehicles')]
 class VehicleController extends AbstractController
 {
+    use UserSecurityTrait;
+
     public function __construct(
         private EntityManagerInterface $entityManager,
         private CostCalculator $costCalculator,
@@ -117,30 +119,16 @@ class VehicleController extends AbstractController
         return null;
     }
 
-    private function isAdminForUser(?User $user): bool
-    {
-        // Avoid relying on the security service here because some requests
-        // (tests or certain token flows) may not populate the security
-        // context reliably. Instead check the user's stored roles array
-        // directly.
-        if (!($user instanceof User)) {
-            return false;
-        }
-
-        $roles = $user->getRoles();
-        return in_array('ROLE_ADMIN', $roles, true);
-    }
-
     private function computeLastServiceDate(Vehicle $vehicle): ?string
     {
         $latest = $this->entityManager->getRepository(\App\Entity\ServiceRecord::class)
-            ->createQueryBuilder('sr')
-            ->where('sr.vehicle = :vehicle')
-            ->setParameter('vehicle', $vehicle)
-            ->orderBy('sr.serviceDate', 'DESC')
-            ->setMaxResults(1)
-            ->getQuery()
-            ->getOneOrNullResult();
+        ->createQueryBuilder('sr')
+        ->where('sr.vehicle = :vehicle')
+        ->setParameter('vehicle', $vehicle)
+        ->orderBy('sr.serviceDate', 'DESC')
+        ->setMaxResults(1)
+        ->getQuery()
+        ->getOneOrNullResult();
 
         if ($latest && $latest->getServiceDate()) {
             return $latest->getServiceDate()->format('Y-m-d');
@@ -167,9 +155,9 @@ class VehicleController extends AbstractController
         // Initialize with nulls
         foreach ($vehicleIds as $vid) {
             $result[$vid] = [
-                'lastServiceDate' => null,
-                'motExpiryDate' => null,
-                'currentMileage' => null,
+            'lastServiceDate' => null,
+            'motExpiryDate' => null,
+            'currentMileage' => null,
             ];
         }
 
@@ -244,13 +232,13 @@ class VehicleController extends AbstractController
     private function computeMotExpiryDate(Vehicle $vehicle): ?string
     {
         $latest = $this->entityManager->getRepository(\App\Entity\MotRecord::class)
-            ->createQueryBuilder('mr')
-            ->where('mr.vehicle = :vehicle')
-            ->setParameter('vehicle', $vehicle)
-            ->orderBy('mr.testDate', 'DESC')
-            ->setMaxResults(1)
-            ->getQuery()
-            ->getOneOrNullResult();
+        ->createQueryBuilder('mr')
+        ->where('mr.vehicle = :vehicle')
+        ->setParameter('vehicle', $vehicle)
+        ->orderBy('mr.testDate', 'DESC')
+        ->setMaxResults(1)
+        ->getQuery()
+        ->getOneOrNullResult();
 
         if ($latest) {
             if ($latest->getExpiryDate()) {
@@ -280,10 +268,10 @@ class VehicleController extends AbstractController
 
                 if ($req) {
                     $dump = [
-                        'time' => (new \DateTimeImmutable())->format('c'),
-                        'headers' => $req->headers->all(),
-                        'server' => $req->server->all(),
-                        'globals' => $_SERVER,
+                    'time' => (new \DateTimeImmutable())->format('c'),
+                    'headers' => $req->headers->all(),
+                    'server' => $req->server->all(),
+                    'globals' => $_SERVER,
                     ];
                     @file_put_contents($this->getParameter('kernel.project_dir') . '/var/log/test_auth_dump.json', json_encode($dump, JSON_PRETTY_PRINT));
                 }
@@ -356,15 +344,6 @@ class VehicleController extends AbstractController
 
         $isAdmin = $this->isAdminForUser($user);
 
-        // Debug: log resolved user and admin status to help diagnose
-        // why a non-admin account might be seeing all vehicles.
-        try {
-            $userEmail = $user instanceof User ? $user->getEmail() : '(none)';
-            @file_put_contents($this->getParameter('kernel.project_dir') . '/var/log/vehicle_list_debug.log', json_encode(['time' => (new \DateTime())->format('c'), 'email' => $userEmail, 'roles' => $user instanceof User ? $user->getRoles() : [], 'isAdmin' => $isAdmin], JSON_PRETTY_PRINT) . "\n", FILE_APPEND);
-        } catch (\Throwable $e) {
-            // swallow logging errors
-        }
-
         // Cache vehicles list for 10 minutes per user
         $cacheKey = 'vehicles.list.' . ($isAdmin ? 'admin' : 'user.' . $user->getId());
 
@@ -376,7 +355,7 @@ class VehicleController extends AbstractController
                 $vehicles = $this->entityManager->getRepository(Vehicle::class)->findAll();
             } else {
                 $vehicles = $this->entityManager->getRepository(Vehicle::class)
-                    ->findBy(['owner' => $user]);
+                ->findBy(['owner' => $user]);
             }
 
             // Batch compute all derived values upfront to avoid N queries
@@ -496,8 +475,8 @@ class VehicleController extends AbstractController
             } catch (\Throwable $e) {
                 // Non-fatal: don't block the update if history can't be created
                 $this->logger->warning('Failed to record vehicle status history', [
-                    'exception' => $e->getMessage(),
-                    'vehicle_id' => $vehicle->getId()
+                'exception' => $e->getMessage(),
+                'vehicle_id' => $vehicle->getId()
                 ]);
             }
         }
@@ -598,17 +577,17 @@ class VehicleController extends AbstractController
         });
 
         $breakdown = [
-            'purchaseCost' => $stats['purchaseCost'],
-            'totalFuelCost' => $stats['totalFuelCost'],
-            'totalPartsCost' => $stats['totalPartsCost'],
-            'totalServiceCost' => $stats['totalServiceCost'],
-            'totalConsumablesCost' => $stats['totalConsumablesCost'],
-            'totalRunningCost' => $stats['totalRunningCost']
+        'purchaseCost' => $stats['purchaseCost'],
+        'totalFuelCost' => $stats['totalFuelCost'],
+        'totalPartsCost' => $stats['totalPartsCost'],
+        'totalServiceCost' => $stats['totalServiceCost'],
+        'totalConsumablesCost' => $stats['totalConsumablesCost'],
+        'totalRunningCost' => $stats['totalRunningCost']
         ];
 
         return $this->json([
-            'totalCosts' => $stats['totalCostToDate'],
-            'breakdown' => $breakdown
+        'totalCosts' => $stats['totalCostToDate'],
+        'breakdown' => $breakdown
         ]);
     }
 
@@ -637,7 +616,7 @@ class VehicleController extends AbstractController
         // Return only summary stats here; the full depreciation schedule
         // is available from the dedicated `/depreciation` endpoint.
         return $this->json([
-            'stats' => $stats
+        'stats' => $stats
         ]);
     }
 
@@ -666,8 +645,8 @@ class VehicleController extends AbstractController
             if ($isAdmin) {
                 $dqlFuel = 'SELECT SUM(fr.cost) FROM App\\Entity\\FuelRecord fr WHERE fr.date >= :cutoff';
                 $fuelTotal = (float) ($this->entityManager->createQuery($dqlFuel)
-                    ->setParameter('cutoff', $cutoff)
-                    ->getSingleScalarResult() ?? 0.0);
+                ->setParameter('cutoff', $cutoff)
+                ->getSingleScalarResult() ?? 0.0);
 
                 $dqlFuelCount = 'SELECT COUNT(fr.id) FROM App\\Entity\\FuelRecord fr WHERE fr.date >= :cutoff';
                 $fuelCount = (int) ($this->entityManager->createQuery($dqlFuelCount)
@@ -676,23 +655,23 @@ class VehicleController extends AbstractController
             } else {
                 $dqlFuel = 'SELECT SUM(fr.cost) FROM App\\Entity\\FuelRecord fr JOIN fr.vehicle v WHERE v.owner = :user AND fr.date >= :cutoff';
                 $fuelTotal = (float) ($this->entityManager->createQuery($dqlFuel)
-                    ->setParameter('user', $user)
-                    ->setParameter('cutoff', $cutoff)
-                    ->getSingleScalarResult() ?? 0.0);
+                ->setParameter('user', $user)
+                ->setParameter('cutoff', $cutoff)
+                ->getSingleScalarResult() ?? 0.0);
 
                 $dqlFuelCount = 'SELECT COUNT(fr.id) FROM App\\Entity\\FuelRecord fr JOIN fr.vehicle v WHERE v.owner = :user AND fr.date >= :cutoff';
                 $fuelCount = (int) ($this->entityManager->createQuery($dqlFuelCount)
-                    ->setParameter('user', $user)
-                    ->setParameter('cutoff', $cutoff)
-                    ->getSingleScalarResult() ?? 0);
+                ->setParameter('user', $user)
+                ->setParameter('cutoff', $cutoff)
+                ->getSingleScalarResult() ?? 0);
             }
 
             // Parts total (use purchaseDate)
             if ($isAdmin) {
                 $dqlParts = 'SELECT SUM(p.cost) FROM App\\Entity\\Part p WHERE p.purchaseDate >= :cutoff';
                 $partsTotal = (float) ($this->entityManager->createQuery($dqlParts)
-                    ->setParameter('cutoff', $cutoff)
-                    ->getSingleScalarResult() ?? 0.0);
+                ->setParameter('cutoff', $cutoff)
+                ->getSingleScalarResult() ?? 0.0);
 
                 $dqlPartsCount = 'SELECT COUNT(p.id) FROM App\\Entity\\Part p WHERE p.purchaseDate >= :cutoff';
                 $partsCount = (int) ($this->entityManager->createQuery($dqlPartsCount)
@@ -701,23 +680,23 @@ class VehicleController extends AbstractController
             } else {
                 $dqlParts = 'SELECT SUM(p.cost) FROM App\\Entity\\Part p JOIN p.vehicle v WHERE v.owner = :user AND p.purchaseDate >= :cutoff';
                 $partsTotal = (float) ($this->entityManager->createQuery($dqlParts)
-                    ->setParameter('user', $user)
-                    ->setParameter('cutoff', $cutoff)
-                    ->getSingleScalarResult() ?? 0.0);
+                ->setParameter('user', $user)
+                ->setParameter('cutoff', $cutoff)
+                ->getSingleScalarResult() ?? 0.0);
 
                 $dqlPartsCount = 'SELECT COUNT(p.id) FROM App\\Entity\\Part p JOIN p.vehicle v WHERE v.owner = :user AND p.purchaseDate >= :cutoff';
                 $partsCount = (int) ($this->entityManager->createQuery($dqlPartsCount)
-                    ->setParameter('user', $user)
-                    ->setParameter('cutoff', $cutoff)
-                    ->getSingleScalarResult() ?? 0);
+                ->setParameter('user', $user)
+                ->setParameter('cutoff', $cutoff)
+                ->getSingleScalarResult() ?? 0);
             }
 
             // Consumables total (use lastChanged)
             if ($isAdmin) {
                 $dqlConsumables = 'SELECT SUM(c.cost) FROM App\\Entity\\Consumable c WHERE c.lastChanged >= :cutoff';
                 $consumablesTotal = (float) ($this->entityManager->createQuery($dqlConsumables)
-                    ->setParameter('cutoff', $cutoff)
-                    ->getSingleScalarResult() ?? 0.0);
+                ->setParameter('cutoff', $cutoff)
+                ->getSingleScalarResult() ?? 0.0);
 
                 $dqlConsumablesCount = 'SELECT COUNT(c.id) FROM App\\Entity\\Consumable c WHERE c.lastChanged >= :cutoff';
                 $consumablesCount = (int) ($this->entityManager->createQuery($dqlConsumablesCount)
@@ -726,24 +705,24 @@ class VehicleController extends AbstractController
             } else {
                 $dqlConsumables = 'SELECT SUM(c.cost) FROM App\\Entity\\Consumable c JOIN c.vehicle v WHERE v.owner = :user AND c.lastChanged >= :cutoff';
                 $consumablesTotal = (float) ($this->entityManager->createQuery($dqlConsumables)
-                    ->setParameter('user', $user)
-                    ->setParameter('cutoff', $cutoff)
-                    ->getSingleScalarResult() ?? 0.0);
+                ->setParameter('user', $user)
+                ->setParameter('cutoff', $cutoff)
+                ->getSingleScalarResult() ?? 0.0);
 
                 $dqlConsumablesCount = 'SELECT COUNT(c.id) FROM App\\Entity\\Consumable c JOIN c.vehicle v WHERE v.owner = :user AND c.lastChanged >= :cutoff';
                 $consumablesCount = (int) ($this->entityManager->createQuery($dqlConsumablesCount)
-                    ->setParameter('user', $user)
-                    ->setParameter('cutoff', $cutoff)
-                    ->getSingleScalarResult() ?? 0);
+                ->setParameter('user', $user)
+                ->setParameter('cutoff', $cutoff)
+                ->getSingleScalarResult() ?? 0);
             }
 
             // Average service cost over the period (labor + parts + additional)
             if ($isAdmin) {
                 $dqlServiceAvg = 'SELECT AVG(COALESCE(sr.laborCost, 0) + COALESCE(sr.partsCost, 0) + COALESCE(sr.additionalCosts, 0))'
-                    . ' FROM App\\Entity\\ServiceRecord sr WHERE sr.serviceDate >= :cutoff';
+                . ' FROM App\\Entity\\ServiceRecord sr WHERE sr.serviceDate >= :cutoff';
                 $serviceAvg = (float) ($this->entityManager->createQuery($dqlServiceAvg)
-                    ->setParameter('cutoff', $cutoff)
-                    ->getSingleScalarResult() ?? 0.0);
+                ->setParameter('cutoff', $cutoff)
+                ->getSingleScalarResult() ?? 0.0);
 
                 $dqlServiceCount = 'SELECT COUNT(sr.id) FROM App\\Entity\\ServiceRecord sr WHERE sr.serviceDate >= :cutoff';
                 $serviceCount = (int) ($this->entityManager->createQuery($dqlServiceCount)
@@ -751,38 +730,17 @@ class VehicleController extends AbstractController
                     ->getSingleScalarResult() ?? 0);
             } else {
                 $dqlServiceAvg = 'SELECT AVG(COALESCE(sr.laborCost, 0) + COALESCE(sr.partsCost, 0) + COALESCE(sr.additionalCosts, 0))'
-                    . ' FROM App\\Entity\\ServiceRecord sr JOIN sr.vehicle v WHERE v.owner = :user AND sr.serviceDate >= :cutoff';
+                . ' FROM App\\Entity\\ServiceRecord sr JOIN sr.vehicle v WHERE v.owner = :user AND sr.serviceDate >= :cutoff';
                 $serviceAvg = (float) ($this->entityManager->createQuery($dqlServiceAvg)
-                    ->setParameter('user', $user)
-                    ->setParameter('cutoff', $cutoff)
-                    ->getSingleScalarResult() ?? 0.0);
+                ->setParameter('user', $user)
+                ->setParameter('cutoff', $cutoff)
+                ->getSingleScalarResult() ?? 0.0);
 
                 $dqlServiceCount = 'SELECT COUNT(sr.id) FROM App\\Entity\\ServiceRecord sr JOIN sr.vehicle v WHERE v.owner = :user AND sr.serviceDate >= :cutoff';
                 $serviceCount = (int) ($this->entityManager->createQuery($dqlServiceCount)
-                    ->setParameter('user', $user)
-                    ->setParameter('cutoff', $cutoff)
-                    ->getSingleScalarResult() ?? 0);
-            }
-
-            // Write debug info to log
-            try {
-                $debug = [
-                    'time' => (new \DateTime())->format('c'),
-                    'user' => $user instanceof User ? $user->getEmail() : null,
-                    'isAdmin' => $isAdmin,
-                    'cutoff' => $cutoff->format('c'),
-                    'fuelTotal' => $fuelTotal,
-                    'fuelCount' => $fuelCount ?? 0,
-                    'partsTotal' => $partsTotal,
-                    'partsCount' => $partsCount ?? 0,
-                    'consumablesTotal' => $consumablesTotal,
-                    'consumablesCount' => $consumablesCount ?? 0,
-                    'serviceAvg' => $serviceAvg,
-                    'serviceCount' => $serviceCount ?? 0,
-                ];
-                @file_put_contents($this->getParameter('kernel.project_dir') . '/var/log/vehicle_totals_debug.log', json_encode($debug, JSON_PRETTY_PRINT) . "\n", FILE_APPEND);
-            } catch (\Throwable $e) {
-                // ignore
+                ->setParameter('user', $user)
+                ->setParameter('cutoff', $cutoff)
+                ->getSingleScalarResult() ?? 0);
             }
 
             // Compute total purchase value of vehicles (site-wide for admins, owner-scoped otherwise)
@@ -790,23 +748,23 @@ class VehicleController extends AbstractController
                 if ($isAdmin) {
                     $dqlTotalValue = 'SELECT SUM(v.purchaseCost) FROM App\\Entity\\Vehicle v';
                     $totalValue = (float) ($this->entityManager->createQuery($dqlTotalValue)
-                        ->getSingleScalarResult() ?? 0.0);
+                    ->getSingleScalarResult() ?? 0.0);
                 } else {
                     $dqlTotalValue = 'SELECT SUM(v.purchaseCost) FROM App\\Entity\\Vehicle v WHERE v.owner = :user';
                     $totalValue = (float) ($this->entityManager->createQuery($dqlTotalValue)
-                        ->setParameter('user', $user)
-                        ->getSingleScalarResult() ?? 0.0);
+                    ->setParameter('user', $user)
+                    ->getSingleScalarResult() ?? 0.0);
                 }
             } catch (\Throwable $e) {
                 $totalValue = 0.0;
             }
 
             return [
-                'periodMonths' => $periodMonths,
-                'fuel' => round($fuelTotal, 2),
-                'parts' => round($partsTotal, 2),
-                'consumables' => round($consumablesTotal, 2),
-                'averageServiceCost' => round($serviceAvg, 2),
+            'periodMonths' => $periodMonths,
+            'fuel' => round($fuelTotal, 2),
+            'parts' => round($partsTotal, 2),
+            'consumables' => round($consumablesTotal, 2),
+            'averageServiceCost' => round($serviceAvg, 2),
             ];
         });
 
@@ -829,46 +787,46 @@ class VehicleController extends AbstractController
         }
 
         return [
-            'id' => $vehicle->getId(),
-            'name' => $vehicle->getName(),
-            'make' => $vehicle->getMake(),
-            'model' => $vehicle->getModel(),
-            'year' => $vehicle->getYear(),
-            'vin' => $vehicle->getVin(),
-            'vinDecodedData' => $vehicle->getVinDecodedData(),
-            'vinDecodedAt' => $vehicle->getVinDecodedAt()?->format('Y-m-d H:i:s'),
-            'registrationNumber' => $vehicle->getRegistrationNumber(),
-            'registration' => $vehicle->getRegistrationNumber(),
-            'engineNumber' => $vehicle->getEngineNumber(),
-            'v5DocumentNumber' => $vehicle->getV5DocumentNumber(),
-            'purchaseCost' => $vehicle->getPurchaseCost(),
-            'purchaseDate' => $vehicle->getPurchaseDate()?->format('Y-m-d'),
-            'purchaseMileage' => $vehicle->getPurchaseMileage(),
-            // Current mileage is computed from the latest fuel records when available
-            'currentMileage' => $currentMileage,
-            // Prefer latest related records (service / MOT); fall back to stored vehicle values
-            'lastServiceDate' => $lastServiceDate,
-            'motExpiryDate' => $motExpiryDate,
-            'roadTaxExpiryDate' => $vehicle->getRoadTaxExpiryDate()?->format('Y-m-d'),
-            'insuranceExpiryDate' => $vehicle->getComputedInsuranceExpiryDate()?->format('Y-m-d'),
-            'isRoadTaxExempt' => $vehicle->isRoadTaxExempt(),
-            'isMotExempt' => $vehicle->isMotExempt(),
-            'roadTaxAnnualCost' => $vehicle->getComputedRoadTaxAnnualCost(),
-            'securityFeatures' => $vehicle->getSecurityFeatures(),
-            'vehicleColor' => $vehicle->getVehicleColor(),
-            'colour' => $vehicle->getVehicleColor(),
-            'serviceIntervalMonths' => $vehicle->getServiceIntervalMonths(),
-            'serviceIntervalMiles' => $vehicle->getServiceIntervalMiles(),
-            'depreciationMethod' => $vehicle->getDepreciationMethod(),
-            'depreciationYears' => $vehicle->getDepreciationYears(),
-            'depreciationRate' => $vehicle->getDepreciationRate(),
-            'vehicleType' => [
-                'id' => $vehicle->getVehicleType()->getId(),
-                'name' => $vehicle->getVehicleType()->getName()
-            ],
-            'status' => $vehicle->getStatus(),
-            'createdAt' => $vehicle->getCreatedAt()?->format('c'),
-            'updatedAt' => $vehicle->getUpdatedAt()?->format('c')
+        'id' => $vehicle->getId(),
+        'name' => $vehicle->getName(),
+        'make' => $vehicle->getMake(),
+        'model' => $vehicle->getModel(),
+        'year' => $vehicle->getYear(),
+        'vin' => $vehicle->getVin(),
+        'vinDecodedData' => $vehicle->getVinDecodedData(),
+        'vinDecodedAt' => $vehicle->getVinDecodedAt()?->format('Y-m-d H:i:s'),
+        'registrationNumber' => $vehicle->getRegistrationNumber(),
+        'registration' => $vehicle->getRegistrationNumber(),
+        'engineNumber' => $vehicle->getEngineNumber(),
+        'v5DocumentNumber' => $vehicle->getV5DocumentNumber(),
+        'purchaseCost' => $vehicle->getPurchaseCost(),
+        'purchaseDate' => $vehicle->getPurchaseDate()?->format('Y-m-d'),
+        'purchaseMileage' => $vehicle->getPurchaseMileage(),
+        // Current mileage is computed from the latest fuel records when available
+        'currentMileage' => $currentMileage,
+        // Prefer latest related records (service / MOT); fall back to stored vehicle values
+        'lastServiceDate' => $lastServiceDate,
+        'motExpiryDate' => $motExpiryDate,
+        'roadTaxExpiryDate' => $vehicle->getRoadTaxExpiryDate()?->format('Y-m-d'),
+        'insuranceExpiryDate' => $vehicle->getComputedInsuranceExpiryDate()?->format('Y-m-d'),
+        'isRoadTaxExempt' => $vehicle->isRoadTaxExempt(),
+        'isMotExempt' => $vehicle->isMotExempt(),
+        'roadTaxAnnualCost' => $vehicle->getComputedRoadTaxAnnualCost(),
+        'securityFeatures' => $vehicle->getSecurityFeatures(),
+        'vehicleColor' => $vehicle->getVehicleColor(),
+        'colour' => $vehicle->getVehicleColor(),
+        'serviceIntervalMonths' => $vehicle->getServiceIntervalMonths(),
+        'serviceIntervalMiles' => $vehicle->getServiceIntervalMiles(),
+        'depreciationMethod' => $vehicle->getDepreciationMethod(),
+        'depreciationYears' => $vehicle->getDepreciationYears(),
+        'depreciationRate' => $vehicle->getDepreciationRate(),
+        'vehicleType' => [
+            'id' => $vehicle->getVehicleType()->getId(),
+            'name' => $vehicle->getVehicleType()->getName()
+        ],
+        'status' => $vehicle->getStatus(),
+        'createdAt' => $vehicle->getCreatedAt()?->format('c'),
+        'updatedAt' => $vehicle->getUpdatedAt()?->format('c')
         ];
     }
 
@@ -876,7 +834,7 @@ class VehicleController extends AbstractController
     {
         if (isset($data['vehicleTypeId'])) {
             $vehicleType = $this->entityManager->getRepository(\App\Entity\VehicleType::class)
-                ->find($data['vehicleTypeId']);
+            ->find($data['vehicleTypeId']);
             if ($vehicleType) {
                 $vehicle->setVehicleType($vehicleType);
             }
@@ -886,7 +844,7 @@ class VehicleController extends AbstractController
         // default by using the first existing VehicleType, or create one.
         if (!$vehicle->getVehicleType()) {
             $vehicleTypeRepo = $this->entityManager
-                ->getRepository(\App\Entity\VehicleType::class);
+            ->getRepository(\App\Entity\VehicleType::class);
             $firstType = $vehicleTypeRepo->findOneBy([]);
             if ($firstType) {
                 $vehicle->setVehicleType($firstType);
@@ -1003,14 +961,14 @@ class VehicleController extends AbstractController
     private function computeCurrentMileage(Vehicle $vehicle): ?int
     {
         $latest = $this->entityManager->getRepository(\App\Entity\FuelRecord::class)
-            ->createQueryBuilder('fr')
-            ->where('fr.vehicle = :vehicle')
-            ->andWhere('fr.mileage IS NOT NULL')
-            ->setParameter('vehicle', $vehicle)
-            ->orderBy('fr.mileage', 'DESC')
-            ->setMaxResults(1)
-            ->getQuery()
-            ->getOneOrNullResult();
+        ->createQueryBuilder('fr')
+        ->where('fr.vehicle = :vehicle')
+        ->andWhere('fr.mileage IS NOT NULL')
+        ->setParameter('vehicle', $vehicle)
+        ->orderBy('fr.mileage', 'DESC')
+        ->setMaxResults(1)
+        ->getQuery()
+        ->getOneOrNullResult();
 
         if ($latest && method_exists($latest, 'getMileage') && $latest->getMileage()) {
             return (int) $latest->getMileage();

@@ -1,0 +1,62 @@
+[
+  {
+    "vehicleType": "Truck",
+    "name": "Alarm System",
+    "description": "Electronic alarm system to deter theft"
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Immobiliser",
+    "description": "Electronic immobiliser to prevent unauthorized starting"
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "GPS Tracking",
+    "description": "GPS tracking device for vehicle location monitoring"
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Air Cuff Lock",
+    "description": "Lock for air brake system connections"
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Kingpin Lock",
+    "description": "Lock for trailer kingpin connection"
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Glad Hand Lock",
+    "description": "Lock for trailer air brake connections"
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Wheel Clamp",
+    "description": "Heavy-duty wheel clamp for immobilization"
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Dash Cam",
+    "description": "Dashboard camera for recording while driving"
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Load Security",
+    "description": "Cargo securing and anti-theft systems"
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Trailer Lock",
+    "description": "Locks for trailer doors and coupling"
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Fifth Wheel Lock",
+    "description": "Lock for fifth wheel coupling mechanism"
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "OBD Port Lock",
+    "description": "Lock for OBD diagnostic port to prevent hacking"
+  }
+]

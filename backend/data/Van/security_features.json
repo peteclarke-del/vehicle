@@ -1,0 +1,72 @@
+[
+  {
+    "vehicleType": "Van",
+    "name": "Alarm System",
+    "description": "Electronic alarm system to deter theft"
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Immobiliser",
+    "description": "Electronic immobiliser to prevent unauthorized starting"
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Central Locking",
+    "description": "Central locking system for all doors"
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Deadlocks",
+    "description": "Additional deadlock mechanisms on doors"
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Slam Locks",
+    "description": "Automatic locking when door is closed"
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Hook Locks",
+    "description": "Hook-style locks for van doors"
+  },
+  {
+    "vehicleType": "Van",
+    "name": "GPS Tracking",
+    "description": "GPS tracking device for vehicle location monitoring"
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Steering Lock",
+    "description": "Mechanical steering wheel lock"
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Dash Cam",
+    "description": "Dashboard camera for recording while driving"
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Load Area Alarm",
+    "description": "Alarm system for cargo area"
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Security Cages",
+    "description": "Metal cages to protect cargo area"
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Window Grills",
+    "description": "Metal grills for windows protection"
+  },
+  {
+    "vehicleType": "Van",
+    "name": "OBD Port Lock",
+    "description": "Lock for OBD diagnostic port to prevent hacking"
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Catalytic Converter Lock",
+    "description": "Lock or cage to prevent catalytic converter theft"
+  }
+]
