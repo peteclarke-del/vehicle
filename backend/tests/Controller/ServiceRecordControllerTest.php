@@ -14,12 +14,6 @@ use Symfony\Bundle\FrameworkBundle\KernelBrowser;
  */
 class ServiceRecordControllerTest extends WebTestCase
 {
-    private KernelBrowser $client;
-
-    protected function setUp(): void
-    {
-        $this->client = static::createClient();
-    }
 
     private function getAuthToken(): string
     {
@@ -28,13 +22,15 @@ class ServiceRecordControllerTest extends WebTestCase
 
     public function testListServiceRecordsRequiresAuthentication(): void
     {
-        $this->client->request('GET', '/api/service-records');
+        $client = static::createClient();
+$client->request('GET', '/api/service-records');
         $this->assertResponseStatusCodeSame(401);
     }
 
     public function testListServiceRecordsRequiresVehicleId(): void
     {
-        $this->client->request(
+        $client = static::createClient();
+$client->request(
             'GET',
             '/api/service-records',
             [],
@@ -46,7 +42,8 @@ class ServiceRecordControllerTest extends WebTestCase
 
     public function testListServiceRecordsForVehicle(): void
     {
-        $this->client->request(
+        $client = static::createClient();
+$client->request(
             'GET',
             '/api/service-records?vehicleId=1',
             [],
@@ -60,7 +57,8 @@ class ServiceRecordControllerTest extends WebTestCase
 
     public function testCreateServiceRecord(): void
     {
-        $serviceData = [
+        $client = static::createClient();
+$serviceData = [
             'vehicleId' => 1,
             'description' => 'Annual Service',
             'serviceDate' => '2026-01-15',
@@ -72,7 +70,7 @@ class ServiceRecordControllerTest extends WebTestCase
             'notes' => 'All filters replaced',
         ];
 
-        $this->client->request(
+        $client->request(
             'POST',
             '/api/service-records',
             [],
@@ -85,7 +83,7 @@ class ServiceRecordControllerTest extends WebTestCase
         );
 
         $this->assertResponseStatusCodeSame(201);
-        $data = json_decode($this->client->getResponse()->getContent(), true);
+        $data = json_decode($client->getResponse()->getContent(), true);
         
         $this->assertArrayHasKey('id', $data);
         $this->assertSame('Annual Service', $data['description']);
@@ -96,12 +94,13 @@ class ServiceRecordControllerTest extends WebTestCase
 
     public function testCreateServiceRecordWithMissingFields(): void
     {
-        $serviceData = [
+        $client = static::createClient();
+$serviceData = [
             'vehicleId' => 1,
             'description' => 'Service',
         ];
 
-        $this->client->request(
+        $client->request(
             'POST',
             '/api/service-records',
             [],
@@ -118,7 +117,8 @@ class ServiceRecordControllerTest extends WebTestCase
 
     public function testUpdateServiceRecord(): void
     {
-        $createData = [
+        $client = static::createClient();
+$createData = [
             'vehicleId' => 1,
             'description' => 'Oil Change',
             'serviceDate' => '2026-01-10',
@@ -127,7 +127,7 @@ class ServiceRecordControllerTest extends WebTestCase
             'partsCost' => 30.00,
         ];
 
-        $this->client->request(
+        $client->request(
             'POST',
             '/api/service-records',
             [],
@@ -139,7 +139,7 @@ class ServiceRecordControllerTest extends WebTestCase
             json_encode($createData)
         );
 
-        $createResponse = json_decode($this->client->getResponse()->getContent(), true);
+        $createResponse = json_decode($client->getResponse()->getContent(), true);
         $serviceId = $createResponse['id'];
 
         $updateData = [
@@ -147,7 +147,7 @@ class ServiceRecordControllerTest extends WebTestCase
             'notes' => 'Used premium oil',
         ];
 
-        $this->client->request(
+        $client->request(
             'PUT',
             '/api/service-records/' . $serviceId,
             [],
@@ -160,7 +160,7 @@ class ServiceRecordControllerTest extends WebTestCase
         );
 
         $this->assertResponseIsSuccessful();
-        $data = json_decode($this->client->getResponse()->getContent(), true);
+        $data = json_decode($client->getResponse()->getContent(), true);
         
         $this->assertSame(60.00, (float)$data['laborCost']);
         $this->assertSame('Used premium oil', $data['notes']);
@@ -169,7 +169,8 @@ class ServiceRecordControllerTest extends WebTestCase
 
     public function testDeleteServiceRecord(): void
     {
-        $createData = [
+        $client = static::createClient();
+$createData = [
             'vehicleId' => 1,
             'description' => 'Test Service',
             'serviceDate' => '2026-01-10',
@@ -177,7 +178,7 @@ class ServiceRecordControllerTest extends WebTestCase
             'laborCost' => 100.00,
         ];
 
-        $this->client->request(
+        $client->request(
             'POST',
             '/api/service-records',
             [],
@@ -189,10 +190,10 @@ class ServiceRecordControllerTest extends WebTestCase
             json_encode($createData)
         );
 
-        $createResponse = json_decode($this->client->getResponse()->getContent(), true);
+        $createResponse = json_decode($client->getResponse()->getContent(), true);
         $serviceId = $createResponse['id'];
 
-        $this->client->request(
+        $client->request(
             'DELETE',
             '/api/service-records/' . $serviceId,
             [],
@@ -205,7 +206,8 @@ class ServiceRecordControllerTest extends WebTestCase
 
     public function testUploadAttachment(): void
     {
-        $createData = [
+        $client = static::createClient();
+$createData = [
             'vehicleId' => 1,
             'description' => 'Service with Receipt',
             'serviceDate' => '2026-01-10',
@@ -213,7 +215,7 @@ class ServiceRecordControllerTest extends WebTestCase
             'laborCost' => 100.00,
         ];
 
-        $this->client->request(
+        $client->request(
             'POST',
             '/api/service-records',
             [],
@@ -225,7 +227,7 @@ class ServiceRecordControllerTest extends WebTestCase
             json_encode($createData)
         );
 
-        $createResponse = json_decode($this->client->getResponse()->getContent(), true);
+        $createResponse = json_decode($client->getResponse()->getContent(), true);
         $serviceId = $createResponse['id'];
 
         // Mock file upload
@@ -237,7 +239,7 @@ class ServiceRecordControllerTest extends WebTestCase
             true
         );
 
-        $this->client->request(
+        $client->request(
             'POST',
             '/api/service-records/' . $serviceId . '/attachments',
             [],
@@ -250,7 +252,8 @@ class ServiceRecordControllerTest extends WebTestCase
 
     public function testCalculateTotalCost(): void
     {
-        $serviceData = [
+        $client = static::createClient();
+$serviceData = [
             'vehicleId' => 1,
             'description' => 'Major Service',
             'serviceDate' => '2026-01-15',
@@ -260,7 +263,7 @@ class ServiceRecordControllerTest extends WebTestCase
             'additionalCosts' => 50.00,
         ];
 
-        $this->client->request(
+        $client->request(
             'POST',
             '/api/service-records',
             [],
@@ -272,13 +275,14 @@ class ServiceRecordControllerTest extends WebTestCase
             json_encode($serviceData)
         );
 
-        $data = json_decode($this->client->getResponse()->getContent(), true);
+        $data = json_decode($client->getResponse()->getContent(), true);
         $this->assertSame(450.00, (float)$data['totalCost']);
     }
 
     public function testFilterByServiceType(): void
     {
-        $this->client->request(
+        $client = static::createClient();
+$client->request(
             'GET',
             '/api/service-records?vehicleId=1&serviceType=scheduled',
             [],
@@ -291,7 +295,8 @@ class ServiceRecordControllerTest extends WebTestCase
 
     public function testFilterByDateRange(): void
     {
-        $this->client->request(
+        $client = static::createClient();
+$client->request(
             'GET',
             '/api/service-records?vehicleId=1&startDate=2026-01-01&endDate=2026-12-31',
             [],
@@ -304,7 +309,8 @@ class ServiceRecordControllerTest extends WebTestCase
 
     public function testGetServiceHistory(): void
     {
-        $this->client->request(
+        $client = static::createClient();
+$client->request(
             'GET',
             '/api/service-records/history?vehicleId=1',
             [],
@@ -313,7 +319,7 @@ class ServiceRecordControllerTest extends WebTestCase
         );
 
         $this->assertResponseIsSuccessful();
-        $data = json_decode($this->client->getResponse()->getContent(), true);
+        $data = json_decode($client->getResponse()->getContent(), true);
         
         $this->assertArrayHasKey('records', $data);
         $this->assertArrayHasKey('totalCost', $data);
@@ -322,7 +328,8 @@ class ServiceRecordControllerTest extends WebTestCase
 
     public function testUserCannotAccessOtherUsersServiceRecords(): void
     {
-        $createData = [
+        $client = static::createClient();
+$createData = [
             'vehicleId' => 1,
             'description' => 'User1 Service',
             'serviceDate' => '2026-01-10',
@@ -330,7 +337,7 @@ class ServiceRecordControllerTest extends WebTestCase
             'laborCost' => 100.00,
         ];
 
-        $this->client->request(
+        $client->request(
             'POST',
             '/api/service-records',
             [],
@@ -342,12 +349,12 @@ class ServiceRecordControllerTest extends WebTestCase
             json_encode($createData)
         );
 
-        $createResponse = json_decode($this->client->getResponse()->getContent(), true);
+        $createResponse = json_decode($client->getResponse()->getContent(), true);
         $serviceId = $createResponse['id'];
 
         $differentUserToken = 'Bearer different-user-token';
 
-        $this->client->request(
+        $client->request(
             'GET',
             '/api/service-records/' . $serviceId,
             [],
@@ -360,7 +367,8 @@ class ServiceRecordControllerTest extends WebTestCase
 
     public function testScheduleNextService(): void
     {
-        $this->client->request(
+        $client = static::createClient();
+$client->request(
             'GET',
             '/api/service-records/next-due?vehicleId=1',
             [],
@@ -369,7 +377,7 @@ class ServiceRecordControllerTest extends WebTestCase
         );
 
         $this->assertResponseIsSuccessful();
-        $data = json_decode($this->client->getResponse()->getContent(), true);
+        $data = json_decode($client->getResponse()->getContent(), true);
         
         $this->assertArrayHasKey('dueDate', $data);
         $this->assertArrayHasKey('dueMileage', $data);

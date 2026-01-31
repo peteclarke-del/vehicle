@@ -1056,6 +1056,9 @@ class VehicleImportExportController extends AbstractController
                 if (!empty($m['description'])) {
                     $attachment->setDescription($m['description']);
                 }
+                if (!empty($m['category'])) {
+                    $attachment->setCategory($m['category']);
+                }
                 $attachment->setUser($user);
 
                 $entityManager->persist($attachment);

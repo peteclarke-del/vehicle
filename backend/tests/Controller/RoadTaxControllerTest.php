@@ -10,18 +10,10 @@ use Symfony\Component\HttpFoundation\Response;
 
 class RoadTaxControllerTest extends WebTestCase
 {
-    private ?KernelBrowser $client = null;
-    private ?string $token = null;
-
-    protected function setUp(): void
-    {
-        $this->client = static::createClient();
-        $this->token = $this->getAuthToken();
-    }
 
     private function getAuthToken(): string
     {
-        $this->client->request(
+        $client->request(
             'POST',
             '/api/login',
             [],
@@ -33,19 +25,21 @@ class RoadTaxControllerTest extends WebTestCase
             ])
         );
 
-        $data = json_decode($this->client->getResponse()->getContent(), true);
+        $data = json_decode($client->getResponse()->getContent(), true);
         return $data['token'] ?? '';
     }
 
     public function testListRequiresAuthentication(): void
     {
-        $this->client->request('GET', '/api/road-tax?vehicleId=1');
-        $this->assertEquals(Response::HTTP_UNAUTHORIZED, $this->client->getResponse()->getStatusCode());
+        $client = static::createClient();
+$client->request('GET', '/api/road-tax?vehicleId=1');
+        $this->assertEquals(Response::HTTP_UNAUTHORIZED, $client->getResponse()->getStatusCode());
     }
 
     public function testCreateRoadTax(): void
     {
-        $rtData = [
+        $client = static::createClient();
+$rtData = [
             'vehicleId' => 1,
             'startDate' => '2026-01-01',
             'expiryDate' => '2027-01-01',
@@ -53,85 +47,87 @@ class RoadTaxControllerTest extends WebTestCase
             'notes' => 'Annual road tax'
         ];
 
-        $this->client->request(
+        $client->request(
             'POST',
             '/api/road-tax',
             [],
             [],
             [
-                'HTTP_AUTHORIZATION' => 'Bearer ' . $this->token,
+                'HTTP_AUTHORIZATION' => 'Bearer ' . $token,
                 'CONTENT_TYPE' => 'application/json'
             ],
             json_encode($rtData)
         );
 
-        $this->assertEquals(Response::HTTP_CREATED, $this->client->getResponse()->getStatusCode());
-        $data = json_decode($this->client->getResponse()->getContent(), true);
+        $this->assertEquals(Response::HTTP_CREATED, $client->getResponse()->getStatusCode());
+        $data = json_decode($client->getResponse()->getContent(), true);
         $this->assertArrayHasKey('id', $data);
         $this->assertEquals('Annual road tax', $data['notes']);
     }
 
     public function testUpdateRoadTax(): void
     {
-        // Create first
-        $this->client->request(
+        $client = static::createClient();
+// Create first
+        $client->request(
             'POST',
             '/api/road-tax',
             [],
             [],
             [
-                'HTTP_AUTHORIZATION' => 'Bearer ' . $this->token,
+                'HTTP_AUTHORIZATION' => 'Bearer ' . $token,
                 'CONTENT_TYPE' => 'application/json'
             ],
             json_encode(['vehicleId' => 1, 'startDate' => '2026-01-01'])
         );
 
-        $create = json_decode($this->client->getResponse()->getContent(), true);
+        $create = json_decode($client->getResponse()->getContent(), true);
         $id = $create['id'];
 
-        $this->client->request(
+        $client->request(
             'PUT',
             '/api/road-tax/' . $id,
             [],
             [],
             [
-                'HTTP_AUTHORIZATION' => 'Bearer ' . $this->token,
+                'HTTP_AUTHORIZATION' => 'Bearer ' . $token,
                 'CONTENT_TYPE' => 'application/json'
             ],
             json_encode(['notes' => 'Updated note', 'amount' => 150.00])
         );
 
-        $this->assertEquals(Response::HTTP_OK, $this->client->getResponse()->getStatusCode());
-        $data = json_decode($this->client->getResponse()->getContent(), true);
+        $this->assertEquals(Response::HTTP_OK, $client->getResponse()->getStatusCode());
+        $data = json_decode($client->getResponse()->getContent(), true);
         $this->assertEquals('Updated note', $data['notes']);
     }
 
     public function testDeleteRoadTax(): void
     {
-        // Create first
-        $this->client->request(
+        $client = static::createClient();
+// Create first
+        $client->request(
             'POST',
             '/api/road-tax',
             [],
             [],
             [
-                'HTTP_AUTHORIZATION' => 'Bearer ' . $this->token,
+                'HTTP_AUTHORIZATION' => 'Bearer ' . $token,
                 'CONTENT_TYPE' => 'application/json'
             ],
             json_encode(['vehicleId' => 1, 'startDate' => '2026-01-01'])
         );
 
-        $create = json_decode($this->client->getResponse()->getContent(), true);
+        $create = json_decode($client->getResponse()->getContent(), true);
         $id = $create['id'];
 
-        $this->client->request(
+        $client->request(
             'DELETE',
             '/api/road-tax/' . $id,
             [],
             [],
-            ['HTTP_AUTHORIZATION' => 'Bearer ' . $this->token]
+            ['HTTP_AUTHORIZATION' => 'Bearer ' . $token]
         );
 
-        $this->assertEquals(Response::HTTP_NO_CONTENT, $this->client->getResponse()->getStatusCode());
+        $this->assertEquals(Response::HTTP_NO_CONTENT, $client->getResponse()->getStatusCode());
     }
 }

@@ -14,12 +14,6 @@ use Symfony\Bundle\FrameworkBundle\KernelBrowser;
  */
 class MotRecordControllerTest extends WebTestCase
 {
-    private KernelBrowser $client;
-
-    protected function setUp(): void
-    {
-        $this->client = static::createClient();
-    }
 
     private function getAuthToken(): string
     {
@@ -28,13 +22,15 @@ class MotRecordControllerTest extends WebTestCase
 
     public function testListMotRecordsRequiresAuthentication(): void
     {
-        $this->client->request('GET', '/api/mot-records');
+        $client = static::createClient();
+$client->request('GET', '/api/mot-records');
         $this->assertResponseStatusCodeSame(401);
     }
 
     public function testListMotRecordsForVehicle(): void
     {
-        $this->client->request(
+        $client = static::createClient();
+$client->request(
             'GET',
             '/api/mot-records?vehicleId=1',
             [],
@@ -48,7 +44,8 @@ class MotRecordControllerTest extends WebTestCase
 
     public function testCreateMotRecord(): void
     {
-        $motData = [
+        $client = static::createClient();
+$motData = [
             'vehicleId' => 1,
             'testDate' => '2026-01-15',
             'expiryDate' => '2027-01-15',
@@ -61,7 +58,7 @@ class MotRecordControllerTest extends WebTestCase
             'cost' => 40.00,
         ];
 
-        $this->client->request(
+        $client->request(
             'POST',
             '/api/mot-records',
             [],
@@ -74,7 +71,7 @@ class MotRecordControllerTest extends WebTestCase
         );
 
         $this->assertResponseStatusCodeSame(201);
-        $data = json_decode($this->client->getResponse()->getContent(), true);
+        $data = json_decode($client->getResponse()->getContent(), true);
         
         $this->assertArrayHasKey('id', $data);
         $this->assertSame('Pass', $data['testResult']);
@@ -83,7 +80,8 @@ class MotRecordControllerTest extends WebTestCase
 
     public function testCreateFailedMotRecord(): void
     {
-        $motData = [
+        $client = static::createClient();
+$motData = [
             'vehicleId' => 1,
             'testDate' => '2026-01-10',
             'testResult' => 'Fail',
@@ -93,7 +91,7 @@ class MotRecordControllerTest extends WebTestCase
             'cost' => 40.00,
         ];
 
-        $this->client->request(
+        $client->request(
             'POST',
             '/api/mot-records',
             [],
@@ -106,7 +104,7 @@ class MotRecordControllerTest extends WebTestCase
         );
 
         $this->assertResponseStatusCodeSame(201);
-        $data = json_decode($this->client->getResponse()->getContent(), true);
+        $data = json_decode($client->getResponse()->getContent(), true);
         
         $this->assertSame('Fail', $data['testResult']);
         $this->assertCount(2, $data['failureItems']);
@@ -114,7 +112,8 @@ class MotRecordControllerTest extends WebTestCase
 
     public function testUpdateMotRecord(): void
     {
-        $createData = [
+        $client = static::createClient();
+$createData = [
             'vehicleId' => 1,
             'testDate' => '2026-01-10',
             'expiryDate' => '2027-01-10',
@@ -123,7 +122,7 @@ class MotRecordControllerTest extends WebTestCase
             'cost' => 40.00,
         ];
 
-        $this->client->request(
+        $client->request(
             'POST',
             '/api/mot-records',
             [],
@@ -135,7 +134,7 @@ class MotRecordControllerTest extends WebTestCase
             json_encode($createData)
         );
 
-        $createResponse = json_decode($this->client->getResponse()->getContent(), true);
+        $createResponse = json_decode($client->getResponse()->getContent(), true);
         $motId = $createResponse['id'];
 
         $updateData = [
@@ -143,7 +142,7 @@ class MotRecordControllerTest extends WebTestCase
             'cost' => 45.00,
         ];
 
-        $this->client->request(
+        $client->request(
             'PUT',
             '/api/mot-records/' . $motId,
             [],
@@ -156,7 +155,7 @@ class MotRecordControllerTest extends WebTestCase
         );
 
         $this->assertResponseIsSuccessful();
-        $data = json_decode($this->client->getResponse()->getContent(), true);
+        $data = json_decode($client->getResponse()->getContent(), true);
         
         $this->assertSame('Updated MOT Center', $data['testCenter']);
         $this->assertSame(45.00, $data['cost']);
@@ -164,7 +163,8 @@ class MotRecordControllerTest extends WebTestCase
 
     public function testDeleteMotRecord(): void
     {
-        $createData = [
+        $client = static::createClient();
+$createData = [
             'vehicleId' => 1,
             'testDate' => '2026-01-10',
             'testResult' => 'Pass',
@@ -172,7 +172,7 @@ class MotRecordControllerTest extends WebTestCase
             'cost' => 40.00,
         ];
 
-        $this->client->request(
+        $client->request(
             'POST',
             '/api/mot-records',
             [],
@@ -184,10 +184,10 @@ class MotRecordControllerTest extends WebTestCase
             json_encode($createData)
         );
 
-        $createResponse = json_decode($this->client->getResponse()->getContent(), true);
+        $createResponse = json_decode($client->getResponse()->getContent(), true);
         $motId = $createResponse['id'];
 
-        $this->client->request(
+        $client->request(
             'DELETE',
             '/api/mot-records/' . $motId,
             [],
@@ -200,7 +200,8 @@ class MotRecordControllerTest extends WebTestCase
 
     public function testFetchMotHistoryFromDvsa(): void
     {
-        $this->client->request(
+        $client = static::createClient();
+$client->request(
             'GET',
             '/api/mot-records/dvsa-history?registration=ABC123',
             [],
@@ -209,14 +210,15 @@ class MotRecordControllerTest extends WebTestCase
         );
 
         $this->assertResponseIsSuccessful();
-        $data = json_decode($this->client->getResponse()->getContent(), true);
+        $data = json_decode($client->getResponse()->getContent(), true);
         
         $this->assertIsArray($data);
     }
 
     public function testGetNextMotDueDate(): void
     {
-        $this->client->request(
+        $client = static::createClient();
+$client->request(
             'GET',
             '/api/mot-records/next-due?vehicleId=1',
             [],
@@ -225,7 +227,7 @@ class MotRecordControllerTest extends WebTestCase
         );
 
         $this->assertResponseIsSuccessful();
-        $data = json_decode($this->client->getResponse()->getContent(), true);
+        $data = json_decode($client->getResponse()->getContent(), true);
         
         $this->assertArrayHasKey('dueDate', $data);
         $this->assertArrayHasKey('daysUntilDue', $data);
@@ -233,7 +235,8 @@ class MotRecordControllerTest extends WebTestCase
 
     public function testGetMotHistory(): void
     {
-        $this->client->request(
+        $client = static::createClient();
+$client->request(
             'GET',
             '/api/mot-records/history?vehicleId=1',
             [],
@@ -242,7 +245,7 @@ class MotRecordControllerTest extends WebTestCase
         );
 
         $this->assertResponseIsSuccessful();
-        $data = json_decode($this->client->getResponse()->getContent(), true);
+        $data = json_decode($client->getResponse()->getContent(), true);
         
         $this->assertArrayHasKey('records', $data);
         $this->assertArrayHasKey('passRate', $data);
@@ -251,7 +254,8 @@ class MotRecordControllerTest extends WebTestCase
 
     public function testCheckMotStatus(): void
     {
-        $this->client->request(
+        $client = static::createClient();
+$client->request(
             'GET',
             '/api/mot-records/status?vehicleId=1',
             [],
@@ -260,7 +264,7 @@ class MotRecordControllerTest extends WebTestCase
         );
 
         $this->assertResponseIsSuccessful();
-        $data = json_decode($this->client->getResponse()->getContent(), true);
+        $data = json_decode($client->getResponse()->getContent(), true);
         
         $this->assertArrayHasKey('status', $data);
         $this->assertArrayHasKey('expiryDate', $data);
@@ -269,12 +273,13 @@ class MotRecordControllerTest extends WebTestCase
 
     public function testImportFromDvsa(): void
     {
-        $importData = [
+        $client = static::createClient();
+$importData = [
             'vehicleId' => 1,
             'registration' => 'ABC123',
         ];
 
-        $this->client->request(
+        $client->request(
             'POST',
             '/api/mot-records/import-dvsa',
             [],
@@ -287,7 +292,7 @@ class MotRecordControllerTest extends WebTestCase
         );
 
         $this->assertResponseIsSuccessful();
-        $data = json_decode($this->client->getResponse()->getContent(), true);
+        $data = json_decode($client->getResponse()->getContent(), true);
         
         $this->assertArrayHasKey('imported', $data);
         $this->assertIsInt($data['imported']);
@@ -295,7 +300,8 @@ class MotRecordControllerTest extends WebTestCase
 
     public function testGetAdvisoryItems(): void
     {
-        $this->client->request(
+        $client = static::createClient();
+$client->request(
             'GET',
             '/api/mot-records/advisories?vehicleId=1',
             [],
@@ -304,14 +310,15 @@ class MotRecordControllerTest extends WebTestCase
         );
 
         $this->assertResponseIsSuccessful();
-        $data = json_decode($this->client->getResponse()->getContent(), true);
+        $data = json_decode($client->getResponse()->getContent(), true);
         
         $this->assertIsArray($data);
     }
 
     public function testUserCannotAccessOtherUsersMotRecords(): void
     {
-        $createData = [
+        $client = static::createClient();
+$createData = [
             'vehicleId' => 1,
             'testDate' => '2026-01-10',
             'testResult' => 'Pass',
@@ -319,7 +326,7 @@ class MotRecordControllerTest extends WebTestCase
             'cost' => 40.00,
         ];
 
-        $this->client->request(
+        $client->request(
             'POST',
             '/api/mot-records',
             [],
@@ -331,12 +338,12 @@ class MotRecordControllerTest extends WebTestCase
             json_encode($createData)
         );
 
-        $createResponse = json_decode($this->client->getResponse()->getContent(), true);
+        $createResponse = json_decode($client->getResponse()->getContent(), true);
         $motId = $createResponse['id'];
 
         $differentUserToken = 'Bearer different-user-token';
 
-        $this->client->request(
+        $client->request(
             'GET',
             '/api/mot-records/' . $motId,
             [],

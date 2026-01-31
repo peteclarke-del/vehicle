@@ -21,11 +21,6 @@ class VehicleControllerTest extends BaseWebTestCase
     /**
      * Set up test environment before each test
      */
-    protected function setUp(): void
-    {
-        parent::setUp();
-    }
-
     /**
      * Helper method to get authentication token
      * 
@@ -42,7 +37,8 @@ class VehicleControllerTest extends BaseWebTestCase
      */
     public function testListVehiclesRequiresAuthentication(): void
     {
-        $this->client->request('GET', '/api/vehicles');
+        $client = static::createClient();
+$client->request('GET', '/api/vehicles');
 
         $this->assertResponseStatusCodeSame(401);
     }
@@ -52,7 +48,8 @@ class VehicleControllerTest extends BaseWebTestCase
      */
     public function testListVehiclesForAuthenticatedUser(): void
     {
-        $this->client->request(
+        $client = static::createClient();
+$client->request(
             'GET',
             '/api/vehicles',
             [],
@@ -63,7 +60,7 @@ class VehicleControllerTest extends BaseWebTestCase
         $this->assertResponseIsSuccessful();
         $this->assertResponseHeaderSame('content-type', 'application/json');
 
-        $data = json_decode($this->client->getResponse()->getContent(), true);
+        $data = json_decode($client->getResponse()->getContent(), true);
         $this->assertIsArray($data);
     }
 
@@ -72,7 +69,8 @@ class VehicleControllerTest extends BaseWebTestCase
      */
     public function testCreateVehicle(): void
     {
-        $vehicleData = [
+        $client = static::createClient();
+$vehicleData = [
             'registration' => 'ABC123',
             'make' => 'Toyota',
             'model' => 'Corolla',
@@ -85,7 +83,7 @@ class VehicleControllerTest extends BaseWebTestCase
             'currentMileage' => 25000,
         ];
 
-        $this->client->request(
+        $client->request(
             'POST',
             '/api/vehicles',
             [],
@@ -100,7 +98,7 @@ class VehicleControllerTest extends BaseWebTestCase
         $this->assertResponseStatusCodeSame(201);
         $this->assertResponseHeaderSame('content-type', 'application/json');
 
-        $data = json_decode($this->client->getResponse()->getContent(), true);
+        $data = json_decode($client->getResponse()->getContent(), true);
         $this->assertArrayHasKey('id', $data);
         $this->assertSame('ABC123', $data['registration']);
         $this->assertSame('Toyota', $data['make']);
@@ -113,12 +111,13 @@ class VehicleControllerTest extends BaseWebTestCase
      */
     public function testCreateVehicleWithMissingFields(): void
     {
-        $vehicleData = [
+        $client = static::createClient();
+$vehicleData = [
             'registration' => 'ABC123',
             // Missing make, model, year
         ];
 
-        $this->client->request(
+        $client->request(
             'POST',
             '/api/vehicles',
             [],
@@ -138,7 +137,8 @@ class VehicleControllerTest extends BaseWebTestCase
      */
     public function testGetVehicle(): void
     {
-        // First create a vehicle
+        $client = static::createClient();
+// First create a vehicle
         $vehicleData = [
             'registration' => 'XYZ789',
             'make' => 'Honda',
@@ -146,7 +146,7 @@ class VehicleControllerTest extends BaseWebTestCase
             'year' => 2019,
         ];
 
-        $this->client->request(
+        $client->request(
             'POST',
             '/api/vehicles',
             [],
@@ -158,11 +158,11 @@ class VehicleControllerTest extends BaseWebTestCase
             json_encode($vehicleData)
         );
 
-        $createResponse = json_decode($this->client->getResponse()->getContent(), true);
+        $createResponse = json_decode($client->getResponse()->getContent(), true);
         $vehicleId = $createResponse['id'];
 
         // Now get the vehicle
-        $this->client->request(
+        $client->request(
             'GET',
             '/api/vehicles/' . $vehicleId,
             [],
@@ -171,7 +171,7 @@ class VehicleControllerTest extends BaseWebTestCase
         );
 
         $this->assertResponseIsSuccessful();
-        $data = json_decode($this->client->getResponse()->getContent(), true);
+        $data = json_decode($client->getResponse()->getContent(), true);
         $this->assertSame($vehicleId, $data['id']);
         $this->assertSame('XYZ789', $data['registration']);
     }
@@ -181,7 +181,8 @@ class VehicleControllerTest extends BaseWebTestCase
      */
     public function testGetNonExistentVehicle(): void
     {
-        $this->client->request(
+        $client = static::createClient();
+$client->request(
             'GET',
             '/api/vehicles/99999',
             [],
@@ -197,7 +198,8 @@ class VehicleControllerTest extends BaseWebTestCase
      */
     public function testUpdateVehicle(): void
     {
-        // First create a vehicle
+        $client = static::createClient();
+// First create a vehicle
         $vehicleData = [
             'registration' => 'UPD123',
             'make' => 'Ford',
@@ -206,7 +208,7 @@ class VehicleControllerTest extends BaseWebTestCase
             'currentMileage' => 30000,
         ];
 
-        $this->client->request(
+        $client->request(
             'POST',
             '/api/vehicles',
             [],
@@ -218,7 +220,7 @@ class VehicleControllerTest extends BaseWebTestCase
             json_encode($vehicleData)
         );
 
-        $createResponse = json_decode($this->client->getResponse()->getContent(), true);
+        $createResponse = json_decode($client->getResponse()->getContent(), true);
         $vehicleId = $createResponse['id'];
 
         // Update the vehicle
@@ -227,7 +229,7 @@ class VehicleControllerTest extends BaseWebTestCase
             'colour' => 'Blue',
         ];
 
-        $this->client->request(
+        $client->request(
             'PUT',
             '/api/vehicles/' . $vehicleId,
             [],
@@ -240,7 +242,7 @@ class VehicleControllerTest extends BaseWebTestCase
         );
 
         $this->assertResponseIsSuccessful();
-        $data = json_decode($this->client->getResponse()->getContent(), true);
+        $data = json_decode($client->getResponse()->getContent(), true);
         $this->assertSame(35000, $data['currentMileage']);
         $this->assertSame('Blue', $data['colour']);
     }
@@ -250,7 +252,8 @@ class VehicleControllerTest extends BaseWebTestCase
      */
     public function testDeleteVehicle(): void
     {
-        // First create a vehicle
+        $client = static::createClient();
+// First create a vehicle
         $vehicleData = [
             'registration' => 'DEL123',
             'make' => 'Nissan',
@@ -258,7 +261,7 @@ class VehicleControllerTest extends BaseWebTestCase
             'year' => 2021,
         ];
 
-        $this->client->request(
+        $client->request(
             'POST',
             '/api/vehicles',
             [],
@@ -270,11 +273,11 @@ class VehicleControllerTest extends BaseWebTestCase
             json_encode($vehicleData)
         );
 
-        $createResponse = json_decode($this->client->getResponse()->getContent(), true);
+        $createResponse = json_decode($client->getResponse()->getContent(), true);
         $vehicleId = $createResponse['id'];
 
         // Delete the vehicle
-        $this->client->request(
+        $client->request(
             'DELETE',
             '/api/vehicles/' . $vehicleId,
             [],
@@ -285,7 +288,7 @@ class VehicleControllerTest extends BaseWebTestCase
         $this->assertResponseStatusCodeSame(204);
 
         // Verify vehicle is deleted
-        $this->client->request(
+        $client->request(
             'GET',
             '/api/vehicles/' . $vehicleId,
             [],
@@ -301,7 +304,8 @@ class VehicleControllerTest extends BaseWebTestCase
      */
     public function testUserCannotAccessOtherUsersVehicles(): void
     {
-        // Create vehicle as user 1
+        $client = static::createClient();
+// Create vehicle as user 1
         $vehicleData = [
             'registration' => 'USR1-VEH',
             'make' => 'BMW',
@@ -309,7 +313,7 @@ class VehicleControllerTest extends BaseWebTestCase
             'year' => 2022,
         ];
 
-        $this->client->request(
+        $client->request(
             'POST',
             '/api/vehicles',
             [],
@@ -321,13 +325,13 @@ class VehicleControllerTest extends BaseWebTestCase
             json_encode($vehicleData)
         );
 
-        $createResponse = json_decode($this->client->getResponse()->getContent(), true);
+        $createResponse = json_decode($client->getResponse()->getContent(), true);
         $vehicleId = $createResponse['id'];
 
         // Try to access as different user (different token)
         $differentUserToken = 'other@vehicle.local';
 
-        $this->client->request(
+        $client->request(
             'GET',
             '/api/vehicles/' . $vehicleId,
             [],
@@ -343,7 +347,8 @@ class VehicleControllerTest extends BaseWebTestCase
      */
     public function testVehicleDepreciationCalculation(): void
     {
-        $vehicleData = [
+        $client = static::createClient();
+$vehicleData = [
             'registration' => 'DEP123',
             'make' => 'Mercedes',
             'model' => 'C-Class',
@@ -352,7 +357,7 @@ class VehicleControllerTest extends BaseWebTestCase
             'purchasePrice' => 30000.00,
         ];
 
-        $this->client->request(
+        $client->request(
             'POST',
             '/api/vehicles',
             [],
@@ -364,11 +369,11 @@ class VehicleControllerTest extends BaseWebTestCase
             json_encode($vehicleData)
         );
 
-        $createResponse = json_decode($this->client->getResponse()->getContent(), true);
+        $createResponse = json_decode($client->getResponse()->getContent(), true);
         $vehicleId = $createResponse['id'];
 
         // Get depreciation schedule
-        $this->client->request(
+        $client->request(
             'GET',
             '/api/vehicles/' . $vehicleId . '/depreciation',
             [],
@@ -377,7 +382,7 @@ class VehicleControllerTest extends BaseWebTestCase
         );
 
         $this->assertResponseIsSuccessful();
-        $data = json_decode($this->client->getResponse()->getContent(), true);
+        $data = json_decode($client->getResponse()->getContent(), true);
         $this->assertArrayHasKey('schedule', $data);
         $this->assertIsArray($data['schedule']);
         $this->assertNotEmpty($data['schedule']);
@@ -388,14 +393,15 @@ class VehicleControllerTest extends BaseWebTestCase
      */
     public function testVehicleCostSummary(): void
     {
-        $vehicleData = [
+        $client = static::createClient();
+$vehicleData = [
             'registration' => 'COST123',
             'make' => 'Audi',
             'model' => 'A4',
             'year' => 2021,
         ];
 
-        $this->client->request(
+        $client->request(
             'POST',
             '/api/vehicles',
             [],
@@ -407,11 +413,11 @@ class VehicleControllerTest extends BaseWebTestCase
             json_encode($vehicleData)
         );
 
-        $createResponse = json_decode($this->client->getResponse()->getContent(), true);
+        $createResponse = json_decode($client->getResponse()->getContent(), true);
         $vehicleId = $createResponse['id'];
 
         // Get cost summary
-        $this->client->request(
+        $client->request(
             'GET',
             '/api/vehicles/' . $vehicleId . '/costs',
             [],
@@ -420,7 +426,7 @@ class VehicleControllerTest extends BaseWebTestCase
         );
 
         $this->assertResponseIsSuccessful();
-        $data = json_decode($this->client->getResponse()->getContent(), true);
+        $data = json_decode($client->getResponse()->getContent(), true);
         $this->assertArrayHasKey('totalCosts', $data);
         $this->assertArrayHasKey('breakdown', $data);
     }

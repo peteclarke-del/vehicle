@@ -272,7 +272,9 @@ class AttachmentController extends AbstractController
                 ->setParameter('entityId', $entityId);
         }
 
-        if ($category) {
+        // Only filter by category if explicitly provided
+        // If category is passed, match it (including NULL if category='null' or empty)
+        if ($category !== null && $category !== '') {
             $qb->andWhere('a.category = :category')
                 ->setParameter('category', $category);
         }
