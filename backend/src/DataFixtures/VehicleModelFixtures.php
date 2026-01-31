@@ -80,9 +80,6 @@ class VehicleModelFixtures extends \App\DataFixtures\AbstractJsonFixture impleme
         $model->setMake($make);
         $model->setVehicleType($make->getVehicleType());
         $model->setImageUrl($item['imageUrl'] ?? null);
-        $model->setEngineOptions($item['engineOptions'] ?? null);
-        $model->setTransmissionOptions($item['transmissionOptions'] ?? null);
-        $model->setGenerationCount($item['generationCount'] ?? null);
         $model->setIsActive($item['isActive'] ?? true);
 
         $manager->persist($model);

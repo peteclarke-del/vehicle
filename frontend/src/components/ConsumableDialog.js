@@ -27,6 +27,8 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
     quantity: '',
     lastChanged: '',
     mileageAtChange: '',
+    replacementIntervalMiles: '',
+    nextReplacementMileage: '',
     cost: '',
     brand: '',
     partNumber: '',
@@ -43,11 +45,14 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
   const [serviceRecords, setServiceRecords] = useState([]);
   const [serviceRecordId, setServiceRecordId] = useState(null);
 
+  // Determine the actual vehicle ID - use consumable's vehicleId if available, otherwise use prop
+  const actualVehicleId = consumable?.vehicleId || vehicleId;
+
   useEffect(() => {
-    if (open && vehicleId) {
+    if (open && actualVehicleId) {
       loadConsumableTypes();
     }
-  }, [open, vehicleId]);
+  }, [open, actualVehicleId]);
 
   useEffect(() => {
     if (consumable) {
@@ -58,6 +63,8 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
         quantity: consumable.quantity || '',
         lastChanged: consumable.lastChanged || '',
         mileageAtChange: consumable.mileageAtChange ? Math.round(convert(consumable.mileageAtChange)) : '',
+        replacementIntervalMiles: consumable.replacementIntervalMiles ? Math.round(convert(consumable.replacementIntervalMiles)) : '',
+        nextReplacementMileage: consumable.nextReplacementMileage ? Math.round(convert(consumable.nextReplacementMileage)) : '',
         cost: consumable.cost || '',
         brand: consumable.brand || '',
         partNumber: consumable.partNumber || '',
@@ -76,6 +83,8 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
         quantity: '',
         lastChanged: '',
         mileageAtChange: '',
+        replacementIntervalMiles: '',
+        nextReplacementMileage: '',
         cost: '',
         brand: '',
         partNumber: '',
@@ -91,27 +100,29 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
 
   useEffect(() => {
     const load = async () => {
-      if (!vehicleId) return;
+      if (!actualVehicleId) return;
       try {
-        const resp = await api.get('/mot-records', { params: { vehicleId } });
-        setMotRecords(resp.data || []);
-        const serv = await api.get('/service-records', { params: { vehicleId } });
+        const resp = await api.get('/mot-records', { params: { vehicleId: actualVehicleId } });
+        setMotRecords(Array.isArray(resp.data) ? resp.data : []);
+        const serv = await api.get('/service-records', { params: { vehicleId: actualVehicleId } });
         const sdata = serv.data;
         if (Array.isArray(sdata)) setServiceRecords(sdata);
         else if (sdata && Array.isArray(sdata.serviceRecords)) setServiceRecords(sdata.serviceRecords);
         else setServiceRecords([]);
       } catch (e) {
         console.error('Failed to load MOT or service records', e);
+        setMotRecords([]);
+        setServiceRecords([]);
       }
     };
     if (open) load();
-  }, [open, vehicleId, api]);
+  }, [open, actualVehicleId, api]);
 
   const loadConsumableTypes = async () => {
     setLoadingTypes(true);
     try {
       // First get the vehicle to find its type
-      const vehicleResponse = await api.get(`/vehicles/${vehicleId}`);
+      const vehicleResponse = await api.get(`/vehicles/${actualVehicleId}`);
       const vehicleTypeId = vehicleResponse.data.vehicleType.id;
       
       // Then get consumable types for this vehicle type
@@ -164,20 +175,23 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
     try {
       const data = {
         ...formData,
-        vehicleId,
+        vehicleId: actualVehicleId,
         cost: parseFloat(formData.cost) || 0,
         quantity: parseFloat(formData.quantity) || 0,
         mileageAtChange: formData.mileageAtChange ? Math.round(toKm(parseFloat(formData.mileageAtChange))) : null,
+        replacementIntervalMiles: formData.replacementIntervalMiles ? Math.round(toKm(parseFloat(formData.replacementIntervalMiles))) : null,
+        nextReplacementMileage: formData.nextReplacementMileage ? Math.round(toKm(parseFloat(formData.nextReplacementMileage))) : null,
         receiptAttachmentId,
         productUrl,
         motRecordId,
         serviceRecordId
       };
 
-      if (formData.consumableTypeId === 'other') {
-        data.consumableTypeId = null;
-        data.consumableTypeName = (formData.consumableTypeName || '').trim();
-      }
+      // The 'other' override is currently disabled (commented out)
+      // if (formData.consumableTypeId === 'other') {
+      //   data.consumableTypeId = null;
+      //   data.consumableTypeName = (formData.consumableTypeName || '').trim();
+      // }
       // send `description` only
 
       let resp;
@@ -251,7 +265,7 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
                   onChange={handleChange}
                 >
                   <MenuItem value="">{t('consumables.selectType')}</MenuItem>
-                  <MenuItem value="other">{t('service.other')}</MenuItem>
+                  {/* <MenuItem value="other">{t('service.other')}</MenuItem> */}
                   {consumableTypes
                     .slice()
                     .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
@@ -262,6 +276,7 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
                     ))}
                 </TextField>
               </Grid>
+              {/*
               {formData.consumableTypeId === 'other' && (
                 <Grid item xs={12} sm={6}>
                   <TextField
@@ -274,6 +289,7 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
                   />
                 </Grid>
               )}
+              */}
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
@@ -283,7 +299,7 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
                   onChange={handleChange}
                 />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12} sm={4}>
                 <TextField
                   fullWidth
                   required
@@ -296,7 +312,7 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
                 />
               </Grid>
 
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12} sm={4}>
                 <TextField
                   fullWidth
                   required
@@ -309,7 +325,7 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
                 />
               </Grid>
 
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12} sm={4}>
                 <TextField
                   fullWidth
                   type="date"
@@ -320,13 +336,33 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
                   InputLabelProps={{ shrink: true }}
                 />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12} sm={4}>
                 <TextField
                   fullWidth
                   type="number"
                   name="mileageAtChange"
                   label={`${t('consumables.mileageAtChange')} (${getLabel()})`}
                   value={formData.mileageAtChange}
+                  onChange={handleChange}
+                />
+              </Grid>
+              <Grid item xs={12} sm={4}>
+                <TextField
+                  fullWidth
+                  type="number"
+                  name="replacementIntervalMiles"
+                  label={`${t('consumables.replacementInterval')} (${getLabel()})`}
+                  value={formData.replacementIntervalMiles}
+                  onChange={handleChange}
+                />
+              </Grid>
+              <Grid item xs={12} sm={4}>
+                <TextField
+                  fullWidth
+                  type="number"
+                  name="nextReplacementMileage"
+                  label={`${t('consumables.nextReplacement')} (${getLabel()})`}
+                  value={formData.nextReplacementMileage}
                   onChange={handleChange}
                 />
               </Grid>

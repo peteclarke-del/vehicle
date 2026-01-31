@@ -52,37 +52,6 @@ class VehicleTypeFixtures extends \App\DataFixtures\AbstractJsonFixture
         $type = new VehicleType();
         $type->setName($typeName);
 
-        // Set sensible defaults based on vehicle type
-        switch ($typeName) {
-        case 'Car':
-            $type->setTypicalSeatingCapacity(5);
-            $type->setTypicalDoors(4);
-            $type->setIconName('car');
-            $type->setIsPopular(true);
-            break;
-        case 'Van':
-            $type->setTypicalSeatingCapacity(7);
-            $type->setTypicalDoors(5);
-            $type->setIconName('van');
-            $type->setIsPopular(true);
-            break;
-        case 'Truck':
-            $type->setTypicalSeatingCapacity(2);
-            $type->setTypicalDoors(2);
-            $type->setIconName('truck');
-            break;
-        case 'Motorcycle':
-            $type->setTypicalSeatingCapacity(2);
-            $type->setTypicalDoors(0);
-            $type->setIconName('motorcycle');
-            break;
-        case 'EV':
-            $type->setTypicalSeatingCapacity(5); // Assuming EV car equivalent
-            $type->setTypicalDoors(4);
-            $type->setIconName('ev');
-            break;
-        }
-
         $manager->persist($type);
         $this->_existingNames[$typeName] = true;
     }

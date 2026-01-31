@@ -27,7 +27,7 @@ class PreferencesController extends AbstractController
             // return a minimal set of user preferences
             $data = [
                 // preferredLanguage, sessionTimeout and distanceUnit are stored in user_preferences
-                'preferredLanguage' => (function() use ($em, $user) {
+                'preferredLanguage' => (function () use ($em, $user) {
                     $repo = $em->getRepository(UserPreference::class);
                     $pref = $repo->findOneBy(['user' => $user, 'name' => 'preferredLanguage']);
                     if ($pref) {
@@ -35,13 +35,15 @@ class PreferencesController extends AbstractController
                         $decoded = null;
                         if ($val !== null) {
                             $decoded = json_decode($val, true);
-                            if (json_last_error() === JSON_ERROR_NONE) $val = $decoded;
+                            if (json_last_error() === JSON_ERROR_NONE) {
+                                $val = $decoded;
+                            }
                         }
                         return $val;
                     }
                     return method_exists($user, 'getPreferredLanguage') ? $user->getPreferredLanguage() : 'en';
                 })(),
-                'distanceUnit' => (function() use ($em, $user) {
+                'distanceUnit' => (function () use ($em, $user) {
                     $repo = $em->getRepository(UserPreference::class);
                     $pref = $repo->findOneBy(['user' => $user, 'name' => 'distanceUnit']);
                     if ($pref) {
@@ -49,13 +51,15 @@ class PreferencesController extends AbstractController
                         $decoded = null;
                         if ($val !== null) {
                             $decoded = json_decode($val, true);
-                            if (json_last_error() === JSON_ERROR_NONE) $val = $decoded;
+                            if (json_last_error() === JSON_ERROR_NONE) {
+                                $val = $decoded;
+                            }
                         }
                         return $val;
                     }
                     return method_exists($user, 'getDistanceUnit') ? $user->getDistanceUnit() : 'miles';
                 })(),
-                'sessionTimeout' => (function() use ($em, $user) {
+                'sessionTimeout' => (function () use ($em, $user) {
                     $repo = $em->getRepository(UserPreference::class);
                     $pref = $repo->findOneBy(['user' => $user, 'name' => 'sessionTimeout']);
                     if ($pref) {
@@ -63,22 +67,28 @@ class PreferencesController extends AbstractController
                         $decoded = null;
                         if ($val !== null) {
                             $decoded = json_decode($val, true);
-                            if (json_last_error() === JSON_ERROR_NONE) $val = $decoded;
+                            if (json_last_error() === JSON_ERROR_NONE) {
+                                $val = $decoded;
+                            }
                         }
                         return $val;
                     }
                     return method_exists($user, 'getSessionTimeout') ? $user->getSessionTimeout() : 3600;
                 })(),
                 // theme is now stored in user_preferences table
-                'theme' => (function() use ($em, $user) {
+                'theme' => (function () use ($em, $user) {
                     $repo = $em->getRepository(UserPreference::class);
                     $pref = $repo->findOneBy(['user' => $user, 'name' => 'theme']);
-                    if (!$pref) return 'light';
+                    if (!$pref) {
+                        return 'light';
+                    }
                     $val = $pref->getValue();
                     $decoded = null;
                     if ($val !== null) {
                         $decoded = json_decode($val, true);
-                        if (json_last_error() === JSON_ERROR_NONE) $val = $decoded;
+                        if (json_last_error() === JSON_ERROR_NONE) {
+                            $val = $decoded;
+                        }
                     }
                     return $val;
                 })(),
@@ -95,7 +105,9 @@ class PreferencesController extends AbstractController
                 $decoded = null;
                 if ($val !== null) {
                     $decoded = json_decode($val, true);
-                    if (json_last_error() === JSON_ERROR_NONE) $val = $decoded;
+                    if (json_last_error() === JSON_ERROR_NONE) {
+                        $val = $decoded;
+                    }
                 }
 
                 // If the stored value is null (or JSON 'null'), fall back to the
@@ -139,7 +151,9 @@ class PreferencesController extends AbstractController
         $decoded = null;
         if ($val !== null) {
             $decoded = json_decode($val, true);
-            if (json_last_error() === JSON_ERROR_NONE) $val = $decoded;
+            if (json_last_error() === JSON_ERROR_NONE) {
+                $val = $decoded;
+            }
         }
 
         return new JsonResponse(['key' => $key, 'value' => $val]);

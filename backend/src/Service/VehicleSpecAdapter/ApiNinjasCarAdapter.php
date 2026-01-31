@@ -11,7 +11,7 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 /**
  * API Ninjas adapter for car specifications
- * 
+ *
  * Fetches detailed car specifications from API Ninjas API
  * https://api-ninjas.com/api/cars
  */
@@ -32,7 +32,7 @@ class ApiNinjasCarAdapter implements VehicleSpecAdapterInterface
         // Supports most vehicle types except motorcycles/bikes
         $type = strtolower($vehicleType);
         $motorcycleTypes = ['motorcycle', 'motorbike', 'bike'];
-        
+
         // Support all vehicle types except motorcycles
         return !in_array($type, $motorcycleTypes);
     }
@@ -68,13 +68,13 @@ class ApiNinjasCarAdapter implements VehicleSpecAdapterInterface
                     'make' => $make,
                     'model' => $modelVariant,
                 ];
-                
+
                 if ($year) {
                     $params['year'] = (string) $year;
                 }
-                
+
                 $apiUrl = 'https://api.api-ninjas.com/v1/cars?' . http_build_query($params);
-                
+
                 $this->logger->info('Fetching car specs from API Ninjas', [
                     'make' => $make,
                     'model' => $modelVariant,
@@ -89,13 +89,13 @@ class ApiNinjasCarAdapter implements VehicleSpecAdapterInterface
                 ]);
 
                 $data = $response->toArray();
-                
+
                 if (!empty($data)) {
                     // Use the first result
                     $carData = $data[0];
-                    
+
                     $spec = $this->parseApiData($carData);
-            
+
                     if ($spec) {
                         $spec->setScrapedAt(new \DateTime());
                         $spec->setSourceUrl($apiUrl);
@@ -103,7 +103,7 @@ class ApiNinjasCarAdapter implements VehicleSpecAdapterInterface
                     }
                 }
             }
-            
+
             // No data found for any variation
             $this->logger->warning('No car data found', [
                 'make' => $make,
@@ -125,18 +125,18 @@ class ApiNinjasCarAdapter implements VehicleSpecAdapterInterface
     private function generateModelVariations(string $model): array
     {
         $variations = [$model]; // Original
-        
+
         // Try just the first word (e.g., "6 SkyActiv Estate" -> "6")
         $words = explode(' ', $model);
         if (count($words) > 1) {
             $variations[] = $words[0];
-            
+
             // Try first two words (e.g., "6 SkyActiv Estate" -> "6 SkyActiv")
             if (count($words) > 2) {
                 $variations[] = implode(' ', array_slice($words, 0, 2));
             }
         }
-        
+
         // Remove trim/edition suffixes (Estate, Sport, etc.)
         $suffixesToRemove = ['Estate', 'Saloon', 'Sport', 'Touring', 'Hatchback', 'Sedan'];
         foreach ($suffixesToRemove as $suffix) {
@@ -144,7 +144,7 @@ class ApiNinjasCarAdapter implements VehicleSpecAdapterInterface
                 $variations[] = trim(str_ireplace($suffix, '', $model));
             }
         }
-        
+
         return array_unique($variations);
     }
 
@@ -158,7 +158,7 @@ class ApiNinjasCarAdapter implements VehicleSpecAdapterInterface
     private function parseApiData(array $data): Specification
     {
         $spec = new Specification();
-        
+
         // Engine specifications
         if (isset($data['cylinders'])) {
             $spec->setEngineType($data['cylinders'] . ' cylinders');
@@ -169,7 +169,7 @@ class ApiNinjasCarAdapter implements VehicleSpecAdapterInterface
         if (isset($data['fuel_type'])) {
             $spec->setFuelSystem($data['fuel_type']);
         }
-        
+
         // Transmission
         if (isset($data['transmission'])) {
             $spec->setTransmission($data['transmission']);
@@ -177,7 +177,7 @@ class ApiNinjasCarAdapter implements VehicleSpecAdapterInterface
         if (isset($data['drive'])) {
             $spec->setAdditionalInfo(json_encode(['drive' => $data['drive']]));
         }
-        
+
         // Performance
         if (isset($data['combination_mpg'])) {
             $info = json_decode($spec->getAdditionalInfo() ?? '{}', true);
@@ -190,7 +190,7 @@ class ApiNinjasCarAdapter implements VehicleSpecAdapterInterface
             }
             $spec->setAdditionalInfo(json_encode($info));
         }
-        
+
         // Store all data in additional info for reference
         $additionalInfo = json_decode($spec->getAdditionalInfo() ?? '{}', true);
         $additionalInfo = array_merge($additionalInfo, [

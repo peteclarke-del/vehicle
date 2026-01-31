@@ -37,8 +37,8 @@ class ServiceItem
     #[ORM\Column(type: 'decimal', precision: 10, scale: 2)]
     private ?string $cost = null;
 
-    #[ORM\Column(type: 'integer', options: ['default' => 1])]
-    private int $quantity = 1;
+    #[ORM\Column(type: 'decimal', precision: 10, scale: 2, options: ['default' => '1.00'])]
+    private string $quantity = '1.00';
 
     public function getId(): ?int
     {
@@ -89,20 +89,20 @@ class ServiceItem
         return $this;
     }
 
-    public function getQuantity(): int
+    public function getQuantity(): string
     {
         return $this->quantity;
     }
 
-    public function setQuantity(int $quantity): self
+    public function setQuantity($quantity): self
     {
-        $this->quantity = $quantity;
+        $this->quantity = $quantity !== null ? (string) $quantity : '1.00';
         return $this;
     }
 
     public function getTotal(): string
     {
-        return bcmul($this->cost ?? '0.00', (string) $this->quantity, 2);
+        return bcmul($this->cost ?? '0.00', $this->quantity ?? '1.00', 2);
     }
 
     public function getConsumable(): ?Consumable

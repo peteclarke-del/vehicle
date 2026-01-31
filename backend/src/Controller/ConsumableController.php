@@ -8,6 +8,7 @@ use App\Entity\Consumable;
 use App\Entity\ConsumableType;
 use App\Entity\User;
 use App\Entity\Vehicle;
+use App\Entity\ServiceItem;
 use App\Service\ReceiptOcrService;
 use App\Service\UrlScraperService;
 use Psr\Log\LoggerInterface;
@@ -198,6 +199,15 @@ class ConsumableController extends AbstractController
         $this->updateConsumableFromData($consumable, $data);
         $consumable->setUpdatedAt(new \DateTime());
 
+        $serviceItem = $this->entityManager->getRepository(ServiceItem::class)
+            ->findOneBy(['consumable' => $consumable]);
+        if ($serviceItem) {
+            $serviceItem->setCost($consumable->getCost());
+            $serviceItem->setQuantity($consumable->getQuantity() ?? 1);
+            $serviceItem->setDescription($consumable->getDescription());
+            $this->entityManager->persist($serviceItem);
+        }
+
         try {
             $this->entityManager->flush();
         } catch (\Throwable $e) {
@@ -277,7 +287,9 @@ class ConsumableController extends AbstractController
      */
     private function isAdminForUser(?User $user): bool
     {
-        if (!$user) return false;
+        if (!$user) {
+            return false;
+        }
         $roles = $user->getRoles() ?: [];
         return in_array('ROLE_ADMIN', $roles, true);
     }
@@ -368,6 +380,12 @@ class ConsumableController extends AbstractController
         }
         if (isset($data['mileageAtChange'])) {
             $consumable->setMileageAtChange($data['mileageAtChange']);
+        }
+        if (isset($data['replacementIntervalMiles'])) {
+            $consumable->setReplacementIntervalMiles($data['replacementIntervalMiles']);
+        }
+        if (isset($data['nextReplacementMileage'])) {
+            $consumable->setNextReplacementMileage($data['nextReplacementMileage']);
         }
         if (isset($data['cost'])) {
             $consumable->setCost($data['cost']);

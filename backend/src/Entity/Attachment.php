@@ -267,5 +267,4 @@ class Attachment
     {
         return $this->user;
     }
-
 }

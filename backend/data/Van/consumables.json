@@ -1,63 +1,500 @@
 [
-    {
-        "vehicleType": "Van",
-        "name": "Engine Oil",
-        "unit": "litres",
-        "description": "Engine oil for light commercial vehicles; check heavy-duty specifications."
-    },
-    {
-        "vehicleType": "Van",
-        "name": "Transmission Fluid",
-        "unit": "litres",
-        "description": "Manual or automatic transmission fluid as specified."
-    },
-    {
-        "vehicleType": "Van",
-        "name": "Indicator/Direction Lamp Bulb",
-        "unit": "unit",
-        "description": "Indicator / direction (turn signal) lamp bulb; include common bulb types and LED replacements." 
-    },
-    {
-        "vehicleType": "Van",
-        "name": "Brake Fluid",
-        "unit": "ml",
-        "description": "Brake fluid for hydraulic systems (DOT 4 common)."
-    },
-    {
-        "vehicleType": "Van",
-        "name": "Tyres/Tires",
-        "unit": "psi / bar",
-        "description": "Commercial tyre sizes and recommended pressures."
-    },
-    {
-        "vehicleType": "Van",
-        "name": "Air Filter",
-        "unit": "unit",
-        "description": "Engine intake air filter."
-    },
-    {
-        "vehicleType": "Van",
-        "name": "Cabin/Pollen Filter",
-        "unit": "unit",
-        "description": "Cabin filter for passenger area."
-    },
-    {
-        "vehicleType": "Van",
-        "name": "Windscreen Washer Fluid",
-        "unit": "litres",
-        "description": "Washer fluid for windscreen/windshield."
-    },
-    {
-        "vehicleType": "Van",
-        "name": "Battery",
-        "unit": "unit",
-        "description": "12V vehicle battery; larger capacity for heavy use."
-    }
-    ,
-    {
-        "vehicleType": "Van",
-        "name": "Engine Flush/Catalytic Converter Cleaner",
-        "unit": "litres",
-        "description": "Engine flush and catalytic converter cleaner; specify product and application instructions."
-    }
+  {
+    "vehicleType": "Van",
+    "name": "Engine Oil",
+    "unit": "litres",
+    "description": "Engine oil for light commercial vehicles; check heavy-duty specifications."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Transmission Fluid",
+    "unit": "litres",
+    "description": "Manual or automatic transmission fluid as specified."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Indicator/Direction Lamp Bulb",
+    "unit": "unit",
+    "description": "Indicator / direction (turn signal) lamp bulb; include common bulb types and LED replacements."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Brake Fluid",
+    "unit": "ml",
+    "description": "Brake fluid for hydraulic systems (DOT 4 common)."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Tyres/Tires",
+    "unit": "psi / bar",
+    "description": "Commercial tyre sizes and recommended pressures."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Air Filter",
+    "unit": "unit",
+    "description": "Engine intake air filter."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Cabin/Pollen Filter",
+    "unit": "unit",
+    "description": "Cabin filter for passenger area."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Windscreen Washer Fluid",
+    "unit": "litres",
+    "description": "Washer fluid for windscreen/windshield."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Battery",
+    "unit": "unit",
+    "description": "12V vehicle battery; larger capacity for heavy use."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Engine Flush/Catalytic Converter Cleaner",
+    "unit": "litres",
+    "description": "Engine flush and catalytic converter cleaner; specify product and application instructions."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Oil Filter",
+    "unit": "unit",
+    "description": "Spin-on or cartridge engine oil filter."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Oil Drain Plug Gasket",
+    "unit": "unit",
+    "description": "Crush washer or gasket for sump drain plug."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Fuel Filter",
+    "unit": "unit",
+    "description": "In-line or in-tank fuel filter."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Fuel Injector Cleaner",
+    "unit": "ml",
+    "description": "Cleaner additive for fuel-injected engines."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Coolant/Antifreeze",
+    "unit": "litres",
+    "description": "Coolant for water-cooled engines."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Thermostat",
+    "unit": "unit",
+    "description": "Engine thermostat with specified opening temperature."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Spark Plugs",
+    "unit": "unit",
+    "description": "Spark plugs for petrol/gasoline engines."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Glow Plugs",
+    "unit": "unit",
+    "description": "Glow plugs for diesel engines."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Ignition Coils",
+    "unit": "unit",
+    "description": "Ignition coils for petrol engines."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Brake Pads (Front)",
+    "unit": "set",
+    "description": "Front brake pads; heavy-duty versions for commercial use."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Brake Pads (Rear)",
+    "unit": "set",
+    "description": "Rear brake pads."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Brake Discs/Rotors (Front)",
+    "unit": "pair",
+    "description": "Front brake discs/rotors."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Brake Discs/Rotors (Rear)",
+    "unit": "pair",
+    "description": "Rear brake discs/rotors."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Brake Caliper Seals / Rebuild Kits",
+    "unit": "kit",
+    "description": "Seal kits for rebuilding brake calipers."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Brake Shoes",
+    "unit": "set",
+    "description": "Rear brake shoes for drum brake systems."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Brake Drums",
+    "unit": "unit",
+    "description": "Brake drums for drum brake systems."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Clutch Kit",
+    "unit": "kit",
+    "description": "Clutch kit (pressure plate, friction disc, release bearing)."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Clutch Fluid",
+    "unit": "ml",
+    "description": "Hydraulic fluid for clutch systems."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Differential Oil",
+    "unit": "litres",
+    "description": "Gear oil for differential."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Transfer Case Fluid",
+    "unit": "litres",
+    "description": "Fluid for transfer case on 4WD/AWD vans."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Power Steering Fluid",
+    "unit": "litres",
+    "description": "Hydraulic power steering fluid."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Shock Absorbers/Struts",
+    "unit": "pair",
+    "description": "Suspension dampers; heavy-duty versions for commercial loads."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Struts (Complete)",
+    "unit": "unit",
+    "description": "Complete strut assemblies for front suspension."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Strut Mounts",
+    "unit": "unit",
+    "description": "Upper strut mounts and bearings."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Sway Bar Links",
+    "unit": "unit",
+    "description": "Stabilizer bar links for front/rear."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Control Arm Bushings",
+    "unit": "unit",
+    "description": "Bushings for front or rear control arms."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Ball Joints",
+    "unit": "unit",
+    "description": "Upper and/or lower ball joints."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Tie Rod Ends",
+    "unit": "unit",
+    "description": "Inner and/or outer tie rod ends."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Wheel Bearings",
+    "unit": "unit",
+    "description": "Wheel bearing/hub assemblies."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "CV Joint Boot Kit",
+    "unit": "kit",
+    "description": "CV joint boot, clamps, and grease."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "CV Axle",
+    "unit": "unit",
+    "description": "Complete CV axle assembly."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Timing Belt/Chain Kit",
+    "unit": "kit",
+    "description": "Complete timing component kit (belt/chain, tensioners, guides)."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Water Pump",
+    "unit": "unit",
+    "description": "Engine coolant water pump."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Radiator Hose",
+    "unit": "unit",
+    "description": "Upper and/or lower radiator hoses."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Heater Hose",
+    "unit": "unit",
+    "description": "Hoses for the heater core circuit."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Radiator",
+    "unit": "unit",
+    "description": "Engine coolant radiator."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Exhaust Manifold Gasket",
+    "unit": "unit",
+    "description": "Gasket between engine head and exhaust manifold."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Exhaust System Hangers",
+    "unit": "unit",
+    "description": "Rubber mounts for supporting the exhaust system."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Catalytic Converter",
+    "unit": "unit",
+    "description": "Emission control catalytic converter."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Muffler",
+    "unit": "unit",
+    "description": "Exhaust muffler or silencer."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Headlight Bulbs",
+    "unit": "unit",
+    "description": "Headlight bulbs (halogen, HID, or LED)."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Taillight/Brake Light Bulbs",
+    "unit": "unit",
+    "description": "Bulbs for rear tail, brake, and indicator lights."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Interior Bulbs",
+    "unit": "unit",
+    "description": "Bulbs for interior lighting."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Number Plate/Registration Plate Bulbs",
+    "unit": "unit",
+    "description": "Bulbs for license plate illumination."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Fuses",
+    "unit": "unit",
+    "description": "Blade-type fuses of various amperages."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Relays",
+    "unit": "unit",
+    "description": "Standard automotive relays."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Wiper Blades (Front)",
+    "unit": "set",
+    "description": "Front wiper blades."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Wiper Blades (Rear)",
+    "unit": "unit",
+    "description": "Rear wiper blade (if applicable)."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Wheel Nuts/Bolts",
+    "unit": "set",
+    "description": "Set of wheel securing nuts or bolts."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Locking Wheel Nut Key",
+    "unit": "unit",
+    "description": "Security key for locking wheel nuts."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Grease/Lubricant",
+    "unit": "grams",
+    "description": "Multi-purpose grease for chassis and components."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Anti-Seize Compound",
+    "unit": "grams",
+    "description": "Compound to prevent fastener seizure."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Threadlocker",
+    "unit": "ml",
+    "description": "Thread locking compound."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Gasket Maker/Sealant",
+    "unit": "ml",
+    "description": "RTV silicone or anaerobic sealant for gaskets."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Electrical Contact Cleaner",
+    "unit": "ml",
+    "description": "Cleaner for electrical connectors and switches."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Dielectric Grease",
+    "unit": "grams",
+    "description": "Silicone grease for waterproofing electrical connectors."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Battery Terminal Cleaner / Protector",
+    "unit": "unit",
+    "description": "Wire brush and anti-corrosion gel for battery terminals."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Tire Valve Stems",
+    "unit": "unit",
+    "description": "Valve stems for tires."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Tire Valve Caps",
+    "unit": "unit",
+    "description": "Plastic or metal caps for tire valves."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Wheel Weights",
+    "unit": "grams",
+    "description": "Balancing weights for wheels."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Van Wash Soap",
+    "unit": "litres",
+    "description": "pH-balanced soap for van exterior washing."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Wax / Polish",
+    "unit": "ml",
+    "description": "Paint protection products."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Interior Cleaner",
+    "unit": "ml",
+    "description": "Cleaner for van interior surfaces and cargo area."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Glass Cleaner",
+    "unit": "ml",
+    "description": "Cleaner for windows and mirrors."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Tire Shine",
+    "unit": "ml",
+    "description": "Dressing for tire sidewalls."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Cargo Area Liner/Protectant",
+    "unit": "ml",
+    "description": "Protectant for cargo area floor and walls."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Microfiber Towels",
+    "unit": "unit",
+    "description": "Lint-free towels for cleaning."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Wash Mitt",
+    "unit": "unit",
+    "description": "Soft mitt for washing."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Hand Cleaner",
+    "unit": "ml",
+    "description": "Mechanics' hand cleaner."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Load Bay Lighting Bulbs",
+    "unit": "unit",
+    "description": "Bulbs for cargo area lighting."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Roof Rack/Rails Maintenance Kit",
+    "unit": "kit",
+    "description": "Maintenance items for roof racks and rails."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Sliding Door Track Cleaner/Lubricant",
+    "unit": "ml",
+    "description": "Cleaner and lubricant for sliding door tracks."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Rear Door Hinge Lubricant",
+    "unit": "ml",
+    "description": "Lubricant for rear door hinges and mechanisms."
+  }
 ]

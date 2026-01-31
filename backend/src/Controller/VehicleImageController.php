@@ -144,7 +144,7 @@ class VehicleImageController extends AbstractController
         $image->setVehicle($vehicle);
         $image->setPath('/uploads/vehicles/' . $storageSubDir . '/' . $newFilename);
         $image->setCaption($request->request->get('caption'));
-        
+
         // Set as primary if it's the first image
         if ($vehicle->getImages()->count() === 0) {
             $image->setIsPrimary(true);

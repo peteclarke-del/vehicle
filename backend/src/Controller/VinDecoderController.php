@@ -23,7 +23,9 @@ class VinDecoderController extends AbstractController
 
     private function isAdminForUser(?\App\Entity\User $user): bool
     {
-        if (!$user) return false;
+        if (!$user) {
+            return false;
+        }
         $roles = $user->getRoles() ?: [];
         return in_array('ROLE_ADMIN', $roles, true);
     }
@@ -43,7 +45,7 @@ class VinDecoderController extends AbstractController
         }
 
         $vin = $vehicle->getVin();
-        
+
         if (!$vin) {
             return $this->json([
                 'error' => 'No VIN number',

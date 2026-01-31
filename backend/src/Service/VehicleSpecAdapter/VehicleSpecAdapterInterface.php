@@ -9,7 +9,7 @@ use App\Entity\Vehicle;
 
 /**
  * Interface for vehicle specification adapters
- * 
+ *
  * Each adapter handles fetching specifications from a specific data source
  * (API, web scraping, database, etc.)
  */

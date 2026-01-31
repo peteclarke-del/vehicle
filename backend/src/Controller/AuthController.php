@@ -143,7 +143,9 @@ class AuthController extends AbstractController
             $decoded = null;
             if ($val !== null) {
                 $decoded = json_decode($val, true);
-                if (json_last_error() === JSON_ERROR_NONE) $val = $decoded;
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    $val = $decoded;
+                }
             }
             $theme = $val ?? 'light';
         }
@@ -243,12 +245,12 @@ class AuthController extends AbstractController
         if (isset($data['distanceUnit'])) {
             $validUnits = ['km', 'mi', 'miles'];
             $unit = $data['distanceUnit'];
-            
+
             // Normalize 'miles' to 'mi' for consistency
             if ($unit === 'miles') {
                 $unit = 'mi';
             }
-            
+
             if (in_array($unit, ['km', 'mi'])) {
                 $repo = $this->entityManager->getRepository(\App\Entity\UserPreference::class);
                 $pref = $repo->findOneBy(['user' => $user, 'name' => 'distanceUnit']);

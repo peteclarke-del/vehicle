@@ -27,6 +27,7 @@ const TodoDialog = ({ open, onClose, vehicleId, todo }) => {
   const [selectedConsumables, setSelectedConsumables] = useState([]);
   const [done, setDone] = useState(false);
   const [dueDate, setDueDate] = useState('');
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -73,6 +74,7 @@ const TodoDialog = ({ open, onClose, vehicleId, todo }) => {
       completedBy: done ? new Date().toISOString() : null,
     };
 
+    setLoading(true);
     try {
       if (todo && todo.id) {
         await api.put(`/todos/${todo.id}`, payload);
@@ -83,6 +85,8 @@ const TodoDialog = ({ open, onClose, vehicleId, todo }) => {
     } catch (err) {
       console.error('Failed to save todo', err);
       onClose(false);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -125,8 +129,8 @@ const TodoDialog = ({ open, onClose, vehicleId, todo }) => {
         </Box>
       </DialogContent>
       <DialogActions>
-        <Button onClick={() => onClose(false)}>{t('common.cancel') || 'Cancel'}</Button>
-        <Button variant="contained" onClick={handleSave}>{t('common.save') || 'Save'}</Button>
+        <Button onClick={() => onClose(false)} disabled={loading}>{t('common.cancel') || 'Cancel'}</Button>
+        <Button variant="contained" onClick={handleSave} disabled={loading}>{loading ? t('common.loading') : (t('common.save') || 'Save')}</Button>
       </DialogActions>
     </Dialog>
   );

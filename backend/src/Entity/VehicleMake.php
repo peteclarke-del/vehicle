@@ -24,23 +24,8 @@ class VehicleMake
     #[ORM\JoinColumn(nullable: false)]
     private VehicleType $vehicleType;
 
-    #[ORM\Column(type: 'string', length: 255, nullable: true)]
-    private ?string $logoUrl = null;
-
-    #[ORM\Column(type: 'string', length: 100, nullable: true)]
-    private ?string $countryOfOrigin = null;
-
-    #[ORM\Column(type: 'integer', nullable: true)]
-    private ?int $foundedYear = null;
-
-    #[ORM\Column(type: 'string', length: 100, nullable: true)]
-    private ?string $headquarters = null;
-
     #[ORM\Column(type: 'boolean', options: ['default' => true])]
     private bool $isActive = true;
-
-    #[ORM\Column(type: 'integer', options: ['default' => 0])]
-    private int $popularity = 0;
 
     #[ORM\OneToMany(mappedBy: 'make', targetEntity: VehicleModel::class)]
     private Collection $models;
@@ -77,50 +62,6 @@ class VehicleMake
         return $this;
     }
 
-    public function getLogoUrl(): ?string
-    {
-        return $this->logoUrl;
-    }
-
-    public function setLogoUrl(?string $logoUrl): self
-    {
-        $this->logoUrl = $logoUrl;
-        return $this;
-    }
-
-    public function getCountryOfOrigin(): ?string
-    {
-        return $this->countryOfOrigin;
-    }
-
-    public function setCountryOfOrigin(?string $countryOfOrigin): self
-    {
-        $this->countryOfOrigin = $countryOfOrigin;
-        return $this;
-    }
-
-    public function getFoundedYear(): ?int
-    {
-        return $this->foundedYear;
-    }
-
-    public function setFoundedYear(?int $foundedYear): self
-    {
-        $this->foundedYear = $foundedYear;
-        return $this;
-    }
-
-    public function getHeadquarters(): ?string
-    {
-        return $this->headquarters;
-    }
-
-    public function setHeadquarters(?string $headquarters): self
-    {
-        $this->headquarters = $headquarters;
-        return $this;
-    }
-
     public function getIsActive(): bool
     {
         return $this->isActive;
@@ -129,17 +70,6 @@ class VehicleMake
     public function setIsActive(bool $isActive): self
     {
         $this->isActive = $isActive;
-        return $this;
-    }
-
-    public function getPopularity(): int
-    {
-        return $this->popularity;
-    }
-
-    public function setPopularity(int $popularity): self
-    {
-        $this->popularity = $popularity;
         return $this;
     }
 

@@ -81,12 +81,7 @@ class VehicleMakeFixtures extends \App\DataFixtures\AbstractJsonFixture implemen
         $make = new VehicleMake();
         $make->setName($name);
         $make->setVehicleType($type);
-        $make->setLogoUrl($item['logoUrl'] ?? null);
-        $make->setCountryOfOrigin($item['countryOfOrigin'] ?? null);
-        $make->setFoundedYear($item['foundedYear'] ?? null);
-        $make->setHeadquarters($item['headquarters'] ?? null);
         $make->setIsActive($item['isActive'] ?? true);
-        $make->setPopularity($item['popularity'] ?? 0);
 
         $manager->persist($make);
         $this->_existingMakes[$key] = true;

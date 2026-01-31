@@ -24,7 +24,9 @@ class SpecificationController extends AbstractController
 
     private function isAdminForUser(?\App\Entity\User $user): bool
     {
-        if (!$user) return false;
+        if (!$user) {
+            return false;
+        }
         $roles = $user->getRoles() ?: [];
         return in_array('ROLE_ADMIN', $roles, true);
     }

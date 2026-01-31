@@ -20,24 +20,6 @@ class VehicleType
     #[ORM\Column(type: 'string', length: 50)]
     private ?string $name = null;
 
-    #[ORM\Column(type: 'string', length: 50, nullable: true)]
-    private ?string $category = null;
-
-    #[ORM\Column(type: 'text', nullable: true)]
-    private ?string $description = null;
-
-    #[ORM\Column(type: 'integer', nullable: true)]
-    private ?int $typicalSeatingCapacity = null;
-
-    #[ORM\Column(type: 'integer', nullable: true)]
-    private ?int $typicalDoors = null;
-
-    #[ORM\Column(type: 'string', length: 50, nullable: true)]
-    private ?string $iconName = null;
-
-    #[ORM\Column(type: 'boolean', options: ['default' => false])]
-    private bool $isPopular = false;
-
     #[ORM\OneToMany(mappedBy: 'vehicleType', targetEntity: Vehicle::class)]
     private Collection $vehicles;
 
@@ -76,72 +58,6 @@ class VehicleType
         return $this->consumableTypes;
     }
 
-    public function getCategory(): ?string
-    {
-        return $this->category;
-    }
-
-    public function setCategory(?string $category): self
-    {
-        $this->category = $category;
-        return $this;
-    }
-
-    public function getDescription(): ?string
-    {
-        return $this->description;
-    }
-
-    public function setDescription(?string $description): self
-    {
-        $this->description = $description;
-        return $this;
-    }
-
-    public function getTypicalSeatingCapacity(): ?int
-    {
-        return $this->typicalSeatingCapacity;
-    }
-
-    public function setTypicalSeatingCapacity(?int $typicalSeatingCapacity): self
-    {
-        $this->typicalSeatingCapacity = $typicalSeatingCapacity;
-        return $this;
-    }
-
-    public function getTypicalDoors(): ?int
-    {
-        return $this->typicalDoors;
-    }
-
-    public function setTypicalDoors(?int $typicalDoors): self
-    {
-        $this->typicalDoors = $typicalDoors;
-        return $this;
-    }
-
-    public function getIconName(): ?string
-    {
-        return $this->iconName;
-    }
-
-    public function setIconName(?string $iconName): self
-    {
-        $this->iconName = $iconName;
-        return $this;
-    }
-
-    public function getIsPopular(): bool
-    {
-        return $this->isPopular;
-    }
-
-    public function setIsPopular(bool $isPopular): self
-    {
-        $this->isPopular = $isPopular;
-        return $this;
-    }
-
     public function addVehicle(Vehicle $vehicle): self
     {
         if (!$this->vehicles->contains($vehicle)) {
@@ -171,10 +87,5 @@ class VehicleType
     public function __toString(): string
     {
         return $this->name ?? '';
-    }
-
-    public function isPopular(): bool
-    {
-        return $this->isPopular;
     }
 }

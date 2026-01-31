@@ -23,11 +23,11 @@ class EbayWebhookController extends AbstractController
 
     /**
      * eBay Marketplace Account Deletion Webhook Endpoint
-     * 
+     *
      * This endpoint handles:
      * 1. GET requests with challenge_code for endpoint verification
      * 2. POST requests with account deletion notifications
-     * 
+     *
      * @see https://developer.ebay.com/develop/guides-v2/marketplace-user-account-deletion/marketplace-user-account-deletion
      */
     #[Route('/account-deletion', name: 'account_deletion', methods: ['GET', 'POST'])]
@@ -48,16 +48,16 @@ class EbayWebhookController extends AbstractController
 
     /**
      * Handle eBay challenge code verification (GET request)
-     * 
+     *
      * eBay sends: GET https://<callback_URL>?challenge_code=123
      * We must respond with: {"challengeResponse": "<hash>"}
-     * 
+     *
      * Hash = SHA256(challengeCode + verificationToken + endpoint)
      */
     private function handleChallengeVerification(Request $request): JsonResponse
     {
         $challengeCode = $request->query->get('challenge_code');
-        
+
         if (!$challengeCode) {
             $this->logger->error('eBay webhook: Missing challenge_code parameter');
             return new JsonResponse(['error' => 'Missing challenge_code'], Response::HTTP_BAD_REQUEST);
@@ -65,7 +65,7 @@ class EbayWebhookController extends AbstractController
 
         // Get verification token from environment
         $verificationToken = $_ENV['EBAY_VERIFICATION_TOKEN'] ?? null;
-        
+
         if (!$verificationToken) {
             $this->logger->error('eBay webhook: EBAY_VERIFICATION_TOKEN not configured');
             return new JsonResponse(['error' => 'Verification token not configured'], Response::HTTP_INTERNAL_SERVER_ERROR);
@@ -95,7 +95,7 @@ class EbayWebhookController extends AbstractController
 
     /**
      * Handle eBay marketplace account deletion notification (POST request)
-     * 
+     *
      * Payload format:
      * {
      *   "metadata": {
@@ -164,7 +164,6 @@ class EbayWebhookController extends AbstractController
                 'status' => 'acknowledged',
                 'notificationId' => $data['notification']['notificationId'] ?? null,
             ], Response::HTTP_OK);
-            
         } catch (\JsonException $e) {
             $this->logger->error('eBay webhook: Invalid JSON payload', [
                 'error' => $e->getMessage(),

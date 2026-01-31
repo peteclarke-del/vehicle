@@ -16,6 +16,7 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { login } = useAuth();
   const { t } = useTranslation();
@@ -23,6 +24,7 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
     try {
       await login(email, password);
       navigate('/');
@@ -31,6 +33,8 @@ const Login = () => {
       // eslint-disable-next-line no-console
       console.error('Login error:', err?.response?.data ?? err.message ?? err);
       setError(t('common.invalidCredentials'));
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -79,8 +83,9 @@ const Login = () => {
               fullWidth
               variant="contained"
               sx={{ mt: 3, mb: 2 }}
+              disabled={loading}
             >
-              {t('auth.login')}
+              {loading ? t('common.loading') : t('auth.login')}
             </Button>
             <Box textAlign="center">
               <Link to="/register" style={{ textDecoration: 'none' }}>

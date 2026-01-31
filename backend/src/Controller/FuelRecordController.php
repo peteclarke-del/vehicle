@@ -168,12 +168,13 @@ class FuelRecordController extends AbstractController
         if (!$record || (!$this->isAdminForUser($user) && $record->getVehicle()->getOwner()->getId() !== $user->getId())) {
             return $this->json(['error' => 'Fuel record not found'], 404);
         }
-
     }
 
     private function isAdminForUser(?User $user): bool
     {
-        if (!$user) return false;
+        if (!$user) {
+            return false;
+        }
         $roles = $user->getRoles() ?: [];
         return in_array('ROLE_ADMIN', $roles, true);
 

@@ -42,7 +42,7 @@ class UrlScraperService
          * --------------------------- */
         $parsed = parse_url($url);
         $host = $parsed['host'] ?? '';
-        
+
         if (str_contains($host, 'ebay.')) {
             $itemId = $this->ebayAdapter->extractItemId($url);
             if ($itemId) {

@@ -1,0 +1,62 @@
+[
+{
+    "vehicleType": "Truck",
+    "name": "Engine",
+    "description": "Heavy-duty engine assemblies and major internal components."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Intake",
+    "description": "High-capacity intake and induction system components."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Fuelling",
+    "description": "Diesel fuel delivery systems and fuel management components."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Exhaust",
+    "description": "Heavy-duty exhaust system components and assemblies."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Transmission",
+    "description": "Manual, automatic, or automated transmission systems."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Body",
+    "description": "Cab panels, bodywork, exterior trim, bumpers, glass, mirrors, and related hardware."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Chassis",
+    "description": "Frame rails, crossmembers, and structural truck components."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Suspension & Steering",
+    "description": "Leaf spring, air suspension, and load-handling suspension components."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Braking System",
+    "description": "Air and hydraulic braking system hardware."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Wheels & Tyres",
+    "description": "Heavy-duty wheels, tyres, wheel bearings, hubs, and related mounting hardware."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Ignition",
+    "description": "Ignition system components including coils, plugs, leads, and ignition modules."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Electrical & Control",
+    "description": "Engine, chassis, and transmission control electronics."
+  }
+]

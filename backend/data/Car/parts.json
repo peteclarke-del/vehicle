@@ -1,0 +1,62 @@
+[
+{
+    "vehicleType": "Car",
+    "name": "Engine",
+    "description": "Core engine assembly and internal components, including block, head, valvetrain, and rotating assembly."
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Intake",
+    "description": "Air intake system components including manifolds, throttle bodies, and aftermarket intake assemblies."
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Fuelling",
+    "description": "Fuel delivery components such as injectors, pumps, rails, and fuel system upgrades."
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Exhaust",
+    "description": "Exhaust system components including manifolds, headers, catalytic housings, and mufflers."
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Transmission",
+    "description": "Gearbox, torque converter, clutch assemblies, and drivetrain interfaces."
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Body",
+    "description": "Body panels, exterior trim, bumpers, glass, mirrors, and related hardware."
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Chassis",
+    "description": "Vehicle structural components including subframes, crossmembers, and reinforcement parts."
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Suspension & Steering",
+    "description": "Suspension components such as control arms, dampers, springs, and performance suspension kits."
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Braking System",
+    "description": "Brake system hardware including calipers, master cylinders, and performance brake assemblies."
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Wheels & Tyres",
+    "description": "Wheels, tyres, wheel bearings, hubs, and related mounting hardware."
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Ignition",
+    "description": "Ignition system components including coils, plugs, leads, and ignition modules."
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Electrical & Control",
+    "description": "Vehicle control modules, wiring looms, sensors, and electronic upgrade components."
+  }
+]

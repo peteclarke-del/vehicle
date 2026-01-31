@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  Container,
   Typography,
   Button,
   Table,
@@ -28,10 +27,12 @@ import useTablePagination from '../hooks/useTablePagination';
 import RoadTaxDialog from '../components/RoadTaxDialog';
 import TablePaginationBar from '../components/TablePaginationBar';
 import VehicleSelector from '../components/VehicleSelector';
+import KnightRiderLoader from '../components/KnightRiderLoader';
 
 const RoadTax = () => {
   const [records, setRecords] = useState([]);
   const [selectedVehicle, setSelectedVehicle] = useState('');
+  const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState(null);
   const { api } = useAuth();
@@ -51,12 +52,15 @@ const RoadTax = () => {
   }, [fetchVehicles]);
 
   const loadRecords = useCallback(async () => {
+    setLoading(true);
     try {
       const url = !selectedVehicle || selectedVehicle === '__all__' ? '/road-tax' : `/road-tax?vehicleId=${selectedVehicle}`;
       const response = await api.get(url);
       setRecords(response.data);
     } catch (error) {
       console.error('Error loading road tax records:', error);
+    } finally {
+      setLoading(false);
     }
   }, [api, selectedVehicle]);
 
@@ -170,17 +174,25 @@ const RoadTax = () => {
 
   const { page, rowsPerPage, paginatedRows: paginatedRecords, handleChangePage, handleChangeRowsPerPage } = useTablePagination(sortedRecords);
 
+  if (loading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
+        <KnightRiderLoader size={32} />
+      </Box>
+    );
+  }
+
   if (vehicles.length === 0) {
     return (
-      <Container>
+      <Box>
         <Typography variant="h4" gutterBottom>{t('roadTax.title')}</Typography>
         <Typography>{t('common.noVehicles')}</Typography>
-      </Container>
+      </Box>
     );
   }
 
   return (
-    <Container maxWidth="xl">
+    <Box>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Typography variant="h4">{t('roadTax.title')}</Typography>
         <Box display="flex" gap={2}>
@@ -306,7 +318,7 @@ const RoadTax = () => {
         vehicles={vehicles}
         onClose={handleDialogClose} 
       />
-    </Container>
+    </Box>
   );
 };
 

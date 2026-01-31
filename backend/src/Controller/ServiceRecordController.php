@@ -58,19 +58,35 @@ class ServiceRecordController extends AbstractController
                 return new JsonResponse(['error' => 'Vehicle not found'], 404);
             }
 
-            $serviceRecords = $this->entityManager->getRepository(ServiceRecord::class)
-                ->findBy(['vehicle' => $vehicle], ['serviceDate' => 'DESC']);
+            // Eager load service records with all relationships
+            $serviceRecords = $this->entityManager->createQueryBuilder()
+                ->select('s', 'v', 'mot', 'att', 'items')
+                ->from(ServiceRecord::class, 's')
+                ->leftJoin('s.vehicle', 'v')
+                ->leftJoin('s.motRecord', 'mot')
+                ->leftJoin('s.receiptAttachment', 'att')
+                ->leftJoin('s.items', 'items')
+                ->where('s.vehicle = :vehicle')
+                ->setParameter('vehicle', $vehicle)
+                ->orderBy('s.serviceDate', 'DESC')
+                ->getQuery()
+                ->getResult();
         } else {
             $vehicleRepo = $this->entityManager->getRepository(Vehicle::class);
             $vehicles = $this->isAdminForUser($user) ? $vehicleRepo->findAll() : $vehicleRepo->findBy(['owner' => $user]);
-            
+
             if (empty($vehicles)) {
                 return new JsonResponse([]);
             }
 
+            // Eager load service records with all relationships
             $qb = $this->entityManager->createQueryBuilder()
-                ->select('s')
+                ->select('s', 'v', 'mot', 'att', 'items')
                 ->from(ServiceRecord::class, 's')
+                ->leftJoin('s.vehicle', 'v')
+                ->leftJoin('s.motRecord', 'mot')
+                ->leftJoin('s.receiptAttachment', 'att')
+                ->leftJoin('s.items', 'items')
                 ->where('s.vehicle IN (:vehicles)')
                 ->setParameter('vehicles', $vehicles)
                 ->orderBy('s.serviceDate', 'DESC');
@@ -91,7 +107,7 @@ class ServiceRecordController extends AbstractController
         $id = (int) $id;
         $serviceRecord = $this->entityManager->getRepository(ServiceRecord::class)->find($id);
         $user = $this->getUserEntity();
-        
+
         if (!$serviceRecord || !$user || (!$this->isAdminForUser($user) && $serviceRecord->getVehicle()->getOwner()->getId() !== $user->getId())) {
             return new JsonResponse(['error' => 'Service record not found'], 404);
         }
@@ -161,7 +177,7 @@ class ServiceRecordController extends AbstractController
         $id = (int) $id;
         $serviceRecord = $this->entityManager->getRepository(ServiceRecord::class)->find($id);
         $user = $this->getUserEntity();
-        
+
         if (!$serviceRecord || !$user || (!$this->isAdminForUser($user) && $serviceRecord->getVehicle()->getOwner()->getId() !== $user->getId())) {
             return new JsonResponse(['error' => 'Service record not found'], 404);
         }
@@ -175,9 +191,9 @@ class ServiceRecordController extends AbstractController
         try {
             $this->logger->info('ServiceRecord update payload', ['id' => $id, 'data' => $data]);
             $prevMotId = $serviceRecord->getMotRecord()?->getId();
-            
+
             $this->updateServiceRecordFromData($serviceRecord, $data);
-            
+
             // Validate entity
             $errors = $this->validator->validate($serviceRecord);
             if (count($errors) > 0) {
@@ -225,7 +241,7 @@ class ServiceRecordController extends AbstractController
         $id = (int) $id;
         $serviceRecord = $this->entityManager->getRepository(ServiceRecord::class)->find($id);
         $user = $this->getUserEntity();
-        
+
         if (!$serviceRecord || !$user || (!$this->isAdminForUser($user) && $serviceRecord->getVehicle()->getOwner()->getId() !== $user->getId())) {
             return new JsonResponse(['error' => 'Service record not found'], 404);
         }
@@ -263,7 +279,7 @@ class ServiceRecordController extends AbstractController
         $id = (int) $id;
         $serviceRecord = $this->entityManager->getRepository(ServiceRecord::class)->find($id);
         $user = $this->getUserEntity();
-        
+
         if (!$serviceRecord || !$user || (!$this->isAdminForUser($user) && $serviceRecord->getVehicle()->getOwner()->getId() !== $user->getId())) {
             return new JsonResponse(['error' => 'Service record not found'], 404);
         }
@@ -297,7 +313,7 @@ class ServiceRecordController extends AbstractController
 
             $quantity = $c['quantity'] ?? 1;
             $cost = (string)($c['cost'] ?? '0.00');
-            $total = $this->calculateTotal($cost, $quantity);
+            $total = $this->calculateTotal($cost, (string)$quantity);
 
             $serviceData['items'][] = [
                 'id' => null,
@@ -321,7 +337,9 @@ class ServiceRecordController extends AbstractController
 
     private function isAdminForUser(?User $user): bool
     {
-        if (!$user) return false;
+        if (!$user) {
+            return false;
+        }
         $roles = $user->getRoles() ?: [];
         return in_array('ROLE_ADMIN', $roles, true);
     }
@@ -392,7 +410,13 @@ class ServiceRecordController extends AbstractController
         return [
             'id' => $part->getId(),
             'description' => $part->getDescription(),
+            'price' => $part->getPrice(),
+            'quantity' => $part->getQuantity(),
             'cost' => $part->getCost(),
+            'partCategory' => $part->getPartCategory() ? [
+                'id' => $part->getPartCategory()->getId(),
+                'name' => $part->getPartCategory()->getName(),
+            ] : null,
         ];
     }
 
@@ -429,18 +453,18 @@ class ServiceRecordController extends AbstractController
                 throw new \InvalidArgumentException('Invalid service date format');
             }
         }
-        
+
         if (isset($data['serviceType'])) {
             $service->setServiceType($data['serviceType']);
         }
-        
+
         if (isset($data['laborCost'])) {
             if (!is_numeric($data['laborCost']) || (float)$data['laborCost'] < 0) {
                 throw new \InvalidArgumentException('Invalid labor cost');
             }
             $service->setLaborCost($data['laborCost']);
         }
-        
+
         if (isset($data['partsCost'])) {
             if (!is_numeric($data['partsCost']) || (float)$data['partsCost'] < 0) {
                 throw new \InvalidArgumentException('Invalid parts cost');
@@ -458,18 +482,18 @@ class ServiceRecordController extends AbstractController
                 $service->setConsumablesCost($data['consumablesCost']);
             }
         }
-        
+
         if (isset($data['mileage'])) {
             if (!is_numeric($data['mileage']) || (int)$data['mileage'] < 0) {
                 throw new \InvalidArgumentException('Invalid mileage');
             }
             $service->setMileage($data['mileage']);
         }
-        
+
         if (isset($data['serviceProvider'])) {
             $service->setServiceProvider($data['serviceProvider']);
         }
-        
+
         if (isset($data['workPerformed'])) {
             $service->setWorkPerformed($data['workPerformed']);
         }
@@ -502,17 +526,17 @@ class ServiceRecordController extends AbstractController
                 $service->setNextServiceMileage((int) $data['nextServiceMileage']);
             }
         }
-        
+
         if (isset($data['notes'])) {
             $service->setNotes($data['notes']);
         }
-        
+
         if (array_key_exists('receiptAttachmentId', $data)) {
             $this->logger->info('ServiceRecord receiptAttachmentId present in payload', [
                 'id' => $service->getId(),
                 'receiptAttachmentId' => $data['receiptAttachmentId']
             ]);
-            
+
             if ($data['receiptAttachmentId'] === null || $data['receiptAttachmentId'] === '') {
                 $service->setReceiptAttachment(null);
             } else {
@@ -565,6 +589,28 @@ class ServiceRecordController extends AbstractController
                 $this->entityManager->remove($ex);
             }
 
+            // Pre-load all consumables and parts to avoid N queries in loop
+            $consumableIds = array_filter(array_column($data['items'], 'consumableId'));
+            $partIds = array_filter(array_column($data['items'], 'partId'));
+
+            $consumablesMap = [];
+            if (!empty($consumableIds)) {
+                $consumables = $this->entityManager->getRepository(Consumable::class)
+                    ->findBy(['id' => $consumableIds]);
+                foreach ($consumables as $c) {
+                    $consumablesMap[$c->getId()] = $c;
+                }
+            }
+
+            $partsMap = [];
+            if (!empty($partIds)) {
+                $parts = $this->entityManager->getRepository(Part::class)
+                    ->findBy(['id' => $partIds]);
+                foreach ($parts as $p) {
+                    $partsMap[$p->getId()] = $p;
+                }
+            }
+
             foreach ($data['items'] as $index => $it) {
                 if (!isset($it['type']) || !isset($it['description']) || !isset($it['cost'])) {
                     throw new \InvalidArgumentException("Item at index $index is missing required fields");
@@ -574,8 +620,8 @@ class ServiceRecordController extends AbstractController
                     throw new \InvalidArgumentException("Invalid cost in item at index $index");
                 }
 
-                $quantity = isset($it['quantity']) ? (int)$it['quantity'] : 1;
-                if ($quantity < 1) {
+                $quantity = isset($it['quantity']) ? (string)$it['quantity'] : '1';
+                if (!is_numeric($quantity) || (float)$quantity <= 0) {
                     throw new \InvalidArgumentException("Invalid quantity in item at index $index");
                 }
 
@@ -587,7 +633,7 @@ class ServiceRecordController extends AbstractController
                 $si->setQuantity($quantity);
                 // If a consumableId is provided, link the ServiceItem to the Consumable entity
                 if (isset($it['consumableId']) && is_numeric($it['consumableId']) && (int)$it['consumableId'] > 0) {
-                    $consumable = $this->entityManager->getRepository(Consumable::class)->find((int)$it['consumableId']);
+                    $consumable = $consumablesMap[(int)$it['consumableId']] ?? null;
                     if ($consumable) {
                         $si->setConsumable($consumable);
                         $consumable->setServiceRecord($service);
@@ -600,7 +646,7 @@ class ServiceRecordController extends AbstractController
                 }
 
                 if (isset($it['partId']) && is_numeric($it['partId']) && (int) $it['partId'] > 0) {
-                    $part = $this->entityManager->getRepository(Part::class)->find((int) $it['partId']);
+                    $part = $partsMap[(int)$it['partId']] ?? null;
                     if ($part) {
                         $part->setServiceRecord($service);
                         $si->setPart($part);
@@ -608,21 +654,70 @@ class ServiceRecordController extends AbstractController
                         $this->logger->warning('Linked part not found', ['partId' => $it['partId']]);
                     }
                 }
-                
+
                 $this->entityManager->persist($si);
             }
         }
     }
 
-    private function calculateTotal(string $cost, int $quantity): string
+    private function calculateTotal(string $cost, string $quantity): string
     {
         if (function_exists('bcmul')) {
-            return bcmul($cost, (string)$quantity, 2);
+            return bcmul($cost, $quantity, 2);
         }
-        
+
         // Fallback calculation
-        $result = (float)$cost * $quantity;
+        $result = (float)$cost * (float)$quantity;
         return number_format($result, 2, '.', '');
+    }
+
+    #[Route('/service-items/{id}', methods: ['PATCH'])]
+    public function updateServiceItem(Request $request, int|string $id): JsonResponse
+    {
+        if (!is_numeric($id) || (int)$id <= 0) {
+            return new JsonResponse(['error' => 'Invalid service item ID'], 400);
+        }
+
+        $id = (int)$id;
+        $item = $this->entityManager->getRepository(ServiceItem::class)->find($id);
+        $user = $this->getUserEntity();
+
+        if (!$item || !$user) {
+            return new JsonResponse(['error' => 'Service item not found'], 404);
+        }
+
+        $service = $item->getServiceRecord();
+        if (!$service || (!$this->isAdminForUser($user) && $service->getVehicle()->getOwner()->getId() !== $user->getId())) {
+            return new JsonResponse(['error' => 'Not authorized to update this item'], 403);
+        }
+
+        $data = json_decode($request->getContent(), true);
+        if (!$data) {
+            return new JsonResponse(['error' => 'Invalid JSON payload'], 400);
+        }
+
+        try {
+            if (isset($data['cost'])) {
+                $item->setCost($data['cost']);
+            }
+            if (isset($data['description'])) {
+                $item->setDescription($data['description']);
+            }
+            if (isset($data['quantity'])) {
+                $item->setQuantity($data['quantity']);
+            }
+
+            $this->entityManager->persist($item);
+            $this->entityManager->flush();
+
+            return new JsonResponse([
+                'message' => 'Service item updated',
+                'item' => $this->serializeItem($item)
+            ]);
+        } catch (\Throwable $e) {
+            $this->logger->error('Error updating service item', ['exception' => $e->getMessage()]);
+            return new JsonResponse(['error' => 'Failed to update service item'], 500);
+        }
     }
 
     #[Route('/service-items/{id}', methods: ['DELETE'])]

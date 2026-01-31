@@ -189,7 +189,7 @@ class ServiceRecord
     {
         return $this->partsCost;
     }
-    
+
     public function setPartsCost($partsCost): self
     {
         if ($partsCost !== null) {

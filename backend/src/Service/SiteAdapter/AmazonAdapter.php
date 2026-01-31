@@ -57,7 +57,7 @@ class AmazonAdapter implements SiteAdapterInterface
         // Price (whole + fraction)
         $priceWhole = $xp->evaluate('string(//span[@class="a-price-whole"])');
         $priceFraction = $xp->evaluate('string(//span[@class="a-price-fraction"])');
-        
+
         if ($priceWhole) {
             $price = $priceWhole . $priceFraction;
             $data['price'] = str_replace(',', '', $price);
@@ -102,7 +102,7 @@ class AmazonAdapter implements SiteAdapterInterface
 
             $host = $this->getHost();
             $endpoint = "https://{$host}/paapi5/getitems";
-            
+
             $payload = [
                 'ItemIds' => [$asin],
                 'Resources' => [

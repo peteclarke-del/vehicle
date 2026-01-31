@@ -56,8 +56,9 @@ class Part
     #[ORM\Column(type: 'decimal', precision: 10, scale: 2)]
     private ?string $cost = null;
 
-    #[ORM\Column(type: 'string', length: 50)]
-    private ?string $category = null;
+    #[ORM\ManyToOne(targetEntity: PartCategory::class)]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
+    private ?PartCategory $partCategory = null;
 
     #[ORM\Column(type: 'date', nullable: true)]
     private ?\DateTimeInterface $installationDate = null;
@@ -166,14 +167,14 @@ class Part
         return $this;
     }
 
-    public function getCategory(): ?string
+    public function getPartCategory(): ?PartCategory
     {
-        return $this->category;
+        return $this->partCategory;
     }
 
-    public function setCategory(string $category): self
+    public function setPartCategory(?PartCategory $partCategory): self
     {
-        $this->category = $category;
+        $this->partCategory = $partCategory;
         return $this;
     }
 

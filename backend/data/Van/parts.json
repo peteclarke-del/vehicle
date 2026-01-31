@@ -1,0 +1,62 @@
+[
+  {
+    "vehicleType": "Van",
+    "name": "Engine",
+    "description": "Engine assemblies and major internal components for light commercial vehicles."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Intake",
+    "description": "Air intake and induction system components."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Fuelling",
+    "description": "Fuel system components including pumps, injectors, and delivery hardware."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Exhaust",
+    "description": "Exhaust system assemblies and components."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Transmission",
+    "description": "Manual or automatic transmission assemblies and drivetrain interfaces."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Body",
+    "description": "Body panels, exterior trim, bumpers, glass, mirrors, and related hardware."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Chassis",
+    "description": "Structural chassis components, subframes, and load-bearing elements."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Suspension & Steering",
+    "description": "Suspension assemblies designed for load-bearing and ride control."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Braking System",
+    "description": "Brake system hardware including calipers and hydraulic components."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Wheels & Tyres",
+    "description": "Wheels, tyres, wheel bearings, hubs, and related mounting hardware."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Ignition",
+    "description": "Ignition system components including coils, plugs, leads, and ignition modules."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Electrical & Control",
+    "description": "Vehicle control units, wiring systems, and electronic modules."
+  }
+]

@@ -11,6 +11,7 @@ import useTablePagination from '../hooks/useTablePagination';
 import FuelRecordDialog from '../components/FuelRecordDialog';
 import TablePaginationBar from '../components/TablePaginationBar';
 import VehicleSelector from '../components/VehicleSelector';
+import ViewAttachmentIconButton from '../components/ViewAttachmentIconButton';
 import KnightRiderLoader from '../components/KnightRiderLoader';
 
 const FuelRecords = () => {
@@ -329,6 +330,7 @@ const FuelRecords = () => {
                 <TableCell>{record.fuelType || t('vehicleDetails.na')}</TableCell>
                 <TableCell>{record.station || t('vehicleDetails.na')}</TableCell>
                 <TableCell>
+                  <ViewAttachmentIconButton record={record} />
                   <Tooltip title={t('common.edit')}>
                     <IconButton size="small" onClick={() => handleEdit(record)}>
                       <Edit fontSize="small" />

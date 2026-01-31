@@ -37,15 +37,6 @@ class VehicleModel
     #[ORM\Column(type: 'string', length: 255, nullable: true)]
     private ?string $imageUrl = null;
 
-    #[ORM\Column(type: 'json', nullable: true)]
-    private ?array $engineOptions = null;
-
-    #[ORM\Column(type: 'json', nullable: true)]
-    private ?array $transmissionOptions = null;
-
-    #[ORM\Column(type: 'integer', nullable: true)]
-    private ?int $generationCount = null;
-
     #[ORM\Column(type: 'boolean', options: ['default' => true])]
     private bool $isActive = true;
 
@@ -116,7 +107,7 @@ class VehicleModel
         return $this;
     }
 
-     public function getImageUrl(): ?string
+    public function getImageUrl(): ?string
     {
         return $this->imageUrl;
     }
@@ -124,39 +115,6 @@ class VehicleModel
     public function setImageUrl(?string $imageUrl): self
     {
         $this->imageUrl = $imageUrl;
-        return $this;
-    }
-
-    public function getEngineOptions(): ?array
-    {
-        return $this->engineOptions;
-    }
-
-    public function setEngineOptions(?array $engineOptions): self
-    {
-        $this->engineOptions = $engineOptions;
-        return $this;
-    }
-
-    public function getTransmissionOptions(): ?array
-    {
-        return $this->transmissionOptions;
-    }
-
-    public function setTransmissionOptions(?array $transmissionOptions): self
-    {
-        $this->transmissionOptions = $transmissionOptions;
-        return $this;
-    }
-
-    public function getGenerationCount(): ?int
-    {
-        return $this->generationCount;
-    }
-
-    public function setGenerationCount(?int $generationCount): self
-    {
-        $this->generationCount = $generationCount;
         return $this;
     }
 

@@ -149,6 +149,98 @@ class VehicleController extends AbstractController
         return $vehicle->getLastServiceDate()?->format('Y-m-d');
     }
 
+    /**
+     * Batch compute derived values for multiple vehicles to avoid N+1 queries
+     *
+     * @param Vehicle[] $vehicles
+     * @return array Map of vehicleId => ['lastServiceDate' => ..., 'motExpiryDate' => ..., 'currentMileage' => ...]
+     */
+    private function batchComputeDerivedValues(array $vehicles): array
+    {
+        if (empty($vehicles)) {
+            return [];
+        }
+
+        $vehicleIds = array_map(fn($v) => $v->getId(), $vehicles);
+        $result = [];
+
+        // Initialize with nulls
+        foreach ($vehicleIds as $vid) {
+            $result[$vid] = [
+                'lastServiceDate' => null,
+                'motExpiryDate' => null,
+                'currentMileage' => null,
+            ];
+        }
+
+        // Batch query for latest service dates
+        $latestServices = $this->entityManager->createQuery(
+            'SELECT IDENTITY(sr.vehicle) AS vehicleId, MAX(sr.serviceDate) AS lastDate
+             FROM App\Entity\ServiceRecord sr
+             WHERE sr.vehicle IN (:ids)
+             GROUP BY sr.vehicle'
+        )->setParameter('ids', $vehicleIds)->getResult();
+
+        foreach ($latestServices as $row) {
+            $vid = (int) $row['vehicleId'];
+            if ($row['lastDate'] instanceof \DateTimeInterface) {
+                $result[$vid]['lastServiceDate'] = $row['lastDate']->format('Y-m-d');
+            }
+        }
+
+        // Batch query for latest MOT expiry dates
+        $latestMots = $this->entityManager->createQuery(
+            'SELECT IDENTITY(mr.vehicle) AS vehicleId, mr.expiryDate, mr.testDate
+             FROM App\Entity\MotRecord mr
+             WHERE mr.vehicle IN (:ids)
+             AND mr.id IN (
+                 SELECT MAX(mr2.id)
+                 FROM App\Entity\MotRecord mr2
+                 WHERE mr2.vehicle = mr.vehicle
+             )'
+        )->setParameter('ids', $vehicleIds)->getResult();
+
+        foreach ($latestMots as $mot) {
+            $vid = (int) $mot['vehicleId'];
+            if ($mot['expiryDate'] instanceof \DateTimeInterface) {
+                $result[$vid]['motExpiryDate'] = $mot['expiryDate']->format('Y-m-d');
+            } elseif ($mot['testDate'] instanceof \DateTimeInterface) {
+                $result[$vid]['motExpiryDate'] = $mot['testDate']->format('Y-m-d');
+            }
+        }
+
+        // Batch query for current mileage
+        $latestMileages = $this->entityManager->createQuery(
+            'SELECT IDENTITY(fr.vehicle) AS vehicleId, MAX(fr.mileage) AS maxMileage
+             FROM App\Entity\FuelRecord fr
+             WHERE fr.vehicle IN (:ids) AND fr.mileage IS NOT NULL
+             GROUP BY fr.vehicle'
+        )->setParameter('ids', $vehicleIds)->getResult();
+
+        foreach ($latestMileages as $row) {
+            $vid = (int) $row['vehicleId'];
+            if ($row['maxMileage']) {
+                $result[$vid]['currentMileage'] = (int) $row['maxMileage'];
+            }
+        }
+
+        // Fill in fallback values from vehicle entities
+        foreach ($vehicles as $vehicle) {
+            $vid = $vehicle->getId();
+            if ($result[$vid]['lastServiceDate'] === null && $vehicle->getLastServiceDate()) {
+                $result[$vid]['lastServiceDate'] = $vehicle->getLastServiceDate()->format('Y-m-d');
+            }
+            if ($result[$vid]['motExpiryDate'] === null && $vehicle->getMotExpiryDate()) {
+                $result[$vid]['motExpiryDate'] = $vehicle->getMotExpiryDate()->format('Y-m-d');
+            }
+            if ($result[$vid]['currentMileage'] === null) {
+                $result[$vid]['currentMileage'] = $vehicle->getCurrentMileage();
+            }
+        }
+
+        return $result;
+    }
+
     private function computeMotExpiryDate(Vehicle $vehicle): ?string
     {
         $latest = $this->entityManager->getRepository(\App\Entity\MotRecord::class)
@@ -275,19 +367,22 @@ class VehicleController extends AbstractController
 
         // Cache vehicles list for 10 minutes per user
         $cacheKey = 'vehicles.list.' . ($isAdmin ? 'admin' : 'user.' . $user->getId());
-        
+
         $data = $this->cache->get($cacheKey, function (ItemInterface $item) use ($isAdmin, $user) {
             $item->expiresAfter(600); // 10 minutes
             $item->tag(['vehicles', 'user.' . $user->getId()]);
-            
+
             if ($isAdmin) {
                 $vehicles = $this->entityManager->getRepository(Vehicle::class)->findAll();
             } else {
                 $vehicles = $this->entityManager->getRepository(Vehicle::class)
                     ->findBy(['owner' => $user]);
             }
-            
-            return array_map(fn($v) => $this->serializeVehicle($v), $vehicles);
+
+            // Batch compute all derived values upfront to avoid N queries
+            $computedData = $this->batchComputeDerivedValues($vehicles);
+
+            return array_map(fn($v) => $this->serializeVehicle($v, $computedData), $vehicles);
         });
 
         return $this->json($data);
@@ -562,7 +657,7 @@ class VehicleController extends AbstractController
 
         // Cache dashboard totals for 2 minutes per user and period
         $cacheKey = 'dashboard.totals.' . ($isAdmin ? 'admin' : 'user.' . $user->getId()) . '.period.' . $periodMonths;
-        
+
         $result = $this->cache->get($cacheKey, function (ItemInterface $item) use ($user, $isAdmin, $cutoff, $periodMonths) {
             $item->expiresAfter(120); // 2 minutes
             $item->tag(['dashboard', 'user.' . $user->getId()]);
@@ -718,8 +813,21 @@ class VehicleController extends AbstractController
         return $this->json($result);
     }
 
-    private function serializeVehicle(Vehicle $vehicle): array
+    private function serializeVehicle(Vehicle $vehicle, ?array $computedData = null): array
     {
+        $vehicleId = $vehicle->getId();
+
+        // Use pre-computed values if available, otherwise compute on demand
+        if ($computedData && isset($computedData[$vehicleId])) {
+            $currentMileage = $computedData[$vehicleId]['currentMileage'];
+            $lastServiceDate = $computedData[$vehicleId]['lastServiceDate'];
+            $motExpiryDate = $computedData[$vehicleId]['motExpiryDate'];
+        } else {
+            $currentMileage = $this->computeCurrentMileage($vehicle);
+            $lastServiceDate = $this->computeLastServiceDate($vehicle);
+            $motExpiryDate = $this->computeMotExpiryDate($vehicle);
+        }
+
         return [
             'id' => $vehicle->getId(),
             'name' => $vehicle->getName(),
@@ -737,10 +845,10 @@ class VehicleController extends AbstractController
             'purchaseDate' => $vehicle->getPurchaseDate()?->format('Y-m-d'),
             'purchaseMileage' => $vehicle->getPurchaseMileage(),
             // Current mileage is computed from the latest fuel records when available
-            'currentMileage' => $this->computeCurrentMileage($vehicle),
+            'currentMileage' => $currentMileage,
             // Prefer latest related records (service / MOT); fall back to stored vehicle values
-            'lastServiceDate' => $this->computeLastServiceDate($vehicle),
-            'motExpiryDate' => $this->computeMotExpiryDate($vehicle),
+            'lastServiceDate' => $lastServiceDate,
+            'motExpiryDate' => $motExpiryDate,
             'roadTaxExpiryDate' => $vehicle->getRoadTaxExpiryDate()?->format('Y-m-d'),
             'insuranceExpiryDate' => $vehicle->getComputedInsuranceExpiryDate()?->format('Y-m-d'),
             'isRoadTaxExempt' => $vehicle->isRoadTaxExempt(),

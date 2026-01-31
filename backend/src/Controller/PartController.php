@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Entity\Part;
+use App\Entity\PartCategory;
+use App\Entity\ServiceItem;
 use App\Entity\User;
 use App\Entity\Vehicle;
 use App\Entity\Attachment;
@@ -143,6 +145,15 @@ class PartController extends AbstractController
         $prevMotId = $part->getMotRecord()?->getId();
         $this->updatePartFromData($part, $data);
 
+        $serviceItem = $this->entityManager->getRepository(ServiceItem::class)
+            ->findOneBy(['part' => $part]);
+        if ($serviceItem) {
+            $serviceItem->setCost($part->getPrice() ?? $part->getCost());
+            $serviceItem->setQuantity($part->getQuantity() ?? 1);
+            $serviceItem->setDescription($part->getDescription() ?? $part->getName());
+            $this->entityManager->persist($serviceItem);
+        }
+
         try {
             $this->entityManager->flush();
         } catch (\Throwable $e) {
@@ -185,12 +196,13 @@ class PartController extends AbstractController
         if (!$part || (!$this->isAdminForUser($user) && $part->getVehicle()->getOwner()->getId() !== $user->getId())) {
             return $this->json(['error' => 'Part not found'], 404);
         }
-
     }
 
     private function isAdminForUser(?User $user): bool
     {
-        if (!$user) return false;
+        if (!$user) {
+            return false;
+        }
         $roles = $user->getRoles() ?: [];
         return in_array('ROLE_ADMIN', $roles, true);
 
@@ -223,8 +235,9 @@ class PartController extends AbstractController
             'partNumber' => $part->getPartNumber(),
             'manufacturer' => $part->getManufacturer(),
             'supplier' => $part->getSupplier(),
+            'price' => $part->getPrice(),
+            'quantity' => $part->getQuantity(),
             'cost' => $part->getCost(),
-            'category' => $part->getCategory(),
             'installationDate' => $part->getInstallationDate()?->format('Y-m-d'),
             'mileageAtInstallation' => $part->getMileageAtInstallation(),
             'notes' => $part->getNotes(),
@@ -239,7 +252,11 @@ class PartController extends AbstractController
             'warranty' => $part->getWarranty(),
             'receiptAttachmentId' => $part->getReceiptAttachment()?->getId(),
             'productUrl' => $part->getProductUrl(),
-            'createdAt' => $part->getCreatedAt()?->format('c')
+            'createdAt' => $part->getCreatedAt()?->format('c'),
+            'partCategory' => $part->getPartCategory() ? [
+                'id' => $part->getPartCategory()->getId(),
+                'name' => $part->getPartCategory()->getName(),
+            ] : null
         ];
     }
 
@@ -260,12 +277,74 @@ class PartController extends AbstractController
         if (isset($data['supplier'])) {
             $part->setSupplier($data['supplier']);
         }
+        if (isset($data['price'])) {
+            $part->setPrice($data['price']);
+        }
+        if (isset($data['quantity'])) {
+            $part->setQuantity((int)$data['quantity']);
+        }
         if (isset($data['cost'])) {
             // Ensure entity expects a string — cast numeric values to string
             $part->setCost((string) $data['cost']);
         }
-        if (isset($data['category'])) {
-            $part->setCategory($data['category']);
+
+        // If price/quantity provided (or both exist on entity), compute cost
+        if (array_key_exists('price', $data) || array_key_exists('quantity', $data)) {
+            $p = $data['price'] ?? $part->getPrice();
+            $q = array_key_exists('quantity', $data) ? (int)$data['quantity'] : $part->getQuantity();
+            if ($p !== null && $q !== null) {
+                $computed = number_format(((float)$p) * ((int)$q), 2, '.', '');
+                $part->setCost((string)$computed);
+            }
+        }
+
+        // Accept partCategory by id or name. Prefer explicit id if provided.
+        if (array_key_exists('partCategoryId', $data) || array_key_exists('partCategory', $data) || array_key_exists('partCategoryName', $data)) {
+            $pcRepo = $this->entityManager->getRepository(PartCategory::class);
+            $vehicleType = $part->getVehicle()?->getVehicleType() ?? null;
+
+            $found = null;
+            if (!empty($data['partCategoryId'])) {
+                $found = $pcRepo->find((int)$data['partCategoryId']);
+            } elseif (!empty($data['partCategory']) && is_array($data['partCategory']) && !empty($data['partCategory']['id'])) {
+                $found = $pcRepo->find((int)$data['partCategory']['id']);
+            } else {
+                $name = $data['partCategoryName'] ?? null;
+                if (!$name && !empty($data['partCategory']) && is_string($data['partCategory'])) {
+                    $name = $data['partCategory'];
+                }
+                if (!$name && isset($data['partCategory']['name'])) {
+                    $name = $data['partCategory']['name'];
+                }
+                if ($name) {
+                    $criteria = ['name' => trim($name)];
+                    if ($vehicleType) {
+                        $criteria['vehicleType'] = $vehicleType;
+                    }
+                    $found = $pcRepo->findOneBy($criteria);
+                    if (!$found) {
+                        // create a new PartCategory
+                        $found = new PartCategory();
+                        $found->setName(trim($name));
+                        if ($vehicleType) {
+                            $found->setVehicleType($vehicleType);
+                        }
+                        if (!empty($data['partCategory']['description'] ?? $data['description'] ?? null)) {
+                            $found->setDescription($data['partCategory']['description'] ?? $data['description']);
+                        }
+                        $this->entityManager->persist($found);
+                    }
+                }
+            }
+
+            if ($found instanceof PartCategory) {
+                $part->setPartCategory($found);
+            } else {
+                // explicit disassociate
+                if (array_key_exists('partCategoryId', $data) && empty($data['partCategoryId'])) {
+                    $part->setPartCategory(null);
+                }
+            }
         }
         if (isset($data['installationDate'])) {
             if (!empty($data['installationDate'])) {

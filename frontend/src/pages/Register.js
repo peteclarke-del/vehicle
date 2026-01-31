@@ -21,6 +21,7 @@ const Register = () => {
   });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { register } = useAuth();
   const { t } = useTranslation();
@@ -32,12 +33,15 @@ const Register = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
     try {
       await register(formData);
       setSuccess(true);
       setTimeout(() => navigate('/login'), 2000);
     } catch (err) {
       setError(err.response?.data?.error || t('errors.registrationFailed'));
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -105,8 +109,9 @@ const Register = () => {
               fullWidth
               variant="contained"
               sx={{ mt: 3, mb: 2 }}
+              disabled={loading}
             >
-              {t('auth.register')}
+              {loading ? t('common.loading') : t('auth.register')}
             </Button>
             <Box textAlign="center">
               <Link to="/login" style={{ textDecoration: 'none' }}>
