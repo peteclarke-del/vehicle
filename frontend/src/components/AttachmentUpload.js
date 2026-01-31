@@ -26,6 +26,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import KnightRiderLoader from './KnightRiderLoader';
 import AttachmentViewerDialog from './AttachmentViewerDialog';
+import { useDragDrop } from '../hooks/useDragDrop';
 
 const AttachmentUpload = ({ entityType, entityId, onChange, compact = false }) => {
   const [attachments, setAttachments] = useState([]);
@@ -58,6 +59,17 @@ const AttachmentUpload = ({ entityType, entityId, onChange, compact = false }) =
 
   const handleFileSelect = async (event) => {
     const files = Array.from(event.target.files || []);
+    await processFiles(files);
+    event.target.value = '';
+  };
+
+  const handleFileDrop = async (files) => {
+    await processFiles(files);
+  };
+
+  const { isDragging, dragHandlers } = useDragDrop(handleFileDrop);
+
+  const processFiles = async (files) => {
     if (files.length === 0) return;
 
     setUploading(true);
@@ -80,7 +92,6 @@ const AttachmentUpload = ({ entityType, entityId, onChange, compact = false }) =
       }
     }
     setUploading(false);
-    event.target.value = '';
   };
 
   const handleDelete = async (id) => {
@@ -167,7 +178,7 @@ const AttachmentUpload = ({ entityType, entityId, onChange, compact = false }) =
       ) : attachments.length === 0 ? (
         compact ? (
           // Compact upload box full-width
-          <Box component="label" sx={{ display: 'block', width: '100%' }}>
+          <Box component="label" sx={{ display: 'block', width: '100%' }} {...dragHandlers}>
             <input
               type="file"
               hidden
@@ -177,8 +188,8 @@ const AttachmentUpload = ({ entityType, entityId, onChange, compact = false }) =
             />
             <Box
               sx={{
-                border: '1px solid',
-                borderColor: 'divider',
+                border: '2px dashed',
+                borderColor: isDragging ? 'primary.main' : 'divider',
                 borderRadius: 1,
                 height: '56px',
                 display: 'flex',
@@ -186,6 +197,8 @@ const AttachmentUpload = ({ entityType, entityId, onChange, compact = false }) =
                 justifyContent: 'center',
                 cursor: 'pointer',
                 width: '100%',
+                bgcolor: isDragging ? 'action.hover' : 'transparent',
+                transition: 'all 0.2s ease',
                 '&:hover': {
                   bgcolor: 'action.hover',
                   borderColor: 'primary.main'
@@ -200,7 +213,9 @@ const AttachmentUpload = ({ entityType, entityId, onChange, compact = false }) =
               ) : (
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <CloudUpload color="action" />
-                  <Typography variant="body2" color="textSecondary">{t('attachment.uploadReceipt')}</Typography>
+                  <Typography variant="body2" color="textSecondary">
+                    {isDragging ? (t('attachment.dropHere') || 'Drop here') : t('attachment.uploadReceipt')}
+                  </Typography>
                 </Box>
               )}
             </Box>

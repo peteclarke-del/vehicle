@@ -27,6 +27,7 @@ import { Box } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import KnightRiderLoader from './components/KnightRiderLoader';
 import ErrorBoundary from './components/ErrorBoundary';
+import { preventDefaultDragDrop } from './hooks/useDragDrop';
 
 const PrivateRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -136,6 +137,12 @@ function AppRoutes() {
 }
 
 function App() {
+  // Prevent default browser drag/drop behavior globally
+  useEffect(() => {
+    const cleanup = preventDefaultDragDrop();
+    return cleanup;
+  }, []);
+
   return (
     <BrowserRouter>
       <AuthProvider>
