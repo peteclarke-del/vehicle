@@ -13,6 +13,7 @@ use App\Service\ReceiptOcrService;
 use App\Service\UrlScraperService;
 use Psr\Log\LoggerInterface;
 use App\Service\RepairCostCalculator;
+use App\Service\EntitySerializerService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -28,6 +29,7 @@ use App\Controller\Trait\UserSecurityTrait;
 class ConsumableController extends AbstractController
 {
     use UserSecurityTrait;
+
     /**
      * function __construct
      *
@@ -44,7 +46,8 @@ class ConsumableController extends AbstractController
         private ReceiptOcrService $ocrService,
         private UrlScraperService $scraperService,
         private LoggerInterface $logger,
-        private RepairCostCalculator $repairCostCalculator
+        private RepairCostCalculator $repairCostCalculator,
+        private EntitySerializerService $serializer
     ) {
     }
 
@@ -91,7 +94,7 @@ class ConsumableController extends AbstractController
             }
         }
 
-        $data = array_map(fn($c) => $this->serializeConsumable($c), $consumables);
+        $data = array_map(fn($c) => $this->serializer->serializeConsumable($c), $consumables);
 
         return $this->json($data);
     }
@@ -119,7 +122,7 @@ class ConsumableController extends AbstractController
             return $this->json(['error' => 'Consumable not found'], 404);
         }
 
-        return $this->json($this->serializeConsumable($consumable));
+        return $this->json($this->serializer->serializeConsumable($consumable));
     }
 
     #[Route('', name: 'api_consumables_create', methods: ['POST'])]
@@ -167,7 +170,7 @@ class ConsumableController extends AbstractController
         $this->entityManager->persist($consumable);
         $this->entityManager->flush();
 
-        return $this->json($this->serializeConsumable($consumable), 201);
+        return $this->json($this->serializer->serializeConsumable($consumable), 201);
     }
 
     #[Route('/{id}', name: 'api_consumables_update', methods: ['PUT'])]
@@ -236,7 +239,7 @@ class ConsumableController extends AbstractController
             $this->logger->error('Error recalculating repair cost after Consumable update', ['exception' => $e->getMessage()]);
         }
 
-        return $this->json($this->serializeConsumable($consumable));
+        return $this->json($this->serializer->serializeConsumable($consumable));
     }
 
     #[Route('/{id}', name: 'api_consumables_delete', methods: ['DELETE'])]
@@ -278,45 +281,6 @@ class ConsumableController extends AbstractController
         }
 
         return $this->json(['message' => 'Consumable deleted successfully']);
-    }
-
-    /**
-     * function serializeConsumable
-     *
-     * @param Consumable $consumable
-     *
-     * @return array
-     */
-    private function serializeConsumable(Consumable $consumable): array
-    {
-        return [
-            'id' => $consumable->getId(),
-            'vehicleId' => $consumable->getVehicle()->getId(),
-            'serviceRecordId' => $consumable->getServiceRecord()?->getId(),
-            'consumableType' => [
-                'id' => $consumable->getConsumableType()->getId(),
-                'name' => $consumable->getConsumableType()->getName(),
-                'unit' => $consumable->getConsumableType()->getUnit()
-            ],
-            'description' => $consumable->getDescription(),
-            'brand' => $consumable->getBrand(),
-            'partNumber' => $consumable->getPartNumber(),
-            'supplier' => $consumable->getSupplier(),
-            'quantity' => $consumable->getQuantity(),
-            'lastChanged' => $consumable->getLastChanged()?->format('Y-m-d'),
-            'mileageAtChange' => $consumable->getMileageAtChange(),
-            'replacementIntervalMiles' => $consumable->getReplacementIntervalMiles(),
-            'nextReplacementMileage' => $consumable->getNextReplacementMileage(),
-            'cost' => $consumable->getCost(),
-            'notes' => $consumable->getNotes(),
-            'receiptAttachmentId' => $consumable->getReceiptAttachment()?->getId(),
-            'productUrl' => $consumable->getProductUrl(),
-            'motRecordId' => $consumable->getMotRecord()?->getId(),
-            'motTestNumber' => $consumable->getMotRecord()?->getMotTestNumber(),
-            'motTestDate' => $consumable->getMotRecord()?->getTestDate()?->format('Y-m-d'),
-            'createdAt' => $consumable->getCreatedAt()?->format('c'),
-            'updatedAt' => $consumable->getUpdatedAt()?->format('c')
-        ];
     }
 
     /**
