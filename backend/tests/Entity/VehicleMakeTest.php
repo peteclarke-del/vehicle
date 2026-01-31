@@ -31,19 +31,21 @@ class VehicleMakeTest extends TestCase
         $this->assertSame('Toyota', $this->make->getName());
     }
 
-    public function testGetSetLogoUrl(): void
-    {
-        $this->make->setLogoUrl('https://example.com/toyota-logo.png');
-        
-        $this->assertSame('https://example.com/toyota-logo.png', $this->make->getLogoUrl());
-    }
+    // Property removed - test disabled
+    // public function testGetSetLogoUrl(): void
+    // {
+    //     $this->make->setLogoUrl('https://example.com/toyota-logo.png');
+    //     
+    //     $this->assertSame('https://example.com/toyota-logo.png', $this->make->getLogoUrl());
+    // }
 
-    public function testGetSetCountryOfOrigin(): void
-    {
-        $this->make->setCountryOfOrigin('Japan');
-        
-        $this->assertSame('Japan', $this->make->getCountryOfOrigin());
-    }
+    // Property removed - test disabled
+    // public function testGetSetCountryOfOrigin(): void
+    // {
+    //     $this->make->setCountryOfOrigin('Japan');
+    //     
+    //     $this->assertSame('Japan', $this->make->getCountryOfOrigin());
+    // }
 
     public function testAddModel(): void
     {
@@ -90,12 +92,13 @@ class VehicleMakeTest extends TestCase
         $this->assertFalse($this->make->isActive());
     }
 
-    public function testGetSetPopularity(): void
-    {
-        $this->make->setPopularity(95);
-        
-        $this->assertSame(95, $this->make->getPopularity());
-    }
+    // Property removed - test disabled
+    // public function testGetSetPopularity(): void
+    // {
+    //     $this->make->setPopularity(95);
+    //     
+    //     $this->assertSame(95, $this->make->getPopularity());
+    // }
 
     public function testToString(): void
     {
@@ -138,17 +141,19 @@ class VehicleMakeTest extends TestCase
         $this->assertSame(2, $this->make->getModelCount());
     }
 
-    public function testGetSetFoundedYear(): void
-    {
-        $this->make->setFoundedYear(1937);
-        
-        $this->assertSame(1937, $this->make->getFoundedYear());
-    }
+    // Property removed - test disabled
+    // public function testGetSetFoundedYear(): void
+    // {
+    //     $this->make->setFoundedYear(1937);
+    //     
+    //     $this->assertSame(1937, $this->make->getFoundedYear());
+    // }
 
-    public function testGetSetHeadquarters(): void
-    {
-        $this->make->setHeadquarters('Toyota City, Japan');
-        
-        $this->assertSame('Toyota City, Japan', $this->make->getHeadquarters());
-    }
+    // Property removed - test disabled
+    // public function testGetSetHeadquarters(): void
+    // {
+    //     $this->make->setHeadquarters('Toyota City, Japan');
+    //     
+    //     $this->assertSame('Toyota City, Japan', $this->make->getHeadquarters());
+    // }
 }

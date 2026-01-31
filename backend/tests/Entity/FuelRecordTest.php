@@ -85,21 +85,23 @@ class FuelRecordTest extends TestCase
         $this->assertSame('Petrol', $record->getFuelType());
     }
 
-    public function testSetAndGetFullTank(): void
-    {
-        $record = new FuelRecord();
-        $record->setFullTank(true);
-        
-        $this->assertTrue($record->isFullTank());
-    }
+    // Property removed - test disabled
+    // public function testSetAndGetFullTank(): void
+    // {
+    //     $record = new FuelRecord();
+    //     $record->setFullTank(true);
+    //     
+    //     $this->assertTrue($record->isFullTank());
+    // }
 
-    public function testSetAndGetPaymentMethod(): void
-    {
-        $record = new FuelRecord();
-        $record->setPaymentMethod('Credit Card');
-        
-        $this->assertSame('Credit Card', $record->getPaymentMethod());
-    }
+    // Property removed - test disabled
+    // public function testSetAndGetPaymentMethod(): void
+    // {
+    //     $record = new FuelRecord();
+    //     $record->setPaymentMethod('Credit Card');
+    //     
+    //     $this->assertSame('Credit Card', $record->getPaymentMethod());
+    // }
 
     public function testSetAndGetNotes(): void
     {
@@ -162,31 +164,33 @@ class FuelRecordTest extends TestCase
         $this->assertSame($vehicle, $record->getVehicle());
     }
 
-    public function testSetAndGetTripComputerMpg(): void
-    {
-        $record = new FuelRecord();
-        $record->setTripComputerMpg(52.0);
-        
-        $this->assertSame('52', $record->getTripComputerMpg());
-    }
+    // Property removed - test disabled
+    // public function testSetAndGetTripComputerMpg(): void
+    // {
+    //     $record = new FuelRecord();
+    //     $record->setTripComputerMpg(52.0);
+    //     
+    //     $this->assertSame('52', $record->getTripComputerMpg());
+    // }
 
-    public function testCompareTripComputerMpg(): void
-    {
-        $previousRecord = new FuelRecord();
-        $previousRecord->setMileage(50000);
-        
-        $record = new FuelRecord();
-        $record->setMileage(50500);
-        $record->setLitres(45.5);
-        $record->setTripComputerMpg(52.0);
-        
-        $calculatedMpg = $record->calculateMpg($previousRecord);
-        $tripComputerMpg = (float)$record->getTripComputerMpg();
-        
-        // Check values are reasonably close (within 5 mpg)
-        $this->assertNotNull($calculatedMpg);
-        $this->assertLessThan(5, abs($tripComputerMpg - $calculatedMpg));
-    }
+    // Property removed - test disabled
+    // public function testCompareTripComputerMpg(): void
+    // {
+    //     $previousRecord = new FuelRecord();
+    //     $previousRecord->setMileage(50000);
+    //     
+    //     $record = new FuelRecord();
+    //     $record->setMileage(50500);
+    //     $record->setLitres(45.5);
+    //     $record->setTripComputerMpg(52.0);
+    //     
+    //     $calculatedMpg = $record->calculateMpg($previousRecord);
+    //     $tripComputerMpg = (float)$record->getTripComputerMpg();
+    //     
+    //     // Check values are reasonably close (within 5 mpg)
+    //     $this->assertNotNull($calculatedMpg);
+    //     $this->assertLessThan(5, abs($tripComputerMpg - $calculatedMpg));
+    // }
 
     public function testCreatedAtTimestamp(): void
     {

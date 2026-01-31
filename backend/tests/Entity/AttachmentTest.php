@@ -143,14 +143,4 @@ class AttachmentTest extends TestCase
         
         $this->assertSame('jpg', $this->attachment->getExtension());
     }
-
-    public function testIsVirusFree(): void
-    {
-        // virus-scan removed: no-op test removed
-    }
-
-    public function testGetSetVirusScanDate(): void
-    {
-        // virus-scan removed: no-op test removed
-    }
 }

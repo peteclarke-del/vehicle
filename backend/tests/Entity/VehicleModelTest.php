@@ -130,26 +130,29 @@ class VehicleModelTest extends TestCase
         $this->assertSame('https://example.com/corolla.jpg', $this->model->getImageUrl());
     }
 
-    public function testGetSetEngineOptions(): void
-    {
-        $options = ['1.8L Petrol', '2.0L Hybrid'];
-        $this->model->setEngineOptions($options);
+    // Property removed - test disabled
+    // public function testGetSetEngineOptions(): void
+    // {
+    //     $options = ['1.8L Petrol', '2.0L Hybrid'];
+    //     $this->model->setEngineOptions($options);
+    //
+    //     $this->assertSame($options, $this->model->getEngineOptions());
+    // }
 
-        $this->assertSame($options, $this->model->getEngineOptions());
-    }
+    // Property removed - test disabled
+    // public function testGetSetTransmissionOptions(): void
+    // {
+    //     $options = ['6-speed Manual', 'CVT'];
+    //     $this->model->setTransmissionOptions($options);
+    //
+    //     $this->assertSame($options, $this->model->getTransmissionOptions());
+    // }
 
-    public function testGetSetTransmissionOptions(): void
-    {
-        $options = ['6-speed Manual', 'CVT'];
-        $this->model->setTransmissionOptions($options);
-
-        $this->assertSame($options, $this->model->getTransmissionOptions());
-    }
-
-    public function testGetGenerationCount(): void
-    {
-        $this->model->setGenerationCount(12);
-        
-        $this->assertSame(12, $this->model->getGenerationCount());
-    }
+    // Property removed - test disabled
+    // public function testGetGenerationCount(): void
+    // {
+    //     $this->model->setGenerationCount(12);
+    //     
+    //     $this->assertSame(12, $this->model->getGenerationCount());
+    // }
 }
