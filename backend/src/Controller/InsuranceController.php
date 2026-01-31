@@ -17,6 +17,7 @@ use Symfony\Component\Routing\Annotation\Route;
 class InsuranceController extends AbstractController
 {
     use UserSecurityTrait;
+
     private EntityManagerInterface $entityManager;
 
     public function __construct(EntityManagerInterface $entityManager)
@@ -32,7 +33,16 @@ class InsuranceController extends AbstractController
             return new JsonResponse(['error' => 'Unauthorized'], 401);
         }
 
-        $policies = $this->entityManager->getRepository(InsurancePolicy::class)->findAll();
+        // Eager load policies with vehicles to avoid N+1 queries
+        $policies = $this->entityManager->getRepository(InsurancePolicy::class)
+            ->createQueryBuilder('p')
+            ->leftJoin('p.vehicles', 'v')
+            ->addSelect('v')
+            ->leftJoin('v.owner', 'o')
+            ->addSelect('o')
+            ->getQuery()
+            ->getResult();
+
         $visible = [];
         foreach ($policies as $p) {
             if ($this->isAdminForUser($user)) {

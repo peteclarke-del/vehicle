@@ -25,6 +25,7 @@ use App\Controller\Trait\UserSecurityTrait;
 class VehicleImageController extends AbstractController
 {
     use UserSecurityTrait;
+
     /**
      * function __construct
      *
