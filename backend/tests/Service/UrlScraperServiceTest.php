@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace App\Tests\Service;
 
 use App\Service\UrlScraperService;
-use App\Service\Adapter\GenericDomAdapter;
-use App\Service\Adapter\ShopifyAdapter;
-use App\Service\Adapter\AmazonAdapter;
-use App\Service\Adapter\EbayAdapter;
+use App\Service\SiteAdapter\GenericDomAdapter;
+use App\Service\SiteAdapter\ShopifyAdapter;
+use App\Service\SiteAdapter\AmazonAdapter;
+use App\Service\SiteAdapter\EbayAdapter;
 use PHPUnit\Framework\TestCase;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Symfony\Component\HttpClient\MockHttpClient;
@@ -30,10 +30,10 @@ class UrlScraperServiceTest extends TestCase
         $this->httpClient = new MockHttpClient();
         
         $adapters = [
-            new ShopifyAdapter($this->httpClient, new NullLogger()),
-            new AmazonAdapter($this->httpClient, new NullLogger()),
-            new EbayAdapter($this->httpClient, new NullLogger()),
-            new GenericDomAdapter($this->httpClient, new NullLogger()),
+            new ShopifyAdapter(new NullLogger(), $this->httpClient),
+            new AmazonAdapter(new NullLogger(), $this->httpClient),
+            new EbayAdapter(new NullLogger(), $this->httpClient),
+            new GenericDomAdapter(new NullLogger(), $this->httpClient),
         ];
         
         $this->service = new UrlScraperService($adapters, new NullLogger());

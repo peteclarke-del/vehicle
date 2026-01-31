@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Service;
 
 use App\Service\CostCalculator;
+use App\Service\DepreciationCalculator;
 use App\Entity\Vehicle;
 use App\Entity\ServiceRecord;
 use App\Entity\Part;
@@ -13,6 +14,8 @@ use App\Entity\FuelRecord;
 use App\Entity\InsurancePolicy;
 use PHPUnit\Framework\TestCase;
 use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\ORM\AbstractQuery;
 
 /**
  * Cost Calculator Test
@@ -22,13 +25,17 @@ use Doctrine\Common\Collections\ArrayCollection;
 class CostCalculatorTest extends TestCase
 {
     private CostCalculator $calculator;
+    private EntityManagerInterface $entityManager;
+    private DepreciationCalculator $depreciationCalculator;
 
     /**
      * Set up test environment
      */
     protected function setUp(): void
     {
-        $this->calculator = new CostCalculator();
+        $this->entityManager = $this->createMock(EntityManagerInterface::class);
+        $this->depreciationCalculator = $this->createMock(DepreciationCalculator::class);
+        $this->calculator = new CostCalculator($this->entityManager, $this->depreciationCalculator);
     }
 
     /**
