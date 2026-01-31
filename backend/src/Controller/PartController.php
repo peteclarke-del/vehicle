@@ -372,6 +372,9 @@ class PartController extends AbstractController
             $att = $this->entityManager->getRepository(Attachment::class)->find($data['receiptAttachmentId']);
             if ($att) {
                 $part->setReceiptAttachment($att);
+                // Update attachment's entity_id to link it to this part
+                $att->setEntityId($part->getId());
+                $att->setEntityType('part');
             }
         }
         if (isset($data['productUrl'])) {

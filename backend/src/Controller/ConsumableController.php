@@ -350,6 +350,9 @@ class ConsumableController extends AbstractController
                 $att = $this->entityManager->getRepository(\App\Entity\Attachment::class)->find($data['receiptAttachmentId']);
                 if ($att) {
                     $consumable->setReceiptAttachment($att);
+                    // Update attachment's entity_id to link it to this consumable
+                    $att->setEntityId($consumable->getId());
+                    $att->setEntityType('consumable');
                 } else {
                     $consumable->setReceiptAttachment(null);
                 }
