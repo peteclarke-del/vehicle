@@ -31,7 +31,9 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 use Symfony\Contracts\Cache\TagAwareCacheInterface;
+use Symfony\Component\String\Slugger\SluggerInterface;
 use App\Controller\Trait\UserSecurityTrait;
+use App\Controller\Trait\AttachmentFileOrganizerTrait;
 
 #[Route('/api/vehicles')]
 #[IsGranted('ROLE_USER')]
@@ -42,6 +44,16 @@ use App\Controller\Trait\UserSecurityTrait;
 class VehicleImportExportController extends AbstractController
 {
     use UserSecurityTrait;
+    use AttachmentFileOrganizerTrait;
+
+    private LoggerInterface $logger;
+    private SluggerInterface $slugger;
+
+    public function __construct(LoggerInterface $logger, SluggerInterface $slugger)
+    {
+        $this->logger = $logger;
+        $this->slugger = $slugger;
+    }
 
     #[Route('/export', name: 'vehicles_export', methods: ['GET'])]
 
@@ -3351,6 +3363,8 @@ class VehicleImportExportController extends AbstractController
             if (!empty($attachmentEntitiesByNewId) && !empty($vehicleIdMap)) {
                 $logger->info('[import] Remapping attachment entity IDs', ['count' => count($attachmentEntitiesByNewId)]);
                 $remappedCount = 0;
+                $reorganizedCount = 0;
+                
                 foreach ($attachmentEntitiesByNewId as $attachmentId => $attachment) {
                     $entityType = $attachment->getEntityType();
                     $oldEntityId = $attachment->getEntityId();
@@ -3367,11 +3381,106 @@ class VehicleImportExportController extends AbstractController
                             $attachment
                         );
                         $remappedCount++;
+                        
+                        // Reorganize file into proper directory structure
+                        $this->reorganizeReceiptFile($attachment, $newVehicle);
+                        $reorganizedCount++;
+                    }
+                    
+                    // Remap receipt attachments for parts, services, MOTs, fuel, consumables
+                    // These need to find their parent entity to get the vehicle for reorganization
+                    if (in_array($entityType, ['part', 'service', 'mot', 'fuel', 'consumable']) && $oldEntityId) {
+                        // For receipts, we need to find the actual entity to get its vehicle
+                        $vehicle = null;
+                        
+                        // Find the entity in vehicleMap by scanning for matching records
+                        foreach ($vehicleIdMap as $oldVehicleId => $newVehicle) {
+                            // Check if this attachment belongs to an entity of this vehicle
+                            $found = false;
+                            
+                            switch ($entityType) {
+                                case 'part':
+                                    $parts = $newVehicle->getParts();
+                                    foreach ($parts as $part) {
+                                        if ($part->getReceiptAttachment()?->getId() === $attachmentId) {
+                                            $attachment->setEntityId($part->getId());
+                                            $vehicle = $newVehicle;
+                                            $found = true;
+                                            break 2;
+                                        }
+                                    }
+                                    break;
+                                    
+                                case 'service':
+                                    $services = $newVehicle->getServiceRecords();
+                                    foreach ($services as $service) {
+                                        if ($service->getReceiptAttachment()?->getId() === $attachmentId) {
+                                            $attachment->setEntityId($service->getId());
+                                            $vehicle = $newVehicle;
+                                            $found = true;
+                                            break 2;
+                                        }
+                                    }
+                                    break;
+                                    
+                                case 'mot':
+                                    $mots = $newVehicle->getMotRecords();
+                                    foreach ($mots as $mot) {
+                                        if ($mot->getReceiptAttachment()?->getId() === $attachmentId) {
+                                            $attachment->setEntityId($mot->getId());
+                                            $vehicle = $newVehicle;
+                                            $found = true;
+                                            break 2;
+                                        }
+                                    }
+                                    break;
+                                    
+                                case 'fuel':
+                                    $fuelRecords = $newVehicle->getFuelRecords();
+                                    foreach ($fuelRecords as $fuelRecord) {
+                                        if ($fuelRecord->getReceiptAttachment()?->getId() === $attachmentId) {
+                                            $attachment->setEntityId($fuelRecord->getId());
+                                            $vehicle = $newVehicle;
+                                            $found = true;
+                                            break 2;
+                                        }
+                                    }
+                                    break;
+                                    
+                                case 'consumable':
+                                    $consumables = $newVehicle->getConsumables();
+                                    foreach ($consumables as $consumable) {
+                                        if ($consumable->getReceiptAttachment()?->getId() === $attachmentId) {
+                                            $attachment->setEntityId($consumable->getId());
+                                            $vehicle = $newVehicle;
+                                            $found = true;
+                                            break 2;
+                                        }
+                                    }
+                                    break;
+                            }
+                        }
+                        
+                        if ($vehicle) {
+                            $entityManager->getUnitOfWork()->recomputeSingleEntityChangeSet(
+                                $entityManager->getClassMetadata(\App\Entity\Attachment::class),
+                                $attachment
+                            );
+                            $remappedCount++;
+                            
+                            // Reorganize receipt file into proper directory structure
+                            $this->reorganizeReceiptFile($attachment, $vehicle);
+                            $reorganizedCount++;
+                        }
                     }
                 }
+                
                 if ($remappedCount > 0) {
                     $entityManager->flush();
-                    $logger->info('[import] Remapped vehicle attachments', ['count' => $remappedCount]);
+                    $logger->info('[import] Remapped and reorganized attachments', [
+                        'remapped' => $remappedCount,
+                        'reorganized' => $reorganizedCount
+                    ]);
                 }
             }
 
