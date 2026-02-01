@@ -22,6 +22,7 @@ use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\String\Slugger\SluggerInterface;
 use App\Controller\Trait\UserSecurityTrait;
 use App\Controller\Trait\AttachmentFileOrganizerTrait;
+use App\Controller\Trait\JsonValidationTrait;
 
 #[Route('/api/consumables')]
 
@@ -32,6 +33,7 @@ class ConsumableController extends AbstractController
 {
     use UserSecurityTrait;
     use AttachmentFileOrganizerTrait;
+    use JsonValidationTrait;
 
     /**
      * function __construct
@@ -145,7 +147,11 @@ class ConsumableController extends AbstractController
             return $this->json(['error' => 'Not authenticated'], 401);
         }
 
-        $data = json_decode($request->getContent(), true);
+        $validation = $this->validateJsonRequest($request);
+        if ($validation['error']) {
+            return $validation['error'];
+        }
+        $data = $validation['data'];
 
         $vehicle = $this->entityManager->getRepository(Vehicle::class)
             ->find($data['vehicleId']);
@@ -201,7 +207,11 @@ class ConsumableController extends AbstractController
             return $this->json(['error' => 'Consumable not found'], 404);
         }
 
-        $data = json_decode($request->getContent(), true);
+        $validation = $this->validateJsonRequest($request);
+        if ($validation['error']) {
+            return $validation['error'];
+        }
+        $data = $validation['data'];
         $this->logger->info('Consumable update payload', ['id' => $id, 'data' => $data]);
 
         $prevMotId = $consumable->getMotRecord()?->getId();
@@ -503,7 +513,11 @@ class ConsumableController extends AbstractController
             return $this->json(['error' => 'Not authenticated'], 401);
         }
 
-        $data = json_decode($request->getContent(), true);
+        $validation = $this->validateJsonRequest($request);
+        if ($validation['error']) {
+            return $validation['error'];
+        }
+        $data = $validation['data'];
         $url = $data['url'] ?? null;
 
         if (!$url) {
