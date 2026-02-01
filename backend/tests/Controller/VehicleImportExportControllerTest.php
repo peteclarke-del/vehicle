@@ -18,7 +18,7 @@ class VehicleImportExportControllerTest extends BaseWebTestCase
 
     public function testExportVehiclesRequiresAuthentication(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 $client->request('GET', '/api/vehicles/export');
 
         $this->assertTrue(in_array($client->getResponse()->getStatusCode(), [Response::HTTP_UNAUTHORIZED, Response::HTTP_FORBIDDEN]));
@@ -26,7 +26,7 @@ $client->request('GET', '/api/vehicles/export');
 
     public function testExportVehiclesToCsv(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 $client->request('GET', '/api/vehicles/export?format=csv', [], [], [
             'HTTP_X_TEST_MOCK_AUTH' => $this->getAuthToken(),
         ]);
@@ -38,7 +38,7 @@ $client->request('GET', '/api/vehicles/export?format=csv', [], [], [
 
     public function testExportVehiclesToJson(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 $client->request('GET', '/api/vehicles/export?format=json', [], [], [
             'HTTP_X_TEST_MOCK_AUTH' => $this->getAuthToken(),
         ]);
@@ -53,7 +53,7 @@ $client->request('GET', '/api/vehicles/export?format=json', [], [], [
 
     public function testExportVehiclesToExcel(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 $client->request('GET', '/api/vehicles/export?format=xlsx', [], [], [
             'HTTP_X_TEST_MOCK_AUTH' => $this->getAuthToken(),
         ]);
@@ -64,7 +64,7 @@ $client->request('GET', '/api/vehicles/export?format=xlsx', [], [], [
 
     public function testExportIncludesAllVehicleFields(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 $client->request('GET', '/api/vehicles/export?format=csv', [], [], [
             'HTTP_X_TEST_MOCK_AUTH' => $this->getAuthToken(),
         ]);
@@ -78,7 +78,7 @@ $client->request('GET', '/api/vehicles/export?format=csv', [], [], [
 
     public function testImportVehiclesRequiresAuthentication(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 $client->request('POST', '/api/vehicles/import');
 
         $this->assertTrue(in_array($client->getResponse()->getStatusCode(), [Response::HTTP_UNAUTHORIZED, Response::HTTP_FORBIDDEN]));
@@ -86,7 +86,7 @@ $client->request('POST', '/api/vehicles/import');
 
     public function testImportVehiclesFromCsv(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 $csvContent = "registration,make,model,year,colour\nAB12 CDE,Toyota,Corolla,2020,Blue";
         
         $client->request('POST', '/api/vehicles/import', [], [], [
@@ -104,7 +104,7 @@ $csvContent = "registration,make,model,year,colour\nAB12 CDE,Toyota,Corolla,2020
 
     public function testImportValidatesRequiredFields(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 $csvContent = "registration,make\nAB12 CDE,Toyota";
         
         $client->request('POST', '/api/vehicles/import', [], [], [
@@ -120,7 +120,7 @@ $csvContent = "registration,make\nAB12 CDE,Toyota";
 
     public function testImportHandlesDuplicateRegistrations(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 $csvContent = "registration,make,model,year\nAB12 CDE,Toyota,Corolla,2020\nAB12 CDE,Honda,Civic,2021";
         
         $client->request('POST', '/api/vehicles/import', [], [], [
@@ -135,7 +135,7 @@ $csvContent = "registration,make,model,year\nAB12 CDE,Toyota,Corolla,2020\nAB12 
 
     public function testImportSupportsUpdateMode(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 $csvContent = "registration,make,model,year,colour\nAB12 CDE,Toyota,Corolla,2020,Blue";
         
         $client->request('POST', '/api/vehicles/import?mode=update', [], [], [
@@ -149,7 +149,7 @@ $csvContent = "registration,make,model,year,colour\nAB12 CDE,Toyota,Corolla,2020
 
     public function testExportFiltersByDateRange(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 $client->request('GET', '/api/vehicles/export?format=csv&from=2020-01-01&to=2024-12-31', [], [], [
             'HTTP_X_TEST_MOCK_AUTH' => $this->getAuthToken(),
         ]);
@@ -159,7 +159,7 @@ $client->request('GET', '/api/vehicles/export?format=csv&from=2020-01-01&to=2024
 
     public function testExportIncludesRelatedData(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 $client->request('GET', '/api/vehicles/export?format=json&include=records', [], [], [
             'HTTP_X_TEST_MOCK_AUTH' => $this->getAuthToken(),
         ]);
@@ -174,7 +174,7 @@ $client->request('GET', '/api/vehicles/export?format=json&include=records', [], 
 
     public function testImportValidatesFileSize(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 $largeContent = str_repeat("registration,make,model,year\nAB12 CDE,Toyota,Corolla,2020\n", 10000);
         
         $client->request('POST', '/api/vehicles/import', [], [], [
@@ -187,7 +187,7 @@ $largeContent = str_repeat("registration,make,model,year\nAB12 CDE,Toyota,Coroll
 
     public function testExportGeneratesFilename(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 $client->request('GET', '/api/vehicles/export?format=csv', [], [], [
             'HTTP_X_TEST_MOCK_AUTH' => $this->getAuthToken(),
         ]);
@@ -199,7 +199,7 @@ $client->request('GET', '/api/vehicles/export?format=csv', [], [], [
 
     public function testImportReturnsDetailedReport(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 $csvContent = "registration,make,model,year\nAB12 CDE,Toyota,Corolla,2020";
         
         $client->request('POST', '/api/vehicles/import', [], [], [
@@ -215,7 +215,7 @@ $csvContent = "registration,make,model,year\nAB12 CDE,Toyota,Corolla,2020";
 
     public function testImportCreatesTodosAndLinksParts(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 $vehiclesPayload = [
             [
                 'name' => 'Import Todo Vehicle',

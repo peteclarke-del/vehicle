@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Controller;
 
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use App\Tests\TestCase\BaseWebTestCase;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -12,24 +13,12 @@ use Symfony\Component\HttpFoundation\Response;
  * 
  * Integration tests for DVSA API endpoints
  */
-class DvsaControllerTest extends WebTestCase
+class DvsaControllerTest extends BaseWebTestCase
 {
-    private function getAuthToken($client): string
-    {
-        $client->request('POST', '/api/auth/login', [], [], [
-            'CONTENT_TYPE' => 'application/json',
-        ], json_encode([
-            'email' => 'test@example.com',
-            'password' => 'password123'
-        ]));
-
-        $response = json_decode($client->getResponse()->getContent(), true);
-        return $response['token'] ?? '';
-    }
 
     public function testGetMotHistoryRequiresAuthentication(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
         $client->request('GET', '/api/dvsa/mot-history/AB12CDE');
 
         $this->assertResponseStatusCodeSame(Response::HTTP_UNAUTHORIZED);
@@ -37,7 +26,7 @@ class DvsaControllerTest extends WebTestCase
 
     public function testGetMotHistoryForRegistration(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
         $token = $this->getAuthToken($client);
         $client->request('GET', '/api/dvsa/mot-history/AB12CDE', [], [], [
             'HTTP_AUTHORIZATION' => 'Bearer ' . $token,
@@ -52,7 +41,7 @@ class DvsaControllerTest extends WebTestCase
 
     public function testSanitizesRegistration(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
         $token = $this->getAuthToken($client);
         $client->request('GET', '/api/dvsa/mot-history/ab12%20cde', [], [], [
             'HTTP_AUTHORIZATION' => 'Bearer ' . $token,
@@ -66,7 +55,7 @@ class DvsaControllerTest extends WebTestCase
 
     public function testHandlesVehicleNotFound(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
         $token = $this->getAuthToken($client);
         $client->request('GET', '/api/dvsa/mot-history/NOTFOUND', [], [], [
             'HTTP_AUTHORIZATION' => 'Bearer ' . $token,
@@ -77,7 +66,7 @@ class DvsaControllerTest extends WebTestCase
 
     public function testGetCurrentMotStatus(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
         $token = $this->getAuthToken($client);
         $client->request('GET', '/api/dvsa/current-status/AB12CDE', [], [], [
             'HTTP_AUTHORIZATION' => 'Bearer ' . $token,
@@ -92,7 +81,7 @@ class DvsaControllerTest extends WebTestCase
 
     public function testLookupVehicleDetails(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
         $token = $this->getAuthToken($client);
         $client->request('GET', '/api/dvsa/vehicle/AB12CDE', [], [], [
             'HTTP_AUTHORIZATION' => 'Bearer ' . $token,
@@ -108,7 +97,7 @@ class DvsaControllerTest extends WebTestCase
 
     public function testGetTestCertificate(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
         $token = $this->getAuthToken($client);
         $client->request('GET', '/api/dvsa/certificate/12345678', [], [], [
             'HTTP_AUTHORIZATION' => 'Bearer ' . $token,
@@ -122,7 +111,7 @@ class DvsaControllerTest extends WebTestCase
 
     public function testValidatesRegistrationFormat(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
         $token = $this->getAuthToken($client);
         $client->request('GET', '/api/dvsa/mot-history/INVALID!@#', [], [], [
             'HTTP_AUTHORIZATION' => 'Bearer ' . $token,
@@ -133,7 +122,7 @@ class DvsaControllerTest extends WebTestCase
 
     public function testHandlesDvsaApiRateLimiting(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
         $token = $this->getAuthToken($client);
         
         // Make multiple requests to trigger rate limiting
@@ -148,7 +137,7 @@ class DvsaControllerTest extends WebTestCase
 
     public function testCachesMotHistory(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
         $token = $this->getAuthToken($client);
         
         // First request
@@ -167,7 +156,7 @@ class DvsaControllerTest extends WebTestCase
 
     public function testReturnsAdvisoryItems(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
         $token = $this->getAuthToken($client);
         $client->request('GET', '/api/dvsa/mot-history/AB12CDE', [], [], [
             'HTTP_AUTHORIZATION' => 'Bearer ' . $token,
@@ -184,7 +173,7 @@ class DvsaControllerTest extends WebTestCase
 
     public function testReturnsFailureItems(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
         $token = $this->getAuthToken($client);
         $client->request('GET', '/api/dvsa/mot-history/AB12CDE', [], [], [
             'HTTP_AUTHORIZATION' => 'Bearer ' . $token,
@@ -201,7 +190,7 @@ class DvsaControllerTest extends WebTestCase
 
     public function testHandlesDvsaApiTimeout(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
         $token = $this->getAuthToken($client);
         $client->request('GET', '/api/dvsa/mot-history/TIMEOUT', [], [], [
             'HTTP_AUTHORIZATION' => 'Bearer ' . $token,

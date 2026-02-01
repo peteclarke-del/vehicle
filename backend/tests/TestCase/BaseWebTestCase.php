@@ -74,6 +74,9 @@ abstract class BaseWebTestCase extends WebTestCase
             self::$schemaCreated = true;
         }
 
+        // Ensure kernel is shut down before creating client
+        static::ensureKernelShutdown();
+
         // Create the client without default authentication headers.
         // Individual tests should provide `HTTP_X_TEST_MOCK_AUTH` or
         // `HTTP_AUTHORIZATION` when they need an authenticated request.

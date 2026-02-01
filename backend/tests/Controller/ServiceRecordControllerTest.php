@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Controller;
 
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use App\Tests\TestCase\BaseWebTestCase;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 
 /**
@@ -12,24 +13,20 @@ use Symfony\Bundle\FrameworkBundle\KernelBrowser;
  * 
  * Integration tests for Service Record CRUD operations
  */
-class ServiceRecordControllerTest extends WebTestCase
+class ServiceRecordControllerTest extends BaseWebTestCase
 {
 
-    private function getAuthToken(): string
-    {
-        return 'Bearer mock-jwt-token-12345';
-    }
 
     public function testListServiceRecordsRequiresAuthentication(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 $client->request('GET', '/api/service-records');
         $this->assertResponseStatusCodeSame(401);
     }
 
     public function testListServiceRecordsRequiresVehicleId(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 $client->request(
             'GET',
             '/api/service-records',
@@ -42,7 +39,7 @@ $client->request(
 
     public function testListServiceRecordsForVehicle(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 $client->request(
             'GET',
             '/api/service-records?vehicleId=1',
@@ -57,7 +54,7 @@ $client->request(
 
     public function testCreateServiceRecord(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 $serviceData = [
             'vehicleId' => 1,
             'description' => 'Annual Service',
@@ -94,7 +91,7 @@ $serviceData = [
 
     public function testCreateServiceRecordWithMissingFields(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 $serviceData = [
             'vehicleId' => 1,
             'description' => 'Service',
@@ -117,7 +114,7 @@ $serviceData = [
 
     public function testUpdateServiceRecord(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 $createData = [
             'vehicleId' => 1,
             'description' => 'Oil Change',
@@ -169,7 +166,7 @@ $createData = [
 
     public function testDeleteServiceRecord(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 $createData = [
             'vehicleId' => 1,
             'description' => 'Test Service',
@@ -206,7 +203,7 @@ $createData = [
 
     public function testUploadAttachment(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 $createData = [
             'vehicleId' => 1,
             'description' => 'Service with Receipt',
@@ -252,7 +249,7 @@ $createData = [
 
     public function testCalculateTotalCost(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 $serviceData = [
             'vehicleId' => 1,
             'description' => 'Major Service',
@@ -281,7 +278,7 @@ $serviceData = [
 
     public function testFilterByServiceType(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 $client->request(
             'GET',
             '/api/service-records?vehicleId=1&serviceType=scheduled',
@@ -295,7 +292,7 @@ $client->request(
 
     public function testFilterByDateRange(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 $client->request(
             'GET',
             '/api/service-records?vehicleId=1&startDate=2026-01-01&endDate=2026-12-31',
@@ -309,7 +306,7 @@ $client->request(
 
     public function testGetServiceHistory(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 $client->request(
             'GET',
             '/api/service-records/history?vehicleId=1',
@@ -328,7 +325,7 @@ $client->request(
 
     public function testUserCannotAccessOtherUsersServiceRecords(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 $createData = [
             'vehicleId' => 1,
             'description' => 'User1 Service',
@@ -367,7 +364,7 @@ $createData = [
 
     public function testScheduleNextService(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 $client->request(
             'GET',
             '/api/service-records/next-due?vehicleId=1',

@@ -37,8 +37,7 @@ class VehicleControllerTest extends BaseWebTestCase
      */
     public function testListVehiclesRequiresAuthentication(): void
     {
-        $client = static::createClient();
-$client->request('GET', '/api/vehicles');
+        $this->client->request('GET', '/api/vehicles');
 
         $this->assertResponseStatusCodeSame(401);
     }
@@ -48,7 +47,7 @@ $client->request('GET', '/api/vehicles');
      */
     public function testListVehiclesForAuthenticatedUser(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 $client->request(
             'GET',
             '/api/vehicles',
@@ -69,7 +68,7 @@ $client->request(
      */
     public function testCreateVehicle(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 $vehicleData = [
             'registration' => 'ABC123',
             'make' => 'Toyota',
@@ -111,7 +110,7 @@ $vehicleData = [
      */
     public function testCreateVehicleWithMissingFields(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 $vehicleData = [
             'registration' => 'ABC123',
             // Missing make, model, year
@@ -137,7 +136,7 @@ $vehicleData = [
      */
     public function testGetVehicle(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 // First create a vehicle
         $vehicleData = [
             'registration' => 'XYZ789',
@@ -181,7 +180,7 @@ $vehicleData = [
      */
     public function testGetNonExistentVehicle(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 $client->request(
             'GET',
             '/api/vehicles/99999',
@@ -198,7 +197,7 @@ $client->request(
      */
     public function testUpdateVehicle(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 // First create a vehicle
         $vehicleData = [
             'registration' => 'UPD123',
@@ -252,7 +251,7 @@ $client->request(
      */
     public function testDeleteVehicle(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 // First create a vehicle
         $vehicleData = [
             'registration' => 'DEL123',
@@ -304,7 +303,7 @@ $client->request(
      */
     public function testUserCannotAccessOtherUsersVehicles(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 // Create vehicle as user 1
         $vehicleData = [
             'registration' => 'USR1-VEH',
@@ -347,7 +346,7 @@ $client->request(
      */
     public function testVehicleDepreciationCalculation(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 $vehicleData = [
             'registration' => 'DEP123',
             'make' => 'Mercedes',
@@ -393,7 +392,7 @@ $vehicleData = [
      */
     public function testVehicleCostSummary(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 $vehicleData = [
             'registration' => 'COST123',
             'make' => 'Audi',
