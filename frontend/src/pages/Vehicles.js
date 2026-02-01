@@ -45,14 +45,11 @@ import {
   DeleteSweep as PurgeIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import logger from '../utils/logger';
 import { useUserPreferences } from '../contexts/UserPreferencesContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { fetchArrayData } from '../hooks/useApiData';
-import logger from '../utils/logger';
 import { useDistance } from '../hooks/useDistance';
-import logger from '../utils/logger';
 import useTablePagination from '../hooks/useTablePagination';
 import logger from '../utils/logger';
 import VehicleDialog from '../components/VehicleDialog';

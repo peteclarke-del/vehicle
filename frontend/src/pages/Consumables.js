@@ -5,13 +5,9 @@ import { Box, Button, Typography, Table, TableBody, TableCell, TableContainer, T
 import { Add, Edit, Delete } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
-import logger from '../utils/logger';
 import { useUserPreferences } from '../contexts/UserPreferencesContext';
-import logger from '../utils/logger';
 import formatCurrency from '../utils/formatCurrency';
-import logger from '../utils/logger';
 import { fetchArrayData } from '../hooks/useApiData';
-import logger from '../utils/logger';
 import { useDistance } from '../hooks/useDistance';
 import logger from '../utils/logger';
 import useTablePagination from '../hooks/useTablePagination';
