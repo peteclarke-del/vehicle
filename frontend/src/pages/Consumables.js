@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import logger from '../utils/logger';
+import SafeStorage from '../utils/SafeStorage';
 import { Box, Button, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, IconButton, Tooltip, TableSortLabel } from '@mui/material';
 import logger from '../utils/logger';
 import { Add, Edit, Delete } from '@mui/icons-material';
@@ -40,8 +41,8 @@ const Consumables = () => {
   const [selectedConsumable, setSelectedConsumable] = useState(null);
   const [openServiceDialog, setOpenServiceDialog] = useState(false);
   const [selectedServiceRecord, setSelectedServiceRecord] = useState(null);
-  const [orderBy, setOrderBy] = useState(() => localStorage.getItem('consumablesSortBy') || 'description');
-  const [order, setOrder] = useState(() => localStorage.getItem('consumablesSortOrder') || 'asc');
+  const [orderBy, setOrderBy] = useState(() => SafeStorage.get('consumablesSortBy', 'description'));
+  const [order, setOrder] = useState(() => SafeStorage.get('consumablesSortOrder', 'asc'));
   const { api } = useAuth();
   const { t, i18n } = useTranslation();
   const registrationLabelText = t('common.registrationNumber');
@@ -139,8 +140,8 @@ const Consumables = () => {
     const newOrder = isAsc ? 'desc' : 'asc';
     setOrder(newOrder);
     setOrderBy(property);
-    localStorage.setItem('consumablesSortBy', property);
-    localStorage.setItem('consumablesSortOrder', newOrder);
+    SafeStorage.set('consumablesSortBy', property);
+    SafeStorage.set('consumablesSortOrder', newOrder);
   };
 
   const sortedConsumables = React.useMemo(() => {

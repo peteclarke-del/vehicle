@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import logger from '../utils/logger';
+import SafeStorage from '../utils/SafeStorage';
 import {
   Box,
   Typography,
@@ -52,8 +53,8 @@ const Reports = () => {
   const [selectedPeriodIndex, setSelectedPeriodIndex] = useState(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
-  const [orderBy, setOrderBy] = useState(() => localStorage.getItem('reportsSortBy') || 'generatedAt');
-  const [order, setOrder] = useState(() => localStorage.getItem('reportsSortOrder') || 'desc');
+  const [orderBy, setOrderBy] = useState(() => SafeStorage.get('reportsSortBy', 'generatedAt'));
+  const [order, setOrder] = useState(() => SafeStorage.get('reportsSortOrder', 'desc'));
 
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerUrl, setViewerUrl] = useState(null);
@@ -147,8 +148,8 @@ const Reports = () => {
     const newOrder = isAsc ? 'desc' : 'asc';
     setOrder(newOrder);
     setOrderBy(property);
-    localStorage.setItem('reportsSortBy', property);
-    localStorage.setItem('reportsSortOrder', newOrder);
+    SafeStorage.set('reportsSortBy', property);
+    SafeStorage.set('reportsSortOrder', newOrder);
   };
 
   const sortedReports = useMemo(() => {
