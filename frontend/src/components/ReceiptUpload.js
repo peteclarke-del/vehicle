@@ -23,6 +23,7 @@ import { useAuth } from '../contexts/AuthContext';
 import KnightRiderLoader from './KnightRiderLoader';
 import AttachmentViewerDialog from './AttachmentViewerDialog';
 import { useDragDrop } from '../hooks/useDragDrop';
+import logger from '../utils/logger';
 
 export default function ReceiptUpload({ 
   entityType, 
@@ -67,11 +68,11 @@ export default function ReceiptUpload({
         });
         onReceiptUploaded(attachmentId, ocrResponse.data);
       } catch (ocrError) {
-        console.warn('OCR failed, receipt attached without data extraction:', ocrError);
+        logger.warn('OCR failed, receipt attached without data extraction:', ocrError);
         onReceiptUploaded(attachmentId, {});
       }
     } catch (error) {
-      console.error('Receipt upload failed:', error);
+      logger.error('Receipt upload failed:', error);
     } finally {
       setUploading(false);
       setProcessing(false);
@@ -117,7 +118,7 @@ export default function ReceiptUpload({
           });
           setAttachmentDetails(response.data);
         } catch (error) {
-          console.error('Failed to load attachment details:', error);
+          logger.error('Failed to load attachment details:', error);
         }
       } else {
         setAttachmentDetails(null);
@@ -132,7 +133,7 @@ export default function ReceiptUpload({
         await api.delete(`/attachments/${receiptAttachmentId}`);
         onReceiptRemoved();
       } catch (error) {
-        console.error('Failed to delete receipt:', error);
+        logger.error('Failed to delete receipt:', error);
       }
     }
   };
@@ -163,7 +164,7 @@ export default function ReceiptUpload({
           setEditDescription(response.data?.description || '');
           setEditDialogOpen(true);
         } catch (error) {
-          console.error('Failed to load attachment for editing:', error);
+          logger.error('Failed to load attachment for editing:', error);
         }
       }
     }
@@ -183,7 +184,7 @@ export default function ReceiptUpload({
       setAttachmentDetails(response.data);
       setEditDialogOpen(false);
     } catch (error) {
-      console.error('Failed to update attachment:', error);
+      logger.error('Failed to update attachment:', error);
     }
   };
 
