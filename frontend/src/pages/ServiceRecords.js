@@ -19,6 +19,7 @@ import {
   TableSortLabel,
 } from '@mui/material';
 import logger from '../utils/logger';
+import SafeStorage from '../utils/SafeStorage';
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
@@ -41,8 +42,8 @@ const ServiceRecords = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingService, setEditingService] = useState(null);
   const { vehicles, fetchVehicles } = useVehicles();
-  const [orderBy, setOrderBy] = useState(() => localStorage.getItem('serviceRecordsSortBy') || 'serviceDate');
-  const [order, setOrder] = useState(() => localStorage.getItem('serviceRecordsSortOrder') || 'desc');
+  const [orderBy, setOrderBy] = useState(() => SafeStorage.get('serviceRecordsSortBy', 'serviceDate'));
+  const [order, setOrder] = useState(() => SafeStorage.get('serviceRecordsSortOrder', 'desc'));
   const { api } = useAuth();
   const { t, i18n } = useTranslation();
   const registrationLabelText = t('common.registrationNumber');
@@ -169,8 +170,8 @@ const ServiceRecords = () => {
     const newOrder = isAsc ? 'desc' : 'asc';
     setOrder(newOrder);
     setOrderBy(property);
-    localStorage.setItem('serviceRecordsSortBy', property);
-    localStorage.setItem('serviceRecordsSortOrder', newOrder);
+    SafeStorage.set('serviceRecordsSortBy', property);
+    SafeStorage.set('serviceRecordsSortOrder', newOrder);
   };
 
   const sortedServiceRecords = React.useMemo(() => {

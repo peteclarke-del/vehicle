@@ -19,6 +19,7 @@ import {
   TableSortLabel,
 } from '@mui/material';
 import logger from '../utils/logger';
+import SafeStorage from '../utils/SafeStorage';
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
@@ -45,8 +46,8 @@ const RoadTax = () => {
   const regFirst = regWords.length > 1 ? regWords.slice(0, regWords.length - 1).join(' ') : (regWords[0] || 'Registration');
   const { defaultVehicleId, setDefaultVehicle } = useUserPreferences();
   const [hasManualSelection, setHasManualSelection] = useState(false);
-  const [orderBy, setOrderBy] = useState(() => localStorage.getItem('roadTaxSortBy') || 'expiryDate');
-  const [order, setOrder] = useState(() => localStorage.getItem('roadTaxSortOrder') || 'desc');
+  const [orderBy, setOrderBy] = useState(() => SafeStorage.get('roadTaxSortBy', 'expiryDate'));
+  const [order, setOrder] = useState(() => SafeStorage.get('roadTaxSortOrder', 'desc'));
 
   useEffect(() => {
     fetchVehicles();
@@ -124,8 +125,8 @@ const RoadTax = () => {
     const newOrder = isAsc ? 'desc' : 'asc';
     setOrder(newOrder);
     setOrderBy(property);
-    localStorage.setItem('roadTaxSortBy', property);
-    localStorage.setItem('roadTaxSortOrder', newOrder);
+    SafeStorage.set('roadTaxSortBy', property);
+    SafeStorage.set('roadTaxSortOrder', newOrder);
   };
 
   const sortedRecords = React.useMemo(() => {
