@@ -18,6 +18,7 @@ import {
   TableBody,
   TableRow,
   TableCell,
+import logger from '../utils/logger';
   TableContainer,
   Paper,
 } from '@mui/material';

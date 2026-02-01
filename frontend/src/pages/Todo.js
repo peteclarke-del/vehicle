@@ -18,6 +18,7 @@ import {
   Checkbox,
   Tooltip,
   TableSortLabel,
+import logger from '../utils/logger';
 } from '@mui/material';
 import { Add, Edit, Delete } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
@@ -99,7 +100,7 @@ const Todo = () => {
       const response = await api.get(url);
       setTodos(response.data);
     } catch (err) {
-      console.error('Error loading todos', err);
+      logger.error('Error loading todos', err);
     }
   }, [api, selectedVehicle]);
 
@@ -127,7 +128,7 @@ const Todo = () => {
       await api.delete(`/todos/${id}`);
       loadTodos();
     } catch (err) {
-      console.error('Failed to delete todo', err);
+      logger.error('Failed to delete todo', err);
     }
   };
 
@@ -137,7 +138,7 @@ const Todo = () => {
       await api.put(`/todos/${todo.id}`, updated);
       loadTodos();
     } catch (err) {
-      console.error('Failed to update todo', err);
+      logger.error('Failed to update todo', err);
     }
   };
 

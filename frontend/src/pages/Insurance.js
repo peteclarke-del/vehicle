@@ -18,6 +18,7 @@ import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/ico
 import { useAuth } from '../contexts/AuthContext';
 import { useUserPreferences } from '../contexts/UserPreferencesContext';
 import { useTranslation } from 'react-i18next';
+import logger from '../utils/logger';
 import { formatDateISO } from '../utils/formatDate';
 import { useVehicles } from '../contexts/VehiclesContext';
 import useTablePagination from '../hooks/useTablePagination';

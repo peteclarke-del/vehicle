@@ -18,6 +18,7 @@ import {
   Tooltip,
   TableSortLabel,
 } from '@mui/material';
+import logger from '../utils/logger';
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
@@ -58,7 +59,7 @@ const RoadTax = () => {
       const response = await api.get(url);
       setRecords(response.data);
     } catch (error) {
-      console.error('Error loading road tax records:', error);
+      logger.error('Error loading road tax records:', error);
     } finally {
       setLoading(false);
     }
@@ -107,7 +108,7 @@ const RoadTax = () => {
         await api.delete(`/road-tax/${id}`);
         loadRecords();
       } catch (error) {
-        console.error('Error deleting road tax record:', error);
+        logger.error('Error deleting road tax record:', error);
       }
     }
   };
