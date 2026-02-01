@@ -13,13 +13,9 @@ import {
   Divider,
 } from '@mui/material';
 import LockIcon from '@mui/icons-material/Lock';
-import logger from '../utils/logger';
 import { useAuth } from '../contexts/AuthContext';
-import logger from '../utils/logger';
 import { useTranslation } from 'react-i18next';
-import logger from '../utils/logger';
 import { useTheme } from '../contexts/ThemeContext';
-import logger from '../utils/logger';
 import PasswordChangeDialog from '../components/PasswordChangeDialog';
 import logger from '../utils/logger';
 import KnightRiderLoader from '../components/KnightRiderLoader';

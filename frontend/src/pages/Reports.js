@@ -27,11 +27,8 @@ import {
 import { Download as DownloadIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import logger from '../utils/logger';
 import { useAuth } from '../contexts/AuthContext';
-import logger from '../utils/logger';
 import { useTranslation } from 'react-i18next';
-import logger from '../utils/logger';
 import VehicleSelector from '../components/VehicleSelector';
-import logger from '../utils/logger';
 import { saveBlob } from '../components/DownloadHelpers';
 import logger from '../utils/logger';
 import KnightRiderLoader from '../components/KnightRiderLoader';
