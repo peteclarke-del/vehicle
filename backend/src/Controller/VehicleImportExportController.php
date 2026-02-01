@@ -298,7 +298,7 @@ class VehicleImportExportController extends AbstractController
                         'nextServiceMileage' => $serviceRecord->getNextServiceMileage(),
                         'workPerformed' => $serviceRecord->getWorkPerformed(),
                         'notes' => $serviceRecord->getNotes(),
-                        'items' => array_map(function ($it) use ($includeAttachmentRefs) {
+                        'items' => array_map(function ($it) use ($includeAttachmentRefs, $zipDir) {
                             $part = $it->getPart();
                             $consumable = $it->getConsumable();
 
@@ -440,7 +440,7 @@ class VehicleImportExportController extends AbstractController
                                     'additionalCosts' => $svc->getAdditionalCosts(),
                                     'nextServiceDate' => $svc->getNextServiceDate()?->format('Y-m-d'),
                                     'nextServiceMileage' => $svc->getNextServiceMileage(),
-                                    'items' => array_map(function ($it) use ($includeAttachmentRefs) {
+                                    'items' => array_map(function ($it) use ($includeAttachmentRefs, $zipDir) {
                                         $part = $it->getPart();
                                         $consumable = $it->getConsumable();
 
