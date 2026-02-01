@@ -18,6 +18,7 @@ import {
   Button as MuiButton,
 } from '@mui/material';
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
+import logger from '../utils/logger';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { formatDateISO } from '../utils/formatDate';

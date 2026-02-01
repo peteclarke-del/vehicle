@@ -18,6 +18,7 @@ import {
   Tooltip,
   TableSortLabel,
 } from '@mui/material';
+import logger from '../utils/logger';
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
@@ -150,7 +151,7 @@ const ServiceRecords = () => {
         await api.delete(`/service-records/${id}`);
         loadServiceRecords();
       } catch (error) {
-        console.error('Error deleting service record:', error);
+        logger.error('Error deleting service record:', error);
       }
     }
   };

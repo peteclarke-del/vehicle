@@ -18,6 +18,7 @@ import {
   Tab,
   Menu,
 } from '@mui/material';
+import logger from '../utils/logger';
 import { PieChart } from '@mui/x-charts/PieChart';
 import { useTranslation } from 'react-i18next';
 import { useUserPreferences } from '../contexts/UserPreferencesContext';
