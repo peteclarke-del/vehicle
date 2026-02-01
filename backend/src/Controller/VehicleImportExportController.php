@@ -3424,16 +3424,23 @@ class VehicleImportExportController extends AbstractController
 
             // Remap attachment entityIds: update attachments to use the NEW entity IDs
             // Attachments were created with OLD entityIds from the export manifest
-            if (!empty($attachmentEntitiesByNewId) && !empty($vehicleIdMap)) {
+            $logger->info('[import] Post-flush attachment remapping check', [
+                'attachmentMap_empty' => empty($attachmentMap),
+                'attachmentMap_count' => is_array($attachmentMap) ? count($attachmentMap) : 0,
+                'vehicleIdMap_empty' => empty($vehicleIdMap),
+                'vehicleIdMap_count' => is_array($vehicleIdMap) ? count($vehicleIdMap) : 0
+            ]);
+            
+            if (!empty($attachmentMap) && !empty($vehicleIdMap)) {
                 $logger->info('[import] Remapping attachment entity IDs', [
-                    'attachmentCount' => count($attachmentEntitiesByNewId),
+                    'attachmentCount' => count($attachmentMap),
                     'vehicleCount' => count($vehicleIdMap)
                 ]);
                 $remappedCount = 0;
                 $reorganizedCount = 0;
                 $notFoundCount = 0;
                 
-                foreach ($attachmentEntitiesByNewId as $attachmentId => $attachment) {
+                foreach ($attachmentMap as $attachmentId => $attachment) {
                     $entityType = $attachment->getEntityType();
                     $oldEntityId = $attachment->getEntityId();
                     
