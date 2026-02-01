@@ -25,14 +25,11 @@ import {
   DialogActions,
 } from '@mui/material';
 import { Download as DownloadIcon, Delete as DeleteIcon } from '@mui/icons-material';
-import logger from '../utils/logger';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import VehicleSelector from '../components/VehicleSelector';
 import { saveBlob } from '../components/DownloadHelpers';
-import logger from '../utils/logger';
 import KnightRiderLoader from '../components/KnightRiderLoader';
-import logger from '../utils/logger';
 import useTablePagination from '../hooks/useTablePagination';
 import logger from '../utils/logger';
 import TablePaginationBar from '../components/TablePaginationBar';

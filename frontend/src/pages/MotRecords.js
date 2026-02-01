@@ -22,13 +22,10 @@ import {
   TableSortLabel,
 } from '@mui/material';
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, Visibility as VisibilityIcon } from '@mui/icons-material';
-import logger from '../utils/logger';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { useUserPreferences } from '../contexts/UserPreferencesContext';
-import logger from '../utils/logger';
 import formatCurrency from '../utils/formatCurrency';
-import logger from '../utils/logger';
 import { useVehicles } from '../contexts/VehiclesContext';
 import logger from '../utils/logger';
 import { useDistance } from '../hooks/useDistance';

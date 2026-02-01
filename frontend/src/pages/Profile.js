@@ -17,9 +17,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../contexts/ThemeContext';
 import PasswordChangeDialog from '../components/PasswordChangeDialog';
-import logger from '../utils/logger';
 import KnightRiderLoader from '../components/KnightRiderLoader';
-import logger from '../utils/logger';
 
 const Profile = () => {
   const { user, updateProfile } = useAuth();
