@@ -9,21 +9,13 @@ import { useUserPreferences } from '../contexts/UserPreferencesContext';
 import formatCurrency from '../utils/formatCurrency';
 import { fetchArrayData } from '../hooks/useApiData';
 import { useDistance } from '../hooks/useDistance';
-import logger from '../utils/logger';
 import useTablePagination from '../hooks/useTablePagination';
-import logger from '../utils/logger';
 import ConsumableDialog from '../components/ConsumableDialog';
-import logger from '../utils/logger';
 import ServiceDialog from '../components/ServiceDialog';
-import logger from '../utils/logger';
 import KnightRiderLoader from '../components/KnightRiderLoader';
-import logger from '../utils/logger';
 import ViewAttachmentIconButton from '../components/ViewAttachmentIconButton';
-import logger from '../utils/logger';
 import TablePaginationBar from '../components/TablePaginationBar';
-import logger from '../utils/logger';
 import VehicleSelector from '../components/VehicleSelector';
-import logger from '../utils/logger';
 
 const Consumables = () => {
   const [consumables, setConsumables] = useState([]);

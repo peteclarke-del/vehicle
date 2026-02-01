@@ -31,9 +31,7 @@ import VehicleSelector from '../components/VehicleSelector';
 import { saveBlob } from '../components/DownloadHelpers';
 import KnightRiderLoader from '../components/KnightRiderLoader';
 import useTablePagination from '../hooks/useTablePagination';
-import logger from '../utils/logger';
 import TablePaginationBar from '../components/TablePaginationBar';
-import logger from '../utils/logger';
 
 const Reports = () => {
   const { api } = useAuth();

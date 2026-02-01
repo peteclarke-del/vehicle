@@ -27,23 +27,14 @@ import { useTranslation } from 'react-i18next';
 import { useUserPreferences } from '../contexts/UserPreferencesContext';
 import formatCurrency from '../utils/formatCurrency';
 import { useVehicles } from '../contexts/VehiclesContext';
-import logger from '../utils/logger';
 import { useDistance } from '../hooks/useDistance';
-import logger from '../utils/logger';
 import { formatDateISO } from '../utils/formatDate';
-import logger from '../utils/logger';
 import useTablePagination from '../hooks/useTablePagination';
-import logger from '../utils/logger';
 import MotDialog from '../components/MotDialog';
-import logger from '../utils/logger';
 import TablePaginationBar from '../components/TablePaginationBar';
-import logger from '../utils/logger';
 import VehicleSelector from '../components/VehicleSelector';
-import logger from '../utils/logger';
 import ViewAttachmentIconButton from '../components/ViewAttachmentIconButton';
-import logger from '../utils/logger';
 import KnightRiderLoader from '../components/KnightRiderLoader';
-import logger from '../utils/logger';
 
 const MotRecords = () => {
   const [motRecords, setMotRecords] = useState([]);
