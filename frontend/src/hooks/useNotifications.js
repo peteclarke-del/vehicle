@@ -1,21 +1,20 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import SafeStorage from '../utils/SafeStorage';
 
 export const useNotifications = () => {
   const { user, api } = useAuth();
   const [rawNotifications, setRawNotifications] = useState([]);
   const [dismissedNotifications, setDismissedNotifications] = useState(() => {
-    const saved = localStorage.getItem('dismissedNotifications');
-    return saved ? JSON.parse(saved) : {};
+    return SafeStorage.get('dismissedNotifications', {});
   });
   const [snoozedNotifications, setSnoozedNotifications] = useState(() => {
-    const saved = localStorage.getItem('snoozedNotifications');
-    return saved ? JSON.parse(saved) : {};
+    return SafeStorage.get('snoozedNotifications', {});
   });
 
   useEffect(() => {
     if (!api || !user?.id) return;
-    const token = localStorage.getItem('token');
+    const token = SafeStorage.get('token');
     const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:8081/api';
     const streamUrl = `${baseUrl}/notifications/stream?token=${encodeURIComponent(token || '')}`;
     let eventSource;
@@ -73,7 +72,7 @@ export const useNotifications = () => {
   const dismissNotification = (notificationId) => {
     const updated = { ...dismissedNotifications, [notificationId]: true };
     setDismissedNotifications(updated);
-    localStorage.setItem('dismissedNotifications', JSON.stringify(updated));
+    SafeStorage.set('dismissedNotifications', updated);
   };
 
   const snoozeNotification = (notificationId, days = 7) => {
@@ -82,7 +81,7 @@ export const useNotifications = () => {
     
     const updated = { ...snoozedNotifications, [notificationId]: snoozedUntil.toISOString() };
     setSnoozedNotifications(updated);
-    localStorage.setItem('snoozedNotifications', JSON.stringify(updated));
+    SafeStorage.set('snoozedNotifications', updated);
   };
 
   const clearAllNotifications = () => {
@@ -91,7 +90,7 @@ export const useNotifications = () => {
       updated[notif.id] = true;
     });
     setDismissedNotifications({ ...dismissedNotifications, ...updated });
-    localStorage.setItem('dismissedNotifications', JSON.stringify({ ...dismissedNotifications, ...updated }));
+    SafeStorage.set('dismissedNotifications', { ...dismissedNotifications, ...updated });
   };
 
   const notifications = useMemo(() => {

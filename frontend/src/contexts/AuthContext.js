@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
 import i18n from '../i18n';
 import logger from '../utils/logger';
+import SafeStorage from '../utils/SafeStorage';
 
 const AuthContext = createContext();
 
@@ -20,7 +21,7 @@ const api = axios.create({
 
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
+    const token = SafeStorage.get('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -32,12 +33,12 @@ api.interceptors.request.use(
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [token, setToken] = useState(localStorage.getItem('token'));
+  const [token, setToken] = useState(SafeStorage.get('token'));
 
   const logout = () => {
     (async () => {
       try {
-        const refreshToken = localStorage.getItem('refreshToken');
+        const refreshToken = SafeStorage.get('refreshToken');
         if (refreshToken) {
           await api.post('/auth/revoke', { refreshToken });
         } else {
@@ -46,8 +47,8 @@ export const AuthProvider = ({ children }) => {
       } catch (e) {
         // ignore network errors during logout
       }
-      localStorage.removeItem('token');
-      localStorage.removeItem('refreshToken');
+      SafeStorage.remove('token');
+      SafeStorage.remove('refreshToken');
       setToken(null);
       setUser(null);
     })();
@@ -98,7 +99,7 @@ export const AuthProvider = ({ children }) => {
         logger.warn('Failed to apply user language', err);
       }
     } catch (error) {
-      localStorage.removeItem('token');
+      SafeStorage.remove('token');
     } finally {
       setLoading(false);
     }
@@ -114,18 +115,18 @@ export const AuthProvider = ({ children }) => {
       throw new Error('Authentication failed: no token returned by server');
     }
 
-    localStorage.setItem('token', newToken);
+    SafeStorage.set('token', newToken);
     setToken(newToken);
     await fetchUser();
     // Try to request a long-lived refresh token from the backend
     try {
       const resp = await api.post('/auth/issue-refresh');
       if (resp?.data?.refreshToken) {
-        localStorage.setItem('refreshToken', resp.data.refreshToken);
+        SafeStorage.set('refreshToken', resp.data.refreshToken);
       }
       // If server returned a token tailored to user's session TTL, adopt it
       if (resp?.data?.token) {
-        localStorage.setItem('token', resp.data.token);
+        SafeStorage.set('token', resp.data.token);
         setToken(resp.data.token);
       }
     } catch (e) {
@@ -143,7 +144,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const updateToken = (newToken) => {
-    localStorage.setItem('token', newToken);
+    SafeStorage.set('token', newToken);
     setToken(newToken);
   };
 
