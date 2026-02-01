@@ -11,22 +11,12 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
-  Box,
-  Typography,
-  IconButton,
-  Tooltip,
 } from '@mui/material';
-import {
-  CloudUpload as UploadIcon,
-  Delete as DeleteIcon,
-  Receipt as ReceiptIcon,
-} from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { useDistance } from '../hooks/useDistance';
 import KnightRiderLoader from './KnightRiderLoader';
-import AttachmentViewerDialog from './AttachmentViewerDialog';
-import { useDragDrop } from '../hooks/useDragDrop';
+import ReceiptUpload from './ReceiptUpload';
 
 const FuelRecordDialog = ({ open, record, vehicleId, onClose }) => {
   const [formData, setFormData] = useState({
@@ -40,21 +30,9 @@ const FuelRecordDialog = ({ open, record, vehicleId, onClose }) => {
   });
   const [loading, setLoading] = useState(false);
   const [fuelTypes, setFuelTypes] = useState([]);
-  const [receiptFile, setReceiptFile] = useState(null);
-  const [uploadingReceipt, setUploadingReceipt] = useState(false);
-  const [viewerOpen, setViewerOpen] = useState(false);
   const { api } = useAuth();
   const { t } = useTranslation();
   const { convert, toKm, getLabel } = useDistance();
-
-  const handleReceiptDrop = async (files) => {
-    const file = files[0];
-    if (file) {
-      await handleReceiptUpload({ target: { files: [file] } });
-    }
-  };
-
-  const { isDragging, dragHandlers } = useDragDrop(handleReceiptDrop);
 
   useEffect(() => {
     loadFuelTypes();
@@ -91,87 +69,28 @@ const FuelRecordDialog = ({ open, record, vehicleId, onClose }) => {
         station: '',
         notes: '',
       });
-      setReceiptFile(null);
     }
   }, [record, open]);
-
-  useEffect(() => {
-    if (!open) {
-      setViewerOpen(false);
-    }
-  }, [open]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleReceiptUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+  const handleReceiptUploaded = (attachmentId, ocrData) => {
+    const updates = { receiptAttachmentId: attachmentId };
+    
+    // Auto-fill form fields with OCR extracted data
+    if (ocrData.date) updates.date = ocrData.date;
+    if (ocrData.cost) updates.cost = ocrData.cost;
+    if (ocrData.litres) updates.litres = ocrData.litres;
+    if (ocrData.station) updates.station = ocrData.station;
+    if (ocrData.fuelType) updates.fuelType = ocrData.fuelType;
 
-    setUploadingReceipt(true);
-    try {
-      const formDataUpload = new FormData();
-      formDataUpload.append('file', file);
-      formDataUpload.append('entityType', 'fuel_record');
-      formDataUpload.append('description', 'Fuel receipt');
-
-      const response = await api.post('/attachments', formDataUpload, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-
-      const attachmentId = response.data.id;
-      setFormData({ ...formData, receiptAttachmentId: attachmentId });
-      setReceiptFile(file);
-
-      // Process OCR to extract receipt data
-      try {
-        const ocrResponse = await api.get(`/attachments/${attachmentId}/ocr`);
-        const extractedData = ocrResponse.data;
-
-        // Auto-fill form fields with extracted data
-        const updates = {};
-        if (extractedData.date) updates.date = extractedData.date;
-        if (extractedData.cost) updates.cost = extractedData.cost;
-        if (extractedData.litres) updates.litres = extractedData.litres;
-        if (extractedData.station) updates.station = extractedData.station;
-        if (extractedData.fuelType) updates.fuelType = extractedData.fuelType;
-
-        if (Object.keys(updates).length > 0) {
-          setFormData({ ...formData, ...updates, receiptAttachmentId: attachmentId });
-        }
-      } catch (ocrError) {
-        console.warn('OCR extraction failed or not applicable:', ocrError);
-        // Continue without OCR data - attachment still uploaded
-      }
-    } catch (error) {
-      console.error('Error uploading receipt:', error);
-      alert(t('attachment.uploadError'));
-    } finally {
-      setUploadingReceipt(false);
-    }
+    setFormData({ ...formData, ...updates });
   };
 
-  const handleRemoveReceipt = async () => {
-    if (formData.receiptAttachmentId) {
-      try {
-        await api.delete(`/attachments/${formData.receiptAttachmentId}`);
-      } catch (error) {
-        console.error('Error deleting receipt:', error);
-      }
-    }
+  const handleReceiptRemoved = () => {
     setFormData({ ...formData, receiptAttachmentId: null });
-    setReceiptFile(null);
-  };
-
-  const handleViewReceipt = () => {
-    if (formData.receiptAttachmentId) {
-      setViewerOpen(true);
-    }
-  };
-
-  const handleCloseViewer = () => {
-    setViewerOpen(false);
   };
 
   const handleSubmit = async (e) => {
@@ -294,75 +213,12 @@ const FuelRecordDialog = ({ open, record, vehicleId, onClose }) => {
               />
             </Grid>
             <Grid item xs={12}>
-              <Box
-                {...dragHandlers}
-                sx={{
-                  border: '2px dashed',
-                  borderColor: isDragging ? 'primary.main' : 'divider',
-                  borderRadius: 1,
-                  height: '56px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  px: 2,
-                  cursor: !formData.receiptAttachmentId && !receiptFile ? 'pointer' : 'default',
-                  bgcolor: isDragging ? 'action.hover' : 'transparent',
-                  transition: 'all 0.2s ease',
-                  '&:hover': !formData.receiptAttachmentId && !receiptFile ? {
-                    bgcolor: 'action.hover',
-                    borderColor: 'primary.main'
-                  } : {}
-                }}
-                component={!formData.receiptAttachmentId && !receiptFile ? 'label' : 'div'}
-              >
-                <input
-                  accept="image/*,application/pdf"
-                  style={{ display: 'none' }}
-                  id="receipt-upload"
-                  type="file"
-                  onChange={handleReceiptUpload}
-                  disabled={uploadingReceipt}
-                />
-                {!formData.receiptAttachmentId && !receiptFile ? (
-                  uploadingReceipt ? (
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <KnightRiderLoader size={16} />
-                      <Typography variant="body2">
-                        {t('attachment.uploading')}
-                      </Typography>
-                    </Box>
-                  ) : (
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <UploadIcon color="action" />
-                      <Typography variant="body2" color="textSecondary">
-                        {isDragging ? (t('attachment.dropHere') || 'Drop here') : t('attachment.uploadReceipt')}
-                      </Typography>
-                    </Box>
-                  )
-                ) : (
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
-                    <ReceiptIcon color="primary" />
-                    <Typography variant="body2" sx={{ flex: 1 }}>
-                      {receiptFile?.name || t('fuel.receiptAttached')}
-                    </Typography>
-                    <Tooltip title={t('attachment.view')}>
-                      <IconButton
-                        size="small"
-                        onClick={handleViewReceipt}
-                      >
-                        <ReceiptIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title={t('attachment.remove')}>
-                      <IconButton
-                        size="small"
-                        onClick={handleRemoveReceipt}
-                      >
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                  </Box>
-                )}
-              </Box>
+              <ReceiptUpload
+                entityType="fuel_record"
+                receiptAttachmentId={formData.receiptAttachmentId}
+                onReceiptUploaded={handleReceiptUploaded}
+                onReceiptRemoved={handleReceiptRemoved}
+              />
             </Grid>
           </Grid>
         </DialogContent>
@@ -373,12 +229,6 @@ const FuelRecordDialog = ({ open, record, vehicleId, onClose }) => {
           </Button>
         </DialogActions>
       </form>
-      <AttachmentViewerDialog
-        open={viewerOpen}
-        onClose={handleCloseViewer}
-        attachmentId={formData.receiptAttachmentId}
-        title={t('attachment.view')}
-      />
     </Dialog>
   );
 };
