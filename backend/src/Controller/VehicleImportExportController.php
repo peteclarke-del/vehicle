@@ -919,14 +919,26 @@ class VehicleImportExportController extends AbstractController
                 return new JsonResponse(['error' => 'Failed to create zip'], 500);
             }
 
-            $files = scandir($tempDir);
-            foreach ($files as $f) {
-                if ($f === '.' || $f === '..') {
-                    continue;
+            // Recursively add all files and directories to ZIP
+            $addToZip = function($dir, $zipPath = '') use (&$addToZip, $zip, $tempDir) {
+                $files = scandir($dir);
+                foreach ($files as $f) {
+                    if ($f === '.' || $f === '..') {
+                        continue;
+                    }
+                    $fullPath = $dir . '/' . $f;
+                    $zipFilePath = $zipPath ? $zipPath . '/' . $f : $f;
+                    
+                    if (is_dir($fullPath)) {
+                        $zip->addEmptyDir($zipFilePath);
+                        $addToZip($fullPath, $zipFilePath);
+                    } else {
+                        $zip->addFile($fullPath, $zipFilePath);
+                    }
                 }
-                $zip->addFile($tempDir . '/' . $f, $f);
-            }
-
+            };
+            
+            $addToZip($tempDir);
             $zip->close();
 
             $logger->info('[export] ZIP archive created', ['path' => $zipPath]);
@@ -937,14 +949,26 @@ class VehicleImportExportController extends AbstractController
                 'elapsedMs' => (int) ((microtime(true) - $t0) * 1000)
             ]);
 
-        // cleanup temp dir
-            foreach ($files as $f) {
-                if ($f === '.' || $f === '..') {
-                    continue;
+        // cleanup temp dir recursively
+            $deleteDir = function($dir) use (&$deleteDir) {
+                if (!is_dir($dir)) {
+                    return;
                 }
-                @unlink($tempDir . '/' . $f);
-            }
-            @rmdir($tempDir);
+                $files = scandir($dir);
+                foreach ($files as $f) {
+                    if ($f === '.' || $f === '..') {
+                        continue;
+                    }
+                    $fullPath = $dir . '/' . $f;
+                    if (is_dir($fullPath)) {
+                        $deleteDir($fullPath);
+                    } else {
+                        @unlink($fullPath);
+                    }
+                }
+                @rmdir($dir);
+            };
+            $deleteDir($tempDir);
 
             $response = new BinaryFileResponse($zipPath);
             $response->setContentDisposition(ResponseHeaderBag::DISPOSITION_ATTACHMENT, 'vehicles-export.zip');
