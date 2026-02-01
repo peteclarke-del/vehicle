@@ -21,6 +21,7 @@ import { useTranslation } from 'react-i18next';
 import ReceiptUpload from './ReceiptUpload';
 import AttachmentUpload from './AttachmentUpload';
 import KnightRiderLoader from './KnightRiderLoader';
+import logger from '../utils/logger';
 
 const PolicyDialog = ({ open, policy, vehicles, selectedVehicleId, existingPolicies, onClose }) => {
   const [formData, setFormData] = useState({
@@ -153,7 +154,7 @@ const PolicyDialog = ({ open, policy, vehicles, selectedVehicleId, existingPolic
       }
       onClose(true);
     } catch (err) {
-      console.error('Error saving policy', err);
+      logger.error('Error saving policy', err);
       alert(t('common.saveError', { type: 'policy' }));
     } finally {
       setLoading(false);

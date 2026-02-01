@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import logger from '../utils/logger';
 
 /**
  * Custom hook for fetching data from API with built-in array validation
@@ -25,7 +26,7 @@ export const useApiData = (endpoint, initialData = []) => {
       setData(responseData);
       return responseData;
     } catch (err) {
-      console.error(`Error loading data from ${endpoint}:`, err);
+      logger.error(`Error loading data from ${endpoint}:`, err);
       setError(err);
       setData(initialData);
       return initialData;
@@ -48,7 +49,7 @@ export const fetchArrayData = async (api, endpoint) => {
     const response = await api.get(endpoint);
     return Array.isArray(response.data) ? response.data : [];
   } catch (error) {
-    console.error(`Error fetching ${endpoint}:`, error);
+    logger.error(`Error fetching ${endpoint}:`, error);
     return [];
   }
 };

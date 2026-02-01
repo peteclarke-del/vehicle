@@ -17,6 +17,7 @@ import { useTranslation } from 'react-i18next';
 import { useDistance } from '../hooks/useDistance';
 import KnightRiderLoader from './KnightRiderLoader';
 import ReceiptUpload from './ReceiptUpload';
+import logger from '../utils/logger';
 
 const FuelRecordDialog = ({ open, record, vehicleId, onClose }) => {
   const [formData, setFormData] = useState({
@@ -44,11 +45,11 @@ const FuelRecordDialog = ({ open, record, vehicleId, onClose }) => {
       if (Array.isArray(response.data)) {
         setFuelTypes(response.data);
       } else {
-        console.warn('Unexpected fuel types response:', response.data);
+        logger.warn('Unexpected fuel types response:', response.data);
         setFuelTypes([]);
       }
     } catch (error) {
-      console.error('Error loading fuel types:', error);
+      logger.error('Error loading fuel types:', error);
     }
   };
 
@@ -109,7 +110,7 @@ const FuelRecordDialog = ({ open, record, vehicleId, onClose }) => {
       }
       onClose(true);
     } catch (error) {
-      console.error('Error saving fuel record:', error);
+      logger.error('Error saving fuel record:', error);
       alert(t('common.saveError', { type: t('fuel.title').toLowerCase() }));
     } finally {
       setLoading(false);

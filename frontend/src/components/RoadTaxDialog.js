@@ -17,6 +17,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import KnightRiderLoader from './KnightRiderLoader';
+import logger from '../utils/logger';
 
 const RoadTaxDialog = ({ open, roadTaxRecord, vehicleId, vehicles, onClose }) => {
   const [formData, setFormData] = useState({
@@ -75,7 +76,7 @@ const RoadTaxDialog = ({ open, roadTaxRecord, vehicleId, vehicles, onClose }) =>
       }
       onClose(true);
     } catch (error) {
-      console.error('Error saving road tax record:', error);
+      logger.error('Error saving road tax record:', error);
       alert(t('common.saveError', { type: 'Road tax record' }));
     } finally {
       setLoading(false);
