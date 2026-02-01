@@ -75,6 +75,14 @@ class VehicleImportExportController extends AbstractController
         // Copy the physical file to ZIP directory
         $storagePath = $attachment->getStoragePath() ?: ('attachments/' . $attachment->getFilename());
         $sourcePath = $this->getParameter('kernel.project_dir') . '/uploads/' . ltrim($storagePath, '/');
+        
+        $this->logger->debug('[export] Attempting to copy attachment', [
+            'attachmentId' => $attachment->getId(),
+            'sourcePath' => $sourcePath,
+            'exists' => file_exists($sourcePath),
+            'zipDir' => $zipDir
+        ]);
+        
         if (file_exists($sourcePath)) {
             $safeName = 'attachment_' . $attachment->getId() . '_' . basename($attachment->getFilename());
             $targetPath = $zipDir . '/attachments/' . $safeName;
@@ -83,8 +91,17 @@ class VehicleImportExportController extends AbstractController
                 mkdir($destDir, 0755, true);
             }
             copy($sourcePath, $targetPath);
+            $this->logger->info('[export] Copied attachment to ZIP', [
+                'attachmentId' => $attachment->getId(),
+                'targetPath' => $targetPath
+            ]);
             // Store the safe name in the serialized data so import knows where to find it
             $attachmentData['importFilename'] = $safeName;
+        } else {
+            $this->logger->warning('[export] Attachment file not found', [
+                'attachmentId' => $attachment->getId(),
+                'sourcePath' => $sourcePath
+            ]);
         }
 
         return $attachmentData;
@@ -971,6 +988,7 @@ class VehicleImportExportController extends AbstractController
             $deleteDir($tempDir);
 
             $response = new BinaryFileResponse($zipPath);
+            $response->headers->set('Content-Type', 'application/zip');
             $response->setContentDisposition(ResponseHeaderBag::DISPOSITION_ATTACHMENT, 'vehicles-export.zip');
 
         // remove zip file after response sent? leave it for now; caller can delete temp files later
