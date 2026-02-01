@@ -706,8 +706,10 @@ class VehicleImportExportController extends AbstractController
                             ]);
                             $attData = $this->serializeAttachment($att, $zipDir);
                             if ($attData) {
+                                // Store original IDs for remapping during import
+                                $attData['originalAttachmentId'] = $att->getId();
                                 $attData['entityType'] = $att->getEntityType();
-                                $attData['entityId'] = $att->getEntityId();
+                                $attData['originalEntityId'] = $att->getEntityId();
                                 $attData['category'] = $att->getCategory();
                                 $attData['description'] = $att->getDescription();
                                 $attachmentsData[] = $attData;
@@ -879,91 +881,10 @@ class VehicleImportExportController extends AbstractController
                 'elapsedMs' => (int) ((microtime(true) - $t0) * 1000)
             ]);
 
-        // gather vehicle images belonging to user
-            if ($this->isAdminForUser($user)) {
-                $vehicles = $entityManager->getRepository(Vehicle::class)->findAll();
-            } else {
-                $vehicles = $entityManager->getRepository(Vehicle::class)->findBy(['owner' => $user]);
-            }
-            $logger->info('[export] ZIP vehicles loaded', ['count' => is_countable($vehicles) ? count($vehicles) : 0]);
-            $vehicleImages = [];
-            foreach ($vehicles as $vehicle) {
-                foreach ($vehicle->getImages() as $image) {
-                    $vehicleImages[] = $image;
-                }
-            }
-
-            $logger->info('[export] ZIP vehicle images collected', ['count' => count($vehicleImages)]);
-
-            $manifest = [];
-            $uploadDir = $this->getParameter('kernel.project_dir') . '/uploads';
-
-            // No longer copying attachments separately - they're embedded in entity data and copied during export()
-            // Just handle vehicle images in the manifest
-
-            $imageCopied = 0;
-            foreach ($vehicleImages as $image) {
-                $path = $image->getPath();
-                if (!$path) {
-                    continue;
-                }
-                $filePath = $this->getParameter('kernel.project_dir') . $path;
-                if (!file_exists($filePath)) {
-                    // fallback to uploads root if path already trimmed
-                    $filePath = $uploadDir . '/' . ltrim($path, '/');
-                    if (!file_exists($filePath)) {
-                        continue;
-                    }
-                }
-
-                $normalizedPath = $path;
-                if (str_starts_with($normalizedPath, '/uploads/')) {
-                    $normalizedPath = substr($normalizedPath, strlen('/uploads/'));
-                }
-                $normalizedPath = ltrim($normalizedPath, '/');
-
-                $safeName = 'vehicle_image_' . $image->getId() . '_' . basename($path);
-                $targetPath = $tempDir . '/' . $safeName;
-                copy($filePath, $targetPath);
-                $imageCopied++;
-                if (($imageCopied % 200) === 0) {
-                    $logger->info('[export] ZIP images copied', ['count' => $imageCopied]);
-                }
-
-                $manifest[] = [
-                'type' => 'vehicle_image',
-                'originalId' => $image->getId(),
-                'filename' => basename($path),
-                'manifestName' => $safeName,
-                'originalName' => basename($path),
-                'mimeType' => @mime_content_type($filePath) ?: null,
-                'fileSize' => @filesize($filePath) ?: null,
-                'uploadedAt' => $image->getUploadedAt()?->format('c'),
-                'entityType' => 'vehicle',
-                'entityId' => $image->getVehicle()?->getId(),
-                'vehicleRegistrationNumber' => $image->getVehicle()?->getRegistrationNumber(),
-                'description' => $image->getCaption(),
-                'caption' => $image->getCaption(),
-                'isPrimary' => $image->getIsPrimary(),
-                'displayOrder' => $image->getDisplayOrder(),
-                'storagePath' => $normalizedPath,
-                'category' => 'vehicle_image',
-                'downloadUrl' => $path,
-                ];
-            }
-
-            $logger->info('Export ZIP images collected', [
-                'count' => count($manifest),
-                'elapsedMs' => (int) ((microtime(true) - $t0) * 1000)
-            ]);
-
-        // write manifest and vehicles json
-            file_put_contents($tempDir . '/manifest.json', json_encode($manifest, JSON_PRETTY_PRINT));
+        // write vehicles json (no manifest needed - attachments are embedded in entity data)
             file_put_contents($tempDir . '/vehicles.json', $vehiclesJson);
 
-            $logger->info('[export] ZIP wrote manifest and vehicles.json');
-
-            $logger->info('Export ZIP wrote manifest and vehicles.json', [
+            $logger->info('[export] ZIP wrote vehicles.json', [
                 'tempDir' => $tempDir,
                 'elapsedMs' => (int) ((microtime(true) - $t0) * 1000)
             ]);
