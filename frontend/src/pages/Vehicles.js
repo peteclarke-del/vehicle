@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import logger from '../utils/logger';
+import SafeStorage from '../utils/SafeStorage';
 import {
   Box,
   Button,
@@ -72,12 +73,12 @@ const Vehicles = () => {
   const { convert, format } = useDistance();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
-  const [statusFilter, setStatusFilter] = useState(() => localStorage.getItem('vehiclesStatusFilter') || 'Live');
+  const [statusFilter, setStatusFilter] = useState(() => SafeStorage.get('vehiclesStatusFilter', 'Live'));
   const [viewMode, setViewMode] = useState(() => {
-    return localStorage.getItem('vehiclesViewMode') || 'card';
+    return SafeStorage.get('vehiclesViewMode', 'card');
   });
-  const [orderBy, setOrderBy] = useState(() => localStorage.getItem('vehiclesSortBy') || 'name');
-  const [order, setOrder] = useState(() => localStorage.getItem('vehiclesSortOrder') || 'asc');
+  const [orderBy, setOrderBy] = useState(() => SafeStorage.get('vehiclesSortBy', 'name'));
+  const [order, setOrder] = useState(() => SafeStorage.get('vehiclesSortOrder', 'asc'));
   const [purgeDialogOpen, setPurgeDialogOpen] = useState(false);
   const [purgeMode, setPurgeMode] = useState('vehicles-only');
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
@@ -100,7 +101,7 @@ const Vehicles = () => {
   const handleViewModeChange = (event, newMode) => {
     if (newMode !== null) {
       setViewMode(newMode);
-      localStorage.setItem('vehiclesViewMode', newMode);
+      SafeStorage.set('vehiclesViewMode', newMode);
     }
   };
 
@@ -133,8 +134,8 @@ const Vehicles = () => {
     const newOrder = isAsc ? 'desc' : 'asc';
     setOrder(newOrder);
     setOrderBy(property);
-    localStorage.setItem('vehiclesSortBy', property);
-    localStorage.setItem('vehiclesSortOrder', newOrder);
+    SafeStorage.set('vehiclesSortBy', property);
+    SafeStorage.set('vehiclesSortOrder', newOrder);
   };
 
   const sortedVehicles = React.useMemo(() => {
@@ -203,7 +204,7 @@ const Vehicles = () => {
   const handleStatusFilterChange = (e) => {
     const val = e.target.value;
     setStatusFilter(val);
-    try { localStorage.setItem('vehiclesStatusFilter', val); } catch (e) {}
+    SafeStorage.set('vehiclesStatusFilter', val);
   };
 
   const handleDelete = async (id) => {

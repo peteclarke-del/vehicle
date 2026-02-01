@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import logger from '../utils/logger';
+import SafeStorage from '../utils/SafeStorage';
 import {
   Typography,
   Button,
@@ -56,8 +57,8 @@ const MotRecords = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingMot, setEditingMot] = useState(null);
   const { vehicles, fetchVehicles } = useVehicles();
-  const [orderBy, setOrderBy] = useState(() => localStorage.getItem('motRecordsSortBy') || 'testDate');
-  const [order, setOrder] = useState(() => localStorage.getItem('motRecordsSortOrder') || 'desc');
+  const [orderBy, setOrderBy] = useState(() => SafeStorage.get('motRecordsSortBy', 'testDate'));
+  const [order, setOrder] = useState(() => SafeStorage.get('motRecordsSortOrder', 'desc'));
   const { api } = useAuth();
   const { t, i18n } = useTranslation();
   const registrationLabelText = t('common.registrationNumber');
@@ -145,8 +146,8 @@ const MotRecords = () => {
     const newOrder = isAsc ? 'desc' : 'asc';
     setOrder(newOrder);
     setOrderBy(property);
-    localStorage.setItem('motRecordsSortBy', property);
-    localStorage.setItem('motRecordsSortOrder', newOrder);
+    SafeStorage.set('motRecordsSortBy', property);
+    SafeStorage.set('motRecordsSortOrder', newOrder);
   };
 
   const sortedMotRecords = React.useMemo(() => {
