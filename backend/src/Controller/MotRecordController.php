@@ -105,14 +105,22 @@ class MotRecordController extends AbstractController
             return new JsonResponse(['error' => 'MOT record not found'], 404);
         }
 
+        // Fetch related entities with eager loading to avoid N+1 queries
         $parts = $this->entityManager->getRepository(Part::class)
             ->findBy(['motRecord' => $motRecord]);
 
         $consumables = $this->entityManager->getRepository(Consumable::class)
             ->findBy(['motRecord' => $motRecord]);
 
-        $serviceRecords = $this->entityManager->getRepository(\App\Entity\ServiceRecord::class)
-            ->findBy(['motRecord' => $motRecord]);
+        // Eager load service records with their items in a single query
+        $serviceRecords = $this->entityManager->createQueryBuilder()
+            ->select('sr', 'sri')
+            ->from(\App\Entity\ServiceRecord::class, 'sr')
+            ->leftJoin('sr.items', 'sri')
+            ->where('sr.motRecord = :motRecord')
+            ->setParameter('motRecord', $motRecord)
+            ->getQuery()
+            ->getResult();
 
         return new JsonResponse([
             'motRecord' => $this->serializer->serializeMotRecord($motRecord),
