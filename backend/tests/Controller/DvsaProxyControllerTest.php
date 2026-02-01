@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Controller;
 
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use App\Tests\TestCase\BaseWebTestCase;
 use Symfony\Component\HttpClient\MockHttpClient;
 use Symfony\Component\HttpClient\Response\MockResponse;
 use Symfony\Component\HttpFoundation\Response;
@@ -12,7 +13,7 @@ use Symfony\Component\HttpFoundation\Response;
 /**
  * Functional tests for the DVSA proxy endpoint.
  */
-class DvsaProxyControllerTest extends WebTestCase
+class DvsaProxyControllerTest extends BaseWebTestCase
 {
     /**
      * Verify a 503 response is returned when the DVSA API key is missing.
@@ -23,7 +24,7 @@ class DvsaProxyControllerTest extends WebTestCase
         unset($_ENV['DVSA_API_KEY']);
         unset($_SERVER['DVSA_API_KEY']);
 
-        $client = static::createClient();
+        $client = $this->client;
         $client->request('GET', '/api/dvsa/lookup?vrm=AB12CDE');
 
         $this->assertResponseStatusCodeSame(Response::HTTP_SERVICE_UNAVAILABLE);
@@ -63,7 +64,7 @@ class DvsaProxyControllerTest extends WebTestCase
         $mockClient = new MockHttpClient($mockResponse);
 
         // Create client and inject mock http_client into test container
-        $client = static::createClient();
+        $client = $this->client;
         $container = static::getContainer();
         $container->set('http_client', $mockClient);
 

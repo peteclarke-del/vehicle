@@ -5,45 +5,27 @@ declare(strict_types=1);
 namespace App\Tests\Controller;
 
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use App\Tests\TestCase\BaseWebTestCase;
 
 /**
  * Attachment Controller Test
  * 
  * Integration tests for file attachment operations
  */
-class AttachmentControllerTest extends WebTestCase
+class AttachmentControllerTest extends BaseWebTestCase
 {
     private string $token;
 
     protected function setUp(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
         $this->token = $this->getAuthToken($client);
     }
 
-    private function getAuthToken($client): string
-    {
-        $client->request('POST', '/api/auth/login', [], [], ['CONTENT_TYPE' => 'application/json'], json_encode([
-            'email' => 'test@example.com',
-            'password' => 'password123',
-        ]));
-
-        $response = $client->getResponse();
-        if ($response->getStatusCode() !== 200) {
-            $this->fail('Failed to authenticate test user: ' . $response->getContent());
-        }
-
-        $data = json_decode($response->getContent(), true);
-        if (!isset($data['token'])) {
-            $this->fail('No token in authentication response');
-        }
-
-        return $data['token'];
-    }
 
     public function testUploadAttachmentRequiresAuthentication(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 
         $client->request('POST', '/api/attachments');
 
@@ -52,7 +34,7 @@ class AttachmentControllerTest extends WebTestCase
 
     public function testUploadAttachment(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 
         $uploadedFile = new \Symfony\Component\HttpFoundation\File\UploadedFile(
             __DIR__ . '/../fixtures/test-receipt.pdf',
@@ -83,7 +65,7 @@ class AttachmentControllerTest extends WebTestCase
 
     public function testUploadImageAttachment(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 
         $uploadedFile = new \Symfony\Component\HttpFoundation\File\UploadedFile(
             __DIR__ . '/../fixtures/test-image.jpg',
@@ -110,7 +92,7 @@ class AttachmentControllerTest extends WebTestCase
 
     public function testUploadAttachmentWithMissingFile(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 
         $client->request('POST', '/api/attachments', [
             'entityType' => 'service_record',
@@ -124,7 +106,7 @@ class AttachmentControllerTest extends WebTestCase
 
     public function testUploadAttachmentWithInvalidFileType(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 
         $uploadedFile = new \Symfony\Component\HttpFoundation\File\UploadedFile(
             __DIR__ . '/../fixtures/test-executable.exe',
@@ -148,7 +130,7 @@ class AttachmentControllerTest extends WebTestCase
 
     public function testUploadAttachmentWithFileTooLarge(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 
         // Create a file larger than max size (10MB)
         $largeFile = tempnam(sys_get_temp_dir(), 'large');
@@ -178,7 +160,7 @@ class AttachmentControllerTest extends WebTestCase
 
     public function testDownloadAttachment(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 
         // First upload an attachment
         $uploadedFile = new \Symfony\Component\HttpFoundation\File\UploadedFile(
@@ -212,7 +194,7 @@ class AttachmentControllerTest extends WebTestCase
 
     public function testDownloadAttachmentRequiresAuthentication(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 
         $client->request('GET', '/api/attachments/1');
 
@@ -221,7 +203,7 @@ class AttachmentControllerTest extends WebTestCase
 
     public function testDeleteAttachment(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 
         // First upload an attachment
         $uploadedFile = new \Symfony\Component\HttpFoundation\File\UploadedFile(
@@ -254,7 +236,7 @@ class AttachmentControllerTest extends WebTestCase
 
     public function testListAttachmentsForEntity(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 
         $client->request('GET', '/api/attachments', [
             'entityType' => 'service_record',
@@ -271,7 +253,7 @@ class AttachmentControllerTest extends WebTestCase
 
     public function testGetAttachmentMetadata(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 
         // Upload attachment
         $uploadedFile = new \Symfony\Component\HttpFoundation\File\UploadedFile(
@@ -310,7 +292,7 @@ class AttachmentControllerTest extends WebTestCase
 
     public function testUserCannotAccessOtherUsersAttachments(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 
         // Try to download an attachment belonging to another user
         $client->request('GET', '/api/attachments/999', [], [], [
@@ -327,7 +309,7 @@ class AttachmentControllerTest extends WebTestCase
 
     public function testGenerateThumbnailForImage(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 
         $uploadedFile = new \Symfony\Component\HttpFoundation\File\UploadedFile(
             __DIR__ . '/../fixtures/test-image.jpg',
@@ -360,7 +342,7 @@ class AttachmentControllerTest extends WebTestCase
 
     public function testGetStorageUsage(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 
         $client->request('GET', '/api/attachments/storage-usage', [], [], [
             'HTTP_AUTHORIZATION' => 'Bearer ' . $this->token,

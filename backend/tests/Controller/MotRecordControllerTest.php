@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Controller;
 
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use App\Tests\TestCase\BaseWebTestCase;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 
 /**
@@ -12,24 +13,20 @@ use Symfony\Bundle\FrameworkBundle\KernelBrowser;
  * 
  * Integration tests for MOT Record CRUD operations and DVSA integration
  */
-class MotRecordControllerTest extends WebTestCase
+class MotRecordControllerTest extends BaseWebTestCase
 {
 
-    private function getAuthToken(): string
-    {
-        return 'Bearer mock-jwt-token-12345';
-    }
 
     public function testListMotRecordsRequiresAuthentication(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 $client->request('GET', '/api/mot-records');
         $this->assertResponseStatusCodeSame(401);
     }
 
     public function testListMotRecordsForVehicle(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 $client->request(
             'GET',
             '/api/mot-records?vehicleId=1',
@@ -44,7 +41,7 @@ $client->request(
 
     public function testCreateMotRecord(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 $motData = [
             'vehicleId' => 1,
             'testDate' => '2026-01-15',
@@ -80,7 +77,7 @@ $motData = [
 
     public function testCreateFailedMotRecord(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 $motData = [
             'vehicleId' => 1,
             'testDate' => '2026-01-10',
@@ -112,7 +109,7 @@ $motData = [
 
     public function testUpdateMotRecord(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 $createData = [
             'vehicleId' => 1,
             'testDate' => '2026-01-10',
@@ -163,7 +160,7 @@ $createData = [
 
     public function testDeleteMotRecord(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 $createData = [
             'vehicleId' => 1,
             'testDate' => '2026-01-10',
@@ -200,7 +197,7 @@ $createData = [
 
     public function testFetchMotHistoryFromDvsa(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 $client->request(
             'GET',
             '/api/mot-records/dvsa-history?registration=ABC123',
@@ -217,7 +214,7 @@ $client->request(
 
     public function testGetNextMotDueDate(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 $client->request(
             'GET',
             '/api/mot-records/next-due?vehicleId=1',
@@ -235,7 +232,7 @@ $client->request(
 
     public function testGetMotHistory(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 $client->request(
             'GET',
             '/api/mot-records/history?vehicleId=1',
@@ -254,7 +251,7 @@ $client->request(
 
     public function testCheckMotStatus(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 $client->request(
             'GET',
             '/api/mot-records/status?vehicleId=1',
@@ -273,7 +270,7 @@ $client->request(
 
     public function testImportFromDvsa(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 $importData = [
             'vehicleId' => 1,
             'registration' => 'ABC123',
@@ -300,7 +297,7 @@ $importData = [
 
     public function testGetAdvisoryItems(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 $client->request(
             'GET',
             '/api/mot-records/advisories?vehicleId=1',
@@ -317,7 +314,7 @@ $client->request(
 
     public function testUserCannotAccessOtherUsersMotRecords(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 $createData = [
             'vehicleId' => 1,
             'testDate' => '2026-01-10',
