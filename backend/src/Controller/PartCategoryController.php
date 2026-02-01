@@ -13,10 +13,13 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
+use App\Controller\Trait\JsonValidationTrait;
 
 #[Route('/api/part-categories')]
 class PartCategoryController extends AbstractController
 {
+    use JsonValidationTrait;
+
     public function __construct(
         private EntityManagerInterface $entityManager,
         private LoggerInterface $logger
@@ -75,7 +78,11 @@ class PartCategoryController extends AbstractController
             return $this->json(['error' => 'Not authenticated'], 401);
         }
 
-        $data = json_decode($request->getContent(), true);
+        $validation = $this->validateJsonRequest($request);
+        if ($validation['error']) {
+            return $validation['error'];
+        }
+        $data = $validation['data'];
         $name = trim($data['name'] ?? '');
         if ($name === '') {
             return $this->json(['error' => 'Name required'], 400);
