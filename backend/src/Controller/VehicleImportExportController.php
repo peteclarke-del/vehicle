@@ -2313,8 +2313,19 @@ class VehicleImportExportController extends AbstractController
                                     $att = null;
                                     if ($attachmentMap !== null && isset($attachmentMap[$rid])) {
                                         $att = $attachmentMap[$rid];
+                                        $logger->debug('[import] Found service receipt attachment in map', [
+                                            'serviceData' => $serviceData['serviceDate'] ?? 'unknown',
+                                            'receiptAttachmentId' => $rid,
+                                            'attachmentId' => $att->getId()
+                                        ]);
                                     } else {
                                         $att = $entityManager->getRepository(\App\Entity\Attachment::class)->find($rid);
+                                        $logger->debug('[import] Service receipt attachment lookup', [
+                                            'receiptAttachmentId' => $rid,
+                                            'foundInMap' => false,
+                                            'foundInDb' => $att !== null,
+                                            'attachmentMapIsNull' => $attachmentMap === null
+                                        ]);
                                     }
                                     if ($att) {
                                         $serviceRecord->setReceiptAttachment($att);
