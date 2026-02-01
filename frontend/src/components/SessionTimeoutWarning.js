@@ -11,6 +11,7 @@ import {
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
+import logger from '../utils/logger';
 
 const SessionTimeoutWarning = () => {
   const { t } = useTranslation();
@@ -41,7 +42,7 @@ const SessionTimeoutWarning = () => {
           }
         }
       } catch (e) {
-        console.warn('Failed to load session timeout preference:', e);
+        logger.warn('Failed to load session timeout preference:', e);
       }
       if (mounted) setTokenTtl(3600);
     })();
@@ -173,7 +174,7 @@ const SessionTimeoutWarning = () => {
         throw new Error('No token in refresh response');
       }
     } catch (error) {
-      console.error('Failed to refresh token:', error);
+      logger.error('Failed to refresh token:', error);
       setIsRefreshing(false);
       setExtendedSuccess(false);
       setOpen(false);
