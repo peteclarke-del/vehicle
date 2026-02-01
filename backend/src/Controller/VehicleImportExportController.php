@@ -1150,6 +1150,13 @@ class VehicleImportExportController extends AbstractController
                 'idMapSample' => array_slice($idMap, 0, 5, true)
             ]);
             
+            // Log sample service record BEFORE remapping
+            if (!empty($vehicles[0]['serviceRecords'][0])) {
+                $logger->info('[BEFORE REMAP] First service record', [
+                    'serviceRecord' => $vehicles[0]['serviceRecords'][0]
+                ]);
+            }
+            
             $remappedCount = 0;
             $remapRecursive = function (&$node) use (&$remapRecursive, $idMap, $logger, &$remappedCount) {
                 if (is_array($node)) {
@@ -1190,6 +1197,13 @@ class VehicleImportExportController extends AbstractController
             $logger->info('[import] Finished receiptAttachmentId remapping', [
                 'remappedCount' => $remappedCount
             ]);
+            
+            // Log sample service record AFTER remapping
+            if (!empty($vehicles[0]['serviceRecords'][0])) {
+                $logger->info('[AFTER REMAP] First service record', [
+                    'serviceRecord' => $vehicles[0]['serviceRecords'][0]
+                ]);
+            }
 
         // call existing import logic by creating a synthetic Request
             $importRequest = new Request([], [], [], [], [], [], json_encode($vehicles));
@@ -2280,6 +2294,17 @@ class VehicleImportExportController extends AbstractController
                     }
                     if (!empty($vehicleData['serviceRecords'])) {
                         foreach ($vehicleData['serviceRecords'] as $serviceData) {
+                            // Log first service record to trace receiptAttachmentId
+                            static $loggedFirstService = false;
+                            if (!$loggedFirstService) {
+                                $logger->info('[IN IMPORT] First service record data', [
+                                    'serviceData' => $serviceData,
+                                    'hasReceiptAttachmentId' => isset($serviceData['receiptAttachmentId']),
+                                    'receiptAttachmentIdValue' => $serviceData['receiptAttachmentId'] ?? 'NOT SET'
+                                ]);
+                                $loggedFirstService = true;
+                            }
+                            
                             $serviceRecord = new ServiceRecord();
                             $serviceRecord->setVehicle($vehicle);
                             // persist the parent ServiceRecord before creating child items (parts/consumables)
