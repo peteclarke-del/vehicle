@@ -1,38 +1,51 @@
-nelmio_cors:
-    defaults:
-        origin_regex: true
-        # Use environment variable for allowed origins
-        # DEV: Allow all origins for development
-        # PROD: Restrict to specific frontend domain(s)
-        allow_origin: '%env(default::CORS_ALLOW_ORIGIN)%'
-        allow_methods: ['GET', 'OPTIONS', 'POST', 'PUT', 'PATCH', 'DELETE']
-        allow_headers: ['Content-Type', 'Authorization']
-        expose_headers: ['Link']
-        max_age: 3600
-    paths:
-        '^/api':
-            # Inherit from defaults or override per environment
-            allow_origin: '%env(default::CORS_ALLOW_ORIGIN)%'
-            allow_headers: ['Content-Type', 'Authorization', 'X-Requested-With']
-            allow_methods: ['POST', 'PUT', 'GET', 'DELETE', 'PATCH', 'OPTIONS']
-            max_age: 3600
-
-# Development environment - allow all origins for local development
+# Development and test environments - allow all origins
 when@dev:
     nelmio_cors:
         defaults:
+            origin_regex: false
             allow_origin: ['*']
+            allow_methods: ['GET', 'OPTIONS', 'POST', 'PUT', 'PATCH', 'DELETE']
+            allow_headers: ['*']
+            expose_headers: ['Link']
+            max_age: 3600
         paths:
             '^/api':
                 allow_origin: ['*']
                 allow_headers: ['*']
+                allow_methods: ['POST', 'PUT', 'GET', 'DELETE', 'PATCH', 'OPTIONS']
+                max_age: 3600
 
-# Test environment - allow all origins for testing
 when@test:
     nelmio_cors:
         defaults:
+            origin_regex: false
             allow_origin: ['*']
+            allow_methods: ['GET', 'OPTIONS', 'POST', 'PUT', 'PATCH', 'DELETE']
+            allow_headers: ['*']
+            expose_headers: ['Link']
+            max_age: 3600
         paths:
             '^/api':
                 allow_origin: ['*']
                 allow_headers: ['*']
+                allow_methods: ['POST', 'PUT', 'GET', 'DELETE', 'PATCH', 'OPTIONS']
+                max_age: 3600
+
+# Production environment - use environment variable for allowed origins
+when@prod:
+    nelmio_cors:
+        defaults:
+            origin_regex: true
+            # Use CORS_ALLOW_ORIGIN environment variable
+            # Example: CORS_ALLOW_ORIGIN='^https?://(yourdomain\.com)(:[0-9]+)?$'
+            allow_origin: '%env(CORS_ALLOW_ORIGIN)%'
+            allow_methods: ['GET', 'OPTIONS', 'POST', 'PUT', 'PATCH', 'DELETE']
+            allow_headers: ['Content-Type', 'Authorization']
+            expose_headers: ['Link']
+            max_age: 3600
+        paths:
+            '^/api':
+                allow_origin: '%env(CORS_ALLOW_ORIGIN)%'
+                allow_headers: ['Content-Type', 'Authorization', 'X-Requested-With']
+                allow_methods: ['POST', 'PUT', 'GET', 'DELETE', 'PATCH', 'OPTIONS']
+                max_age: 3600

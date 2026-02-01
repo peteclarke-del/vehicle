@@ -24,7 +24,6 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Component\String\Slugger\SluggerInterface;
-use App\Controller\Trait\UserSecurityTrait;
 use App\Controller\Trait\AttachmentFileOrganizerTrait;
 
 #[Route('/api')]
