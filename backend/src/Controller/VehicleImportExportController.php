@@ -67,9 +67,9 @@ class VehicleImportExportController extends AbstractController
 
         $attachmentData = [
             'filename' => $attachment->getFilename(),
-            'filepath' => $attachment->getFilepath(),
-            'mimetype' => $attachment->getMimetype(),
-            'filesize' => $attachment->getFilesize(),
+            'storagePath' => $attachment->getStoragePath(),
+            'mimetype' => $attachment->getMimeType(),
+            'filesize' => $attachment->getFileSize(),
             'uploadedAt' => $attachment->getUploadedAt()?->format('c'),
         ];
 
