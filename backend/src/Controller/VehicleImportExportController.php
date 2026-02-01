@@ -1138,82 +1138,12 @@ class VehicleImportExportController extends AbstractController
                 }
             }
 
-        // import vehicle images
-            foreach ($manifest as $m) {
-                if (($m['type'] ?? null) !== 'vehicle_image') {
-                    continue;
-                }
-                $src = $tmpDir . '/' . ($m['manifestName'] ?? '');
-                if (!$src || !file_exists($src)) {
-                    continue;
-                }
-
-                $reg = $m['vehicleRegistrationNumber'] ?? null;
-                if (!$reg) {
-                    continue;
-                }
-                $vehicle = $vehicleByReg[$reg] ?? null;
-                if (!$vehicle) {
-                    continue;
-                }
-
-                $storagePath = $m['storagePath'] ?? ('vehicles/' . ($m['filename'] ?? basename($m['manifestName'])));
-                $storagePath = ltrim((string) $storagePath, '/');
-                if (str_starts_with($storagePath, 'uploads/')) {
-                    $storagePath = substr($storagePath, strlen('uploads/'));
-                }
-                $subDir = trim(dirname($storagePath), '.');
-                if ($subDir === '') {
-                    $subDir = 'vehicles';
-                }
-                $targetDir = $uploadDir . '/' . $subDir;
-                if (!file_exists($targetDir)) {
-                    try {
-                        mkdir($targetDir, 0755, true);
-                    } catch (\Throwable $e) {
-                        $logger->error('Failed to create vehicle image target directory', ['path' => $targetDir, 'exception' => $e->getMessage()]);
-                        continue; // skip this image but continue with others
-                    }
-                }
-
-                $filename = basename($storagePath);
-                $dest = $targetDir . '/' . $filename;
-                if (file_exists($dest)) {
-                    $filename = uniqid('img_') . '_' . $filename;
-                    $dest = $targetDir . '/' . $filename;
-                }
-
-                rename($src, $dest);
-
-                $image = new VehicleImage();
-                $image->setVehicle($vehicle);
-                $image->setPath('/uploads/' . $subDir . '/' . $filename);
-                if (!empty($m['caption'])) {
-                    $image->setCaption($m['caption']);
-                } elseif (!empty($m['description'])) {
-                    $image->setCaption($m['description']);
-                }
-                if (isset($m['isPrimary'])) {
-                    $image->setIsPrimary((bool) $m['isPrimary']);
-                }
-                if (isset($m['displayOrder'])) {
-                    $image->setDisplayOrder((int) $m['displayOrder']);
-                }
-                if (!empty($m['uploadedAt'])) {
-                    try {
-                        $image->setUploadedAt(new \DateTime($m['uploadedAt']));
-                    } catch (\Exception) {
-                        // ignore invalid date
-                    }
-                }
-
-                $entityManager->persist($image);
-            }
-            $entityManager->flush();
+        // Vehicle images import removed - needs update for Option 3 format
+        // TODO: Implement vehicle image export/import using embedded format (like attachments)
+        // The old manifest-based approach is no longer supported
 
         // cleanup tmp files
             @unlink($zipPath);
-            @unlink($manifestFile);
             @unlink($vehiclesFile);
             @rmdir($tmpDir);
 
