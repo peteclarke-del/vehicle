@@ -137,7 +137,8 @@ class VehicleImportExportController extends AbstractController
 
             $logger->info('[export] JSON started', [
                 'userId' => $user->getId(),
-                'includeAttachmentRefs' => $includeAttachmentRefs
+                'includeAttachmentRefs' => $includeAttachmentRefs,
+                'zipDir' => $zipDir
             ]);
 
             $logger->info('Export JSON started', [
@@ -207,6 +208,11 @@ class VehicleImportExportController extends AbstractController
                             'createdAt' => $fuelRecord->getCreatedAt()?->format('c'),
                         ];
                         if ($includeAttachmentRefs) {
+                            $logger->debug('[export] Checking fuel record for attachment', [
+                                'fuelRecordId' => $fuelRecord->getId(),
+                                'hasAttachment' => $fuelRecord->getReceiptAttachment() !== null,
+                                'zipDir' => $zipDir
+                            ]);
                             $record['receiptAttachment'] = $this->serializeAttachment($fuelRecord->getReceiptAttachment(), $zipDir);
                         }
                         $fuelRecords[] = $record;
@@ -366,6 +372,11 @@ class VehicleImportExportController extends AbstractController
                             'createdAt' => $serviceRecord->getCreatedAt()?->format('c'),
                         ];
                         if ($includeAttachmentRefs) {
+                            $logger->debug('[export] Checking service record for attachment', [
+                                'serviceRecordId' => $serviceRecord->getId(),
+                                'hasAttachment' => $serviceRecord->getReceiptAttachment() !== null,
+                                'zipDir' => $zipDir
+                            ]);
                             $serviceData['receiptAttachment'] = $this->serializeAttachment($serviceRecord->getReceiptAttachment(), $zipDir);
                         }
                         $serviceRecordsData[] = $serviceData;
@@ -677,6 +688,32 @@ class VehicleImportExportController extends AbstractController
                     'specification' => $specData,
                     'insuranceRecords' => $insuranceRecordsData,
                     'roadTaxRecords' => $roadTaxRecordsData,
+                    // Export vehicle-level attachments
+                    'attachments' => (function () use ($entityManager, $vehicle, $includeAttachmentRefs, $zipDir, $logger) {
+                        if (!$includeAttachmentRefs) {
+                            return [];
+                        }
+                        $attachments = $entityManager->getRepository(\App\Entity\Attachment::class)
+                            ->findBy(['vehicle' => $vehicle]);
+                        
+                        $attachmentsData = [];
+                        foreach ($attachments as $att) {
+                            $logger->debug('[export] Processing vehicle attachment', [
+                                'vehicleId' => $vehicle->getId(),
+                                'attachmentId' => $att->getId(),
+                                'zipDir' => $zipDir
+                            ]);
+                            $attData = $this->serializeAttachment($att, $zipDir);
+                            if ($attData) {
+                                $attData['entityType'] = $att->getEntityType();
+                                $attData['entityId'] = $att->getEntityId();
+                                $attData['category'] = $att->getCategory();
+                                $attData['description'] = $att->getDescription();
+                                $attachmentsData[] = $attData;
+                            }
+                        }
+                        return $attachmentsData;
+                    })(),
                     // Export todos for this vehicle
                     'todos' => (function () use ($entityManager, $vehicle) {
                         $todos = $entityManager->getRepository(Todo::class)->findBy(['vehicle' => $vehicle], ['createdAt' => 'ASC']);
