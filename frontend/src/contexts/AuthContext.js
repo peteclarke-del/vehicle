@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
 import i18n from '../i18n';
+import logger from '../utils/logger';
 
 const AuthContext = createContext();
 
@@ -94,7 +95,7 @@ export const AuthProvider = ({ children }) => {
       } catch (err) {
         // ignore i18n errors
         // eslint-disable-next-line no-console
-        console.warn('Failed to apply user language', err);
+        logger.warn('Failed to apply user language', err);
       }
     } catch (error) {
       localStorage.removeItem('token');
@@ -130,7 +131,7 @@ export const AuthProvider = ({ children }) => {
     } catch (e) {
       // non-fatal: continue without refresh token
       // eslint-disable-next-line no-console
-      console.warn('Failed to obtain refresh token', e);
+      logger.warn('Failed to obtain refresh token', e);
     }
 
     return response.data;
@@ -155,7 +156,7 @@ export const AuthProvider = ({ children }) => {
         await i18n.changeLanguage(lang);
       } catch (err) {
         // eslint-disable-next-line no-console
-        console.warn('Failed to change language after profile update', err);
+        logger.warn('Failed to change language after profile update', err);
       }
     }
     await fetchUser();

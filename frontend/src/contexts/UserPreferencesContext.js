@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { useAuth } from './AuthContext';
+import logger from '../utils/logger';
 
 const UserPreferencesContext = createContext(null);
 
@@ -34,22 +35,22 @@ export const UserPreferencesProvider = ({ children }) => {
 
   const persistToServer = useCallback(async (key, value) => {
     if (!api) {
-      console.warn('[UserPreferences] Cannot persist to server: API not available');
+      logger.warn('[UserPreferences] Cannot persist to server: API not available');
       return;
     }
     try {
-      console.log('[UserPreferences] Persisting to server:', { key, value });
+      logger.log('[UserPreferences] Persisting to server:', { key, value });
       await api.post('/user/preferences', { key, value });
-      console.log('[UserPreferences] Successfully persisted to server');
+      logger.log('[UserPreferences] Successfully persisted to server');
     } catch (e) {
-      console.error('[UserPreferences] Failed to persist to server:', e);
+      logger.error('[UserPreferences] Failed to persist to server:', e);
     }
   }, [api]);
 
   // Process pending save when user becomes available
   useEffect(() => {
     if (pendingSave && user && user.id && !authLoading) {
-      console.log('[UserPreferences] Processing pending save:', pendingSave);
+      logger.log('[UserPreferences] Processing pending save:', pendingSave);
       persistToServer(pendingSave.key, pendingSave.value);
       setPendingSave(null);
     }
@@ -62,12 +63,12 @@ export const UserPreferencesProvider = ({ children }) => {
       try {
         userObj = JSON.parse(user);
       } catch (e) {
-        console.error('[UserPreferences] Failed to parse user string:', e);
+        logger.error('[UserPreferences] Failed to parse user string:', e);
         userObj = null;
       }
     }
     
-    console.log('[UserPreferences] Setting default vehicle:', { vehicleId, hasUser: !!userObj, authLoading });
+    logger.log('[UserPreferences] Setting default vehicle:', { vehicleId, hasUser: !!userObj, authLoading });
     
     // Always update local state immediately for responsive UI
     setDefaultVehicleId(vehicleId);
@@ -75,10 +76,10 @@ export const UserPreferencesProvider = ({ children }) => {
     // If user not available yet (still loading), queue the save for later
     if (!userObj || !userObj.id) {
       if (authLoading) {
-        console.log('[UserPreferences] User still loading, queueing save for later');
+        logger.log('[UserPreferences] User still loading, queueing save for later');
         setPendingSave({ key: 'vehicle.default', value: vehicleId });
       } else {
-        console.warn('[UserPreferences] Cannot set default vehicle: User not available', { user: userObj, vehicleId });
+        logger.warn('[UserPreferences] Cannot set default vehicle: User not available', { user: userObj, vehicleId });
       }
       return;
     }
