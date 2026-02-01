@@ -367,10 +367,11 @@ class AttachmentController extends AbstractController
      * function download
      *
      * @param int $id
+     * @param Request $request
      *
      * @return BinaryFileResponse|JsonResponse
      */
-    public function download(int $id): BinaryFileResponse|JsonResponse
+    public function download(int $id, Request $request): BinaryFileResponse|JsonResponse
     {
         $user = $this->getUserEntity();
         if (!$user) {
@@ -380,6 +381,11 @@ class AttachmentController extends AbstractController
         $attachment = $this->entityManager->getRepository(Attachment::class)->find($id);
         if (!$attachment || $attachment->getUser() !== $user) {
             return $this->json(['error' => 'Attachment not found'], 404);
+        }
+
+        // If metadata=true query parameter is present, return JSON metadata instead of file
+        if ($request->query->get('metadata') === 'true') {
+            return $this->json($this->serializeAttachment($attachment));
         }
 
         $filePath = $this->getAttachmentFilePath($attachment);

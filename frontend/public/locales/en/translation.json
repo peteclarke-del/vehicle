@@ -3,6 +3,7 @@
     "loading": "Loading...",
     "name": "Name",
     "description": "Description",
+    "optional": "Optional",
     "previewTitle": "Import Preview",
     "quantity": "Quantity",
     "save": "Save",
@@ -718,8 +719,14 @@
     "uploadError": "Error uploading file",
     "receiptAttached": "Receipt attached",
     "uploadReceipt": "Click or drag to upload receipt (image or PDF)",
+    "uploadDocument": "Click or drag to upload document",
+    "selectDocument": "Click or drag to select document",
     "uploading": "Uploading...",
-    "processing": "Processing OCR..."
+    "processing": "Processing OCR...",
+    "dropHere": "Drop here",
+    "fileSelected": "File selected",
+    "editAttachment": "Edit Attachment",
+    "updateDescription": "Update Description"
   },
   "scraper": {
     "productUrl": "Product URL",

@@ -8,8 +8,9 @@ function prefsStorageKey(userId) {
 }
 
 export const UserPreferencesProvider = ({ children }) => {
-  const { user, api } = useAuth();
+  const { user, api, loading: authLoading } = useAuth();
   const [defaultVehicleId, setDefaultVehicleId] = useState(null);
+  const [pendingSave, setPendingSave] = useState(null);
 
   // load from server when user available
   useEffect(() => {
@@ -32,20 +33,59 @@ export const UserPreferencesProvider = ({ children }) => {
   }, [user, api]);
 
   const persistToServer = useCallback(async (key, value) => {
-    if (!api) return;
+    if (!api) {
+      console.warn('[UserPreferences] Cannot persist to server: API not available');
+      return;
+    }
     try {
+      console.log('[UserPreferences] Persisting to server:', { key, value });
       await api.post('/user/preferences', { key, value });
+      console.log('[UserPreferences] Successfully persisted to server');
     } catch (e) {
-      // ignore failures for now
+      console.error('[UserPreferences] Failed to persist to server:', e);
     }
   }, [api]);
 
+  // Process pending save when user becomes available
+  useEffect(() => {
+    if (pendingSave && user && user.id && !authLoading) {
+      console.log('[UserPreferences] Processing pending save:', pendingSave);
+      persistToServer(pendingSave.key, pendingSave.value);
+      setPendingSave(null);
+    }
+  }, [pendingSave, user, authLoading, persistToServer]);
+
   const setDefaultVehicle = useCallback((vehicleId) => {
-    if (!user || !user.id) return;
+    // Defensive: handle case where user might be stringified
+    let userObj = user;
+    if (typeof user === 'string') {
+      try {
+        userObj = JSON.parse(user);
+      } catch (e) {
+        console.error('[UserPreferences] Failed to parse user string:', e);
+        userObj = null;
+      }
+    }
+    
+    console.log('[UserPreferences] Setting default vehicle:', { vehicleId, hasUser: !!userObj, authLoading });
+    
+    // Always update local state immediately for responsive UI
     setDefaultVehicleId(vehicleId);
-    // sync to server
+    
+    // If user not available yet (still loading), queue the save for later
+    if (!userObj || !userObj.id) {
+      if (authLoading) {
+        console.log('[UserPreferences] User still loading, queueing save for later');
+        setPendingSave({ key: 'vehicle.default', value: vehicleId });
+      } else {
+        console.warn('[UserPreferences] Cannot set default vehicle: User not available', { user: userObj, vehicleId });
+      }
+      return;
+    }
+    
+    // User is available, save immediately
     persistToServer('vehicle.default', vehicleId);
-  }, [user, persistToServer]);
+  }, [user, authLoading, persistToServer]);
 
   const clearDefaultVehicle = useCallback(() => {
     if (!user || !user.id) {
