@@ -829,7 +829,8 @@
     "import": "Import",
     "noPreview": "No preview available.",
     "previewTitle": "Preview Import Data",
-    "showingRows": "Showing {{shown}} of {{total}} rows"
+    "showingRows": "Showing {{shown}} of {{total}} rows",
+    "no_manifest_vehicle_images_skipped": "No manifest.json file found, vehicle images were skipped"
   },
   "todo": {
     "title": "Vehicle TODOs",
