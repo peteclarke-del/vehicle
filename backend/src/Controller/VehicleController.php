@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Controller\Trait\JsonValidationTrait;
 use App\Controller\Trait\UserSecurityTrait;
 use App\Entity\User;
 use App\Entity\Vehicle;
@@ -22,6 +23,7 @@ use Symfony\Contracts\Cache\TagAwareCacheInterface;
 #[Route('/api/vehicles')]
 class VehicleController extends AbstractController
 {
+    use JsonValidationTrait;
     use UserSecurityTrait;
 
     public function __construct(
@@ -396,7 +398,11 @@ class VehicleController extends AbstractController
             return $this->json(['error' => 'Not authenticated'], 401);
         }
 
-        $data = json_decode($request->getContent(), true);
+        $validation = $this->validateJsonRequest($request);
+        if ($validation['error']) {
+            return $validation['error'];
+        }
+        $data = $validation['data'];
 
         // Basic required-field validation for API consumers and tests.
         if (empty($data['make']) || empty($data['model']) || empty($data['year'])) {
@@ -442,7 +448,11 @@ class VehicleController extends AbstractController
             return $this->json(['error' => 'Access denied'], 403);
         }
 
-        $data = json_decode($request->getContent(), true);
+        $validation = $this->validateJsonRequest($request);
+        if ($validation['error']) {
+            return $validation['error'];
+        }
+        $data = $validation['data'];
 
         // Capture previous status to create a history record if it changes
         $previousStatus = $vehicle->getStatus();
