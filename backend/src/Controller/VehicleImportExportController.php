@@ -108,6 +108,60 @@ class VehicleImportExportController extends AbstractController
         return $attachmentData;
     }
 
+    /**
+     * Deserialize attachment data during import and create Attachment entity
+     */
+    private function deserializeAttachment(?array $attachmentData, string $zipDir, $user): ?Attachment
+    {
+        if (!$attachmentData || !isset($attachmentData['importFilename'])) {
+            return null;
+        }
+
+        // Copy file from ZIP to uploads directory
+        $sourcePath = $zipDir . '/attachments/' . $attachmentData['importFilename'];
+        if (!file_exists($sourcePath)) {
+            $this->logger->warning('[import] Attachment file not found in ZIP', [
+                'importFilename' => $attachmentData['importFilename'],
+                'sourcePath' => $sourcePath
+            ]);
+            return null;
+        }
+
+        $uploadDir = $this->getParameter('kernel.project_dir') . '/uploads/attachments';
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0755, true);
+        }
+
+        // Generate unique filename to avoid collisions
+        $newFilename = uniqid('att_') . '_' . basename($attachmentData['filename']);
+        $destPath = $uploadDir . '/' . $newFilename;
+        copy($sourcePath, $destPath);
+
+        // Create Attachment entity
+        $attachment = new Attachment();
+        $attachment->setFilename($newFilename);
+        $attachment->setOriginalFilename($attachmentData['filename'] ?? $newFilename);
+        $attachment->setMimeType($attachmentData['mimetype'] ?? 'application/octet-stream');
+        $attachment->setFileSize($attachmentData['filesize'] ?? filesize($destPath));
+        $attachment->setStoragePath('attachments/' . $newFilename);
+        $attachment->setUploadedAt(new \DateTime());
+        $attachment->setUser($user);
+        
+        if (isset($attachmentData['category'])) {
+            $attachment->setCategory($attachmentData['category']);
+        }
+        if (isset($attachmentData['description'])) {
+            $attachment->setDescription($attachmentData['description']);
+        }
+
+        $this->logger->info('[import] Created attachment from embedded data', [
+            'filename' => $newFilename,
+            'originalFilename' => $attachmentData['filename']
+        ]);
+
+        return $attachment;
+    }
+
     #[Route('/export', name: 'vehicles_export', methods: ['GET'])]
 
     /**
@@ -1180,7 +1234,7 @@ class VehicleImportExportController extends AbstractController
 
         // call existing import logic by creating a synthetic Request
             $importRequest = new Request([], [], [], [], [], [], json_encode($vehicles));
-            $result = $this->import($importRequest, $entityManager, $logger, $cache, $attachmentEntitiesByNewId);
+            $result = $this->import($importRequest, $entityManager, $logger, $cache, $attachmentEntitiesByNewId, $tmpDir);
 
         // build registration -> vehicle map for image import
             $vehiclesList = $vehicles;
@@ -1315,11 +1369,13 @@ class VehicleImportExportController extends AbstractController
      * @param Request $request
      * @param EntityManagerInterface $entityManager
      * @param LoggerInterface $logger
-     * @param array $attachmentMap
+     * @param TagAwareCacheInterface $cache
+     * @param array|null $attachmentMap Legacy attachment map for old import format
+     * @param string|null $zipExtractDir Directory where ZIP was extracted (for embedded attachments)
      *
      * @return JsonResponse
      */
-    public function import(Request $request, EntityManagerInterface $entityManager, LoggerInterface $logger, TagAwareCacheInterface $cache, ?array $attachmentMap = null): JsonResponse
+    public function import(Request $request, EntityManagerInterface $entityManager, LoggerInterface $logger, TagAwareCacheInterface $cache, ?array $attachmentMap = null, ?string $zipExtractDir = null): JsonResponse
     {
         // Start transaction for data consistency
         $entityManager->beginTransaction();
@@ -1327,7 +1383,8 @@ class VehicleImportExportController extends AbstractController
         $logger->info('[import] Function called', [
             'attachmentMapProvided' => $attachmentMap !== null,
             'attachmentMapCount' => $attachmentMap ? count($attachmentMap) : 0,
-            'attachmentMapKeys' => $attachmentMap ? array_slice(array_keys($attachmentMap), 0, 10) : []
+            'attachmentMapKeys' => $attachmentMap ? array_slice(array_keys($attachmentMap), 0, 10) : [],
+            'zipExtractDir' => $zipExtractDir
         ]);
 
         try {
@@ -1877,7 +1934,21 @@ class VehicleImportExportController extends AbstractController
                                 $fuelRecord->setNotes($fuelData['notes']);
                             }
 
-                            if (isset($fuelData['receiptAttachmentId'])) {
+                            // Handle embedded attachment (Option 3: attachment data embedded in entity)
+                            if (isset($fuelData['receiptAttachment']) && is_array($fuelData['receiptAttachment'])) {
+                                $att = $this->deserializeAttachment($fuelData['receiptAttachment'], $zipExtractDir, $user);
+                                if ($att) {
+                                    $att->setEntityType('fuel');
+                                    $att->setVehicle($vehicle);
+                                    $entityManager->persist($att);
+                                    $fuelRecord->setReceiptAttachment($att);
+                                    $logger->debug('[import] Attached receipt to fuel record', [
+                                        'filename' => $att->getFilename()
+                                    ]);
+                                }
+                            }
+                            // Legacy support: receiptAttachmentId from old exports
+                            elseif (isset($fuelData['receiptAttachmentId'])) {
                                 if ($fuelData['receiptAttachmentId'] === null || $fuelData['receiptAttachmentId'] === '') {
                                     $fuelRecord->setReceiptAttachment(null);
                                 } else {
