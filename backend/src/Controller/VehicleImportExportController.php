@@ -1917,6 +1917,10 @@ class VehicleImportExportController extends AbstractController
                                     }
                                     if ($att) {
                                         $fuelRecord->setReceiptAttachment($att);
+                                        // Update attachment entity_type to match its actual usage
+                                        if ($att->getEntityType() !== 'fuel') {
+                                            $att->setEntityType('fuel');
+                                        }
                                     } else {
                                         $fuelRecord->setReceiptAttachment(null);
                                     }
@@ -2040,6 +2044,10 @@ class VehicleImportExportController extends AbstractController
                                     }
                                     if ($att) {
                                         $part->setReceiptAttachment($att);
+                                        // Update attachment entity_type to match its actual usage
+                                        if ($att->getEntityType() !== 'part') {
+                                            $att->setEntityType('part');
+                                        }
                                     } else {
                                         $part->setReceiptAttachment(null);
                                     }
@@ -2160,6 +2168,10 @@ class VehicleImportExportController extends AbstractController
                                     }
                                     if ($att) {
                                         $consumable->setReceiptAttachment($att);
+                                        // Update attachment entity_type to match its actual usage
+                                        if ($att->getEntityType() !== 'consumable') {
+                                            $att->setEntityType('consumable');
+                                        }
                                     } else {
                                         $consumable->setReceiptAttachment(null);
                                     }
@@ -2382,6 +2394,16 @@ class VehicleImportExportController extends AbstractController
                                     }
                                     if ($att) {
                                         $serviceRecord->setReceiptAttachment($att);
+                                        // Update attachment entity_type to match its actual usage
+                                        // The manifest may have old/incorrect entity_type from export
+                                        if ($att->getEntityType() !== 'service') {
+                                            $att->setEntityType('service');
+                                            $logger->debug('[import] Corrected attachment entity_type', [
+                                                'attachmentId' => $att->getId(),
+                                                'oldEntityType' => $att->getEntityType(),
+                                                'newEntityType' => 'service'
+                                            ]);
+                                        }
                                     } else {
                                         $serviceRecord->setReceiptAttachment(null);
                                     }
@@ -2685,6 +2707,10 @@ class VehicleImportExportController extends AbstractController
                                     }
                                     if ($att) {
                                         $motRecord->setReceiptAttachment($att);
+                                        // Update attachment entity_type to match its actual usage
+                                        if ($att->getEntityType() !== 'mot') {
+                                            $att->setEntityType('mot');
+                                        }
                                     } else {
                                         $motRecord->setReceiptAttachment(null);
                                     }
