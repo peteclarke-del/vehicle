@@ -3473,6 +3473,7 @@ class VehicleImportExportController extends AbstractController
                                     foreach ($parts as $part) {
                                         if ($part->getReceiptAttachment()?->getId() === $attachmentId) {
                                             $attachment->setEntityId($part->getId());
+                                            $attachment->setVehicle($newVehicle);
                                             $vehicle = $newVehicle;
                                             $found = true;
                                             break 2;
@@ -3485,6 +3486,7 @@ class VehicleImportExportController extends AbstractController
                                     foreach ($services as $service) {
                                         if ($service->getReceiptAttachment()?->getId() === $attachmentId) {
                                             $attachment->setEntityId($service->getId());
+                                            $attachment->setVehicle($newVehicle);
                                             $vehicle = $newVehicle;
                                             $found = true;
                                             break 2;
@@ -3497,6 +3499,7 @@ class VehicleImportExportController extends AbstractController
                                     foreach ($mots as $mot) {
                                         if ($mot->getReceiptAttachment()?->getId() === $attachmentId) {
                                             $attachment->setEntityId($mot->getId());
+                                            $attachment->setVehicle($newVehicle);
                                             $vehicle = $newVehicle;
                                             $found = true;
                                             break 2;
@@ -3509,6 +3512,7 @@ class VehicleImportExportController extends AbstractController
                                     foreach ($fuelRecords as $fuelRecord) {
                                         if ($fuelRecord->getReceiptAttachment()?->getId() === $attachmentId) {
                                             $attachment->setEntityId($fuelRecord->getId());
+                                            $attachment->setVehicle($newVehicle);
                                             $vehicle = $newVehicle;
                                             $found = true;
                                             break 2;
@@ -3521,6 +3525,7 @@ class VehicleImportExportController extends AbstractController
                                     foreach ($consumables as $consumable) {
                                         if ($consumable->getReceiptAttachment()?->getId() === $attachmentId) {
                                             $attachment->setEntityId($consumable->getId());
+                                            $attachment->setVehicle($newVehicle);
                                             $vehicle = $newVehicle;
                                             $found = true;
                                             break 2;
@@ -3531,6 +3536,10 @@ class VehicleImportExportController extends AbstractController
                         }
                         
                         if ($vehicle) {
+                            // Persist the changes to ensure vehicle_id FK is set
+                            $entityManager->persist($attachment);
+                            
+                            // Force Doctrine UnitOfWork to compute changeset for this entity
                             $entityManager->getUnitOfWork()->recomputeSingleEntityChangeSet(
                                 $entityManager->getClassMetadata(\App\Entity\Attachment::class),
                                 $attachment
