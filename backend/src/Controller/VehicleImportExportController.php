@@ -65,39 +65,54 @@ class VehicleImportExportController extends AbstractController
             return null;
         }
 
+        // Validate essential attachment data
+        if (!$attachment->getFilename()) {
+            $this->logger->warning('[export] Attachment has no filename', ['id' => $attachment->getId()]);
+            return null;
+        }
+
         $attachmentData = [
             'filename' => $attachment->getFilename(),
             'storagePath' => $attachment->getStoragePath(),
             'mimetype' => $attachment->getMimeType(),
             'filesize' => $attachment->getFileSize(),
             'uploadedAt' => $attachment->getUploadedAt()?->format('c'),
+            'category' => $attachment->getCategory(),
+            'description' => $attachment->getDescription(),
         ];
 
         // Copy the physical file to ZIP directory
         $storagePath = $attachment->getStoragePath() ?: ('attachments/' . $attachment->getFilename());
         $sourcePath = $this->getParameter('kernel.project_dir') . '/uploads/' . ltrim($storagePath, '/');
         
-        $this->logger->debug('[export] Attempting to copy attachment', [
-            'attachmentId' => $attachment->getId(),
-            'sourcePath' => $sourcePath,
-            'exists' => file_exists($sourcePath),
-            'zipDir' => $zipDir
-        ]);
-        
         if (file_exists($sourcePath)) {
             $safeName = 'attachment_' . $attachment->getId() . '_' . basename($attachment->getFilename());
             $targetPath = $zipDir . '/attachments/' . $safeName;
             $destDir = dirname($targetPath);
-            if (!is_dir($destDir)) {
-                mkdir($destDir, 0755, true);
+            
+            try {
+                if (!is_dir($destDir)) {
+                    mkdir($destDir, 0755, true);
+                }
+                
+                if (!copy($sourcePath, $targetPath)) {
+                    throw new \RuntimeException('Failed to copy file');
+                }
+                
+                $this->logger->info('[export] Copied attachment to ZIP', [
+                    'attachmentId' => $attachment->getId(),
+                    'targetPath' => $targetPath
+                ]);
+                // Store the safe name in the serialized data so import knows where to find it
+                $attachmentData['importFilename'] = $safeName;
+            } catch (\Throwable $e) {
+                $this->logger->error('[export] Failed to copy attachment', [
+                    'attachmentId' => $attachment->getId(),
+                    'sourcePath' => $sourcePath,
+                    'targetPath' => $targetPath,
+                    'exception' => $e->getMessage()
+                ]);
             }
-            copy($sourcePath, $targetPath);
-            $this->logger->info('[export] Copied attachment to ZIP', [
-                'attachmentId' => $attachment->getId(),
-                'targetPath' => $targetPath
-            ]);
-            // Store the safe name in the serialized data so import knows where to find it
-            $attachmentData['importFilename'] = $safeName;
         } else {
             $this->logger->warning('[export] Attachment file not found', [
                 'attachmentId' => $attachment->getId(),
@@ -111,9 +126,15 @@ class VehicleImportExportController extends AbstractController
     /**
      * Deserialize attachment data during import and create Attachment entity
      */
-    private function deserializeAttachment(?array $attachmentData, string $zipDir, $user): ?Attachment
+    private function deserializeAttachment(?array $attachmentData, string $zipDir, $user, ?string $vehicleRegNo = null): ?Attachment
     {
         if (!$attachmentData || !isset($attachmentData['importFilename'])) {
+            return null;
+        }
+
+        // Validate filename
+        if (empty($attachmentData['filename'])) {
+            $this->logger->warning('[import] Attachment data missing filename');
             return null;
         }
 
@@ -127,23 +148,48 @@ class VehicleImportExportController extends AbstractController
             return null;
         }
 
-        $uploadDir = $this->getParameter('kernel.project_dir') . '/uploads/attachments';
-        if (!is_dir($uploadDir)) {
-            mkdir($uploadDir, 0755, true);
+        // Determine storage path based on vehicle registration and category
+        $category = $attachmentData['category'] ?? 'misc';
+        
+        if ($vehicleRegNo) {
+            // Sanitize registration number for filesystem use
+            $safeRegNo = preg_replace('/[^a-zA-Z0-9-_]/', '_', $vehicleRegNo);
+            $uploadDir = $this->getParameter('kernel.project_dir') . '/uploads/vehicles/' . $safeRegNo . '/' . $category;
+            $storagePath = 'vehicles/' . $safeRegNo . '/' . $category;
+        } else {
+            // Fallback to attachments folder if no vehicle registration
+            $uploadDir = $this->getParameter('kernel.project_dir') . '/uploads/attachments/' . $category;
+            $storagePath = 'attachments/' . $category;
         }
+        
+        try {
+            if (!is_dir($uploadDir)) {
+                mkdir($uploadDir, 0755, true);
+            }
 
-        // Generate unique filename to avoid collisions
-        $newFilename = uniqid('att_') . '_' . basename($attachmentData['filename']);
-        $destPath = $uploadDir . '/' . $newFilename;
-        copy($sourcePath, $destPath);
+            // Generate unique filename to avoid collisions
+            $newFilename = uniqid('att_') . '_' . basename($attachmentData['filename']);
+            $destPath = $uploadDir . '/' . $newFilename;
+            
+            if (!copy($sourcePath, $destPath)) {
+                throw new \RuntimeException('Failed to copy file');
+            }
+        } catch (\Throwable $e) {
+            $this->logger->error('[import] Failed to copy attachment file', [
+                'sourcePath' => $sourcePath,
+                'destPath' => $destPath ?? 'unknown',
+                'exception' => $e->getMessage()
+            ]);
+            return null;
+        }
 
         // Create Attachment entity
         $attachment = new Attachment();
         $attachment->setFilename($newFilename);
-        $attachment->setOriginalFilename($attachmentData['filename'] ?? $newFilename);
+        $attachment->setOriginalFilename($attachmentData['filename']);
         $attachment->setMimeType($attachmentData['mimetype'] ?? 'application/octet-stream');
         $attachment->setFileSize($attachmentData['filesize'] ?? filesize($destPath));
-        $attachment->setStoragePath('attachments/' . $newFilename);
+        $attachment->setStoragePath($storagePath . '/' . $newFilename);
         $attachment->setUploadedAt(new \DateTime());
         $attachment->setUser($user);
         
@@ -156,7 +202,8 @@ class VehicleImportExportController extends AbstractController
 
         $this->logger->info('[import] Created attachment from embedded data', [
             'filename' => $newFilename,
-            'originalFilename' => $attachmentData['filename']
+            'originalFilename' => $attachmentData['filename'],
+            'storagePath' => $storagePath . '/' . $newFilename
         ]);
 
         return $attachment;
@@ -1089,6 +1136,19 @@ class VehicleImportExportController extends AbstractController
                 return new JsonResponse(['error' => 'Invalid vehicles.json'], 400);
             }
 
+            // Check for optional manifest.json (for vehicle images)
+            $manifestFile = $tmpDir . '/manifest.json';
+            $manifest = null;
+            $hasManifest = file_exists($manifestFile);
+            if ($hasManifest) {
+                $manifest = json_decode(file_get_contents($manifestFile), true);
+                if (!is_array($manifest)) {
+                    $logger->warning('[import] Invalid manifest.json, skipping vehicle images');
+                    $manifest = null;
+                    $hasManifest = false;
+                }
+            }
+
             $uploadDir = $this->getParameter('kernel.project_dir') . '/uploads';
             if (!file_exists($uploadDir)) {
                 try {
@@ -1104,7 +1164,10 @@ class VehicleImportExportController extends AbstractController
             }
 
             // Option 3: Attachments are embedded in entity data, no separate manifest needed
-            $logger->info('[import] Using Option 3 format (embedded attachments)');
+            $logger->info('[import] Using Option 3 format (embedded attachments)', [
+                'hasManifest' => $hasManifest,
+                'manifestItems' => $manifest ? count($manifest) : 0
+            ]);
 
         // call existing import logic by creating a synthetic Request
             $importRequest = new Request([], [], [], [], [], [], json_encode($vehicles));
@@ -1138,16 +1201,121 @@ class VehicleImportExportController extends AbstractController
                 }
             }
 
-        // Vehicle images import removed - needs update for Option 3 format
-        // TODO: Implement vehicle image export/import using embedded format (like attachments)
-        // The old manifest-based approach is no longer supported
+        // Import vehicle images if manifest.json is present
+            $vehicleImagesSkipped = false;
+            $vehicleImagesImported = 0;
+            
+            if ($hasManifest && $manifest) {
+                foreach ($manifest as $m) {
+                    if (($m['type'] ?? null) !== 'vehicle_image') {
+                        continue;
+                    }
+                    $src = $tmpDir . '/' . ($m['manifestName'] ?? '');
+                    if (!$src || !file_exists($src)) {
+                        continue;
+                    }
+
+                    $reg = $m['vehicleRegistrationNumber'] ?? null;
+                    if (!$reg) {
+                        continue;
+                    }
+                    $vehicle = $vehicleByReg[$reg] ?? null;
+                    if (!$vehicle) {
+                        continue;
+                    }
+
+                    $storagePath = $m['storagePath'] ?? ('vehicles/' . ($m['filename'] ?? basename($m['manifestName'])));
+                    $storagePath = ltrim((string) $storagePath, '/');
+                    if (str_starts_with($storagePath, 'uploads/')) {
+                        $storagePath = substr($storagePath, strlen('uploads/'));
+                    }
+                    $subDir = trim(dirname($storagePath), '.');
+                    if ($subDir === '') {
+                        $subDir = 'vehicles';
+                    }
+                    $targetDir = $uploadDir . '/' . $subDir;
+                    if (!file_exists($targetDir)) {
+                        try {
+                            mkdir($targetDir, 0755, true);
+                        } catch (\Throwable $e) {
+                            $logger->error('Failed to create vehicle image target directory', ['path' => $targetDir, 'exception' => $e->getMessage()]);
+                            continue;
+                        }
+                    }
+
+                    $filename = basename($storagePath);
+                    $dest = $targetDir . '/' . $filename;
+                    if (file_exists($dest)) {
+                        $filename = uniqid('img_') . '_' . $filename;
+                        $dest = $targetDir . '/' . $filename;
+                    }
+
+                    try {
+                        if (!rename($src, $dest)) {
+                            throw new \RuntimeException('Failed to move file');
+                        }
+                    } catch (\Throwable $e) {
+                        $logger->error('Failed to move vehicle image file', [
+                            'source' => $src,
+                            'dest' => $dest,
+                            'exception' => $e->getMessage()
+                        ]);
+                        continue;
+                    }
+
+                    $image = new VehicleImage();
+                    $image->setVehicle($vehicle);
+                    $image->setPath('/uploads/' . $subDir . '/' . $filename);
+                    if (!empty($m['caption'])) {
+                        $image->setCaption($m['caption']);
+                    } elseif (!empty($m['description'])) {
+                        $image->setCaption($m['description']);
+                    }
+                    if (isset($m['isPrimary'])) {
+                        $image->setIsPrimary((bool) $m['isPrimary']);
+                    }
+                    if (isset($m['displayOrder'])) {
+                        $image->setDisplayOrder((int) $m['displayOrder']);
+                    }
+                    if (!empty($m['uploadedAt'])) {
+                        try {
+                            $image->setUploadedAt(new \DateTime($m['uploadedAt']));
+                        } catch (\Exception) {
+                            // ignore invalid date
+                        }
+                    }
+
+                    $entityManager->persist($image);
+                    $vehicleImagesImported++;
+                }
+                
+                if ($vehicleImagesImported > 0) {
+                    $entityManager->flush();
+                    $logger->info('[import] Imported vehicle images', ['count' => $vehicleImagesImported]);
+                }
+            } else {
+                $vehicleImagesSkipped = true;
+                $logger->info('[import] No manifest.json found, skipping vehicle images');
+            }
 
         // cleanup tmp files
             @unlink($zipPath);
+            if ($hasManifest) {
+                @unlink($manifestFile);
+            }
             @unlink($vehiclesFile);
             @rmdir($tmpDir);
 
-            return $result;
+            // Add vehicle images info to result
+            $resultData = json_decode($result->getContent(), true);
+            if ($vehicleImagesSkipped) {
+                $resultData['vehicleImagesSkipped'] = true;
+                $resultData['vehicleImagesMessage'] = 'import.no_manifest_vehicle_images_skipped';
+            } elseif ($vehicleImagesImported > 0) {
+                $resultData['vehicleImagesImported'] = $vehicleImagesImported;
+            }
+            
+            return new JsonResponse($resultData, $result->getStatusCode());
         } catch (\Exception $e) {
             $logger->error('Zip import failed with exception', [
                 'exception' => $e->getMessage(),
@@ -1736,7 +1904,7 @@ class VehicleImportExportController extends AbstractController
 
                             // Handle embedded attachment (Option 3: attachment data embedded in entity)
                             if (isset($fuelData['receiptAttachment']) && is_array($fuelData['receiptAttachment'])) {
-                                $att = $this->deserializeAttachment($fuelData['receiptAttachment'], $zipExtractDir, $user);
+                                $att = $this->deserializeAttachment($fuelData['receiptAttachment'], $zipExtractDir, $user, $vehicle->getRegistrationNumber());
                                 if ($att) {
                                     $att->setEntityType('fuel');
                                     $att->setVehicle($vehicle);
@@ -1855,7 +2023,7 @@ class VehicleImportExportController extends AbstractController
                             
                             // Handle embedded attachment (Option 3: attachment data embedded in entity)
                             if (isset($partData['receiptAttachment']) && is_array($partData['receiptAttachment'])) {
-                                $att = $this->deserializeAttachment($partData['receiptAttachment'], $zipExtractDir, $user);
+                                $att = $this->deserializeAttachment($partData['receiptAttachment'], $zipExtractDir, $user, $vehicle->getRegistrationNumber());
                                 if ($att) {
                                     $att->setEntityType('part');
                                     $att->setVehicle($vehicle);
@@ -1969,7 +2137,7 @@ class VehicleImportExportController extends AbstractController
                             
                             // Handle embedded attachment (Option 3: attachment data embedded in entity)
                             if (isset($consumableData['receiptAttachment']) && is_array($consumableData['receiptAttachment'])) {
-                                $att = $this->deserializeAttachment($consumableData['receiptAttachment'], $zipExtractDir, $user);
+                                $att = $this->deserializeAttachment($consumableData['receiptAttachment'], $zipExtractDir, $user, $vehicle->getRegistrationNumber());
                                 if ($att) {
                                     $att->setEntityType('consumable');
                                     $att->setVehicle($vehicle);
@@ -2107,17 +2275,6 @@ class VehicleImportExportController extends AbstractController
                     }
                     if (!empty($vehicleData['serviceRecords'])) {
                         foreach ($vehicleData['serviceRecords'] as $serviceData) {
-                            // Log first service record to trace receiptAttachmentId
-                            static $loggedFirstService = false;
-                            if (!$loggedFirstService) {
-                                $logger->info('[IN IMPORT] First service record data', [
-                                    'serviceData' => $serviceData,
-                                    'hasReceiptAttachmentId' => isset($serviceData['receiptAttachmentId']),
-                                    'receiptAttachmentIdValue' => $serviceData['receiptAttachmentId'] ?? 'NOT SET'
-                                ]);
-                                $loggedFirstService = true;
-                            }
-                            
                             $serviceRecord = new ServiceRecord();
                             $serviceRecord->setVehicle($vehicle);
                             // persist the parent ServiceRecord before creating child items (parts/consumables)
@@ -2173,7 +2330,7 @@ class VehicleImportExportController extends AbstractController
 
                             // Handle embedded attachment (Option 3: attachment data embedded in entity)
                             if (isset($serviceData['receiptAttachment']) && is_array($serviceData['receiptAttachment'])) {
-                                $att = $this->deserializeAttachment($serviceData['receiptAttachment'], $zipExtractDir, $user);
+                                $att = $this->deserializeAttachment($serviceData['receiptAttachment'], $zipExtractDir, $user, $vehicle->getRegistrationNumber());
                                 if ($att) {
                                     $att->setEntityType('service');
                                     $att->setVehicle($vehicle);
@@ -2270,7 +2427,7 @@ class VehicleImportExportController extends AbstractController
                                         
                                         // Handle embedded attachment (Option 3: attachment data embedded in entity)
                                         if (isset($cData['receiptAttachment']) && is_array($cData['receiptAttachment'])) {
-                                            $att = $this->deserializeAttachment($cData['receiptAttachment'], $zipExtractDir, $user);
+                                            $att = $this->deserializeAttachment($cData['receiptAttachment'], $zipExtractDir, $user, $vehicle->getRegistrationNumber());
                                             if ($att) {
                                                 $att->setEntityType('consumable');
                                                 $att->setVehicle($vehicle);
@@ -2374,7 +2531,7 @@ class VehicleImportExportController extends AbstractController
                                         
                                         // Handle embedded attachment (Option 3: attachment data embedded in entity)
                                         if (isset($pData['receiptAttachment']) && is_array($pData['receiptAttachment'])) {
-                                            $att = $this->deserializeAttachment($pData['receiptAttachment'], $zipExtractDir, $user);
+                                            $att = $this->deserializeAttachment($pData['receiptAttachment'], $zipExtractDir, $user, $vehicle->getRegistrationNumber());
                                             if ($att) {
                                                 $att->setEntityType('part');
                                                 $att->setVehicle($vehicle);
@@ -2468,7 +2625,7 @@ class VehicleImportExportController extends AbstractController
                             
                             // Handle embedded attachment (Option 3: attachment data embedded in entity)
                             if (isset($motData['receiptAttachment']) && is_array($motData['receiptAttachment'])) {
-                                $att = $this->deserializeAttachment($motData['receiptAttachment'], $zipExtractDir, $user);
+                                $att = $this->deserializeAttachment($motData['receiptAttachment'], $zipExtractDir, $user, $vehicle->getRegistrationNumber());
                                 if ($att) {
                                     $att->setEntityType('mot');
                                     $att->setVehicle($vehicle);
@@ -2560,7 +2717,7 @@ class VehicleImportExportController extends AbstractController
                                         
                                         // Handle embedded attachment (Option 3: attachment data embedded in entity)
                                         if (isset($partData['receiptAttachment']) && is_array($partData['receiptAttachment'])) {
-                                            $att = $this->deserializeAttachment($partData['receiptAttachment'], $zipExtractDir, $user);
+                                            $att = $this->deserializeAttachment($partData['receiptAttachment'], $zipExtractDir, $user, $vehicle->getRegistrationNumber());
                                             if ($att) {
                                                 $att->setEntityType('part');
                                                 $att->setVehicle($vehicle);
@@ -2720,7 +2877,7 @@ class VehicleImportExportController extends AbstractController
                                         
                                         // Handle embedded attachment (Option 3: attachment data embedded in entity)
                                         if (isset($consumableData['receiptAttachment']) && is_array($consumableData['receiptAttachment'])) {
-                                            $att = $this->deserializeAttachment($consumableData['receiptAttachment'], $zipExtractDir, $user);
+                                            $att = $this->deserializeAttachment($consumableData['receiptAttachment'], $zipExtractDir, $user, $vehicle->getRegistrationNumber());
                                             if ($att) {
                                                 $att->setEntityType('consumable');
                                                 $att->setVehicle($vehicle);
@@ -2815,18 +2972,6 @@ class VehicleImportExportController extends AbstractController
 
                                     if ($existingSvc) {
                                         $existingSvc->setMotRecord($motRecord);
-                                        if (isset($svcData['receiptAttachmentId'])) {
-                                            if ($svcData['receiptAttachmentId'] === null || $svcData['receiptAttachmentId'] === '') {
-                                                $existingSvc->setReceiptAttachment(null);
-                                            } else {
-                                                $att = $entityManager->getRepository(\App\Entity\Attachment::class)->find($svcData['receiptAttachmentId']);
-                                                if ($att) {
-                                                    $existingSvc->setReceiptAttachment($att);
-                                                } else {
-                                                    $existingSvc->setReceiptAttachment(null);
-                                                }
-                                            }
-                                        }
                                         if (!empty($svcData['workshop'])) {
                                             if (empty($svcData['serviceProvider'])) {
                                                 $existingSvc->setServiceProvider($svcData['workshop']);
@@ -3075,7 +3220,7 @@ class VehicleImportExportController extends AbstractController
                     // Import vehicle-level attachments
                     if (!empty($vehicleData['attachments']) && is_array($vehicleData['attachments'])) {
                         foreach ($vehicleData['attachments'] as $attData) {
-                            $att = $this->deserializeAttachment($attData, $zipExtractDir, $user);
+                            $att = $this->deserializeAttachment($attData, $zipExtractDir, $user, $vehicle->getRegistrationNumber());
                             if ($att) {
                                 $att->setVehicle($vehicle);
                                 // Set entity type and ID from original data if available
