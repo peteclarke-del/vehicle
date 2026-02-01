@@ -3495,6 +3495,17 @@ class VehicleImportExportController extends AbstractController
                 'vehicleIdMap_count' => is_array($vehicleIdMap) ? count($vehicleIdMap) : 0
             ]);
             
+            // Refresh all vehicles to ensure their collections (service records, parts, etc.) are properly loaded
+            // This is necessary because the flush above persisted new entities, and we need the updated state
+            if (!empty($vehicleIdMap)) {
+                foreach ($vehicleIdMap as $vehicle) {
+                    $entityManager->refresh($vehicle);
+                }
+                $logger->info('[import] Refreshed vehicle entities', [
+                    'vehicleCount' => count($vehicleIdMap)
+                ]);
+            }
+            
             if (!empty($attachmentMap) && !empty($vehicleIdMap)) {
                 $logger->info('[import] Remapping attachment entity IDs', [
                     'attachmentCount' => count($attachmentMap),
