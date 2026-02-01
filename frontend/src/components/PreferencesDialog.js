@@ -17,6 +17,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { getAvailableLanguages } from '../i18n';
+import logger from '../utils/logger';
 
 const PreferencesDialog = ({ open, onClose }) => {
   const { user, api, fetchUser, updateProfile } = useAuth();
@@ -101,7 +102,7 @@ const PreferencesDialog = ({ open, onClose }) => {
           // Persist to preferences
           await api.post('/user/preferences', { key: 'preferredLanguage', value: language });
         } catch (err) {
-          console.warn('Failed to update language', err);
+          logger.warn('Failed to update language', err);
         }
       }
       

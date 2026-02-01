@@ -15,6 +15,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { fetchArrayData } from '../hooks/useApiData';
+import logger from '../utils/logger';
 
 const TodoDialog = ({ open, onClose, vehicleId, todo }) => {
   const { api } = useAuth();
@@ -83,7 +84,7 @@ const TodoDialog = ({ open, onClose, vehicleId, todo }) => {
       }
       onClose(true);
     } catch (err) {
-      console.error('Failed to save todo', err);
+      logger.error('Failed to save todo', err);
       onClose(false);
     } finally {
       setLoading(false);

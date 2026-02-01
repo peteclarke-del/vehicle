@@ -23,6 +23,7 @@ import ReceiptUpload from './ReceiptUpload';
 import PartDialog from './PartDialog';
 import ConsumableDialog from './ConsumableDialog';
 import KnightRiderLoader from './KnightRiderLoader';
+import logger from '../utils/logger';
 
 const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose }) => {
   const [formData, setFormData] = useState({
@@ -94,7 +95,7 @@ const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose }) => {
         const resp = await api.get(`/mot-records?vehicleId=${vehicleId}`);
         setMotRecords(resp.data || []);
       } catch (err) {
-        console.error('Error loading MOT records', err);
+        logger.error('Error loading MOT records', err);
       }
     })();
   }, [open, vehicleId, api]);
@@ -183,7 +184,7 @@ const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose }) => {
           const resp = await api.get(`/parts/${partId}`);
           setSelectedPart(resp.data);
         } catch (err) {
-          console.error('Error loading part', err);
+          logger.error('Error loading part', err);
           setSelectedPart(it);
         }
       } else {
@@ -197,7 +198,7 @@ const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose }) => {
           const resp = await api.get(`/consumables/${consumableId}`);
           setSelectedConsumable(resp.data);
         } catch (err) {
-          console.error('Error loading consumable', err);
+          logger.error('Error loading consumable', err);
           setSelectedConsumable(it);
         }
       } else {
@@ -244,7 +245,7 @@ const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose }) => {
       if (typeof index === 'number') items.splice(index, 1);
       setFormData({ ...formData, items });
     } catch (err) {
-      console.error('Error performing confirm action', err);
+      logger.error('Error performing confirm action', err);
     } finally {
       setConfirmOpen(false);
       setConfirmTarget(null);
@@ -283,11 +284,11 @@ const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose }) => {
             description: fullPartData.description || fullPartData.name
           });
         } catch (err) {
-          console.error('Error updating service item cost', err);
+          logger.error('Error updating service item cost', err);
         }
       }
     } catch (err) {
-      console.error('Error fetching updated part data', err);
+      logger.error('Error fetching updated part data', err);
       const fallbackQuantity = savedPart.quantity ?? currentItem.quantity ?? 1;
       items[editingItemIndex] = { ...currentItem, description: savedPart.description || savedPart.name || currentItem.description, cost: String(savedPart.cost || currentItem.cost), quantity: fallbackQuantity, id: savedPart.id };
     }
@@ -340,11 +341,11 @@ const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose }) => {
             description: fullConsumableData.description
           });
         } catch (err) {
-          console.error('Error updating service item cost', err);
+          logger.error('Error updating service item cost', err);
         }
       }
     } catch (err) {
-      console.error('Error fetching updated consumable data', err);
+      logger.error('Error fetching updated consumable data', err);
       const desc = savedConsumable.description || currentItem.description || '';
       const fallbackQuantity = savedConsumable.quantity ?? currentItem.quantity ?? 1;
       items[editingItemIndex] = { ...currentItem, description: desc, cost: String(savedConsumable.cost || currentItem.cost), quantity: fallbackQuantity, consumableId: savedConsumable.id };
@@ -451,7 +452,7 @@ const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose }) => {
       }
       onClose(true);
     } catch (error) {
-      console.error('Error saving service record:', error);
+      logger.error('Error saving service record:', error);
       alert(t('common.saveError', { type: 'service record' }));
     } finally {
       setLoading(false);
@@ -578,7 +579,7 @@ const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose }) => {
                               const resp = await api.get(`/parts/${partId}`);
                               setSelectedPart(resp.data);
                             } catch (err) {
-                              console.error('Error loading part', err);
+                              logger.error('Error loading part', err);
                               setSelectedPart(it);
                             }
                           } else {
@@ -594,7 +595,7 @@ const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose }) => {
                               const resp = await api.get(`/consumables/${consumableId}`);
                               setSelectedConsumable(resp.data);
                             } catch (err) {
-                              console.error('Error loading consumable', err);
+                              logger.error('Error loading consumable', err);
                               setSelectedConsumable(it);
                             }
                           } else {
@@ -609,7 +610,7 @@ const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose }) => {
                             setNestedServiceRecord(resp.data);
                             setOpenNestedServiceDialog(true);
                           } catch (err) {
-                            console.error('Error loading service record', err);
+                            logger.error('Error loading service record', err);
                           }
                         }
                       }} sx={{ background: 'none', border: 'none', padding: 0, textDecoration: 'underline', cursor: 'pointer', color: 'primary.main' }}>
