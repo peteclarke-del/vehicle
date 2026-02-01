@@ -51,15 +51,10 @@ import { useTranslation } from 'react-i18next';
 import { fetchArrayData } from '../hooks/useApiData';
 import { useDistance } from '../hooks/useDistance';
 import useTablePagination from '../hooks/useTablePagination';
-import logger from '../utils/logger';
 import VehicleDialog from '../components/VehicleDialog';
-import logger from '../utils/logger';
 import VehicleSpecifications from '../components/VehicleSpecifications';
-import logger from '../utils/logger';
 import KnightRiderLoader from '../components/KnightRiderLoader';
-import logger from '../utils/logger';
 import TablePaginationBar from '../components/TablePaginationBar';
-import logger from '../utils/logger';
 
 const Vehicles = () => {
   const [vehicles, setVehicles] = useState([]);

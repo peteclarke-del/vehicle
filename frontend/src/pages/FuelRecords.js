@@ -9,19 +9,12 @@ import { useTranslation } from 'react-i18next';
 import formatCurrency from '../utils/formatCurrency';
 import { fetchArrayData } from '../hooks/useApiData';
 import { useDistance } from '../hooks/useDistance';
-import logger from '../utils/logger';
 import useTablePagination from '../hooks/useTablePagination';
-import logger from '../utils/logger';
 import FuelRecordDialog from '../components/FuelRecordDialog';
-import logger from '../utils/logger';
 import TablePaginationBar from '../components/TablePaginationBar';
-import logger from '../utils/logger';
 import VehicleSelector from '../components/VehicleSelector';
-import logger from '../utils/logger';
 import ViewAttachmentIconButton from '../components/ViewAttachmentIconButton';
-import logger from '../utils/logger';
 import KnightRiderLoader from '../components/KnightRiderLoader';
-import logger from '../utils/logger';
 
 const FuelRecords = () => {
   const [records, setRecords] = useState([]);
