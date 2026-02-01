@@ -55,6 +55,41 @@ class VehicleImportExportController extends AbstractController
         $this->slugger = $slugger;
     }
 
+    /**
+     * Serialize attachment data for export
+     */
+    private function serializeAttachment(?Attachment $attachment, string $zipDir): ?array
+    {
+        if (!$attachment || !$zipDir) {
+            return null;
+        }
+
+        $attachmentData = [
+            'filename' => $attachment->getFilename(),
+            'filepath' => $attachment->getFilepath(),
+            'mimetype' => $attachment->getMimetype(),
+            'filesize' => $attachment->getFilesize(),
+            'uploadedAt' => $attachment->getUploadedAt()?->format('c'),
+        ];
+
+        // Copy the physical file to ZIP directory
+        $storagePath = $attachment->getStoragePath() ?: ('attachments/' . $attachment->getFilename());
+        $sourcePath = $this->getParameter('kernel.project_dir') . '/uploads/' . ltrim($storagePath, '/');
+        if (file_exists($sourcePath)) {
+            $safeName = 'attachment_' . $attachment->getId() . '_' . basename($attachment->getFilename());
+            $targetPath = $zipDir . '/attachments/' . $safeName;
+            $destDir = dirname($targetPath);
+            if (!is_dir($destDir)) {
+                mkdir($destDir, 0755, true);
+            }
+            copy($sourcePath, $targetPath);
+            // Store the safe name in the serialized data so import knows where to find it
+            $attachmentData['importFilename'] = $safeName;
+        }
+
+        return $attachmentData;
+    }
+
     #[Route('/export', name: 'vehicles_export', methods: ['GET'])]
 
     /**
@@ -63,10 +98,11 @@ class VehicleImportExportController extends AbstractController
      * @param Request $request
      * @param EntityManagerInterface $entityManager
      * @param LoggerInterface $logger
+     * @param string|null $zipDir Optional directory path for ZIP export (to copy attachment files)
      *
      * @return Response
      */
-    public function export(Request $request, EntityManagerInterface $entityManager, LoggerInterface $logger): Response
+    public function export(Request $request, EntityManagerInterface $entityManager, LoggerInterface $logger, ?string $zipDir = null): Response
     {
         try {
             @ini_set('max_execution_time', '0');
@@ -154,7 +190,7 @@ class VehicleImportExportController extends AbstractController
                             'createdAt' => $fuelRecord->getCreatedAt()?->format('c'),
                         ];
                         if ($includeAttachmentRefs) {
-                            $record['receiptAttachmentOriginalId'] = $fuelRecord->getReceiptAttachment()?->getId();
+                            $record['receiptAttachment'] = $this->serializeAttachment($fuelRecord->getReceiptAttachment(), $zipDir);
                         }
                         $fuelRecords[] = $record;
                     }
@@ -189,7 +225,7 @@ class VehicleImportExportController extends AbstractController
                             'createdAt' => $part->getCreatedAt()?->format('c'),
                         ];
                         if ($includeAttachmentRefs) {
-                            $partData['receiptAttachmentOriginalId'] = $part->getReceiptAttachment()?->getId();
+                            $partData['receiptAttachment'] = $this->serializeAttachment($part->getReceiptAttachment(), $zipDir);
                         }
                         $parts[] = $partData;
                     }
@@ -220,7 +256,7 @@ class VehicleImportExportController extends AbstractController
                         'updatedAt' => $consumable->getUpdatedAt()?->format('c'),
                         ];
                         if ($includeAttachmentRefs) {
-                            $consumableData['receiptAttachmentOriginalId'] = $consumable->getReceiptAttachment()?->getId();
+                            $consumableData['receiptAttachment'] = $this->serializeAttachment($consumable->getReceiptAttachment(), $zipDir);
                         }
                         $consumables[] = $consumableData;
                     }
@@ -270,7 +306,7 @@ class VehicleImportExportController extends AbstractController
                                     'createdAt' => $part->getCreatedAt()?->format('c'),
                                 ];
                                 if ($includeAttachmentRefs) {
-                                    $partData['receiptAttachmentOriginalId'] = $part->getReceiptAttachment()?->getId();
+                                    $partData['receiptAttachment'] = $this->serializeAttachment($part->getReceiptAttachment(), $zipDir);
                                 }
                             }
 
@@ -295,7 +331,7 @@ class VehicleImportExportController extends AbstractController
                                     'updatedAt' => $consumable->getUpdatedAt()?->format('c'),
                                 ];
                                 if ($includeAttachmentRefs) {
-                                    $consumableData['receiptAttachmentOriginalId'] = $consumable->getReceiptAttachment()?->getId();
+                                    $consumableData['receiptAttachment'] = $this->serializeAttachment($consumable->getReceiptAttachment(), $zipDir);
                                 }
                             }
 
@@ -313,7 +349,7 @@ class VehicleImportExportController extends AbstractController
                             'createdAt' => $serviceRecord->getCreatedAt()?->format('c'),
                         ];
                         if ($includeAttachmentRefs) {
-                            $serviceData['receiptAttachmentOriginalId'] = $serviceRecord->getReceiptAttachment()?->getId();
+                            $serviceData['receiptAttachment'] = $this->serializeAttachment($serviceRecord->getReceiptAttachment(), $zipDir);
                         }
                         $serviceRecordsData[] = $serviceData;
                     }
@@ -341,7 +377,7 @@ class VehicleImportExportController extends AbstractController
                                     'createdAt' => $part->getCreatedAt()?->format('c'),
                                 ];
                                 if ($includeAttachmentRefs) {
-                                    $motPartData['receiptAttachmentOriginalId'] = $part->getReceiptAttachment()?->getId();
+                                    $motPartData['receiptAttachment'] = $this->serializeAttachment($part->getReceiptAttachment(), $zipDir);
                                 }
                                 $motParts[] = $motPartData;
                             }
@@ -365,7 +401,7 @@ class VehicleImportExportController extends AbstractController
                                     'createdAt' => $consumable->getCreatedAt()?->format('c'),
                                 ];
                                 if ($includeAttachmentRefs) {
-                                    $motConsumableData['receiptAttachmentOriginalId'] = $consumable->getReceiptAttachment()?->getId();
+                                    $motConsumableData['receiptAttachment'] = $this->serializeAttachment($consumable->getReceiptAttachment(), $zipDir);
                                 }
                                 $motConsumables[] = $motConsumableData;
                             }
@@ -410,7 +446,7 @@ class VehicleImportExportController extends AbstractController
                                                 'createdAt' => $part->getCreatedAt()?->format('c'),
                                             ];
                                             if ($includeAttachmentRefs) {
-                                                $partData['receiptAttachmentOriginalId'] = $part->getReceiptAttachment()?->getId();
+                                                $partData['receiptAttachment'] = $this->serializeAttachment($part->getReceiptAttachment(), $zipDir);
                                             }
                                         }
 
@@ -435,7 +471,7 @@ class VehicleImportExportController extends AbstractController
                                                 'updatedAt' => $consumable->getUpdatedAt()?->format('c'),
                                             ];
                                             if ($includeAttachmentRefs) {
-                                                $consumableData['receiptAttachmentOriginalId'] = $consumable->getReceiptAttachment()?->getId();
+                                                $consumableData['receiptAttachment'] = $this->serializeAttachment($consumable->getReceiptAttachment(), $zipDir);
                                             }
                                         }
 
@@ -454,7 +490,7 @@ class VehicleImportExportController extends AbstractController
                                     'createdAt' => $svc->getCreatedAt()?->format('c'),
                                 ];
                                 if ($includeAttachmentRefs) {
-                                    $motSvcData['receiptAttachmentOriginalId'] = $svc->getReceiptAttachment()?->getId();
+                                    $motSvcData['receiptAttachment'] = $this->serializeAttachment($svc->getReceiptAttachment(), $zipDir);
                                 }
                                 $motServiceRecords[] = $motSvcData;
                             }
@@ -481,7 +517,7 @@ class VehicleImportExportController extends AbstractController
                             'createdAt' => $motRecord->getCreatedAt()?->format('c'),
                         ];
                         if ($includeAttachmentRefs) {
-                            $motRecordData['receiptAttachmentOriginalId'] = $motRecord->getReceiptAttachment()?->getId();
+                            $motRecordData['receiptAttachment'] = $this->serializeAttachment($motRecord->getReceiptAttachment(), $zipDir);
                         }
                         $motRecordsData[] = $motRecordData;
                     }
@@ -740,65 +776,7 @@ class VehicleImportExportController extends AbstractController
                 'query' => $request->query->all()
             ]);
 
-            // Add flag to include attachment references for ZIP export
-            $modifiedRequest = $request->duplicate();
-            $modifiedRequest->query->set('includeAttachmentRefs', '1');
-
-            // reuse export() to get vehicles JSON
-            $exportResponse = $this->export($modifiedRequest, $entityManager, $logger);
-            if ($exportResponse->getStatusCode() >= 400) {
-                $logger->error('Export ZIP failed: export() returned error', [
-                    'status' => $exportResponse->getStatusCode(),
-                    'body' => $exportResponse->getContent()
-                ]);
-                return new JsonResponse([
-                    'error' => 'Export failed: ' . ($exportResponse->getContent() ?: 'unknown error')
-                ], $exportResponse->getStatusCode());
-            }
-
-            $vehiclesJson = $exportResponse->getContent();
-            if (!is_string($vehiclesJson) || trim($vehiclesJson) === '') {
-                $logger->error('Export returned empty payload for ZIP');
-                return new JsonResponse(['error' => 'Export failed: empty payload'], 500);
-            }
-
-            $logger->info('[export] ZIP got vehicles JSON', ['bytes' => strlen($vehiclesJson)]);
-
-            $logger->info('Export ZIP got vehicles JSON', [
-                'bytes' => strlen($vehiclesJson),
-                'elapsedMs' => (int) ((microtime(true) - $t0) * 1000)
-            ]);
-
-            // gather attachments belonging to user
-            $attRepo = $entityManager->getRepository(\App\Entity\Attachment::class);
-            if ($this->isAdminForUser($user)) {
-                $attachments = $attRepo->findAll();
-            } else {
-                $attachments = $attRepo->createQueryBuilder('a')
-                ->where('a.user = :user')
-                ->setParameter('user', $user)
-                ->getQuery()
-                ->getResult();
-            }
-
-            $logger->info('[export] ZIP attachments loaded', ['count' => is_countable($attachments) ? count($attachments) : 0]);
-
-        // gather vehicle images belonging to user
-            if ($this->isAdminForUser($user)) {
-                $vehicles = $entityManager->getRepository(Vehicle::class)->findAll();
-            } else {
-                $vehicles = $entityManager->getRepository(Vehicle::class)->findBy(['owner' => $user]);
-            }
-            $logger->info('[export] ZIP vehicles loaded', ['count' => is_countable($vehicles) ? count($vehicles) : 0]);
-            $vehicleImages = [];
-            foreach ($vehicles as $vehicle) {
-                foreach ($vehicle->getImages() as $image) {
-                    $vehicleImages[] = $image;
-                }
-            }
-
-            $logger->info('[export] ZIP vehicle images collected', ['count' => count($vehicleImages)]);
-
+            // Create temp directory first so we can pass it to export() for embedding attachments
             $projectTmpRoot = $this->getParameter('kernel.project_dir') . '/var/tmp';
             if (!file_exists($projectTmpRoot)) {
                 try {
@@ -817,62 +795,56 @@ class VehicleImportExportController extends AbstractController
                 return new JsonResponse(['error' => 'Unable to prepare temporary directory for export'], 500);
             }
 
-            $logger->info('Export ZIP temp dir ready', [
-                'tempDir' => $tempDir,
+            $logger->info('[export] ZIP temp dir ready', ['tempDir' => $tempDir]);
+
+            // Add flag to include attachment references for ZIP export
+            $modifiedRequest = $request->duplicate();
+            $modifiedRequest->query->set('includeAttachmentRefs', '1');
+
+            // reuse export() to get vehicles JSON, passing $tempDir for embedding attachments
+            $exportResponse = $this->export($modifiedRequest, $entityManager, $logger, $tempDir);
+            if ($exportResponse->getStatusCode() >= 400) {
+                $logger->error('Export ZIP failed: export() returned error', [
+                    'status' => $exportResponse->getStatusCode(),
+                    'body' => $exportResponse->getContent()
+                ]);
+                return new JsonResponse([
+                    'error' => 'Export failed: ' . ($exportResponse->getContent() ?: 'unknown error')
+                ], $exportResponse->getStatusCode());
+            }
+
+            $vehiclesJson = $exportResponse->getContent();
+            if (!is_string($vehiclesJson) || trim($vehiclesJson) === '') {
+                $logger->error('Export returned empty payload for ZIP');
+                return new JsonResponse(['error' => 'Export failed: empty payload'], 500);
+            }
+
+            $logger->info('[export] ZIP got vehicles JSON', [
+                'bytes' => strlen($vehiclesJson),
                 'elapsedMs' => (int) ((microtime(true) - $t0) * 1000)
             ]);
-            $logger->info('[export] ZIP temp dir ready', ['tempDir' => $tempDir]);
+
+        // gather vehicle images belonging to user
+            if ($this->isAdminForUser($user)) {
+                $vehicles = $entityManager->getRepository(Vehicle::class)->findAll();
+            } else {
+                $vehicles = $entityManager->getRepository(Vehicle::class)->findBy(['owner' => $user]);
+            }
+            $logger->info('[export] ZIP vehicles loaded', ['count' => is_countable($vehicles) ? count($vehicles) : 0]);
+            $vehicleImages = [];
+            foreach ($vehicles as $vehicle) {
+                foreach ($vehicle->getImages() as $image) {
+                    $vehicleImages[] = $image;
+                }
+            }
+
+            $logger->info('[export] ZIP vehicle images collected', ['count' => count($vehicleImages)]);
 
             $manifest = [];
             $uploadDir = $this->getParameter('kernel.project_dir') . '/uploads';
 
-            $attachmentCopied = 0;
-            foreach ($attachments as $att) {
-                $storagePath = $att->getStoragePath() ?: ('attachments/' . $att->getFilename());
-                $filePath = $uploadDir . '/' . ltrim($storagePath, '/');
-                if (!file_exists($filePath)) {
-                    continue;
-                }
-                $safeName = 'attachment_' . $att->getId() . '_' . basename($att->getFilename());
-                $targetPath = $tempDir . '/' . $safeName;
-                copy($filePath, $targetPath);
-                $attachmentCopied++;
-                if (($attachmentCopied % 200) === 0) {
-                    $logger->info('[export] ZIP attachments copied', ['count' => $attachmentCopied]);
-                }
-
-                // Determine entity type and ID from either explicit fields or vehicle relationship
-                $entityType = $att->getEntityType();
-                $entityId = $att->getEntityId();
-
-                // If no explicit entityType but vehicle relationship exists, use that
-                if (!$entityType && $att->getVehicle()) {
-                    $entityType = 'vehicle';
-                    $entityId = $att->getVehicle()->getId();
-                }
-
-                $manifest[] = [
-                'type' => 'attachment',
-                'originalId' => $att->getId(),
-                'filename' => $att->getFilename(),
-                'manifestName' => $safeName,
-                'originalName' => $att->getOriginalName(),
-                'mimeType' => $att->getMimeType(),
-                'fileSize' => $att->getFileSize(),
-                'uploadedAt' => $att->getUploadedAt()->format('c'),
-                'entityType' => $entityType,
-                'entityId' => $entityId,
-                'description' => $att->getDescription(),
-                'storagePath' => $storagePath,
-                'category' => $att->getCategory(),
-                'downloadUrl' => '/api/attachments/' . $att->getId(),
-                ];
-            }
-
-            $logger->info('Export ZIP attachments collected', [
-                'count' => count($manifest),
-                'elapsedMs' => (int) ((microtime(true) - $t0) * 1000)
-            ]);
+            // No longer copying attachments separately - they're embedded in entity data and copied during export()
+            // Just handle vehicle images in the manifest
 
             $imageCopied = 0;
             foreach ($vehicleImages as $image) {
