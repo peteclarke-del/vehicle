@@ -14,6 +14,8 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 use App\Controller\Trait\JsonValidationTrait;
+use Symfony\Contracts\Cache\CacheInterface;
+use Symfony\Contracts\Cache\ItemInterface;
 
 #[Route('/api/part-categories')]
 class PartCategoryController extends AbstractController
@@ -22,7 +24,8 @@ class PartCategoryController extends AbstractController
 
     public function __construct(
         private EntityManagerInterface $entityManager,
-        private LoggerInterface $logger
+        private LoggerInterface $logger,
+        private CacheInterface $lookupsCache
     ) {
     }
 
@@ -35,37 +38,53 @@ class PartCategoryController extends AbstractController
         }
 
         $vehicleTypeId = $request->query->get('vehicleTypeId');
-        $repo = $this->entityManager->getRepository(PartCategory::class);
-
-        if ($vehicleTypeId) {
-            $vt = $this->entityManager->getRepository(VehicleType::class)->find((int)$vehicleTypeId);
-            if (!$vt) {
-                return $this->json([], 200);
+        $cacheKey = $vehicleTypeId ? "part_categories_type_{$vehicleTypeId}" : 'part_categories_all';
+        
+        $data = $this->lookupsCache->get($cacheKey, function (ItemInterface $item) use ($vehicleTypeId) {
+            $item->expiresAfter(3600); // 1 hour cache
+            $tags = ['part_categories'];
+            if ($vehicleTypeId) {
+                $tags[] = "vehicle_type_{$vehicleTypeId}";
             }
-            // Find categories for this vehicle type OR categories with no specific type (generic)
-            $qb = $repo->createQueryBuilder('pc')
-                ->where('pc.vehicleType = :vt')
-                ->orWhere('pc.vehicleType IS NULL')
-                ->setParameter('vt', $vt)
-                ->orderBy('pc.name', 'ASC')
-                ->getQuery();
-            $items = $qb->getResult();
-        } else {
-            $items = $repo->findBy([], ['name' => 'ASC']);
-        }
+            $item->tag($tags);
+            
+            $repo = $this->entityManager->getRepository(PartCategory::class);
 
-        // Remove duplicates by name (keep first occurrence)
-        $seen = [];
-        $unique = [];
-        foreach ($items as $item) {
-            $name = $item->getName();
-            if (!isset($seen[$name])) {
-                $seen[$name] = true;
-                $unique[] = $item;
+            if ($vehicleTypeId) {
+                $vt = $this->entityManager->getRepository(VehicleType::class)->find((int)$vehicleTypeId);
+                if (!$vt) {
+                    return [];
+                }
+                // Find categories for this vehicle type OR categories with no specific type (generic)
+                $qb = $repo->createQueryBuilder('pc')
+                    ->where('pc.vehicleType = :vt')
+                    ->orWhere('pc.vehicleType IS NULL')
+                    ->setParameter('vt', $vt)
+                    ->orderBy('pc.name', 'ASC')
+                    ->getQuery();
+                $items = $qb->getResult();
+            } else {
+                $items = $repo->findBy([], ['name' => 'ASC']);
             }
-        }
 
-        $data = array_map(fn(PartCategory $c) => ['id' => $c->getId(), 'name' => $c->getName(), 'vehicleType' => $c->getVehicleType()?->getId(), 'description' => $c->getDescription()], $unique);
+            // Remove duplicates by name (keep first occurrence)
+            $seen = [];
+            $unique = [];
+            foreach ($items as $item) {
+                $name = $item->getName();
+                if (!isset($seen[$name])) {
+                    $seen[$name] = true;
+                    $unique[] = $item;
+                }
+            }
+
+            return array_map(fn(PartCategory $c) => [
+                'id' => $c->getId(), 
+                'name' => $c->getName(), 
+                'vehicleType' => $c->getVehicleType()?->getId(), 
+                'description' => $c->getDescription()
+            ], $unique);
+        });
 
         return $this->json($data);
     }
@@ -95,7 +114,14 @@ class PartCategoryController extends AbstractController
                 return $this->json(['error' => 'Vehicle type not found'], 404);
             }
         }
+// Invalidate caches
+        $tags = ['part_categories'];
+        if ($vehicleType) {
+            $tags[] = "vehicle_type_{$vehicleType->getId()}";
+        }
+        $this->lookupsCache->invalidateTags($tags);
 
+        
         // Avoid duplicates (simple exact-name check for now)
         $repo = $this->entityManager->getRepository(PartCategory::class);
         $existing = $repo->findOneBy(['name' => $name, 'vehicleType' => $vehicleType]);
