@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import logger from '../utils/logger';
 import {
   Box,
   Button,
@@ -9,8 +10,11 @@ import {
   Alert,
 } from '@mui/material';
 import { useNavigate, Link } from 'react-router-dom';
+import logger from '../utils/logger';
 import { useAuth } from '../contexts/AuthContext';
+import logger from '../utils/logger';
 import { useTranslation } from 'react-i18next';
+import logger from '../utils/logger';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -31,7 +35,7 @@ const Login = () => {
     } catch (err) {
       // Log full error for debugging (server response may contain details)
       // eslint-disable-next-line no-console
-      console.error('Login error:', err?.response?.data ?? err.message ?? err);
+      logger.error('Login error:', err?.response?.data ?? err.message ?? err);
       setError(t('common.invalidCredentials'));
     } finally {
       setLoading(false);

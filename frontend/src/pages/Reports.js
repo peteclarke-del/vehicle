@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import logger from '../utils/logger';
 import {
   Box,
   Typography,
@@ -23,13 +24,21 @@ import {
   DialogActions,
 } from '@mui/material';
 import { Download as DownloadIcon, Delete as DeleteIcon } from '@mui/icons-material';
+import logger from '../utils/logger';
 import { useAuth } from '../contexts/AuthContext';
+import logger from '../utils/logger';
 import { useTranslation } from 'react-i18next';
+import logger from '../utils/logger';
 import VehicleSelector from '../components/VehicleSelector';
+import logger from '../utils/logger';
 import { saveBlob } from '../components/DownloadHelpers';
+import logger from '../utils/logger';
 import KnightRiderLoader from '../components/KnightRiderLoader';
+import logger from '../utils/logger';
 import useTablePagination from '../hooks/useTablePagination';
+import logger from '../utils/logger';
 import TablePaginationBar from '../components/TablePaginationBar';
+import logger from '../utils/logger';
 
 const Reports = () => {
   const { api } = useAuth();
@@ -59,7 +68,7 @@ const Reports = () => {
       setVehicles(resp.data || []);
       if ((resp.data || []).length > 0) setSelectedVehicle('__all__');
     } catch (err) {
-      console.error('Failed to load vehicles', err);
+      logger.error('Failed to load vehicles', err);
     }
   }, [api]);
 
@@ -70,7 +79,7 @@ const Reports = () => {
       const resp = await api.get(url);
       setReports(resp.data || []);
     } catch (err) {
-      console.error('Failed to load reports', err);
+      logger.error('Failed to load reports', err);
       setReports([]);
     } finally {
       setLoading(false);
@@ -96,13 +105,13 @@ const Reports = () => {
               const obj = req(k);
               return { ...(obj || {}), filename: k.replace('./', '') };
             } catch (e) {
-              console.warn('Failed to require template', k, e);
+              logger.warn('Failed to require template', k, e);
               return null;
             }
           }).filter(Boolean);
         } catch (e) {
           // require.context not available (not built with webpack), fall back to backend API
-          console.debug('require.context not available; falling back to backend', e);
+          logger.debug('require.context not available; falling back to backend', e);
         }
 
         if (tpls.length === 0) {
@@ -122,7 +131,7 @@ const Reports = () => {
           setSelectedPeriodIndex(first.defaultPeriodIndex ?? 0);
         }
       } catch (e) {
-        console.warn('Report template discovery failed', e);
+        logger.warn('Report template discovery failed', e);
         setTemplates([]);
       }
     };
@@ -207,16 +216,16 @@ const Reports = () => {
               setViewerPreview({ type: 'xlsx', columns, rows });
             }
           } catch (e) {
-            console.warn('XLSX preview not available (xlsx lib missing)', e);
+            logger.warn('XLSX preview not available (xlsx lib missing)', e);
           }
         }
       } catch (e) {
-        console.warn('Preview parse failed', e);
+        logger.warn('Preview parse failed', e);
       }
 
       setViewerOpen(true);
     } catch (err) {
-      console.error('Failed to fetch report for viewing', err);
+      logger.error('Failed to fetch report for viewing', err);
       alert(t('common.downloadFailed') || 'Failed to fetch report');
     }
   };
@@ -247,7 +256,7 @@ const Reports = () => {
       await api.post('/reports', payload);
       loadReports();
     } catch (err) {
-      console.error('Failed to generate report', err);
+      logger.error('Failed to generate report', err);
     } finally {
       setGenerating(false);
     }
@@ -258,7 +267,7 @@ const Reports = () => {
       const resp = await api.get(`/reports/${report.id}/download`, { responseType: 'blob' });
       saveBlob(resp.data, `${report.name || 'report'}_${new Date(report.generatedAt || Date.now()).toISOString().split('T')[0]}.pdf`);
     } catch (err) {
-      console.error('Failed to download report', err);
+      logger.error('Failed to download report', err);
       alert(t('common.downloadFailed') || 'Failed to download file');
     }
   };
@@ -269,7 +278,7 @@ const Reports = () => {
       await api.delete(`/reports/${report.id}`);
       loadReports();
     } catch (err) {
-      console.error('Failed to delete report', err);
+      logger.error('Failed to delete report', err);
     }
   };
 

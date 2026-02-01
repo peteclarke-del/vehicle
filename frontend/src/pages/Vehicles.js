@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import logger from '../utils/logger';
 import {
   Box,
   Button,
@@ -43,16 +44,27 @@ import {
   DeleteSweep as PurgeIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
+import logger from '../utils/logger';
 import { useUserPreferences } from '../contexts/UserPreferencesContext';
+import logger from '../utils/logger';
 import { useAuth } from '../contexts/AuthContext';
+import logger from '../utils/logger';
 import { useTranslation } from 'react-i18next';
+import logger from '../utils/logger';
 import { fetchArrayData } from '../hooks/useApiData';
+import logger from '../utils/logger';
 import { useDistance } from '../hooks/useDistance';
+import logger from '../utils/logger';
 import useTablePagination from '../hooks/useTablePagination';
+import logger from '../utils/logger';
 import VehicleDialog from '../components/VehicleDialog';
+import logger from '../utils/logger';
 import VehicleSpecifications from '../components/VehicleSpecifications';
+import logger from '../utils/logger';
 import KnightRiderLoader from '../components/KnightRiderLoader';
+import logger from '../utils/logger';
 import TablePaginationBar from '../components/TablePaginationBar';
+import logger from '../utils/logger';
 
 const Vehicles = () => {
   const [vehicles, setVehicles] = useState([]);
@@ -111,7 +123,7 @@ const Vehicles = () => {
       // Reload vehicles
       loadVehicles();
     } catch (error) {
-      console.error('Purge failed:', error);
+      logger.error('Purge failed:', error);
       alert(t('common.deleteFailed'));
     }
   };
@@ -200,7 +212,7 @@ const Vehicles = () => {
         await api.delete(`/vehicles/${id}`);
         loadVehicles();
       } catch (error) {
-        console.error('Error deleting vehicle:', error);
+        logger.error('Error deleting vehicle:', error);
       }
     }
   };

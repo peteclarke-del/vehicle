@@ -64,7 +64,7 @@ const ServiceRecords = () => {
       else if (data && Array.isArray(data.serviceRecords)) setServiceRecords(data.serviceRecords);
       else setServiceRecords([]);
     } catch (error) {
-      console.error('Error loading service records:', error);
+      logger.error('Error loading service records:', error);
     } finally {
       setLoading(false);
     }
@@ -138,7 +138,7 @@ const ServiceRecords = () => {
       setEditingService(svc);
       setDialogOpen(true);
     } catch (err) {
-      console.error('Error loading service details', err);
+      logger.error('Error loading service details', err);
       // fallback to minimal object
       setEditingService(service);
       setDialogOpen(true);
