@@ -7,6 +7,7 @@ services:
         autoconfigure: true
         bind:
             int $uploadMaxBytes: '%app.upload_max_bytes%'
+            Symfony\Contracts\Cache\CacheInterface $lookupsCache: '@cache.lookups'
 
     # Redis cache with tag support
     Symfony\Contracts\Cache\TagAwareCacheInterface: '@cache.app'
