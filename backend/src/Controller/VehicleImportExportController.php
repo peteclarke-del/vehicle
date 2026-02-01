@@ -11,6 +11,7 @@ use App\Entity\VehicleModel;
 use App\Entity\FuelRecord;
 use App\Entity\Part;
 use App\Entity\Consumable;
+use App\Entity\Attachment;
 use App\Entity\Todo;
 use App\Entity\ConsumableType;
 use App\Entity\PartCategory;
