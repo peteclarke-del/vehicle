@@ -6,6 +6,7 @@ namespace App\Controller;
 
 use App\Controller\Trait\UserSecurityTrait;
 use App\Controller\Trait\AttachmentFileOrganizerTrait;
+use App\Controller\Trait\JsonValidationTrait;
 use App\Entity\MotRecord;
 use App\Entity\Vehicle;
 use App\Entity\Part;
@@ -26,6 +27,7 @@ class MotRecordController extends AbstractController
 {
     use UserSecurityTrait;
     use AttachmentFileOrganizerTrait;
+    use JsonValidationTrait;
 
     public function __construct(
         private EntityManagerInterface $entityManager,
@@ -40,7 +42,11 @@ class MotRecordController extends AbstractController
     #[Route('/mot-records', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {
-        $data = json_decode($request->getContent(), true);
+        $validation = $this->validateJsonRequest($request);
+        if ($validation['error']) {
+            return $validation['error'];
+        }
+        $data = $validation['data'];
 
         $vehicle = $this->entityManager->getRepository(Vehicle::class)->find($data['vehicleId']);
         $user = $this->getUserEntity();
@@ -67,7 +73,11 @@ class MotRecordController extends AbstractController
             return new JsonResponse(['error' => 'MOT record not found'], 404);
         }
 
-        $data = json_decode($request->getContent(), true);
+        $validation = $this->validateJsonRequest($request);
+        if ($validation['error']) {
+            return $validation['error'];
+        }
+        $data = $validation['data'];
         $this->updateMotRecordFromData($motRecord, $data);
 
         $this->entityManager->flush();
