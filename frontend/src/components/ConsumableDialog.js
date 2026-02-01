@@ -15,6 +15,7 @@ import { useDistance } from '../hooks/useDistance';
 import ReceiptUpload from './ReceiptUpload';
 import UrlScraper from './UrlScraper';
 import KnightRiderLoader from './KnightRiderLoader';
+import logger from '../utils/logger';
 
 export default function ConsumableDialog({ open, onClose, consumable, vehicleId }) {
   const { t } = useTranslation();
@@ -110,7 +111,7 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
         else if (sdata && Array.isArray(sdata.serviceRecords)) setServiceRecords(sdata.serviceRecords);
         else setServiceRecords([]);
       } catch (e) {
-        console.error('Failed to load MOT or service records', e);
+        logger.error('Failed to load MOT or service records', e);
         setMotRecords([]);
         setServiceRecords([]);
       }
@@ -129,7 +130,7 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
       const typesResponse = await api.get(`/vehicle-types/${vehicleTypeId}/consumable-types`);
       setConsumableTypes(typesResponse.data);
     } catch (error) {
-      console.error('Error loading consumable types:', error);
+      logger.error('Error loading consumable types:', error);
     } finally {
       setLoadingTypes(false);
     }
@@ -202,7 +203,7 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
       }
       onClose(resp.data);
     } catch (error) {
-      console.error('Error saving consumable:', error);
+      logger.error('Error saving consumable:', error);
     } finally {
       setLoading(false);
     }

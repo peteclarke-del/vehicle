@@ -60,6 +60,7 @@ import { Tooltip, IconButton as MuiIconButton, Snackbar, Alert } from '@mui/mate
 import PreferencesDialog from '../components/PreferencesDialog';
 import { Settings as SettingsIcon } from '@mui/icons-material';
 import { useNotifications } from '../hooks/useNotifications';
+import logger from '../utils/logger';
 
 const drawerWidth = 240;
 
@@ -250,7 +251,7 @@ const Layout = () => {
               const newLocked = !drawerLocked;
               setDrawerLocked(newLocked);
               setTempOpen(false);
-              if (user && api) api.post('/user/preferences', { key: 'nav.drawerLocked', value: newLocked }).catch((err) => console.warn('Failed to save drawer lock preference:', err));
+              if (user && api) api.post('/user/preferences', { key: 'nav.drawerLocked', value: newLocked }).catch((err) => logger.warn('Failed to save drawer lock preference:', err));
             }}
           >
             {drawerLocked ? <PushPin fontSize="small" /> : <PushPinOutlined fontSize="small" />}
@@ -341,7 +342,7 @@ const Layout = () => {
                 // show UI feedback
                 setSnack({ open: true, message: t('errors.failedToSavePreferences') || 'Failed to persist theme preference', severity: 'error' });
                 // eslint-disable-next-line no-console
-                console.warn('Failed to persist theme preference', err);
+                logger.warn('Failed to persist theme preference', err);
               }
             }}
           >
@@ -403,7 +404,7 @@ const Layout = () => {
           <Drawer
             variant="persistent"
             open
-            onClose={() => { setDrawerLocked(false); if (user && api) api.post('/user/preferences', { key: 'nav.drawerLocked', value: false }).catch((err) => console.warn('Failed to save drawer unlock preference:', err)); }}
+            onClose={() => { setDrawerLocked(false); if (user && api) api.post('/user/preferences', { key: 'nav.drawerLocked', value: false }).catch((err) => logger.warn('Failed to save drawer unlock preference:', err)); }}
             sx={{
               display: { xs: 'none', sm: 'block' },
               '& .MuiDrawer-paper': { 

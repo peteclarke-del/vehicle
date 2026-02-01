@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Controller\Trait\JsonValidationTrait;
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
@@ -19,6 +20,8 @@ use Symfony\Contracts\Cache\TagAwareCacheInterface;
 #[Route('/api')]
 class AuthController extends AbstractController
 {
+    use JsonValidationTrait;
+
     public function __construct(
         private EntityManagerInterface $entityManager,
         private UserPasswordHasherInterface $passwordHasher,
@@ -60,7 +63,11 @@ class AuthController extends AbstractController
     #[Route('/register', name: 'api_register', methods: ['POST'])]
     public function register(Request $request): JsonResponse
     {
-        $data = json_decode($request->getContent(), true);
+        $validation = $this->validateJsonRequest($request);
+        if ($validation['error']) {
+            return $validation['error'];
+        }
+        $data = $validation['data'];
 
         if (!isset($data['email']) || !isset($data['password'])) {
             return $this->json(['error' => 'Email and password required'], 400);
@@ -201,7 +208,11 @@ class AuthController extends AbstractController
             return $this->json(['error' => 'Not authenticated'], 401);
         }
 
-        $data = json_decode($request->getContent(), true);
+        $validation = $this->validateJsonRequest($request);
+        if ($validation['error']) {
+            return $validation['error'];
+        }
+        $data = $validation['data'];
 
         if (isset($data['firstName'])) {
             $user->setFirstName($data['firstName']);
@@ -341,7 +352,12 @@ class AuthController extends AbstractController
     #[Route('/auth/refresh', name: 'api_auth_refresh_with_token', methods: ['POST'])]
     public function refreshWithToken(Request $request): JsonResponse
     {
-        $data = json_decode($request->getContent(), true);
+        $validation = $this->validateJsonRequest($request);
+        if ($validation['error']) {
+            return $validation['error'];
+        }
+        $data = $validation['data'];
+        
         $incoming = $data['refreshToken'] ?? null;
         if (!$incoming) {
             return $this->json(['error' => 'refreshToken required'], 400);
@@ -389,7 +405,12 @@ class AuthController extends AbstractController
             return $this->json(['error' => 'Not authenticated'], 401);
         }
 
-        $data = json_decode($request->getContent(), true);
+        $validation = $this->validateJsonRequest($request);
+        if ($validation['error']) {
+            return $validation['error'];
+        }
+        $data = $validation['data'];
+        
         $incoming = $data['refreshToken'] ?? null;
 
         $repo = $this->entityManager->getRepository(RefreshToken::class);
@@ -426,7 +447,11 @@ class AuthController extends AbstractController
             return $this->json(['error' => 'Not authenticated'], 401);
         }
 
-        $data = json_decode($request->getContent(), true);
+        $validation = $this->validateJsonRequest($request);
+        if ($validation['error']) {
+            return $validation['error'];
+        }
+        $data = $validation['data'];
 
         if (!isset($data['currentPassword']) || !isset($data['newPassword'])) {
             return $this->json(['error' => 'Current and new password required'], 400);

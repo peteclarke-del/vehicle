@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { MenuItem, TextField } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { getAvailableLanguages } from '../i18n';
+import logger from '../utils/logger';
 
 export default function LanguageSelector({ value, onChange, fullWidth = false, ...props }) {
   const { t } = useTranslation();
@@ -17,7 +18,7 @@ export default function LanguageSelector({ value, onChange, fullWidth = false, .
       const availableLanguages = await getAvailableLanguages();
       setLanguages(availableLanguages);
     } catch (error) {
-      console.error('Error loading languages:', error);
+      logger.error('Error loading languages:', error);
       // Fallback to default languages
       setLanguages([
         { code: 'en', name: 'English', nativeName: 'English' },

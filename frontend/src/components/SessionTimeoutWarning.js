@@ -11,6 +11,8 @@ import {
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
+import logger from '../utils/logger';
+import SafeStorage from '../utils/SafeStorage';
 
 const SessionTimeoutWarning = () => {
   const { t } = useTranslation();
@@ -41,7 +43,7 @@ const SessionTimeoutWarning = () => {
           }
         }
       } catch (e) {
-        console.warn('Failed to load session timeout preference:', e);
+        logger.warn('Failed to load session timeout preference:', e);
       }
       if (mounted) setTokenTtl(3600);
     })();
@@ -49,7 +51,7 @@ const SessionTimeoutWarning = () => {
   }, [api, user]);
 
   const getTokenTimestamp = useCallback(() => {
-    const token = localStorage.getItem('token');
+    const token = SafeStorage.get('token');
     if (!token) return null;
     
     try {
@@ -61,7 +63,7 @@ const SessionTimeoutWarning = () => {
   }, []);
 
   const getTokenExpiry = useCallback(() => {
-    const token = localStorage.getItem('token');
+    const token = SafeStorage.get('token');
     if (!token) return null;
 
     try {
@@ -133,7 +135,7 @@ const SessionTimeoutWarning = () => {
     
     try {
       // Prefer refresh-by-token flow so we can refresh without a valid JWT
-      const refreshToken = localStorage.getItem('refreshToken');
+      const refreshToken = SafeStorage.get('refreshToken');
       if (!refreshToken) {
         // fall back to authenticated refresh (may fail if token expired)
         const response = await api.post('/refresh-token');
@@ -173,7 +175,7 @@ const SessionTimeoutWarning = () => {
         throw new Error('No token in refresh response');
       }
     } catch (error) {
-      console.error('Failed to refresh token:', error);
+      logger.error('Failed to refresh token:', error);
       setIsRefreshing(false);
       setExtendedSuccess(false);
       setOpen(false);

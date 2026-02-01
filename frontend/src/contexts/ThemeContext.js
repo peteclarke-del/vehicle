@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { ThemeProvider as MuiThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { useAuth } from './AuthContext';
+import SafeStorage from '../utils/SafeStorage';
 
 const ThemeContext = createContext();
 
@@ -17,12 +18,8 @@ export const ThemeProvider = ({ children }) => {
   const { user, api } = useAuth();
   // initialize from localStorage, fallback to light
   const [mode, setMode] = useState(() => {
-    try {
-      const stored = window.localStorage.getItem('theme');
-      return stored === 'dark' ? 'dark' : 'light';
-    } catch (e) {
-      return 'light';
-    }
+    const stored = SafeStorage.get('theme', 'light');
+    return stored === 'dark' ? 'dark' : 'light';
   });
 
   // if user has a server preference, prefer that when available
@@ -35,11 +32,7 @@ export const ThemeProvider = ({ children }) => {
   // persist mode to server when it changes
   useEffect(() => {
     // persist to localStorage always so theme survives logout/reset
-    try {
-      window.localStorage.setItem('theme', mode);
-    } catch (e) {
-      // ignore
-    }
+    SafeStorage.set('theme', mode);
 
     if (!api || !user) return;
     (async () => {

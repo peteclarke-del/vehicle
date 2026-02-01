@@ -6,6 +6,7 @@ namespace App\Controller;
 
 use App\Controller\Trait\UserSecurityTrait;
 use App\Controller\Trait\AttachmentFileOrganizerTrait;
+use App\Controller\Trait\JsonValidationTrait;
 use App\Entity\MotRecord;
 use App\Entity\Vehicle;
 use App\Entity\Part;
@@ -26,6 +27,7 @@ class MotRecordController extends AbstractController
 {
     use UserSecurityTrait;
     use AttachmentFileOrganizerTrait;
+    use JsonValidationTrait;
 
     public function __construct(
         private EntityManagerInterface $entityManager,
@@ -40,7 +42,11 @@ class MotRecordController extends AbstractController
     #[Route('/mot-records', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {
-        $data = json_decode($request->getContent(), true);
+        $validation = $this->validateJsonRequest($request);
+        if ($validation['error']) {
+            return $validation['error'];
+        }
+        $data = $validation['data'];
 
         $vehicle = $this->entityManager->getRepository(Vehicle::class)->find($data['vehicleId']);
         $user = $this->getUserEntity();
@@ -67,7 +73,11 @@ class MotRecordController extends AbstractController
             return new JsonResponse(['error' => 'MOT record not found'], 404);
         }
 
-        $data = json_decode($request->getContent(), true);
+        $validation = $this->validateJsonRequest($request);
+        if ($validation['error']) {
+            return $validation['error'];
+        }
+        $data = $validation['data'];
         $this->updateMotRecordFromData($motRecord, $data);
 
         $this->entityManager->flush();
@@ -105,14 +115,22 @@ class MotRecordController extends AbstractController
             return new JsonResponse(['error' => 'MOT record not found'], 404);
         }
 
+        // Fetch related entities with eager loading to avoid N+1 queries
         $parts = $this->entityManager->getRepository(Part::class)
             ->findBy(['motRecord' => $motRecord]);
 
         $consumables = $this->entityManager->getRepository(Consumable::class)
             ->findBy(['motRecord' => $motRecord]);
 
-        $serviceRecords = $this->entityManager->getRepository(\App\Entity\ServiceRecord::class)
-            ->findBy(['motRecord' => $motRecord]);
+        // Eager load service records with their items in a single query
+        $serviceRecords = $this->entityManager->createQueryBuilder()
+            ->select('sr', 'sri')
+            ->from(\App\Entity\ServiceRecord::class, 'sr')
+            ->leftJoin('sr.items', 'sri')
+            ->where('sr.motRecord = :motRecord')
+            ->setParameter('motRecord', $motRecord)
+            ->getQuery()
+            ->getResult();
 
         return new JsonResponse([
             'motRecord' => $this->serializer->serializeMotRecord($motRecord),

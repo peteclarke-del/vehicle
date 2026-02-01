@@ -1,4 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import logger from '../utils/logger';
+import SafeStorage from '../utils/SafeStorage';
 import { Box, Button, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, IconButton, Chip, Tooltip, TableSortLabel } from '@mui/material';
 import { Add, Edit, Delete } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
@@ -24,8 +26,8 @@ const Parts = () => {
   const [selectedPart, setSelectedPart] = useState(null);
   const [openServiceDialog, setOpenServiceDialog] = useState(false);
   const [selectedServiceRecord, setSelectedServiceRecord] = useState(null);
-  const [orderBy, setOrderBy] = useState(() => localStorage.getItem('partsSortBy') || 'description');
-  const [order, setOrder] = useState(() => localStorage.getItem('partsSortOrder') || 'asc');
+  const [orderBy, setOrderBy] = useState(() => SafeStorage.get('partsSortBy', 'description'));
+  const [order, setOrder] = useState(() => SafeStorage.get('partsSortOrder', 'asc'));
   const { api } = useAuth();
   const { t, i18n } = useTranslation();
   const registrationLabelText = t('common.registrationNumber');
@@ -59,7 +61,7 @@ const Parts = () => {
       }
       setParts(response.data);
     } catch (error) {
-      console.error('Error loading parts:', error);
+      logger.error('Error loading parts:', error);
     }
   }, [api, selectedVehicle]);
 
@@ -101,7 +103,7 @@ const Parts = () => {
         await api.delete(`/parts/${id}`);
         loadParts();
       } catch (error) {
-        console.error('Error deleting part:', error);
+        logger.error('Error deleting part:', error);
       }
     }
   };
@@ -119,8 +121,8 @@ const Parts = () => {
     const newOrder = isAsc ? 'desc' : 'asc';
     setOrder(newOrder);
     setOrderBy(property);
-    localStorage.setItem('partsSortBy', property);
-    localStorage.setItem('partsSortOrder', newOrder);
+    SafeStorage.set('partsSortBy', property);
+    SafeStorage.set('partsSortOrder', newOrder);
   };
 
   const sortedParts = React.useMemo(() => {
@@ -314,7 +316,7 @@ const Parts = () => {
                       </div>
                       <div>
                         {part.serviceRecordId ? (
-                          <button onClick={async (e) => { e.preventDefault(); try { const resp = await api.get(`/service-records/${part.serviceRecordId}`); setSelectedServiceRecord(resp.data); setOpenServiceDialog(true); } catch (err) { console.error('Failed to load service record', err); } }} style={{ background: 'none', border: 'none', padding: 0, textDecoration: 'underline', cursor: 'pointer', color: 'inherit' }}>
+                          <button onClick={async (e) => { e.preventDefault(); try { const resp = await api.get(`/service-records/${part.serviceRecordId}`); setSelectedServiceRecord(resp.data); setOpenServiceDialog(true); } catch (err) { logger.error('Failed to load service record', err); } }} style={{ background: 'none', border: 'none', padding: 0, textDecoration: 'underline', cursor: 'pointer', color: 'inherit' }}>
                             {part.serviceRecordDate ? t('service.serviceLabelDate', { date: part.serviceRecordDate }) : t('service.serviceLabelId', { id: part.serviceRecordId })}
                           </button>
                         ) : '-'}

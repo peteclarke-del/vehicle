@@ -22,6 +22,8 @@ import {
 import { Add, Edit, Delete } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
+import logger from '../utils/logger';
+import SafeStorage from '../utils/SafeStorage';
 import TodoDialog from '../components/TodoDialog';
 import { fetchArrayData } from '../hooks/useApiData';
 import useTablePagination from '../hooks/useTablePagination';
@@ -41,16 +43,16 @@ const Todo = () => {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState(null);
-  const [orderBy, setOrderBy] = useState(() => localStorage.getItem('todoSortBy') || 'dueDate');
-  const [order, setOrder] = useState(() => localStorage.getItem('todoSortOrder') || 'desc');
+  const [orderBy, setOrderBy] = useState(() => SafeStorage.get('todoSortBy', 'dueDate'));
+  const [order, setOrder] = useState(() => SafeStorage.get('todoSortOrder', 'desc'));
 
   const handleRequestSort = (property) => {
     const isAsc = orderBy === property && order === 'asc';
     const newOrder = isAsc ? 'desc' : 'asc';
     setOrder(newOrder);
     setOrderBy(property);
-    localStorage.setItem('todoSortBy', property);
-    localStorage.setItem('todoSortOrder', newOrder);
+    SafeStorage.set('todoSortBy', property);
+    SafeStorage.set('todoSortOrder', newOrder);
   };
 
   const sortedTodos = useMemo(() => {
@@ -99,7 +101,7 @@ const Todo = () => {
       const response = await api.get(url);
       setTodos(response.data);
     } catch (err) {
-      console.error('Error loading todos', err);
+      logger.error('Error loading todos', err);
     }
   }, [api, selectedVehicle]);
 
@@ -127,7 +129,7 @@ const Todo = () => {
       await api.delete(`/todos/${id}`);
       loadTodos();
     } catch (err) {
-      console.error('Failed to delete todo', err);
+      logger.error('Failed to delete todo', err);
     }
   };
 
@@ -137,7 +139,7 @@ const Todo = () => {
       await api.put(`/todos/${todo.id}`, updated);
       loadTodos();
     } catch (err) {
-      console.error('Failed to update todo', err);
+      logger.error('Failed to update todo', err);
     }
   };
 

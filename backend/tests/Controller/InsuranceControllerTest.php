@@ -9,6 +9,7 @@ use App\Entity\User;
 use App\Entity\Vehicle;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use App\Tests\TestCase\BaseWebTestCase;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -16,7 +17,7 @@ use Symfony\Component\HttpFoundation\Response;
  *
  * Comprehensive test suite for InsuranceController covering all endpoints
  */
-class InsuranceControllerTest extends WebTestCase
+class InsuranceControllerTest extends BaseWebTestCase
 {
 
     /**
@@ -24,30 +25,13 @@ class InsuranceControllerTest extends WebTestCase
      *
      * @return string JWT token
      */
-    private function getAuthToken(): string
-    {
-        $client->request(
-            'POST',
-            '/api/login',
-            [],
-            [],
-            ['CONTENT_TYPE' => 'application/json'],
-            json_encode([
-                'email' => 'test@example.com',
-                'password' => 'testpassword'
-            ])
-        );
-
-        $data = json_decode($client->getResponse()->getContent(), true);
-        return $data['token'] ?? '';
-    }
 
     /**
      * Test listing insurance records requires authentication
      */
     public function testListInsuranceRequiresAuthentication(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 $client->request('GET', '/api/insurance?vehicleId=1');
         
         $this->assertEquals(
@@ -61,7 +45,7 @@ $client->request('GET', '/api/insurance?vehicleId=1');
      */
     public function testListInsuranceRequiresVehicleId(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 $client->request(
             'GET',
             '/api/insurance',
@@ -83,7 +67,7 @@ $client->request(
      */
     public function testListInsuranceForInvalidVehicle(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 $client->request(
             'GET',
             '/api/insurance?vehicleId=99999',
@@ -101,7 +85,7 @@ $client->request(
      */
     public function testCreateInsurance(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 $insuranceData = [
             'vehicleId' => 1,
             'provider' => 'Test Insurance Co',
@@ -141,7 +125,7 @@ $insuranceData = [
      */
     public function testUpdateInsurance(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 $updatedData = [
             'provider' => 'Updated Insurance Co',
             'annualCost' => 700.00
@@ -172,7 +156,7 @@ $updatedData = [
      */
     public function testUpdateNonExistentInsurance(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 $client->request(
             'PUT',
             '/api/insurance/99999',
@@ -194,7 +178,7 @@ $client->request(
      */
     public function testDeleteInsurance(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 $client->request(
             'DELETE',
             '/api/insurance/1',
@@ -216,7 +200,7 @@ $client->request(
      */
     public function testDeleteNonExistentInsurance(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 $client->request(
             'DELETE',
             '/api/insurance/99999',
@@ -234,7 +218,7 @@ $client->request(
      */
     public function testUserCannotAccessOtherUsersInsurance(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 // Create second user and get their token
         $client->request(
             'POST',

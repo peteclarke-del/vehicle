@@ -16,6 +16,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\String\Slugger\SluggerInterface;
 use App\Controller\Trait\UserSecurityTrait;
+use App\Controller\Trait\JsonValidationTrait;
 
 #[Route('/api')]
 
@@ -25,6 +26,7 @@ use App\Controller\Trait\UserSecurityTrait;
 class VehicleImageController extends AbstractController
 {
     use UserSecurityTrait;
+    use JsonValidationTrait;
 
     /**
      * function __construct
@@ -197,7 +199,11 @@ class VehicleImageController extends AbstractController
             return $this->json(['error' => 'Forbidden'], 403);
         }
 
-        $data = json_decode($request->getContent(), true);
+        $validation = $this->validateJsonRequest($request);
+        if ($validation['error']) {
+            return $validation['error'];
+        }
+        $data = $validation['data'];
 
         if (isset($data['caption'])) {
             $image->setCaption($data['caption']);

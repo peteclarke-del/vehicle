@@ -34,6 +34,7 @@ import { useTranslation } from 'react-i18next';
 import KnightRiderLoader from './KnightRiderLoader';
 import AttachmentViewerDialog from './AttachmentViewerDialog';
 import { useDragDrop } from '../hooks/useDragDrop';
+import logger from '../utils/logger';
 
 const VehicleDocuments = ({ vehicle, category }) => {
   const { api } = useAuth();
@@ -63,7 +64,7 @@ const VehicleDocuments = ({ vehicle, category }) => {
       });
       setDocuments(response.data || []);
     } catch (err) {
-      console.error('Error loading documents:', err);
+      logger.error('Error loading documents:', err);
       setError('Failed to load documents');
     } finally {
       setLoading(false);
@@ -128,9 +129,9 @@ const VehicleDocuments = ({ vehicle, category }) => {
       setDescription('');
       await loadDocuments();
     } catch (err) {
-      console.error('Error uploading document:', err);
-      console.error('Error response:', err.response?.data);
-      console.error('Error status:', err.response?.status);
+      logger.error('Error uploading document:', err);
+      logger.error('Error response:', err.response?.data);
+      logger.error('Error status:', err.response?.status);
       setError(err.response?.data?.error || err.message || 'Failed to upload document');
     } finally {
       setUploading(false);
@@ -144,7 +145,7 @@ const VehicleDocuments = ({ vehicle, category }) => {
       await api.delete(`/attachments/${documentId}`);
       await loadDocuments();
     } catch (err) {
-      console.error('Error deleting document:', err);
+      logger.error('Error deleting document:', err);
       setError('Failed to delete document');
     }
   };
@@ -167,7 +168,7 @@ const VehicleDocuments = ({ vehicle, category }) => {
       setEditingDocument(null);
       setEditDescription('');
     } catch (err) {
-      console.error('Error updating attachment:', err);
+      logger.error('Error updating attachment:', err);
       setError('Failed to update attachment description');
     }
   };
@@ -197,7 +198,7 @@ const VehicleDocuments = ({ vehicle, category }) => {
       link.parentNode.removeChild(link);
       window.URL.revokeObjectURL(url);
     } catch (err) {
-      console.error('Error downloading document:', err);
+      logger.error('Error downloading document:', err);
       setError('Failed to download document');
     }
   };

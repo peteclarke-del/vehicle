@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import logger from '../utils/logger';
 import {
   Box,
   Card,
@@ -50,7 +51,7 @@ const Profile = () => {
       await updateProfile(formData);
       setSuccess(true);
     } catch (error) {
-      console.error('Error updating profile:', error);
+      logger.error('Error updating profile:', error);
     } finally {
       setLoading(false);
     }

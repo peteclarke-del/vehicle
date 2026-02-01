@@ -17,12 +17,14 @@ use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\String\Slugger\SluggerInterface;
 use App\Controller\Trait\UserSecurityTrait;
 use App\Controller\Trait\AttachmentFileOrganizerTrait;
+use App\Controller\Trait\JsonValidationTrait;
 
 #[Route('/api/fuel-records')]
 class FuelRecordController extends AbstractController
 {
     use UserSecurityTrait;
     use AttachmentFileOrganizerTrait;
+    use JsonValidationTrait;
 
     private const FUEL_TYPES = [
         'Biodiesel',
@@ -119,7 +121,11 @@ class FuelRecordController extends AbstractController
             return $this->json(['error' => 'Not authenticated'], 401);
         }
 
-        $data = json_decode($request->getContent(), true);
+        $validation = $this->validateJsonRequest($request);
+        if ($validation['error']) {
+            return $validation['error'];
+        }
+        $data = $validation['data'];
 
         $vehicle = $this->entityManager->getRepository(Vehicle::class)
             ->find($data['vehicleId']);
@@ -157,7 +163,11 @@ class FuelRecordController extends AbstractController
             return $this->json(['error' => 'Fuel record not found'], 404);
         }
 
-        $data = json_decode($request->getContent(), true);
+        $validation = $this->validateJsonRequest($request);
+        if ($validation['error']) {
+            return $validation['error'];
+        }
+        $data = $validation['data'];
         $this->updateRecordFromData($record, $data);
 
         $this->entityManager->flush();

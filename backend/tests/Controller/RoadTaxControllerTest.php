@@ -5,40 +5,24 @@ declare(strict_types=1);
 namespace App\Tests\Controller;
 
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use App\Tests\TestCase\BaseWebTestCase;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Component\HttpFoundation\Response;
 
-class RoadTaxControllerTest extends WebTestCase
+class RoadTaxControllerTest extends BaseWebTestCase
 {
 
-    private function getAuthToken(): string
-    {
-        $client->request(
-            'POST',
-            '/api/login',
-            [],
-            [],
-            ['CONTENT_TYPE' => 'application/json'],
-            json_encode([
-                'email' => 'test@example.com',
-                'password' => 'testpassword'
-            ])
-        );
-
-        $data = json_decode($client->getResponse()->getContent(), true);
-        return $data['token'] ?? '';
-    }
 
     public function testListRequiresAuthentication(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 $client->request('GET', '/api/road-tax?vehicleId=1');
         $this->assertEquals(Response::HTTP_UNAUTHORIZED, $client->getResponse()->getStatusCode());
     }
 
     public function testCreateRoadTax(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 $rtData = [
             'vehicleId' => 1,
             'startDate' => '2026-01-01',
@@ -67,7 +51,7 @@ $rtData = [
 
     public function testUpdateRoadTax(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 // Create first
         $client->request(
             'POST',
@@ -103,7 +87,7 @@ $rtData = [
 
     public function testDeleteRoadTax(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 // Create first
         $client->request(
             'POST',

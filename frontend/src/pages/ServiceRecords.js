@@ -18,6 +18,8 @@ import {
   Tooltip,
   TableSortLabel,
 } from '@mui/material';
+import logger from '../utils/logger';
+import SafeStorage from '../utils/SafeStorage';
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
@@ -40,8 +42,8 @@ const ServiceRecords = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingService, setEditingService] = useState(null);
   const { vehicles, fetchVehicles } = useVehicles();
-  const [orderBy, setOrderBy] = useState(() => localStorage.getItem('serviceRecordsSortBy') || 'serviceDate');
-  const [order, setOrder] = useState(() => localStorage.getItem('serviceRecordsSortOrder') || 'desc');
+  const [orderBy, setOrderBy] = useState(() => SafeStorage.get('serviceRecordsSortBy', 'serviceDate'));
+  const [order, setOrder] = useState(() => SafeStorage.get('serviceRecordsSortOrder', 'desc'));
   const { api } = useAuth();
   const { t, i18n } = useTranslation();
   const registrationLabelText = t('common.registrationNumber');
@@ -63,7 +65,7 @@ const ServiceRecords = () => {
       else if (data && Array.isArray(data.serviceRecords)) setServiceRecords(data.serviceRecords);
       else setServiceRecords([]);
     } catch (error) {
-      console.error('Error loading service records:', error);
+      logger.error('Error loading service records:', error);
     } finally {
       setLoading(false);
     }
@@ -137,7 +139,7 @@ const ServiceRecords = () => {
       setEditingService(svc);
       setDialogOpen(true);
     } catch (err) {
-      console.error('Error loading service details', err);
+      logger.error('Error loading service details', err);
       // fallback to minimal object
       setEditingService(service);
       setDialogOpen(true);
@@ -150,7 +152,7 @@ const ServiceRecords = () => {
         await api.delete(`/service-records/${id}`);
         loadServiceRecords();
       } catch (error) {
-        console.error('Error deleting service record:', error);
+        logger.error('Error deleting service record:', error);
       }
     }
   };
@@ -168,8 +170,8 @@ const ServiceRecords = () => {
     const newOrder = isAsc ? 'desc' : 'asc';
     setOrder(newOrder);
     setOrderBy(property);
-    localStorage.setItem('serviceRecordsSortBy', property);
-    localStorage.setItem('serviceRecordsSortOrder', newOrder);
+    SafeStorage.set('serviceRecordsSortBy', property);
+    SafeStorage.set('serviceRecordsSortOrder', newOrder);
   };
 
   const sortedServiceRecords = React.useMemo(() => {

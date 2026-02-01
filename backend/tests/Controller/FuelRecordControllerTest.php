@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Controller;
 
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use App\Tests\TestCase\BaseWebTestCase;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 
 /**
@@ -12,23 +13,19 @@ use Symfony\Bundle\FrameworkBundle\KernelBrowser;
  * 
  * Integration tests for Fuel Record CRUD operations and economy calculations
  */
-class FuelRecordControllerTest extends WebTestCase
+class FuelRecordControllerTest extends BaseWebTestCase
 {
-    private function getAuthToken(): string
-    {
-        return 'Bearer mock-jwt-token-12345';
-    }
 
     public function testListFuelRecordsRequiresAuthentication(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
         $client->request('GET', '/api/fuel-records');
         $this->assertResponseStatusCodeSame(401);
     }
 
     public function testListFuelRecordsForVehicle(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
         $client->request(
             'GET',
             '/api/fuel-records?vehicleId=1',
@@ -43,7 +40,7 @@ class FuelRecordControllerTest extends WebTestCase
 
     public function testCreateFuelRecord(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
         $fuelData = [
             'vehicleId' => 1,
             'date' => '2026-01-15',
@@ -78,7 +75,7 @@ class FuelRecordControllerTest extends WebTestCase
 
     public function testCalculateFuelEconomy(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 // First fill-up
         $fuel1 = [
             'vehicleId' => 1,
@@ -141,7 +138,7 @@ class FuelRecordControllerTest extends WebTestCase
 
     public function testUpdateFuelRecord(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 $createData = [
             'vehicleId' => 1,
             'date' => '2026-01-10',
@@ -191,7 +188,7 @@ $createData = [
 
     public function testDeleteFuelRecord(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 $createData = [
             'vehicleId' => 1,
             'date' => '2026-01-10',
@@ -228,7 +225,7 @@ $createData = [
 
     public function testGetTotalFuelCost(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 $client->request(
             'GET',
             '/api/fuel-records/total-cost?vehicleId=1',
@@ -247,7 +244,7 @@ $client->request(
 
     public function testGetFuelEconomyTrend(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 $client->request(
             'GET',
             '/api/fuel-records/economy-trend?vehicleId=1',
@@ -265,7 +262,7 @@ $client->request(
 
     public function testFilterByDateRange(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 $client->request(
             'GET',
             '/api/fuel-records?vehicleId=1&startDate=2026-01-01&endDate=2026-12-31',
@@ -279,7 +276,7 @@ $client->request(
 
     public function testCalculateCostPerMile(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 $client->request(
             'GET',
             '/api/fuel-records/cost-per-mile?vehicleId=1',
@@ -297,7 +294,7 @@ $client->request(
 
     public function testGetMonthlyCostAverage(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 $client->request(
             'GET',
             '/api/fuel-records/monthly-average?vehicleId=1',
@@ -314,7 +311,7 @@ $client->request(
 
     public function testUserCannotAccessOtherUsersFuelRecords(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 $createData = [
             'vehicleId' => 1,
             'date' => '2026-01-10',

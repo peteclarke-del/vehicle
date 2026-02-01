@@ -30,10 +30,10 @@ class UrlScraperServiceTest extends TestCase
         $this->httpClient = new MockHttpClient();
         
         $adapters = [
-            new ShopifyAdapter(new NullLogger(), $this->httpClient),
-            new AmazonAdapter(new NullLogger(), $this->httpClient),
-            new EbayAdapter(new NullLogger(), $this->httpClient),
-            new GenericDomAdapter(new NullLogger(), $this->httpClient),
+            new ShopifyAdapter($this->httpClient, new NullLogger()),
+            new AmazonAdapter($this->httpClient, new NullLogger()),
+            new EbayAdapter($this->httpClient, new NullLogger()),
+            new GenericDomAdapter($this->httpClient, new NullLogger()),
         ];
         
         $this->service = new UrlScraperService($adapters, new NullLogger());

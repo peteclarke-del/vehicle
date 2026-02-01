@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Controller;
 
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use App\Tests\TestCase\BaseWebTestCase;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -12,32 +13,20 @@ use Symfony\Component\HttpFoundation\Response;
  * 
  * Integration tests for vehicle make management endpoints
  */
-class VehicleMakeControllerTest extends WebTestCase
+class VehicleMakeControllerTest extends BaseWebTestCase
 {
     private string $token;
 
     protected function setUp(): void
     {
-        $client = static::createClient();
-        $this->token = $this->getAuthToken($client);
+        parent::setUp();
+        $this->token = $this->getAuthToken();
     }
 
-    private function getAuthToken($client): string
-    {
-        $client->request('POST', '/api/auth/login', [], [], [
-            'CONTENT_TYPE' => 'application/json',
-        ], json_encode([
-            'email' => 'test@example.com',
-            'password' => 'password123'
-        ]));
-
-        $response = json_decode($client->getResponse()->getContent(), true);
-        return $response['token'] ?? '';
-    }
 
     public function testGetAllMakesDoesNotRequireAuthentication(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
         $client->request('GET', '/api/vehicle-makes');
 
         $this->assertResponseIsSuccessful();
@@ -45,7 +34,7 @@ class VehicleMakeControllerTest extends WebTestCase
 
     public function testGetAllMakes(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
         $client->request('GET', '/api/vehicle-makes');
 
         $this->assertResponseIsSuccessful();
@@ -58,7 +47,7 @@ class VehicleMakeControllerTest extends WebTestCase
 
     public function testGetMakeById(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
         $client->request('GET', '/api/vehicle-makes/1');
 
         $this->assertResponseIsSuccessful();
@@ -71,7 +60,7 @@ class VehicleMakeControllerTest extends WebTestCase
 
     public function testGetMakeByIdReturns404ForInvalidId(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
         $client->request('GET', '/api/vehicle-makes/99999');
 
         $this->assertResponseStatusCodeSame(Response::HTTP_NOT_FOUND);
@@ -79,7 +68,7 @@ class VehicleMakeControllerTest extends WebTestCase
 
     public function testCreateMakeRequiresAuthentication(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
         $client->request('POST', '/api/vehicle-makes', [], [], [
             'CONTENT_TYPE' => 'application/json',
         ], json_encode(['name' => 'Tesla']));
@@ -89,7 +78,7 @@ class VehicleMakeControllerTest extends WebTestCase
 
     public function testCreateMakeRequiresAdminRole(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
         $client->request('POST', '/api/vehicle-makes', [], [], [
             'HTTP_AUTHORIZATION' => 'Bearer ' . $this->token,
             'CONTENT_TYPE' => 'application/json',
@@ -100,7 +89,7 @@ class VehicleMakeControllerTest extends WebTestCase
 
     public function testCreateMake(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
         $adminToken = $this->getAdminToken($client);
         
         $client->request('POST', '/api/vehicle-makes', [], [], [
@@ -121,7 +110,7 @@ class VehicleMakeControllerTest extends WebTestCase
 
     public function testCreateMakeValidatesRequiredFields(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
         $adminToken = $this->getAdminToken($client);
         
         $client->request('POST', '/api/vehicle-makes', [], [], [
@@ -134,7 +123,7 @@ class VehicleMakeControllerTest extends WebTestCase
 
     public function testUpdateMake(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
         $adminToken = $this->getAdminToken($client);
         
         $client->request('PUT', '/api/vehicle-makes/1', [], [], [
@@ -153,7 +142,7 @@ class VehicleMakeControllerTest extends WebTestCase
 
     public function testDeleteMake(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
         $adminToken = $this->getAdminToken($client);
         
         $client->request('DELETE', '/api/vehicle-makes/999', [], [], [
@@ -165,7 +154,7 @@ class VehicleMakeControllerTest extends WebTestCase
 
     public function testGetModelsByMake(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
         $client->request('GET', '/api/vehicle-makes/1/models');
 
         $this->assertResponseIsSuccessful();
@@ -176,7 +165,7 @@ class VehicleMakeControllerTest extends WebTestCase
 
     public function testSearchMakes(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
         $client->request('GET', '/api/vehicle-makes?search=Toyota');
 
         $this->assertResponseIsSuccessful();
@@ -187,7 +176,7 @@ class VehicleMakeControllerTest extends WebTestCase
 
     public function testGetPopularMakes(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
         $client->request('GET', '/api/vehicle-makes?popular=true');
 
         $this->assertResponseIsSuccessful();
@@ -198,7 +187,7 @@ class VehicleMakeControllerTest extends WebTestCase
 
     public function testGetMakesSortedByName(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
         $client->request('GET', '/api/vehicle-makes?sort=name');
 
         $this->assertResponseIsSuccessful();
@@ -209,18 +198,5 @@ class VehicleMakeControllerTest extends WebTestCase
         if (count($data) > 1) {
             $this->assertLessThanOrEqual($data[1]['name'], $data[0]['name']);
         }
-    }
-
-    private function getAdminToken($client): string
-    {
-        $client->request('POST', '/api/auth/login', [], [], [
-            'CONTENT_TYPE' => 'application/json',
-        ], json_encode([
-            'email' => 'admin@example.com',
-            'password' => 'admin123'
-        ]));
-
-        $response = json_decode($client->getResponse()->getContent(), true);
-        return $response['token'] ?? '';
     }
 }

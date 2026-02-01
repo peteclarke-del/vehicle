@@ -1,4 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import logger from '../utils/logger';
+import SafeStorage from '../utils/SafeStorage';
 import { Box, Button, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, IconButton, Tooltip, TableSortLabel } from '@mui/material';
 import { Add, Edit, Delete } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
@@ -24,8 +26,8 @@ const Consumables = () => {
   const [selectedConsumable, setSelectedConsumable] = useState(null);
   const [openServiceDialog, setOpenServiceDialog] = useState(false);
   const [selectedServiceRecord, setSelectedServiceRecord] = useState(null);
-  const [orderBy, setOrderBy] = useState(() => localStorage.getItem('consumablesSortBy') || 'description');
-  const [order, setOrder] = useState(() => localStorage.getItem('consumablesSortOrder') || 'asc');
+  const [orderBy, setOrderBy] = useState(() => SafeStorage.get('consumablesSortBy', 'description'));
+  const [order, setOrder] = useState(() => SafeStorage.get('consumablesSortOrder', 'asc'));
   const { api } = useAuth();
   const { t, i18n } = useTranslation();
   const registrationLabelText = t('common.registrationNumber');
@@ -61,7 +63,7 @@ const Consumables = () => {
       const response = await api.get(url);
       setConsumables(response.data);
     } catch (error) {
-      console.error('Error loading consumables:', error);
+      logger.error('Error loading consumables:', error);
     }
   }, [api, selectedVehicle]);
 
@@ -104,7 +106,7 @@ const Consumables = () => {
         await api.delete(`/consumables/${id}`);
         loadConsumables();
       } catch (error) {
-        console.error('Error deleting consumable:', error);
+        logger.error('Error deleting consumable:', error);
         window.alert(t('common.deleteFailed'));
       }
     }
@@ -123,8 +125,8 @@ const Consumables = () => {
     const newOrder = isAsc ? 'desc' : 'asc';
     setOrder(newOrder);
     setOrderBy(property);
-    localStorage.setItem('consumablesSortBy', property);
-    localStorage.setItem('consumablesSortOrder', newOrder);
+    SafeStorage.set('consumablesSortBy', property);
+    SafeStorage.set('consumablesSortOrder', newOrder);
   };
 
   const sortedConsumables = React.useMemo(() => {
@@ -329,7 +331,7 @@ const Consumables = () => {
                       </div>
                       <div>
                         {consumable.serviceRecordId ? (
-                          <button onClick={async (e) => { e.preventDefault(); try { const resp = await api.get(`/service-records/${consumable.serviceRecordId}`); setSelectedServiceRecord(resp.data); setOpenServiceDialog(true); } catch (err) { console.error('Failed to load service record', err); } }} style={{ background: 'none', border: 'none', padding: 0, textDecoration: 'underline', cursor: 'pointer', color: 'inherit' }}>
+                          <button onClick={async (e) => { e.preventDefault(); try { const resp = await api.get(`/service-records/${consumable.serviceRecordId}`); setSelectedServiceRecord(resp.data); setOpenServiceDialog(true); } catch (err) { logger.error('Failed to load service record', err); } }} style={{ background: 'none', border: 'none', padding: 0, textDecoration: 'underline', cursor: 'pointer', color: 'inherit' }}>
                             {consumable.serviceRecordDate ? t('service.serviceLabelDate', { date: consumable.serviceRecordDate }) : t('service.serviceLabelId', { id: consumable.serviceRecordId })}
                           </button>
                         ) : '-'}

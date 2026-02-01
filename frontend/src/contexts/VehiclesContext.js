@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { useAuth } from './AuthContext';
+import logger from '../utils/logger';
 
 const VehiclesContext = createContext();
 
@@ -35,7 +36,7 @@ export const VehiclesProvider = ({ children }) => {
       lastFetchRef.current = now;
       return data;
     } catch (error) {
-      console.error('Error fetching vehicles:', error);
+      logger.error('Error fetching vehicles:', error);
       return [];
     } finally {
       if (!silent) {

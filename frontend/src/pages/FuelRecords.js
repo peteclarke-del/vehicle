@@ -1,4 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import logger from '../utils/logger';
+import SafeStorage from '../utils/SafeStorage';
 import { Box, Button, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, IconButton, Tooltip, TableSortLabel } from '@mui/material';
 import { Add, Edit, Delete } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
@@ -23,8 +25,8 @@ const FuelRecords = () => {
   const recordsAbortRef = React.useRef(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState(null);
-  const [orderBy, setOrderBy] = useState(() => localStorage.getItem('fuelRecordsSortBy') || 'date');
-  const [order, setOrder] = useState(() => localStorage.getItem('fuelRecordsSortOrder') || 'desc');
+  const [orderBy, setOrderBy] = useState(() => SafeStorage.get('fuelRecordsSortBy', 'date'));
+  const [order, setOrder] = useState(() => SafeStorage.get('fuelRecordsSortOrder', 'desc'));
   const { api } = useAuth();
   const { t, i18n } = useTranslation();
   const registrationLabelText = t('common.registrationNumber');
@@ -35,15 +37,15 @@ const FuelRecords = () => {
   const { defaultVehicleId, setDefaultVehicle } = useUserPreferences();
   const [hasManualSelection, setHasManualSelection] = useState(false);
 
-  // Send client-side logs to backend if endpoint exists, otherwise console.warn/error
+  // Send client-side logs to backend if endpoint exists, otherwise logger.warn/error
   const sendClientLog = useCallback(async (level, message, context = {}) => {
     const payload = { level, message, context, ts: new Date().toISOString() };
     try {
       // attempt to post to /client-logs; ignore failures
       await api.post('/client-logs', payload);
     } catch (err) {
-      if (level === 'error') console.error('[client-log]', message, context, err);
-      else console.warn('[client-log]', message, context, err);
+      if (level === 'error') logger.error('[client-log]', message, context, err);
+      else logger.warn('[client-log]', message, context, err);
     }
   }, [api]);
 
@@ -80,7 +82,7 @@ const FuelRecords = () => {
       setRecords(response.data);
     } catch (error) {
       if (error.name !== 'CanceledError' && error.name !== 'AbortError') {
-        console.error('Error loading fuel records:', error);
+        logger.error('Error loading fuel records:', error);
         sendClientLog('error', 'fuel_records_error', { vehicleId: selectedVehicle, error: String(error) });
       }
       setRecords([]);
@@ -128,7 +130,7 @@ const FuelRecords = () => {
         await api.delete(`/fuel-records/${id}`);
         loadRecords();
       } catch (error) {
-        console.error('Error deleting fuel record:', error);
+        logger.error('Error deleting fuel record:', error);
       }
     }
   };
@@ -146,8 +148,8 @@ const FuelRecords = () => {
     const newOrder = isAsc ? 'desc' : 'asc';
     setOrder(newOrder);
     setOrderBy(property);
-    localStorage.setItem('fuelRecordsSortBy', property);
-    localStorage.setItem('fuelRecordsSortOrder', newOrder);
+    SafeStorage.set('fuelRecordsSortBy', property);
+    SafeStorage.set('fuelRecordsSortOrder', newOrder);
   };
 
   const sortedRecords = React.useMemo(() => {

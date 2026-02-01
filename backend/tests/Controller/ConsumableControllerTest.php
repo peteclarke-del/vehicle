@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Controller;
 
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use App\Tests\TestCase\BaseWebTestCase;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 
 /**
@@ -12,19 +13,14 @@ use Symfony\Bundle\FrameworkBundle\KernelBrowser;
  * 
  * Integration tests for Consumable CRUD operations and replacement tracking
  */
-class ConsumableControllerTest extends WebTestCase
+class ConsumableControllerTest extends BaseWebTestCase
 {
-    private KernelBrowser $client;
 
     protected function setUp(): void
     {
         $this->client = static::createClient();
     }
 
-    private function getAuthToken(): string
-    {
-        return 'Bearer mock-jwt-token-12345';
-    }
 
     public function testListConsumablesRequiresAuthentication(): void
     {

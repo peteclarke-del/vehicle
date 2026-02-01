@@ -21,6 +21,7 @@ import { useTranslation } from 'react-i18next';
 import { fetchArrayData } from '../hooks/useApiData';
 import { useDistance } from '../hooks/useDistance';
 import KnightRiderLoader from './KnightRiderLoader';
+import logger from '../utils/logger';
 
 const VehicleDialog = ({ open, vehicle, onClose }) => {
   const { convert, toKm, getLabel } = useDistance();
@@ -235,7 +236,7 @@ const VehicleDialog = ({ open, vehicle, onClose }) => {
       const response = await api.get(`/security-features?vehicleTypeId=${vehicleTypeId}`);
       setSecurityFeatures(response.data || []);
     } catch (error) {
-      console.error('Error loading security features:', error);
+      logger.error('Error loading security features:', error);
       setSecurityFeatures([]);
     }
   };
@@ -295,7 +296,7 @@ const VehicleDialog = ({ open, vehicle, onClose }) => {
               makeId = newMake.data.id;
               setMakes(prev => [...prev, newMake.data]);
             } catch (err) {
-              console.error('Error creating make:', err);
+              logger.error('Error creating make:', err);
             }
           }
         }
@@ -364,7 +365,7 @@ const VehicleDialog = ({ open, vehicle, onClose }) => {
 
       // Not found - allow manual entry without alarming the user
       if (status === 404) {
-        console.info('DVLA returned 404; no record found for', registration);
+        logger.info('DVLA returned 404; no record found for', registration);
         return;
       }
 
@@ -376,7 +377,7 @@ const VehicleDialog = ({ open, vehicle, onClose }) => {
           alert(serverError);
         }
       } else {
-        console.warn('Could not lookup registration:', error.response?.data?.error || error.message);
+        logger.warn('Could not lookup registration:', error.response?.data?.error || error.message);
         alert(t('vehicle.lookupFailed'));
       }
     } finally {
@@ -392,7 +393,7 @@ const VehicleDialog = ({ open, vehicle, onClose }) => {
       if (formData.registrationNumber) {
         await lookupRegistration(formData.registrationNumber);
       } else {
-        console.warn('VIN lookup skipped: no registration present and DVLA VIN lookup unavailable');
+        logger.warn('VIN lookup skipped: no registration present and DVLA VIN lookup unavailable');
       }
     };
 
@@ -430,7 +431,7 @@ const VehicleDialog = ({ open, vehicle, onClose }) => {
       }
       handleClose(true);
     } catch (error) {
-      console.error('Error saving vehicle:', error);
+      logger.error('Error saving vehicle:', error);
       alert(t('common.saveError', { type: 'vehicle' }));
     } finally {
       setLoading(false);
@@ -449,7 +450,7 @@ const VehicleDialog = ({ open, vehicle, onClose }) => {
       setFormData(prev => ({ ...prev, status: newStatus }));
       setStatusDialogOpen(false);
     } catch (err) {
-      console.error('Error changing status:', err);
+      logger.error('Error changing status:', err);
       alert(t('common.saveError', { type: 'status' }));
     }
   };
