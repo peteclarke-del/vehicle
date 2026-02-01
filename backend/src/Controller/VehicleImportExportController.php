@@ -1145,19 +1145,37 @@ class VehicleImportExportController extends AbstractController
             }
 
         // remap receiptAttachmentId references in vehicles payload
-            $remapRecursive = function (&$node) use (&$remapRecursive, $idMap) {
+            $logger->info('[import] Starting receiptAttachmentId remapping', [
+                'idMapCount' => count($idMap),
+                'idMapSample' => array_slice($idMap, 0, 5, true)
+            ]);
+            
+            $remappedCount = 0;
+            $remapRecursive = function (&$node) use (&$remapRecursive, $idMap, $logger, &$remappedCount) {
                 if (is_array($node)) {
                     foreach ($node as $k => &$v) {
                         // support exported original IDs (receiptAttachmentOriginalId) and
                         // legacy receiptAttachmentId. For originals, map into the
                         // import-side key 'receiptAttachmentId' which the import logic expects.
                         if ($k === 'receiptAttachmentOriginalId' && !empty($v) && isset($idMap[$v])) {
-                            $node['receiptAttachmentId'] = $idMap[$v];
+                            $newId = $idMap[$v];
+                            $node['receiptAttachmentId'] = $newId;
                             unset($node[$k]);
+                            $remappedCount++;
+                            $logger->debug('[import] Remapped receiptAttachmentOriginalId', [
+                                'oldId' => $v,
+                                'newId' => $newId
+                            ]);
                             continue;
                         }
                         if ($k === 'receiptAttachmentId' && !empty($v) && isset($idMap[$v])) {
+                            $oldVal = $v;
                             $v = $idMap[$v];
+                            $remappedCount++;
+                            $logger->debug('[import] Remapped receiptAttachmentId', [
+                                'oldId' => $oldVal,
+                                'newId' => $v
+                            ]);
                             continue;
                         }
                         if (is_array($v) || is_object($v)) {
@@ -1168,6 +1186,10 @@ class VehicleImportExportController extends AbstractController
             };
 
             $remapRecursive($vehicles);
+            
+            $logger->info('[import] Finished receiptAttachmentId remapping', [
+                'remappedCount' => $remappedCount
+            ]);
 
         // call existing import logic by creating a synthetic Request
             $importRequest = new Request([], [], [], [], [], [], json_encode($vehicles));
