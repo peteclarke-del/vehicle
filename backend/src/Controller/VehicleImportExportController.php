@@ -3425,13 +3425,23 @@ class VehicleImportExportController extends AbstractController
             // Remap attachment entityIds: update attachments to use the NEW entity IDs
             // Attachments were created with OLD entityIds from the export manifest
             if (!empty($attachmentEntitiesByNewId) && !empty($vehicleIdMap)) {
-                $logger->info('[import] Remapping attachment entity IDs', ['count' => count($attachmentEntitiesByNewId)]);
+                $logger->info('[import] Remapping attachment entity IDs', [
+                    'attachmentCount' => count($attachmentEntitiesByNewId),
+                    'vehicleCount' => count($vehicleIdMap)
+                ]);
                 $remappedCount = 0;
                 $reorganizedCount = 0;
+                $notFoundCount = 0;
                 
                 foreach ($attachmentEntitiesByNewId as $attachmentId => $attachment) {
                     $entityType = $attachment->getEntityType();
                     $oldEntityId = $attachment->getEntityId();
+                    
+                    $logger->debug('[import] Processing attachment', [
+                        'attachmentId' => $attachmentId,
+                        'entityType' => $entityType,
+                        'oldEntityId' => $oldEntityId
+                    ]);
 
                     // Remap vehicle attachments (includes documents, manuals, etc.)
                     if ($entityType === 'vehicle' && $oldEntityId && isset($vehicleIdMap[$oldEntityId])) {
@@ -3451,6 +3461,12 @@ class VehicleImportExportController extends AbstractController
                         );
                         $remappedCount++;
                         
+                        $logger->debug('[import] Remapped vehicle attachment', [
+                            'attachmentId' => $attachmentId,
+                            'newEntityId' => $newVehicle->getId(),
+                            'vehicleId' => $newVehicle->getId()
+                        ]);
+                        
                         // Reorganize file into proper directory structure
                         $this->reorganizeReceiptFile($attachment, $newVehicle);
                         $reorganizedCount++;
@@ -3461,22 +3477,33 @@ class VehicleImportExportController extends AbstractController
                     if (in_array($entityType, ['part', 'service', 'mot', 'fuel', 'consumable']) && $oldEntityId) {
                         // For receipts, we need to find the actual entity to get its vehicle
                         $vehicle = null;
+                        $newEntityId = null;
+                        $foundRelationship = false;
+                        
+                        $logger->debug('[import] Searching for receipt attachment parent', [
+                            'attachmentId' => $attachmentId,
+                            'entityType' => $entityType,
+                            'oldEntityId' => $oldEntityId
+                        ]);
                         
                         // Find the entity in vehicleMap by scanning for matching records
                         foreach ($vehicleIdMap as $oldVehicleId => $newVehicle) {
                             // Check if this attachment belongs to an entity of this vehicle
-                            $found = false;
                             
                             switch ($entityType) {
                                 case 'part':
                                     $parts = $newVehicle->getParts();
                                     foreach ($parts as $part) {
                                         if ($part->getReceiptAttachment()?->getId() === $attachmentId) {
-                                            $attachment->setEntityId($part->getId());
-                                            $attachment->setVehicle($newVehicle);
+                                            $newEntityId = $part->getId();
                                             $vehicle = $newVehicle;
-                                            $found = true;
-                                            break 2;
+                                            $foundRelationship = true;
+                                            $logger->debug('[import] Found part with receipt', [
+                                                'partId' => $part->getId(),
+                                                'attachmentId' => $attachmentId,
+                                                'vehicleId' => $newVehicle->getId()
+                                            ]);
+                                            break 3;
                                         }
                                     }
                                     break;
@@ -3485,11 +3512,15 @@ class VehicleImportExportController extends AbstractController
                                     $services = $newVehicle->getServiceRecords();
                                     foreach ($services as $service) {
                                         if ($service->getReceiptAttachment()?->getId() === $attachmentId) {
-                                            $attachment->setEntityId($service->getId());
-                                            $attachment->setVehicle($newVehicle);
+                                            $newEntityId = $service->getId();
                                             $vehicle = $newVehicle;
-                                            $found = true;
-                                            break 2;
+                                            $foundRelationship = true;
+                                            $logger->debug('[import] Found service with receipt', [
+                                                'serviceId' => $service->getId(),
+                                                'attachmentId' => $attachmentId,
+                                                'vehicleId' => $newVehicle->getId()
+                                            ]);
+                                            break 3;
                                         }
                                     }
                                     break;
@@ -3498,11 +3529,15 @@ class VehicleImportExportController extends AbstractController
                                     $mots = $newVehicle->getMotRecords();
                                     foreach ($mots as $mot) {
                                         if ($mot->getReceiptAttachment()?->getId() === $attachmentId) {
-                                            $attachment->setEntityId($mot->getId());
-                                            $attachment->setVehicle($newVehicle);
+                                            $newEntityId = $mot->getId();
                                             $vehicle = $newVehicle;
-                                            $found = true;
-                                            break 2;
+                                            $foundRelationship = true;
+                                            $logger->debug('[import] Found MOT with receipt', [
+                                                'motId' => $mot->getId(),
+                                                'attachmentId' => $attachmentId,
+                                                'vehicleId' => $newVehicle->getId()
+                                            ]);
+                                            break 3;
                                         }
                                     }
                                     break;
@@ -3511,11 +3546,15 @@ class VehicleImportExportController extends AbstractController
                                     $fuelRecords = $newVehicle->getFuelRecords();
                                     foreach ($fuelRecords as $fuelRecord) {
                                         if ($fuelRecord->getReceiptAttachment()?->getId() === $attachmentId) {
-                                            $attachment->setEntityId($fuelRecord->getId());
-                                            $attachment->setVehicle($newVehicle);
+                                            $newEntityId = $fuelRecord->getId();
                                             $vehicle = $newVehicle;
-                                            $found = true;
-                                            break 2;
+                                            $foundRelationship = true;
+                                            $logger->debug('[import] Found fuel record with receipt', [
+                                                'fuelId' => $fuelRecord->getId(),
+                                                'attachmentId' => $attachmentId,
+                                                'vehicleId' => $newVehicle->getId()
+                                            ]);
+                                            break 3;
                                         }
                                     }
                                     break;
@@ -3524,18 +3563,25 @@ class VehicleImportExportController extends AbstractController
                                     $consumables = $newVehicle->getConsumables();
                                     foreach ($consumables as $consumable) {
                                         if ($consumable->getReceiptAttachment()?->getId() === $attachmentId) {
-                                            $attachment->setEntityId($consumable->getId());
-                                            $attachment->setVehicle($newVehicle);
+                                            $newEntityId = $consumable->getId();
                                             $vehicle = $newVehicle;
-                                            $found = true;
-                                            break 2;
+                                            $foundRelationship = true;
+                                            $logger->debug('[import] Found consumable with receipt', [
+                                                'consumableId' => $consumable->getId(),
+                                                'attachmentId' => $attachmentId,
+                                                'vehicleId' => $newVehicle->getId()
+                                            ]);
+                                            break 3;
                                         }
                                     }
                                     break;
                             }
                         }
                         
-                        if ($vehicle) {
+                        if ($foundRelationship && $vehicle && $newEntityId) {
+                            $attachment->setEntityId($newEntityId);
+                            $attachment->setVehicle($vehicle);
+                            
                             // Persist the changes to ensure vehicle_id FK is set
                             $entityManager->persist($attachment);
                             
@@ -3546,9 +3592,24 @@ class VehicleImportExportController extends AbstractController
                             );
                             $remappedCount++;
                             
+                            $logger->info('[import] Remapped receipt attachment', [
+                                'attachmentId' => $attachmentId,
+                                'entityType' => $entityType,
+                                'oldEntityId' => $oldEntityId,
+                                'newEntityId' => $newEntityId,
+                                'vehicleId' => $vehicle->getId()
+                            ]);
+                            
                             // Reorganize receipt file into proper directory structure
                             $this->reorganizeReceiptFile($attachment, $vehicle);
                             $reorganizedCount++;
+                        } else {
+                            $logger->warning('[import] Could not find parent entity for receipt attachment', [
+                                'attachmentId' => $attachmentId,
+                                'entityType' => $entityType,
+                                'oldEntityId' => $oldEntityId
+                            ]);
+                            $notFoundCount++;
                         }
                     }
                 }
@@ -3557,7 +3618,8 @@ class VehicleImportExportController extends AbstractController
                     $entityManager->flush();
                     $logger->info('[import] Remapped and reorganized attachments', [
                         'remapped' => $remappedCount,
-                        'reorganized' => $reorganizedCount
+                        'reorganized' => $reorganizedCount,
+                        'notFound' => $notFoundCount
                     ]);
                 }
             }
