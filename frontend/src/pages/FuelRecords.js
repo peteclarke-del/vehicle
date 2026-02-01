@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import logger from '../utils/logger';
+import SafeStorage from '../utils/SafeStorage';
 import { Box, Button, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, IconButton, Tooltip, TableSortLabel } from '@mui/material';
 import logger from '../utils/logger';
 import { Add, Edit, Delete } from '@mui/icons-material';
@@ -38,8 +39,8 @@ const FuelRecords = () => {
   const recordsAbortRef = React.useRef(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState(null);
-  const [orderBy, setOrderBy] = useState(() => localStorage.getItem('fuelRecordsSortBy') || 'date');
-  const [order, setOrder] = useState(() => localStorage.getItem('fuelRecordsSortOrder') || 'desc');
+  const [orderBy, setOrderBy] = useState(() => SafeStorage.get('fuelRecordsSortBy', 'date'));
+  const [order, setOrder] = useState(() => SafeStorage.get('fuelRecordsSortOrder', 'desc'));
   const { api } = useAuth();
   const { t, i18n } = useTranslation();
   const registrationLabelText = t('common.registrationNumber');
@@ -161,8 +162,8 @@ const FuelRecords = () => {
     const newOrder = isAsc ? 'desc' : 'asc';
     setOrder(newOrder);
     setOrderBy(property);
-    localStorage.setItem('fuelRecordsSortBy', property);
-    localStorage.setItem('fuelRecordsSortOrder', newOrder);
+    SafeStorage.set('fuelRecordsSortBy', property);
+    SafeStorage.set('fuelRecordsSortOrder', newOrder);
   };
 
   const sortedRecords = React.useMemo(() => {
