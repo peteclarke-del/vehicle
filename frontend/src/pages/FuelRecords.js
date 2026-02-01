@@ -1,18 +1,33 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import logger from '../utils/logger';
 import { Box, Button, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, IconButton, Tooltip, TableSortLabel } from '@mui/material';
+import logger from '../utils/logger';
 import { Add, Edit, Delete } from '@mui/icons-material';
+import logger from '../utils/logger';
 import { useAuth } from '../contexts/AuthContext';
+import logger from '../utils/logger';
 import { useUserPreferences } from '../contexts/UserPreferencesContext';
+import logger from '../utils/logger';
 import { useTranslation } from 'react-i18next';
+import logger from '../utils/logger';
 import formatCurrency from '../utils/formatCurrency';
+import logger from '../utils/logger';
 import { fetchArrayData } from '../hooks/useApiData';
+import logger from '../utils/logger';
 import { useDistance } from '../hooks/useDistance';
+import logger from '../utils/logger';
 import useTablePagination from '../hooks/useTablePagination';
+import logger from '../utils/logger';
 import FuelRecordDialog from '../components/FuelRecordDialog';
+import logger from '../utils/logger';
 import TablePaginationBar from '../components/TablePaginationBar';
+import logger from '../utils/logger';
 import VehicleSelector from '../components/VehicleSelector';
+import logger from '../utils/logger';
 import ViewAttachmentIconButton from '../components/ViewAttachmentIconButton';
+import logger from '../utils/logger';
 import KnightRiderLoader from '../components/KnightRiderLoader';
+import logger from '../utils/logger';
 
 const FuelRecords = () => {
   const [records, setRecords] = useState([]);
@@ -35,15 +50,15 @@ const FuelRecords = () => {
   const { defaultVehicleId, setDefaultVehicle } = useUserPreferences();
   const [hasManualSelection, setHasManualSelection] = useState(false);
 
-  // Send client-side logs to backend if endpoint exists, otherwise console.warn/error
+  // Send client-side logs to backend if endpoint exists, otherwise logger.warn/error
   const sendClientLog = useCallback(async (level, message, context = {}) => {
     const payload = { level, message, context, ts: new Date().toISOString() };
     try {
       // attempt to post to /client-logs; ignore failures
       await api.post('/client-logs', payload);
     } catch (err) {
-      if (level === 'error') console.error('[client-log]', message, context, err);
-      else console.warn('[client-log]', message, context, err);
+      if (level === 'error') logger.error('[client-log]', message, context, err);
+      else logger.warn('[client-log]', message, context, err);
     }
   }, [api]);
 
@@ -80,7 +95,7 @@ const FuelRecords = () => {
       setRecords(response.data);
     } catch (error) {
       if (error.name !== 'CanceledError' && error.name !== 'AbortError') {
-        console.error('Error loading fuel records:', error);
+        logger.error('Error loading fuel records:', error);
         sendClientLog('error', 'fuel_records_error', { vehicleId: selectedVehicle, error: String(error) });
       }
       setRecords([]);
@@ -128,7 +143,7 @@ const FuelRecords = () => {
         await api.delete(`/fuel-records/${id}`);
         loadRecords();
       } catch (error) {
-        console.error('Error deleting fuel record:', error);
+        logger.error('Error deleting fuel record:', error);
       }
     }
   };

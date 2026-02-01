@@ -223,7 +223,7 @@ const Dashboard = () => {
       setLast12ConsumablesTotal(resp.data.consumables ?? 0);
       setAvgServiceCost(resp.data.averageServiceCost ?? 0);
     } catch (err) {
-      console.warn('Failed to load vehicle totals', err);
+      logger.warn('Failed to load vehicle totals', err);
     } finally {
       setTotalsLoading(false);
     }
@@ -256,7 +256,7 @@ const Dashboard = () => {
         .length;
       setSornVehicles(sornCount);
     } catch (err) {
-      console.warn('Failed to load road tax data', err);
+      logger.warn('Failed to load road tax data', err);
     }
   }, [api, vehicles]);
 
@@ -320,7 +320,7 @@ const Dashboard = () => {
       await api.put(`/vehicles/${vehicleId}`, payload);
       await refreshVehicles();
     } catch (e) {
-      console.error('Error updating vehicle status with metadata', e);
+      logger.error('Error updating vehicle status with metadata', e);
     } finally {
       setStatusDialogOpen(false);
     }

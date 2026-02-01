@@ -79,7 +79,7 @@ const Policies = () => {
       try {
         await api.delete(`/insurance/policies/${id}`);
       } catch (err) {
-        console.error('Error deleting policy', err);
+        logger.error('Error deleting policy', err);
         // Revert locally if delete failed
         setPolicies(prev => [p, ...prev]);
       } finally {

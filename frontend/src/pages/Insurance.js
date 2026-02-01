@@ -48,7 +48,7 @@ const Insurance = () => {
       const response = await api.get(url);
       setPolicies(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
-      console.error('Error loading policies:', error);
+      logger.error('Error loading policies:', error);
       setPolicies([]);
     } finally {
       setLoading(false);
@@ -142,7 +142,7 @@ const Insurance = () => {
       await api.delete(`/insurance/policies/${id}`);
       loadPolicies();
     } catch (err) {
-      console.error('Error deleting policy', err);
+      logger.error('Error deleting policy', err);
     }
   };
 

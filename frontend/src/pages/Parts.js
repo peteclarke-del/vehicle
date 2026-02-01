@@ -1,19 +1,35 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import logger from '../utils/logger';
 import { Box, Button, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, IconButton, Chip, Tooltip, TableSortLabel } from '@mui/material';
+import logger from '../utils/logger';
 import { Add, Edit, Delete } from '@mui/icons-material';
+import logger from '../utils/logger';
 import { useAuth } from '../contexts/AuthContext';
+import logger from '../utils/logger';
 import VehicleSelector from '../components/VehicleSelector';
+import logger from '../utils/logger';
 import { useTranslation } from 'react-i18next';
+import logger from '../utils/logger';
 import { useUserPreferences } from '../contexts/UserPreferencesContext';
+import logger from '../utils/logger';
 import formatCurrency from '../utils/formatCurrency';
+import logger from '../utils/logger';
 import { fetchArrayData } from '../hooks/useApiData';
+import logger from '../utils/logger';
 import { useDistance } from '../hooks/useDistance';
+import logger from '../utils/logger';
 import useTablePagination from '../hooks/useTablePagination';
+import logger from '../utils/logger';
 import PartDialog from '../components/PartDialog';
+import logger from '../utils/logger';
 import ServiceDialog from '../components/ServiceDialog';
+import logger from '../utils/logger';
 import KnightRiderLoader from '../components/KnightRiderLoader';
+import logger from '../utils/logger';
 import ViewAttachmentIconButton from '../components/ViewAttachmentIconButton';
+import logger from '../utils/logger';
 import TablePaginationBar from '../components/TablePaginationBar';
+import logger from '../utils/logger';
 
 const Parts = () => {
   const [parts, setParts] = useState([]);
@@ -59,7 +75,7 @@ const Parts = () => {
       }
       setParts(response.data);
     } catch (error) {
-      console.error('Error loading parts:', error);
+      logger.error('Error loading parts:', error);
     }
   }, [api, selectedVehicle]);
 
@@ -101,7 +117,7 @@ const Parts = () => {
         await api.delete(`/parts/${id}`);
         loadParts();
       } catch (error) {
-        console.error('Error deleting part:', error);
+        logger.error('Error deleting part:', error);
       }
     }
   };
@@ -314,7 +330,7 @@ const Parts = () => {
                       </div>
                       <div>
                         {part.serviceRecordId ? (
-                          <button onClick={async (e) => { e.preventDefault(); try { const resp = await api.get(`/service-records/${part.serviceRecordId}`); setSelectedServiceRecord(resp.data); setOpenServiceDialog(true); } catch (err) { console.error('Failed to load service record', err); } }} style={{ background: 'none', border: 'none', padding: 0, textDecoration: 'underline', cursor: 'pointer', color: 'inherit' }}>
+                          <button onClick={async (e) => { e.preventDefault(); try { const resp = await api.get(`/service-records/${part.serviceRecordId}`); setSelectedServiceRecord(resp.data); setOpenServiceDialog(true); } catch (err) { logger.error('Failed to load service record', err); } }} style={{ background: 'none', border: 'none', padding: 0, textDecoration: 'underline', cursor: 'pointer', color: 'inherit' }}>
                             {part.serviceRecordDate ? t('service.serviceLabelDate', { date: part.serviceRecordDate }) : t('service.serviceLabelId', { id: part.serviceRecordId })}
                           </button>
                         ) : '-'}
