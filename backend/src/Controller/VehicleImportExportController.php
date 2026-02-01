@@ -1079,16 +1079,14 @@ class VehicleImportExportController extends AbstractController
             $zip->extractTo($tmpDir);
             $zip->close();
 
-            $manifestFile = $tmpDir . '/manifest.json';
             $vehiclesFile = $tmpDir . '/vehicles.json';
-            if (!file_exists($manifestFile) || !file_exists($vehiclesFile)) {
-                return new JsonResponse(['error' => 'Missing manifest or vehicles.json in zip'], 400);
+            if (!file_exists($vehiclesFile)) {
+                return new JsonResponse(['error' => 'Missing vehicles.json in zip'], 400);
             }
 
-            $manifest = json_decode(file_get_contents($manifestFile), true);
             $vehicles = json_decode(file_get_contents($vehiclesFile), true);
-            if (!is_array($manifest) || !is_array($vehicles)) {
-                return new JsonResponse(['error' => 'Invalid manifest or vehicles.json'], 400);
+            if (!is_array($vehicles)) {
+                return new JsonResponse(['error' => 'Invalid vehicles.json'], 400);
             }
 
             $uploadDir = $this->getParameter('kernel.project_dir') . '/uploads';
@@ -1370,20 +1368,16 @@ class VehicleImportExportController extends AbstractController
      * @param EntityManagerInterface $entityManager
      * @param LoggerInterface $logger
      * @param TagAwareCacheInterface $cache
-     * @param array|null $attachmentMap Legacy attachment map for old import format
      * @param string|null $zipExtractDir Directory where ZIP was extracted (for embedded attachments)
      *
      * @return JsonResponse
      */
-    public function import(Request $request, EntityManagerInterface $entityManager, LoggerInterface $logger, TagAwareCacheInterface $cache, ?array $attachmentMap = null, ?string $zipExtractDir = null): JsonResponse
+    public function import(Request $request, EntityManagerInterface $entityManager, LoggerInterface $logger, TagAwareCacheInterface $cache, ?string $zipExtractDir = null): JsonResponse
     {
         // Start transaction for data consistency
         $entityManager->beginTransaction();
 
-        $logger->info('[import] Function called', [
-            'attachmentMapProvided' => $attachmentMap !== null,
-            'attachmentMapCount' => $attachmentMap ? count($attachmentMap) : 0,
-            'attachmentMapKeys' => $attachmentMap ? array_slice(array_keys($attachmentMap), 0, 10) : [],
+        $logger->info('[import] Function called (Option 3 format)', [
             'zipExtractDir' => $zipExtractDir
         ]);
 
@@ -1947,29 +1941,6 @@ class VehicleImportExportController extends AbstractController
                                     ]);
                                 }
                             }
-                            // Legacy support: receiptAttachmentId from old exports
-                            elseif (isset($fuelData['receiptAttachmentId'])) {
-                                if ($fuelData['receiptAttachmentId'] === null || $fuelData['receiptAttachmentId'] === '') {
-                                    $fuelRecord->setReceiptAttachment(null);
-                                } else {
-                                    $rid = $fuelData['receiptAttachmentId'];
-                                    $att = null;
-                                    if ($attachmentMap !== null && isset($attachmentMap[$rid])) {
-                                        $att = $attachmentMap[$rid];
-                                    } else {
-                                        $att = $entityManager->getRepository(\App\Entity\Attachment::class)->find($rid);
-                                    }
-                                    if ($att) {
-                                        $fuelRecord->setReceiptAttachment($att);
-                                        // Update attachment entity_type to match its actual usage
-                                        if ($att->getEntityType() !== 'fuel') {
-                                            $att->setEntityType('fuel');
-                                        }
-                                    } else {
-                                        $fuelRecord->setReceiptAttachment(null);
-                                    }
-                                }
-                            }
                             if (!empty($fuelData['createdAt'])) {
                                 try {
                                     $fuelRecord->setCreatedAt(new \DateTime($fuelData['createdAt']));
@@ -2087,29 +2058,6 @@ class VehicleImportExportController extends AbstractController
                                     $logger->debug('[import] Attached receipt to part', ['part' => $part->getName()]);
                                 }
                             }
-                            // Legacy support: receiptAttachmentId from old exports
-                            elseif (isset($partData['receiptAttachmentId'])) {
-                                if ($partData['receiptAttachmentId'] === null || $partData['receiptAttachmentId'] === '') {
-                                    $part->setReceiptAttachment(null);
-                                } else {
-                                    $rid = $partData['receiptAttachmentId'];
-                                    $att = null;
-                                    if ($attachmentMap !== null && isset($attachmentMap[$rid])) {
-                                        $att = $attachmentMap[$rid];
-                                    } else {
-                                        $att = $entityManager->getRepository(\App\Entity\Attachment::class)->find($rid);
-                                    }
-                                    if ($att) {
-                                        $part->setReceiptAttachment($att);
-                                        // Update attachment entity_type to match its actual usage
-                                        if ($att->getEntityType() !== 'part') {
-                                            $att->setEntityType('part');
-                                        }
-                                    } else {
-                                        $part->setReceiptAttachment(null);
-                                    }
-                                }
-                            }
                             if (!empty($partData['productUrl'])) {
                                 $part->setProductUrl($partData['productUrl']);
                             }
@@ -2222,29 +2170,6 @@ class VehicleImportExportController extends AbstractController
                                     $entityManager->persist($att);
                                     $consumable->setReceiptAttachment($att);
                                     $logger->debug('[import] Attached receipt to consumable', ['consumable' => $consumable->getName()]);
-                                }
-                            }
-                            // Legacy support: receiptAttachmentId from old exports
-                            elseif (isset($consumableData['receiptAttachmentId'])) {
-                                if ($consumableData['receiptAttachmentId'] === null || $consumableData['receiptAttachmentId'] === '') {
-                                    $consumable->setReceiptAttachment(null);
-                                } else {
-                                    $rid = $consumableData['receiptAttachmentId'];
-                                    $att = null;
-                                    if ($attachmentMap !== null && isset($attachmentMap[$rid])) {
-                                        $att = $attachmentMap[$rid];
-                                    } else {
-                                        $att = $entityManager->getRepository(\App\Entity\Attachment::class)->find($rid);
-                                    }
-                                    if ($att) {
-                                        $consumable->setReceiptAttachment($att);
-                                        // Update attachment entity_type to match its actual usage
-                                        if ($att->getEntityType() !== 'consumable') {
-                                            $att->setEntityType('consumable');
-                                        }
-                                    } else {
-                                        $consumable->setReceiptAttachment(null);
-                                    }
                                 }
                             }
                             if (!empty($consumableData['productUrl'])) {
@@ -2451,46 +2376,6 @@ class VehicleImportExportController extends AbstractController
                                     $logger->debug('[import] Attached receipt to service', ['serviceDate' => $serviceData['serviceDate'] ?? 'unknown']);
                                 }
                             }
-                            // Legacy support: receiptAttachmentId from old exports
-                            elseif (isset($serviceData['receiptAttachmentId'])) {
-                                if ($serviceData['receiptAttachmentId'] === null || $serviceData['receiptAttachmentId'] === '') {
-                                    $serviceRecord->setReceiptAttachment(null);
-                                } else {
-                                    $rid = $serviceData['receiptAttachmentId'];
-                                    $att = null;
-                                    if ($attachmentMap !== null && isset($attachmentMap[$rid])) {
-                                        $att = $attachmentMap[$rid];
-                                        $logger->debug('[import] Found service receipt attachment in map', [
-                                            'serviceData' => $serviceData['serviceDate'] ?? 'unknown',
-                                            'receiptAttachmentId' => $rid,
-                                            'attachmentId' => $att->getId()
-                                        ]);
-                                    } else {
-                                        $att = $entityManager->getRepository(\App\Entity\Attachment::class)->find($rid);
-                                        $logger->debug('[import] Service receipt attachment lookup', [
-                                            'receiptAttachmentId' => $rid,
-                                            'foundInMap' => false,
-                                            'foundInDb' => $att !== null,
-                                            'attachmentMapIsNull' => $attachmentMap === null
-                                        ]);
-                                    }
-                                    if ($att) {
-                                        $serviceRecord->setReceiptAttachment($att);
-                                        // Update attachment entity_type to match its actual usage
-                                        // The manifest may have old/incorrect entity_type from export
-                                        if ($att->getEntityType() !== 'service') {
-                                            $att->setEntityType('service');
-                                            $logger->debug('[import] Corrected attachment entity_type', [
-                                                'attachmentId' => $att->getId(),
-                                                'oldEntityType' => $att->getEntityType(),
-                                                'newEntityType' => 'service'
-                                            ]);
-                                        }
-                                    } else {
-                                        $serviceRecord->setReceiptAttachment(null);
-                                    }
-                                }
-                            }
                             if (!empty($serviceData['createdAt'])) {
                                 try {
                                     $serviceRecord->setCreatedAt(new \DateTime($serviceData['createdAt']));
@@ -2584,19 +2469,6 @@ class VehicleImportExportController extends AbstractController
                                                 $att->setEntityType('consumable');
                                                 $att->setVehicle($vehicle);
                                                 $entityManager->persist($att);
-                                                $consumable->setReceiptAttachment($att);
-                                            }
-                                        }
-                                        // Legacy support: receiptAttachmentOriginalId from old exports
-                                        elseif (isset($cData['receiptAttachmentOriginalId'])) {
-                                            $rid = $cData['receiptAttachmentOriginalId'];
-                                            $att = null;
-                                            if ($attachmentMap !== null && isset($attachmentMap[$rid])) {
-                                                $att = $attachmentMap[$rid];
-                                            } else {
-                                                $att = $entityManager->getRepository(\App\Entity\Attachment::class)->find($rid);
-                                            }
-                                            if ($att) {
                                                 $consumable->setReceiptAttachment($att);
                                             }
                                         }
@@ -2704,19 +2576,6 @@ class VehicleImportExportController extends AbstractController
                                                 $part->setReceiptAttachment($att);
                                             }
                                         }
-                                        // Legacy support: receiptAttachmentOriginalId from old exports
-                                        elseif (isset($pData['receiptAttachmentOriginalId'])) {
-                                            $rid = $pData['receiptAttachmentOriginalId'];
-                                            $att = null;
-                                            if ($attachmentMap !== null && isset($attachmentMap[$rid])) {
-                                                $att = $attachmentMap[$rid];
-                                            } else {
-                                                $att = $entityManager->getRepository(\App\Entity\Attachment::class)->find($rid);
-                                            }
-                                            if ($att) {
-                                                $part->setReceiptAttachment($att);
-                                            }
-                                        }
 
                                         $entityManager->persist($part);
                                         $item->setPart($part);
@@ -2812,29 +2671,6 @@ class VehicleImportExportController extends AbstractController
                                     $logger->debug('[import] Attached receipt to MOT', ['testDate' => $motData['testDate'] ?? 'unknown']);
                                 }
                             }
-                            // Legacy support: receiptAttachmentId from old exports
-                            elseif (isset($motData['receiptAttachmentId'])) {
-                                if ($motData['receiptAttachmentId'] === null || $motData['receiptAttachmentId'] === '') {
-                                    $motRecord->setReceiptAttachment(null);
-                                } else {
-                                    $rid = $motData['receiptAttachmentId'];
-                                    $att = null;
-                                    if ($attachmentMap !== null && isset($attachmentMap[$rid])) {
-                                        $att = $attachmentMap[$rid];
-                                    } else {
-                                        $att = $entityManager->getRepository(\App\Entity\Attachment::class)->find($rid);
-                                    }
-                                    if ($att) {
-                                        $motRecord->setReceiptAttachment($att);
-                                        // Update attachment entity_type to match its actual usage
-                                        if ($att->getEntityType() !== 'mot') {
-                                            $att->setEntityType('mot');
-                                        }
-                                    } else {
-                                        $motRecord->setReceiptAttachment(null);
-                                    }
-                                }
-                            }
                             if (!empty($motData['createdAt'])) {
                                 try {
                                     $motRecord->setCreatedAt(new \DateTime($motData['createdAt']));
@@ -2924,25 +2760,6 @@ class VehicleImportExportController extends AbstractController
                                                 $att->setVehicle($vehicle);
                                                 $entityManager->persist($att);
                                                 $existingPart->setReceiptAttachment($att);
-                                            }
-                                        }
-                                        // Legacy support: receiptAttachmentId from old exports
-                                        elseif (isset($partData['receiptAttachmentId'])) {
-                                            if ($partData['receiptAttachmentId'] === null || $partData['receiptAttachmentId'] === '') {
-                                                $existingPart->setReceiptAttachment(null);
-                                            } else {
-                                                $rid = $partData['receiptAttachmentId'];
-                                                $att = null;
-                                                if ($attachmentMap !== null && isset($attachmentMap[$rid])) {
-                                                    $att = $attachmentMap[$rid];
-                                                } else {
-                                                    $att = $entityManager->getRepository(\App\Entity\Attachment::class)->find($rid);
-                                                }
-                                                if ($att) {
-                                                    $existingPart->setReceiptAttachment($att);
-                                                } else {
-                                                    $existingPart->setReceiptAttachment(null);
-                                                }
                                             }
                                         }
                                         if (!empty($partData['productUrl'])) {
@@ -3121,25 +2938,6 @@ class VehicleImportExportController extends AbstractController
                                                 $att->setVehicle($vehicle);
                                                 $entityManager->persist($att);
                                                 $existingConsumable->setReceiptAttachment($att);
-                                            }
-                                        }
-                                        // Legacy support: receiptAttachmentId from old exports
-                                        elseif (isset($consumableData['receiptAttachmentId'])) {
-                                            if ($consumableData['receiptAttachmentId'] === null || $consumableData['receiptAttachmentId'] === '') {
-                                                $existingConsumable->setReceiptAttachment(null);
-                                            } else {
-                                                $rid = $consumableData['receiptAttachmentId'];
-                                                $att = null;
-                                                if ($attachmentMap !== null && isset($attachmentMap[$rid])) {
-                                                    $att = $attachmentMap[$rid];
-                                                } else {
-                                                    $att = $entityManager->getRepository(\App\Entity\Attachment::class)->find($rid);
-                                                }
-                                                if ($att) {
-                                                    $existingConsumable->setReceiptAttachment($att);
-                                                } else {
-                                                    $existingConsumable->setReceiptAttachment(null);
-                                                }
                                             }
                                         }
                                         if (!empty($consumableData['productUrl'])) {
