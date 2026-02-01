@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import logger from '../utils/logger';
 import {
   Box,
   Button,
@@ -31,7 +32,7 @@ const Login = () => {
     } catch (err) {
       // Log full error for debugging (server response may contain details)
       // eslint-disable-next-line no-console
-      console.error('Login error:', err?.response?.data ?? err.message ?? err);
+      logger.error('Login error:', err?.response?.data ?? err.message ?? err);
       setError(t('common.invalidCredentials'));
     } finally {
       setLoading(false);

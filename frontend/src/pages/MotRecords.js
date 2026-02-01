@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import logger from '../utils/logger';
+import SafeStorage from '../utils/SafeStorage';
 import {
   Typography,
   Button,
@@ -41,8 +43,8 @@ const MotRecords = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingMot, setEditingMot] = useState(null);
   const { vehicles, fetchVehicles } = useVehicles();
-  const [orderBy, setOrderBy] = useState(() => localStorage.getItem('motRecordsSortBy') || 'testDate');
-  const [order, setOrder] = useState(() => localStorage.getItem('motRecordsSortOrder') || 'desc');
+  const [orderBy, setOrderBy] = useState(() => SafeStorage.get('motRecordsSortBy', 'testDate'));
+  const [order, setOrder] = useState(() => SafeStorage.get('motRecordsSortOrder', 'desc'));
   const { api } = useAuth();
   const { t, i18n } = useTranslation();
   const registrationLabelText = t('common.registrationNumber');
@@ -60,7 +62,7 @@ const MotRecords = () => {
       const response = await api.get(url);
       setMotRecords(response.data);
     } catch (error) {
-      console.error('Error loading MOT records:', error);
+      logger.error('Error loading MOT records:', error);
     } finally {
       setLoading(false);
     }
@@ -112,7 +114,7 @@ const MotRecords = () => {
         await api.delete(`/mot-records/${id}`);
         loadMotRecords();
       } catch (error) {
-        console.error('Error deleting MOT record:', error);
+        logger.error('Error deleting MOT record:', error);
       }
     }
   };
@@ -130,8 +132,8 @@ const MotRecords = () => {
     const newOrder = isAsc ? 'desc' : 'asc';
     setOrder(newOrder);
     setOrderBy(property);
-    localStorage.setItem('motRecordsSortBy', property);
-    localStorage.setItem('motRecordsSortOrder', newOrder);
+    SafeStorage.set('motRecordsSortBy', property);
+    SafeStorage.set('motRecordsSortOrder', newOrder);
   };
 
   const sortedMotRecords = React.useMemo(() => {
@@ -246,7 +248,7 @@ const MotRecords = () => {
                     loadMotRecords();
                   } catch (err) {
                     // eslint-disable-next-line no-console
-                    console.error('Error importing MOT history:', err);
+                    logger.error('Error importing MOT history:', err);
                     // eslint-disable-next-line no-alert
                     alert(t('mot.importFailed'));
                   }

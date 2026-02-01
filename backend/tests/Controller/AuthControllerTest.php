@@ -5,17 +5,18 @@ declare(strict_types=1);
 namespace App\Tests\Controller;
 
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use App\Tests\TestCase\BaseWebTestCase;
 
 /**
  * Auth Controller Test
  * 
  * Integration tests for authentication and authorization
  */
-class AuthControllerTest extends WebTestCase
+class AuthControllerTest extends BaseWebTestCase
 {
     public function testRegisterNewUser(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 
         $client->request('POST', '/api/auth/register', [], [], ['CONTENT_TYPE' => 'application/json'], json_encode([
             'email' => 'newuser@example.com',
@@ -35,7 +36,7 @@ class AuthControllerTest extends WebTestCase
 
     public function testRegisterWithExistingEmail(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 
         $client->request('POST', '/api/auth/register', [], [], ['CONTENT_TYPE' => 'application/json'], json_encode([
             'email' => 'test@example.com',
@@ -52,7 +53,7 @@ class AuthControllerTest extends WebTestCase
 
     public function testRegisterWithWeakPassword(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 
         $client->request('POST', '/api/auth/register', [], [], ['CONTENT_TYPE' => 'application/json'], json_encode([
             'email' => 'newuser@example.com',
@@ -69,7 +70,7 @@ class AuthControllerTest extends WebTestCase
 
     public function testRegisterWithInvalidEmail(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 
         $client->request('POST', '/api/auth/register', [], [], ['CONTENT_TYPE' => 'application/json'], json_encode([
             'email' => 'not-an-email',
@@ -83,7 +84,7 @@ class AuthControllerTest extends WebTestCase
 
     public function testLogin(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 
         $client->request('POST', '/api/auth/login', [], [], ['CONTENT_TYPE' => 'application/json'], json_encode([
             'email' => 'test@example.com',
@@ -100,7 +101,7 @@ class AuthControllerTest extends WebTestCase
 
     public function testLoginWithInvalidCredentials(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 
         $client->request('POST', '/api/auth/login', [], [], ['CONTENT_TYPE' => 'application/json'], json_encode([
             'email' => 'test@example.com',
@@ -115,7 +116,7 @@ class AuthControllerTest extends WebTestCase
 
     public function testLoginWithNonExistentUser(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 
         $client->request('POST', '/api/auth/login', [], [], ['CONTENT_TYPE' => 'application/json'], json_encode([
             'email' => 'nonexistent@example.com',
@@ -127,7 +128,7 @@ class AuthControllerTest extends WebTestCase
 
     public function testRefreshToken(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 
         // First login to get a token
         $client->request('POST', '/api/auth/login', [], [], ['CONTENT_TYPE' => 'application/json'], json_encode([
@@ -153,7 +154,7 @@ class AuthControllerTest extends WebTestCase
 
     public function testRefreshTokenRequiresAuthentication(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 
         $client->request('POST', '/api/auth/refresh');
 
@@ -162,7 +163,7 @@ class AuthControllerTest extends WebTestCase
 
     public function testRefreshTokenWithExpiredToken(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 
         // Use an expired token (mocked)
         $expiredToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE1MTYyMzkwMjJ9.expired';
@@ -177,7 +178,7 @@ class AuthControllerTest extends WebTestCase
 
     public function testRequestPasswordReset(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 
         $client->request('POST', '/api/auth/password-reset-request', [], [], ['CONTENT_TYPE' => 'application/json'], json_encode([
             'email' => 'test@example.com',
@@ -192,7 +193,7 @@ class AuthControllerTest extends WebTestCase
 
     public function testRequestPasswordResetWithInvalidEmail(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 
         $client->request('POST', '/api/auth/password-reset-request', [], [], ['CONTENT_TYPE' => 'application/json'], json_encode([
             'email' => 'nonexistent@example.com',
@@ -204,7 +205,7 @@ class AuthControllerTest extends WebTestCase
 
     public function testResetPassword(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 
         // Request reset token
         $client->request('POST', '/api/auth/password-reset-request', [], [], ['CONTENT_TYPE' => 'application/json'], json_encode([
@@ -225,7 +226,7 @@ class AuthControllerTest extends WebTestCase
 
     public function testResetPasswordWithInvalidToken(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 
         $client->request('POST', '/api/auth/password-reset', [], [], ['CONTENT_TYPE' => 'application/json'], json_encode([
             'token' => 'invalid-token',
@@ -237,7 +238,7 @@ class AuthControllerTest extends WebTestCase
 
     public function testResetPasswordWithExpiredToken(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 
         $expiredToken = 'expired-token-123';
 
@@ -254,7 +255,7 @@ class AuthControllerTest extends WebTestCase
 
     public function testLogout(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 
         // Login first
         $client->request('POST', '/api/auth/login', [], [], ['CONTENT_TYPE' => 'application/json'], json_encode([
@@ -282,7 +283,7 @@ class AuthControllerTest extends WebTestCase
 
     public function testGetCurrentUser(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 
         // Login first
         $client->request('POST', '/api/auth/login', [], [], ['CONTENT_TYPE' => 'application/json'], json_encode([
@@ -309,7 +310,7 @@ class AuthControllerTest extends WebTestCase
 
     public function testUpdateProfile(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 
         // Login first
         $client->request('POST', '/api/auth/login', [], [], ['CONTENT_TYPE' => 'application/json'], json_encode([
@@ -338,7 +339,7 @@ class AuthControllerTest extends WebTestCase
 
     public function testChangePassword(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 
         // Login first
         $client->request('POST', '/api/auth/login', [], [], ['CONTENT_TYPE' => 'application/json'], json_encode([
@@ -363,7 +364,7 @@ class AuthControllerTest extends WebTestCase
 
     public function testChangePasswordWithWrongCurrentPassword(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 
         // Login first
         $client->request('POST', '/api/auth/login', [], [], ['CONTENT_TYPE' => 'application/json'], json_encode([
@@ -388,7 +389,7 @@ class AuthControllerTest extends WebTestCase
 
     public function testRateLimitingOnLogin(): void
     {
-        $client = static::createClient();
+        $client = $this->client;
 
         // Attempt multiple failed logins
         for ($i = 0; $i < 10; $i++) {

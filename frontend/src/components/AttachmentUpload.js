@@ -27,6 +27,7 @@ import { useTranslation } from 'react-i18next';
 import KnightRiderLoader from './KnightRiderLoader';
 import AttachmentViewerDialog from './AttachmentViewerDialog';
 import { useDragDrop } from '../hooks/useDragDrop';
+import logger from '../utils/logger';
 
 const AttachmentUpload = ({ entityType, entityId, onChange, compact = false }) => {
   const [attachments, setAttachments] = useState([]);
@@ -51,7 +52,7 @@ const AttachmentUpload = ({ entityType, entityId, onChange, compact = false }) =
       setAttachments(response.data);
       if (onChange) onChange(response.data);
     } catch (error) {
-      console.error('Error loading attachments:', error);
+      logger.error('Error loading attachments:', error);
     } finally {
       setLoading(false);
     }
@@ -87,7 +88,7 @@ const AttachmentUpload = ({ entityType, entityId, onChange, compact = false }) =
         setAttachments(newAttachments);
         if (onChange) onChange(newAttachments);
       } catch (error) {
-        console.error('Error uploading file:', error);
+        logger.error('Error uploading file:', error);
         alert(t('common.uploadFailed', { filename: file.name }));
       }
     }
@@ -103,7 +104,7 @@ const AttachmentUpload = ({ entityType, entityId, onChange, compact = false }) =
       setAttachments(newAttachments);
       if (onChange) onChange(newAttachments);
     } catch (error) {
-      console.error('Error deleting attachment:', error);
+      logger.error('Error deleting attachment:', error);
       alert(t('common.deleteFailed'));
     }
   };
@@ -119,7 +120,7 @@ const AttachmentUpload = ({ entityType, entityId, onChange, compact = false }) =
       const { saveBlob } = await import('../components/DownloadHelpers');
       saveBlob(blob, attachment.originalName);
     } catch (error) {
-      console.error('Error downloading attachment:', error);
+      logger.error('Error downloading attachment:', error);
       alert(t('common.downloadFailed'));
     }
   };

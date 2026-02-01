@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Controller\Trait\JsonValidationTrait;
+use App\Controller\Trait\UserSecurityTrait;
 use App\Entity\ServiceRecord;
 use App\Entity\ServiceItem;
 use App\Entity\Vehicle;
@@ -22,12 +24,12 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Component\String\Slugger\SluggerInterface;
-use App\Controller\Trait\UserSecurityTrait;
 use App\Controller\Trait\AttachmentFileOrganizerTrait;
 
 #[Route('/api')]
 class ServiceRecordController extends AbstractController
 {
+    use JsonValidationTrait;
     use UserSecurityTrait;
     use AttachmentFileOrganizerTrait;
 
@@ -126,10 +128,11 @@ class ServiceRecordController extends AbstractController
             return new JsonResponse(['error' => 'Unauthorized'], 401);
         }
 
-        $data = json_decode($request->getContent(), true);
-        if (json_last_error() !== JSON_ERROR_NONE) {
-            return new JsonResponse(['error' => 'Invalid JSON payload'], 400);
+        $validation = $this->validateJsonRequest($request);
+        if ($validation['error']) {
+            return $validation['error'];
         }
+        $data = $validation['data'];
 
         // Validate required fields
         if (!isset($data['vehicleId']) || !isset($data['serviceDate'])) {
@@ -185,10 +188,11 @@ class ServiceRecordController extends AbstractController
             return new JsonResponse(['error' => 'Service record not found'], 404);
         }
 
-        $data = json_decode($request->getContent(), true);
-        if (json_last_error() !== JSON_ERROR_NONE) {
-            return new JsonResponse(['error' => 'Invalid JSON payload'], 400);
+        $validation = $this->validateJsonRequest($request);
+        if ($validation['error']) {
+            return $validation['error'];
         }
+        $data = $validation['data'];
 
         $this->entityManager->beginTransaction();
         try {
@@ -673,10 +677,11 @@ class ServiceRecordController extends AbstractController
             return new JsonResponse(['error' => 'Not authorized to update this item'], 403);
         }
 
-        $data = json_decode($request->getContent(), true);
-        if (!$data) {
-            return new JsonResponse(['error' => 'Invalid JSON payload'], 400);
+        $validation = $this->validateJsonRequest($request);
+        if ($validation['error']) {
+            return $validation['error'];
         }
+        $data = $validation['data'];
 
         try {
             if (isset($data['cost'])) {

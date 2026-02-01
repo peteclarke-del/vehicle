@@ -23,12 +23,14 @@ use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\String\Slugger\SluggerInterface;
 use App\Controller\Trait\UserSecurityTrait;
 use App\Controller\Trait\AttachmentFileOrganizerTrait;
+use App\Controller\Trait\JsonValidationTrait;
 
 #[Route('/api/parts')]
 class PartController extends AbstractController
 {
     use UserSecurityTrait;
     use AttachmentFileOrganizerTrait;
+    use JsonValidationTrait;
 
     public function __construct(
         private EntityManagerInterface $entityManager,
@@ -109,7 +111,11 @@ class PartController extends AbstractController
             return $this->json(['error' => 'Not authenticated'], 401);
         }
 
-        $data = json_decode($request->getContent(), true);
+        $validation = $this->validateJsonRequest($request);
+        if ($validation['error']) {
+            return $validation['error'];
+        }
+        $data = $validation['data'];
 
         $vehicle = $this->entityManager->getRepository(Vehicle::class)
             ->find($data['vehicleId']);
@@ -148,7 +154,11 @@ class PartController extends AbstractController
             return $this->json(['error' => 'Part not found'], 404);
         }
 
-        $data = json_decode($request->getContent(), true);
+        $validation = $this->validateJsonRequest($request);
+        if ($validation['error']) {
+            return $validation['error'];
+        }
+        $data = $validation['data'];
         $this->logger->info('Part update payload', ['id' => $id, 'data' => $data]);
 
         $prevMotId = $part->getMotRecord()?->getId();
@@ -397,7 +407,11 @@ class PartController extends AbstractController
             return $this->json(['error' => 'Not authenticated'], 401);
         }
 
-        $data = json_decode($request->getContent(), true);
+        $validation = $this->validateJsonRequest($request);
+        if ($validation['error']) {
+            return $validation['error'];
+        }
+        $data = $validation['data'];
         $url = $data['url'] ?? null;
 
         if (!$url) {

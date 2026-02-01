@@ -18,6 +18,8 @@ import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/ico
 import { useAuth } from '../contexts/AuthContext';
 import { useUserPreferences } from '../contexts/UserPreferencesContext';
 import { useTranslation } from 'react-i18next';
+import logger from '../utils/logger';
+import SafeStorage from '../utils/SafeStorage';
 import { formatDateISO } from '../utils/formatDate';
 import { useVehicles } from '../contexts/VehiclesContext';
 import useTablePagination from '../hooks/useTablePagination';
@@ -37,8 +39,8 @@ const Insurance = () => {
   const [policyDialogOpen, setPolicyDialogOpen] = useState(false);
   const [editingPolicy, setEditingPolicy] = useState(null);
   const { vehicles, fetchVehicles } = useVehicles();
-  const [orderBy, setOrderBy] = useState(() => localStorage.getItem('insuranceSortBy') || 'expiryDate');
-  const [order, setOrder] = useState(() => localStorage.getItem('insuranceSortOrder') || 'desc');
+  const [orderBy, setOrderBy] = useState(() => SafeStorage.get('insuranceSortBy', 'expiryDate'));
+  const [order, setOrder] = useState(() => SafeStorage.get('insuranceSortOrder', 'desc'));
 
   const loadPolicies = useCallback(async () => {
     setLoading(true);
@@ -47,7 +49,7 @@ const Insurance = () => {
       const response = await api.get(url);
       setPolicies(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
-      console.error('Error loading policies:', error);
+      logger.error('Error loading policies:', error);
       setPolicies([]);
     } finally {
       setLoading(false);
@@ -90,8 +92,8 @@ const Insurance = () => {
     const newOrder = isAsc ? 'desc' : 'asc';
     setOrder(newOrder);
     setOrderBy(property);
-    localStorage.setItem('insuranceSortBy', property);
-    localStorage.setItem('insuranceSortOrder', newOrder);
+    SafeStorage.set('insuranceSortBy', property);
+    SafeStorage.set('insuranceSortOrder', newOrder);
   };
 
   const sortedPolicies = React.useMemo(() => {
@@ -141,7 +143,7 @@ const Insurance = () => {
       await api.delete(`/insurance/policies/${id}`);
       loadPolicies();
     } catch (err) {
-      console.error('Error deleting policy', err);
+      logger.error('Error deleting policy', err);
     }
   };
 

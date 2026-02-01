@@ -14,6 +14,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useDistance } from '../hooks/useDistance';
 import ReceiptUpload from './ReceiptUpload';
 import UrlScraper from './UrlScraper';
+import logger from '../utils/logger';
 
 export default function PartDialog({ open, onClose, part, vehicleId }) {
   const { t } = useTranslation();
@@ -97,7 +98,7 @@ export default function PartDialog({ open, onClose, part, vehicleId }) {
         const resp = await api.get(`/vehicles/${actualVehicleId}`);
         setVehicleTypeId(resp.data?.vehicleTypeId || null);
       } catch (e) {
-        console.error('Failed to load vehicle', e);
+        logger.error('Failed to load vehicle', e);
       }
     };
     if (open) loadVehicle();
@@ -110,7 +111,7 @@ export default function PartDialog({ open, onClose, part, vehicleId }) {
         const resp = await api.get('/part-categories', { params });
         setPartCategories(resp.data || []);
       } catch (e) {
-        console.error('Failed to load part categories', e);
+        logger.error('Failed to load part categories', e);
       }
     };
     if (open) loadCategories();
@@ -123,7 +124,7 @@ export default function PartDialog({ open, onClose, part, vehicleId }) {
         const resp = await api.get('/mot-records', { params: { vehicleId: actualVehicleId } });
         setMotRecords(Array.isArray(resp.data) ? resp.data : []);
       } catch (e) {
-        console.error('Failed to load MOT records', e);
+        logger.error('Failed to load MOT records', e);
         setMotRecords([]);
       }
     };
@@ -137,7 +138,7 @@ export default function PartDialog({ open, onClose, part, vehicleId }) {
         const resp = await api.get('/service-records', { params: { vehicleId: actualVehicleId } });
         setServiceRecords(Array.isArray(resp.data) ? resp.data : []);
       } catch (e) {
-        console.error('Failed to load service records', e);
+        logger.error('Failed to load service records', e);
         setServiceRecords([]);
       }
     };
@@ -216,7 +217,7 @@ export default function PartDialog({ open, onClose, part, vehicleId }) {
       }
       onClose(resp.data);
     } catch (error) {
-      console.error('Error saving part:', error);
+      logger.error('Error saving part:', error);
     } finally {
       setLoading(false);
     }

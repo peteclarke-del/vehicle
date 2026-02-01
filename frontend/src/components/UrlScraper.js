@@ -9,6 +9,7 @@ import { Search as SearchIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import KnightRiderLoader from './KnightRiderLoader';
+import logger from '../utils/logger';
 
 export default function UrlScraper({ onDataScraped, endpoint }) {
   const { t } = useTranslation();
@@ -25,7 +26,7 @@ export default function UrlScraper({ onDataScraped, endpoint }) {
       onDataScraped(response.data, url);
       setUrl('');
     } catch (error) {
-      console.error('URL scraping failed:', error);
+      logger.error('URL scraping failed:', error);
       // Extract error message from response or use default
       const errorMessage = error.response?.data?.error || t('scraper.failed');
       alert(errorMessage);

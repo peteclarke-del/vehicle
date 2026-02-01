@@ -1,3 +1,5 @@
+import logger from '../utils/logger';
+
 export function saveBlob(blob, filename) {
   try {
     const url = window.URL.createObjectURL(blob);
@@ -12,7 +14,7 @@ export function saveBlob(blob, filename) {
     // Fallback: try using FileSaver-like behavior or log
     // Keep errors non-fatal for the UI caller
     // eslint-disable-next-line no-console
-    console.error('saveBlob failed', err);
+    logger.error('saveBlob failed', err);
   }
 }
 

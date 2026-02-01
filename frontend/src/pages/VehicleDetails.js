@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import logger from '../utils/logger';
 import {
   Box,
   Card,
@@ -144,7 +145,7 @@ const VehicleDetails = () => {
       setVehicle(vehicleRes.data);
       setStats(statsRes.data);
     } catch (error) {
-      console.error('Error loading vehicle data:', error);
+      logger.error('Error loading vehicle data:', error);
     } finally {
       setLoading(false);
     }
@@ -163,7 +164,7 @@ const VehicleDetails = () => {
           setDepreciationSchedule(res.data.schedule || []);
         })
         .catch((err) => {
-          console.error('Error loading depreciation schedule:', err);
+          logger.error('Error loading depreciation schedule:', err);
           setDepreciationSchedule([]);
         })
         .finally(() => setDepreciationLoading(false));

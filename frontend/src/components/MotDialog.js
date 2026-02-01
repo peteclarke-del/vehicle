@@ -28,6 +28,7 @@ import LinkIcon from '@mui/icons-material/Link';
 import BuildIcon from '@mui/icons-material/Build';
 import OpacityIcon from '@mui/icons-material/Opacity';
 import MiscellaneousServicesIcon from '@mui/icons-material/MiscellaneousServices';
+import logger from '../utils/logger';
 
 const MotDialog = ({ open, motRecord, vehicleId, vehicles, onClose }) => {
   const [formData, setFormData] = useState({
@@ -70,7 +71,7 @@ const MotDialog = ({ open, motRecord, vehicleId, vehicles, onClose }) => {
       const res = await api.get(`/mot-records/${id}/items`);
       setMotItems(res.data || { parts: [], consumables: [], serviceRecords: [] });
     } catch (err) {
-      console.error('Error loading MOT items', err);
+      logger.error('Error loading MOT items', err);
     }
   };
 
@@ -146,11 +147,11 @@ const MotDialog = ({ open, motRecord, vehicleId, vehicles, onClose }) => {
         try {
           await api.put(`/mot-records/${motRecord.id}`, { repairCost: newRepairCost });
         } catch (e) {
-          console.error('Failed to persist MOT repairCost', e);
+          logger.error('Failed to persist MOT repairCost', e);
         }
       }
     } catch (err) {
-      console.error('Error performing confirm action', err);
+      logger.error('Error performing confirm action', err);
       setConfirmOpen(false);
     }
   };
@@ -244,7 +245,7 @@ const MotDialog = ({ open, motRecord, vehicleId, vehicles, onClose }) => {
       }
       onClose(true);
     } catch (error) {
-      console.error('Error saving MOT record:', error);
+      logger.error('Error saving MOT record:', error);
       alert(t('common.saveError', { type: 'MOT record' }));
     } finally {
       setLoading(false);
@@ -507,7 +508,7 @@ const MotDialog = ({ open, motRecord, vehicleId, vehicles, onClose }) => {
                           setSelectedServiceRecord(resp.data);
                           setOpenServiceDialog(true);
                         } catch (err) {
-                          console.error('Error loading service record', err);
+                          logger.error('Error loading service record', err);
                         }
                       }} sx={{ background: 'none', border: 'none', padding: 0, textDecoration: 'underline', cursor: 'pointer', color: 'primary.main' }}>
                         <MiscellaneousServicesIcon fontSize="small" sx={{ mr: 1, verticalAlign: 'middle' }} />

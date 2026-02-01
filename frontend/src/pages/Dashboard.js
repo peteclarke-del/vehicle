@@ -18,6 +18,8 @@ import {
   Tab,
   Menu,
 } from '@mui/material';
+import logger from '../utils/logger';
+import SafeStorage from '../utils/SafeStorage';
 import { PieChart } from '@mui/x-charts/PieChart';
 import { useTranslation } from 'react-i18next';
 import { useUserPreferences } from '../contexts/UserPreferencesContext';
@@ -61,13 +63,13 @@ const Dashboard = () => {
   const [orderedVehicles, setOrderedVehicles] = useState([]);
   const [activeFilter, setActiveFilter] = useState(null);
   const [showVehicleCards, setShowVehicleCards] = useState(() => {
-    return localStorage.getItem('dashboardShowVehicles') !== 'false';
+    return SafeStorage.get('dashboardShowVehicles', 'true') !== 'false';
   });
   const [selectedStatus, setSelectedStatus] = useState('Live');
   const [menuAnchorEl, setMenuAnchorEl] = useState(null);
   const [menuVehicleId, setMenuVehicleId] = useState(null);
   const [sortOrder, setSortOrder] = useState(() => {
-    return localStorage.getItem('vehicleSortOrder') || 'name';
+    return SafeStorage.get('vehicleSortOrder', 'name');
   });
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
@@ -222,7 +224,7 @@ const Dashboard = () => {
       setLast12ConsumablesTotal(resp.data.consumables ?? 0);
       setAvgServiceCost(resp.data.averageServiceCost ?? 0);
     } catch (err) {
-      console.warn('Failed to load vehicle totals', err);
+      logger.warn('Failed to load vehicle totals', err);
     } finally {
       setTotalsLoading(false);
     }
@@ -255,7 +257,7 @@ const Dashboard = () => {
         .length;
       setSornVehicles(sornCount);
     } catch (err) {
-      console.warn('Failed to load road tax data', err);
+      logger.warn('Failed to load road tax data', err);
     }
   }, [api, vehicles]);
 
@@ -319,7 +321,7 @@ const Dashboard = () => {
       await api.put(`/vehicles/${vehicleId}`, payload);
       await refreshVehicles();
     } catch (e) {
-      console.error('Error updating vehicle status with metadata', e);
+      logger.error('Error updating vehicle status with metadata', e);
     } finally {
       setStatusDialogOpen(false);
     }
@@ -328,7 +330,7 @@ const Dashboard = () => {
   const handleSortChange = (event) => {
     const newSort = event.target.value;
     setSortOrder(newSort);
-    localStorage.setItem('vehicleSortOrder', newSort);
+    SafeStorage.set('vehicleSortOrder', newSort);
   };
 
   const handleOpenMenu = (event, vehicleId) => {
@@ -880,7 +882,7 @@ const Dashboard = () => {
                     onClick={() => {
                       const newValue = !showVehicleCards;
                       setShowVehicleCards(newValue);
-                      localStorage.setItem('dashboardShowVehicles', newValue.toString());
+                      SafeStorage.set('dashboardShowVehicles', newValue.toString());
                     }}
                     sx={{ ml: 1, color: 'text.primary' }}
                   >

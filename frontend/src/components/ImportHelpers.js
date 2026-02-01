@@ -1,4 +1,6 @@
-export const authHeaders = () => ({ Authorization: 'Bearer ' + localStorage.getItem('token') });
+import SafeStorage from '../utils/SafeStorage';
+
+export const authHeaders = () => ({ Authorization: 'Bearer ' + SafeStorage.get('token') });
 
 export const buildUrl = (apiBase, path, paramsObj = {}) => {
   const params = new URLSearchParams();

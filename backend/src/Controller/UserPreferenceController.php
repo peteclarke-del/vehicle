@@ -11,11 +11,14 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Doctrine\ORM\EntityManagerInterface;
+use App\Controller\Trait\JsonValidationTrait;
 
 #[Route('/api/user')]
 #[IsGranted('ROLE_USER')]
 class UserPreferenceController extends AbstractController
 {
+    use JsonValidationTrait;
+
     #[Route('/preferences', name: 'user_preferences_get', methods: ['GET'])]
     public function list(EntityManagerInterface $em): JsonResponse
     {
@@ -44,7 +47,11 @@ class UserPreferenceController extends AbstractController
             return new JsonResponse(['error' => 'Unauthorized'], 401);
         }
 
-        $data = json_decode($request->getContent(), true) ?? $request->request->all();
+        $validation = $this->validateJsonRequest($request);
+        if ($validation['error']) {
+            return $validation['error'];
+        }
+        $data = $validation['data'];
         $key = $data['key'] ?? $data['name'] ?? null;
         $value = $data['value'] ?? null;
 
