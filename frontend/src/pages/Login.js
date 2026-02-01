@@ -10,11 +10,8 @@ import {
   Alert,
 } from '@mui/material';
 import { useNavigate, Link } from 'react-router-dom';
-import logger from '../utils/logger';
 import { useAuth } from '../contexts/AuthContext';
-import logger from '../utils/logger';
 import { useTranslation } from 'react-i18next';
-import logger from '../utils/logger';
 
 const Login = () => {
   const [email, setEmail] = useState('');

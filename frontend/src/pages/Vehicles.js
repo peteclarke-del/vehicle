@@ -47,11 +47,8 @@ import {
 import { useNavigate } from 'react-router-dom';
 import logger from '../utils/logger';
 import { useUserPreferences } from '../contexts/UserPreferencesContext';
-import logger from '../utils/logger';
 import { useAuth } from '../contexts/AuthContext';
-import logger from '../utils/logger';
 import { useTranslation } from 'react-i18next';
-import logger from '../utils/logger';
 import { fetchArrayData } from '../hooks/useApiData';
 import logger from '../utils/logger';
 import { useDistance } from '../hooks/useDistance';

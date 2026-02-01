@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import logger from '../utils/logger';
 import {
   Box,
   Card,
@@ -18,7 +19,6 @@ import {
   TableBody,
   TableRow,
   TableCell,
-import logger from '../utils/logger';
   TableContainer,
   Paper,
 } from '@mui/material';
