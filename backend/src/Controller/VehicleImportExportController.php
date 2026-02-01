@@ -1103,136 +1103,12 @@ class VehicleImportExportController extends AbstractController
                 return new JsonResponse(['error' => 'Uploads directory not writable'], 500);
             }
 
-            $idMap = [];
-            $attachmentEntitiesByNewId = [];
-        // import attachments first
-            foreach ($manifest as $m) {
-                if (($m['type'] ?? 'attachment') !== 'attachment') {
-                    continue;
-                }
-                $src = $tmpDir . '/' . $m['manifestName'];
-                if (!file_exists($src)) {
-                    continue;
-                }
-                $storagePath = $m['storagePath'] ?? ('attachments/' . ($m['filename'] ?? basename($m['manifestName'])));
-                $storagePath = ltrim($storagePath, '/');
-                $subDir = trim(dirname($storagePath), '.');
-                if ($subDir === '') {
-                    $subDir = 'attachments';
-                }
-                $targetDir = $uploadDir . '/' . $subDir;
-                if (!file_exists($targetDir)) {
-                    try {
-                        mkdir($targetDir, 0755, true);
-                    } catch (\Throwable $e) {
-                        $logger->error('Failed to create attachment target directory', ['path' => $targetDir, 'exception' => $e->getMessage()]);
-                        continue; // skip this attachment but continue with others
-                    }
-                }
-
-                // generate safe filename to avoid collisions
-                $newFilename = uniqid('att_') . '_' . basename($storagePath);
-                $dest = $targetDir . '/' . $newFilename;
-                rename($src, $dest);
-
-                $attachment = new \App\Entity\Attachment();
-                $attachment->setFilename($newFilename);
-                $attachment->setOriginalName($m['originalName'] ?? $m['filename']);
-                $attachment->setMimeType($m['mimeType'] ?? 'application/octet-stream');
-                $attachment->setFileSize($m['fileSize'] ?? filesize($dest));
-                $attachment->setStoragePath($subDir . '/' . $newFilename);
-                try {
-                    if (!empty($m['uploadedAt'])) {
-                        $attachment->setUploadedAt(new \DateTime($m['uploadedAt']));
-                    }
-                } catch (\Exception $e) {
-                    // ignore invalid date
-                }
-                if (!empty($m['entityType'])) {
-                    $attachment->setEntityType($m['entityType']);
-                }
-                if (!empty($m['entityId'])) {
-                    $attachment->setEntityId($m['entityId']);
-                }
-                if (!empty($m['description'])) {
-                    $attachment->setDescription($m['description']);
-                }
-                if (!empty($m['category'])) {
-                    $attachment->setCategory($m['category']);
-                }
-                $attachment->setUser($user);
-
-                $entityManager->persist($attachment);
-                $entityManager->flush();
-
-                $idMap[$m['originalId']] = $attachment->getId();
-                $attachmentEntitiesByNewId[$attachment->getId()] = $attachment;
-            }
-
-        // remap receiptAttachmentId references in vehicles payload
-            $logger->info('[import] Starting receiptAttachmentId remapping', [
-                'idMapCount' => count($idMap),
-                'idMapSample' => array_slice($idMap, 0, 5, true)
-            ]);
-            
-            // Log sample service record BEFORE remapping
-            if (!empty($vehicles[0]['serviceRecords'][0])) {
-                $logger->info('[BEFORE REMAP] First service record', [
-                    'serviceRecord' => $vehicles[0]['serviceRecords'][0]
-                ]);
-            }
-            
-            $remappedCount = 0;
-            $remapRecursive = function (&$node) use (&$remapRecursive, $idMap, $logger, &$remappedCount) {
-                if (is_array($node)) {
-                    foreach ($node as $k => &$v) {
-                        // support exported original IDs (receiptAttachmentOriginalId) and
-                        // legacy receiptAttachmentId. For originals, map into the
-                        // import-side key 'receiptAttachmentId' which the import logic expects.
-                        if ($k === 'receiptAttachmentOriginalId' && !empty($v) && isset($idMap[$v])) {
-                            $newId = $idMap[$v];
-                            $node['receiptAttachmentId'] = $newId;
-                            unset($node[$k]);
-                            $remappedCount++;
-                            $logger->debug('[import] Remapped receiptAttachmentOriginalId', [
-                                'oldId' => $v,
-                                'newId' => $newId
-                            ]);
-                            continue;
-                        }
-                        if ($k === 'receiptAttachmentId' && !empty($v) && isset($idMap[$v])) {
-                            $oldVal = $v;
-                            $v = $idMap[$v];
-                            $remappedCount++;
-                            $logger->debug('[import] Remapped receiptAttachmentId', [
-                                'oldId' => $oldVal,
-                                'newId' => $v
-                            ]);
-                            continue;
-                        }
-                        if (is_array($v) || is_object($v)) {
-                            $remapRecursive($v);
-                        }
-                    }
-                }
-            };
-
-            $remapRecursive($vehicles);
-            
-            $logger->info('[import] Finished receiptAttachmentId remapping', [
-                'remappedCount' => $remappedCount
-            ]);
-            
-            // Log sample service record AFTER remapping
-            if (!empty($vehicles[0]['serviceRecords'][0])) {
-                $logger->info('[AFTER REMAP] First service record', [
-                    'serviceRecord' => $vehicles[0]['serviceRecords'][0]
-                ]);
-            }
+            // Option 3: Attachments are embedded in entity data, no separate manifest needed
+            $logger->info('[import] Using Option 3 format (embedded attachments)');
 
         // call existing import logic by creating a synthetic Request
             $importRequest = new Request([], [], [], [], [], [], json_encode($vehicles));
-            $result = $this->import($importRequest, $entityManager, $logger, $cache, $attachmentEntitiesByNewId, $tmpDir);
+            $result = $this->import($importRequest, $entityManager, $logger, $cache, $tmpDir);
 
         // build registration -> vehicle map for image import
             $vehiclesList = $vehicles;
@@ -2820,24 +2696,6 @@ class VehicleImportExportController extends AbstractController
                                     if (!empty($partData['supplier'])) {
                                         $part->setSupplier($partData['supplier']);
                                     }
-                                    if (isset($partData['receiptAttachmentId'])) {
-                                        if ($partData['receiptAttachmentId'] === null || $partData['receiptAttachmentId'] === '') {
-                                            $part->setReceiptAttachment(null);
-                                        } else {
-                                            $rid = $partData['receiptAttachmentId'];
-                                            $att = null;
-                                            if ($attachmentMap !== null && isset($attachmentMap[$rid])) {
-                                                $att = $attachmentMap[$rid];
-                                            } else {
-                                                $att = $entityManager->getRepository(\App\Entity\Attachment::class)->find($rid);
-                                            }
-                                            if ($att) {
-                                                $part->setReceiptAttachment($att);
-                                            } else {
-                                                $part->setReceiptAttachment(null);
-                                            }
-                                        }
-                                    }
                                     if (!empty($partData['productUrl'])) {
                                         $part->setProductUrl($partData['productUrl']);
                                     }
@@ -2988,24 +2846,6 @@ class VehicleImportExportController extends AbstractController
 
                                     if (!empty($consumableData['supplier'])) {
                                         $consumable->setSupplier($consumableData['supplier']);
-                                    }
-                                    if (isset($consumableData['receiptAttachmentId'])) {
-                                        if ($consumableData['receiptAttachmentId'] === null || $consumableData['receiptAttachmentId'] === '') {
-                                            $consumable->setReceiptAttachment(null);
-                                        } else {
-                                            $rid = $consumableData['receiptAttachmentId'];
-                                            $att = null;
-                                            if ($attachmentMap !== null && isset($attachmentMap[$rid])) {
-                                                $att = $attachmentMap[$rid];
-                                            } else {
-                                                $att = $entityManager->getRepository(\App\Entity\Attachment::class)->find($rid);
-                                            }
-                                            if ($att) {
-                                                $consumable->setReceiptAttachment($att);
-                                            } else {
-                                                $consumable->setReceiptAttachment(null);
-                                            }
-                                        }
                                     }
                                     if (!empty($consumableData['productUrl'])) {
                                         $consumable->setProductUrl($consumableData['productUrl']);
@@ -3220,18 +3060,6 @@ class VehicleImportExportController extends AbstractController
                                                 if (!empty($cData['productUrl'])) {
                                                     $consumable->setProductUrl($cData['productUrl']);
                                                 }
-                                                if (isset($cData['receiptAttachmentOriginalId'])) {
-                                                    $rid = $cData['receiptAttachmentOriginalId'];
-                                                    $att = null;
-                                                    if ($attachmentMap !== null && isset($attachmentMap[$rid])) {
-                                                        $att = $attachmentMap[$rid];
-                                                    } else {
-                                                        $att = $entityManager->getRepository(\App\Entity\Attachment::class)->find($rid);
-                                                    }
-                                                    if ($att) {
-                                                        $consumable->setReceiptAttachment($att);
-                                                    }
-                                                }
 
                                                 $consumable->setServiceRecord($svc);
                                                 $entityManager->persist($consumable);
@@ -3288,18 +3116,6 @@ class VehicleImportExportController extends AbstractController
                                                 if (!empty($pData['productUrl'])) {
                                                     $part->setProductUrl($pData['productUrl']);
                                                 }
-                                                if (isset($pData['receiptAttachmentOriginalId'])) {
-                                                    $rid = $pData['receiptAttachmentOriginalId'];
-                                                    $att = null;
-                                                    if ($attachmentMap !== null && isset($attachmentMap[$rid])) {
-                                                        $att = $attachmentMap[$rid];
-                                                    } else {
-                                                        $att = $entityManager->getRepository(\App\Entity\Attachment::class)->find($rid);
-                                                    }
-                                                    if ($att) {
-                                                        $part->setReceiptAttachment($att);
-                                                    }
-                                                }
 
                                                 $entityManager->persist($part);
                                                 $item->setPart($part);
@@ -3312,18 +3128,6 @@ class VehicleImportExportController extends AbstractController
                                         }
                                     }
 
-                                    if (isset($svcData['receiptAttachmentId'])) {
-                                        if ($svcData['receiptAttachmentId'] === null || $svcData['receiptAttachmentId'] === '') {
-                                            $svc->setReceiptAttachment(null);
-                                        } else {
-                                            $att = $entityManager->getRepository(\App\Entity\Attachment::class)->find($svcData['receiptAttachmentId']);
-                                            if ($att) {
-                                                $svc->setReceiptAttachment($att);
-                                            } else {
-                                                $svc->setReceiptAttachment(null);
-                                            }
-                                        }
-                                    }
                                     if (!empty($svcData['createdAt'])) {
                                         try {
                                             $svc->setCreatedAt(new \DateTime($svcData['createdAt']));
@@ -3476,226 +3280,8 @@ class VehicleImportExportController extends AbstractController
 
             $entityManager->flush();
 
-            // Remap attachment entityIds: update attachments to use the NEW entity IDs
-            // Attachments were created with OLD entityIds from the export manifest
-            $logger->info('[import] Post-flush attachment remapping check', [
-                'attachmentMap_empty' => empty($attachmentMap),
-                'attachmentMap_count' => is_array($attachmentMap) ? count($attachmentMap) : 0,
-                'vehicleIdMap_empty' => empty($vehicleIdMap),
-                'vehicleIdMap_count' => is_array($vehicleIdMap) ? count($vehicleIdMap) : 0
-            ]);
+            // Option 3: No post-flush remapping needed - attachments created and associated immediately during import
             
-            // Refresh all vehicles to ensure their collections (service records, parts, etc.) are properly loaded
-            // This is necessary because the flush above persisted new entities, and we need the updated state
-            if (!empty($vehicleIdMap)) {
-                foreach ($vehicleIdMap as $vehicle) {
-                    $entityManager->refresh($vehicle);
-                }
-                $logger->info('[import] Refreshed vehicle entities', [
-                    'vehicleCount' => count($vehicleIdMap)
-                ]);
-            }
-            
-            if (!empty($attachmentMap) && !empty($vehicleIdMap)) {
-                $logger->info('[import] Remapping attachment entity IDs', [
-                    'attachmentCount' => count($attachmentMap),
-                    'vehicleCount' => count($vehicleIdMap)
-                ]);
-                $remappedCount = 0;
-                $reorganizedCount = 0;
-                $notFoundCount = 0;
-                
-                foreach ($attachmentMap as $attachmentId => $attachment) {
-                    $entityType = $attachment->getEntityType();
-                    $oldEntityId = $attachment->getEntityId();
-                    
-                    $logger->debug('[import] Processing attachment', [
-                        'attachmentId' => $attachmentId,
-                        'entityType' => $entityType,
-                        'oldEntityId' => $oldEntityId
-                    ]);
-
-                    // Remap vehicle attachments (includes documents, manuals, etc.)
-                    if ($entityType === 'vehicle' && $oldEntityId && isset($vehicleIdMap[$oldEntityId])) {
-                        $newVehicle = $vehicleIdMap[$oldEntityId];
-                        $attachment->setEntityId($newVehicle->getId());
-                        // Set the vehicle relationship to maintain proper entity association and enable CASCADE delete
-                        $attachment->setVehicle($newVehicle);
-                        
-                        // Persist the changes immediately to ensure vehicle_id FK is set
-                        // The entity was already persisted earlier, so this updates it
-                        $entityManager->persist($attachment);
-                        
-                        // Force Doctrine UnitOfWork to compute changeset for this entity
-                        $entityManager->getUnitOfWork()->recomputeSingleEntityChangeSet(
-                            $entityManager->getClassMetadata(\App\Entity\Attachment::class),
-                            $attachment
-                        );
-                        $remappedCount++;
-                        
-                        $logger->debug('[import] Remapped vehicle attachment', [
-                            'attachmentId' => $attachmentId,
-                            'newEntityId' => $newVehicle->getId(),
-                            'vehicleId' => $newVehicle->getId()
-                        ]);
-                        
-                        // Reorganize file into proper directory structure
-                        $this->reorganizeReceiptFile($attachment, $newVehicle);
-                        $reorganizedCount++;
-                    }
-                    
-                    // Remap receipt attachments for parts, services, MOTs, fuel, consumables
-                    // These need to find their parent entity to get the vehicle for reorganization
-                    if (in_array($entityType, ['part', 'service', 'mot', 'fuel', 'consumable']) && $oldEntityId) {
-                        // For receipts, we need to find the actual entity to get its vehicle
-                        $vehicle = null;
-                        $newEntityId = null;
-                        $foundRelationship = false;
-                        
-                        $logger->debug('[import] Searching for receipt attachment parent', [
-                            'attachmentId' => $attachmentId,
-                            'entityType' => $entityType,
-                            'oldEntityId' => $oldEntityId
-                        ]);
-                        
-                        // Find the entity in vehicleMap by scanning for matching records
-                        foreach ($vehicleIdMap as $oldVehicleId => $newVehicle) {
-                            // Check if this attachment belongs to an entity of this vehicle
-                            
-                            switch ($entityType) {
-                                case 'part':
-                                    $parts = $newVehicle->getParts();
-                                    foreach ($parts as $part) {
-                                        if ($part->getReceiptAttachment()?->getId() === $attachmentId) {
-                                            $newEntityId = $part->getId();
-                                            $vehicle = $newVehicle;
-                                            $foundRelationship = true;
-                                            $logger->debug('[import] Found part with receipt', [
-                                                'partId' => $part->getId(),
-                                                'attachmentId' => $attachmentId,
-                                                'vehicleId' => $newVehicle->getId()
-                                            ]);
-                                            break 3;
-                                        }
-                                    }
-                                    break;
-                                    
-                                case 'service':
-                                    $services = $newVehicle->getServiceRecords();
-                                    foreach ($services as $service) {
-                                        if ($service->getReceiptAttachment()?->getId() === $attachmentId) {
-                                            $newEntityId = $service->getId();
-                                            $vehicle = $newVehicle;
-                                            $foundRelationship = true;
-                                            $logger->debug('[import] Found service with receipt', [
-                                                'serviceId' => $service->getId(),
-                                                'attachmentId' => $attachmentId,
-                                                'vehicleId' => $newVehicle->getId()
-                                            ]);
-                                            break 3;
-                                        }
-                                    }
-                                    break;
-                                    
-                                case 'mot':
-                                    $mots = $newVehicle->getMotRecords();
-                                    foreach ($mots as $mot) {
-                                        if ($mot->getReceiptAttachment()?->getId() === $attachmentId) {
-                                            $newEntityId = $mot->getId();
-                                            $vehicle = $newVehicle;
-                                            $foundRelationship = true;
-                                            $logger->debug('[import] Found MOT with receipt', [
-                                                'motId' => $mot->getId(),
-                                                'attachmentId' => $attachmentId,
-                                                'vehicleId' => $newVehicle->getId()
-                                            ]);
-                                            break 3;
-                                        }
-                                    }
-                                    break;
-                                    
-                                case 'fuel':
-                                    $fuelRecords = $newVehicle->getFuelRecords();
-                                    foreach ($fuelRecords as $fuelRecord) {
-                                        if ($fuelRecord->getReceiptAttachment()?->getId() === $attachmentId) {
-                                            $newEntityId = $fuelRecord->getId();
-                                            $vehicle = $newVehicle;
-                                            $foundRelationship = true;
-                                            $logger->debug('[import] Found fuel record with receipt', [
-                                                'fuelId' => $fuelRecord->getId(),
-                                                'attachmentId' => $attachmentId,
-                                                'vehicleId' => $newVehicle->getId()
-                                            ]);
-                                            break 3;
-                                        }
-                                    }
-                                    break;
-                                    
-                                case 'consumable':
-                                    $consumables = $newVehicle->getConsumables();
-                                    foreach ($consumables as $consumable) {
-                                        if ($consumable->getReceiptAttachment()?->getId() === $attachmentId) {
-                                            $newEntityId = $consumable->getId();
-                                            $vehicle = $newVehicle;
-                                            $foundRelationship = true;
-                                            $logger->debug('[import] Found consumable with receipt', [
-                                                'consumableId' => $consumable->getId(),
-                                                'attachmentId' => $attachmentId,
-                                                'vehicleId' => $newVehicle->getId()
-                                            ]);
-                                            break 3;
-                                        }
-                                    }
-                                    break;
-                            }
-                        }
-                        
-                        if ($foundRelationship && $vehicle && $newEntityId) {
-                            $attachment->setEntityId($newEntityId);
-                            $attachment->setVehicle($vehicle);
-                            
-                            // Persist the changes to ensure vehicle_id FK is set
-                            $entityManager->persist($attachment);
-                            
-                            // Force Doctrine UnitOfWork to compute changeset for this entity
-                            $entityManager->getUnitOfWork()->recomputeSingleEntityChangeSet(
-                                $entityManager->getClassMetadata(\App\Entity\Attachment::class),
-                                $attachment
-                            );
-                            $remappedCount++;
-                            
-                            $logger->info('[import] Remapped receipt attachment', [
-                                'attachmentId' => $attachmentId,
-                                'entityType' => $entityType,
-                                'oldEntityId' => $oldEntityId,
-                                'newEntityId' => $newEntityId,
-                                'vehicleId' => $vehicle->getId()
-                            ]);
-                            
-                            // Reorganize receipt file into proper directory structure
-                            $this->reorganizeReceiptFile($attachment, $vehicle);
-                            $reorganizedCount++;
-                        } else {
-                            $logger->warning('[import] Could not find parent entity for receipt attachment', [
-                                'attachmentId' => $attachmentId,
-                                'entityType' => $entityType,
-                                'oldEntityId' => $oldEntityId
-                            ]);
-                            $notFoundCount++;
-                        }
-                    }
-                }
-                
-                if ($remappedCount > 0) {
-                    $entityManager->flush();
-                    $logger->info('[import] Remapped and reorganized attachments', [
-                        'remapped' => $remappedCount,
-                        'reorganized' => $reorganizedCount,
-                        'notFound' => $notFoundCount
-                    ]);
-                }
-            }
-
         // Commit transaction on success
             $entityManager->commit();
 
