@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Controller\Trait\JsonValidationTrait;
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
@@ -19,6 +20,8 @@ use Symfony\Contracts\Cache\TagAwareCacheInterface;
 #[Route('/api')]
 class AuthController extends AbstractController
 {
+    use JsonValidationTrait;
+
     public function __construct(
         private EntityManagerInterface $entityManager,
         private UserPasswordHasherInterface $passwordHasher,
@@ -60,7 +63,11 @@ class AuthController extends AbstractController
     #[Route('/register', name: 'api_register', methods: ['POST'])]
     public function register(Request $request): JsonResponse
     {
-        $data = json_decode($request->getContent(), true);
+        $validation = $this->validateJsonRequest($request);
+        if ($validation['error']) {
+            return $validation['error'];
+        }
+        $data = $validation['data'];
 
         if (!isset($data['email']) || !isset($data['password'])) {
             return $this->json(['error' => 'Email and password required'], 400);
