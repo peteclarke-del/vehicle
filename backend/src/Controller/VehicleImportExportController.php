@@ -2075,7 +2075,20 @@ class VehicleImportExportController extends AbstractController
                             if (!empty($partData['supplier'])) {
                                 $part->setSupplier($partData['supplier']);
                             }
-                            if (isset($partData['receiptAttachmentId'])) {
+                            
+                            // Handle embedded attachment (Option 3: attachment data embedded in entity)
+                            if (isset($partData['receiptAttachment']) && is_array($partData['receiptAttachment'])) {
+                                $att = $this->deserializeAttachment($partData['receiptAttachment'], $zipExtractDir, $user);
+                                if ($att) {
+                                    $att->setEntityType('part');
+                                    $att->setVehicle($vehicle);
+                                    $entityManager->persist($att);
+                                    $part->setReceiptAttachment($att);
+                                    $logger->debug('[import] Attached receipt to part', ['part' => $part->getName()]);
+                                }
+                            }
+                            // Legacy support: receiptAttachmentId from old exports
+                            elseif (isset($partData['receiptAttachmentId'])) {
                                 if ($partData['receiptAttachmentId'] === null || $partData['receiptAttachmentId'] === '') {
                                     $part->setReceiptAttachment(null);
                                 } else {
@@ -2199,7 +2212,20 @@ class VehicleImportExportController extends AbstractController
                             if (!empty($consumableData['supplier'])) {
                                 $consumable->setSupplier($consumableData['supplier']);
                             }
-                            if (isset($consumableData['receiptAttachmentId'])) {
+                            
+                            // Handle embedded attachment (Option 3: attachment data embedded in entity)
+                            if (isset($consumableData['receiptAttachment']) && is_array($consumableData['receiptAttachment'])) {
+                                $att = $this->deserializeAttachment($consumableData['receiptAttachment'], $zipExtractDir, $user);
+                                if ($att) {
+                                    $att->setEntityType('consumable');
+                                    $att->setVehicle($vehicle);
+                                    $entityManager->persist($att);
+                                    $consumable->setReceiptAttachment($att);
+                                    $logger->debug('[import] Attached receipt to consumable', ['consumable' => $consumable->getName()]);
+                                }
+                            }
+                            // Legacy support: receiptAttachmentId from old exports
+                            elseif (isset($consumableData['receiptAttachmentId'])) {
                                 if ($consumableData['receiptAttachmentId'] === null || $consumableData['receiptAttachmentId'] === '') {
                                     $consumable->setReceiptAttachment(null);
                                 } else {
@@ -2414,7 +2440,19 @@ class VehicleImportExportController extends AbstractController
                                 $serviceRecord->setNextServiceMileage((int)$serviceData['nextServiceMileage']);
                             }
 
-                            if (isset($serviceData['receiptAttachmentId'])) {
+                            // Handle embedded attachment (Option 3: attachment data embedded in entity)
+                            if (isset($serviceData['receiptAttachment']) && is_array($serviceData['receiptAttachment'])) {
+                                $att = $this->deserializeAttachment($serviceData['receiptAttachment'], $zipExtractDir, $user);
+                                if ($att) {
+                                    $att->setEntityType('service');
+                                    $att->setVehicle($vehicle);
+                                    $entityManager->persist($att);
+                                    $serviceRecord->setReceiptAttachment($att);
+                                    $logger->debug('[import] Attached receipt to service', ['serviceDate' => $serviceData['serviceDate'] ?? 'unknown']);
+                                }
+                            }
+                            // Legacy support: receiptAttachmentId from old exports
+                            elseif (isset($serviceData['receiptAttachmentId'])) {
                                 if ($serviceData['receiptAttachmentId'] === null || $serviceData['receiptAttachmentId'] === '') {
                                     $serviceRecord->setReceiptAttachment(null);
                                 } else {
@@ -2538,7 +2576,19 @@ class VehicleImportExportController extends AbstractController
                                         if (!empty($cData['productUrl'])) {
                                             $consumable->setProductUrl($cData['productUrl']);
                                         }
-                                        if (isset($cData['receiptAttachmentOriginalId'])) {
+                                        
+                                        // Handle embedded attachment (Option 3: attachment data embedded in entity)
+                                        if (isset($cData['receiptAttachment']) && is_array($cData['receiptAttachment'])) {
+                                            $att = $this->deserializeAttachment($cData['receiptAttachment'], $zipExtractDir, $user);
+                                            if ($att) {
+                                                $att->setEntityType('consumable');
+                                                $att->setVehicle($vehicle);
+                                                $entityManager->persist($att);
+                                                $consumable->setReceiptAttachment($att);
+                                            }
+                                        }
+                                        // Legacy support: receiptAttachmentOriginalId from old exports
+                                        elseif (isset($cData['receiptAttachmentOriginalId'])) {
                                             $rid = $cData['receiptAttachmentOriginalId'];
                                             $att = null;
                                             if ($attachmentMap !== null && isset($attachmentMap[$rid])) {
@@ -2643,7 +2693,19 @@ class VehicleImportExportController extends AbstractController
                                         if ($partCategory) {
                                             $part->setPartCategory($partCategory);
                                         }
-                                        if (isset($pData['receiptAttachmentOriginalId'])) {
+                                        
+                                        // Handle embedded attachment (Option 3: attachment data embedded in entity)
+                                        if (isset($pData['receiptAttachment']) && is_array($pData['receiptAttachment'])) {
+                                            $att = $this->deserializeAttachment($pData['receiptAttachment'], $zipExtractDir, $user);
+                                            if ($att) {
+                                                $att->setEntityType('part');
+                                                $att->setVehicle($vehicle);
+                                                $entityManager->persist($att);
+                                                $part->setReceiptAttachment($att);
+                                            }
+                                        }
+                                        // Legacy support: receiptAttachmentOriginalId from old exports
+                                        elseif (isset($pData['receiptAttachmentOriginalId'])) {
                                             $rid = $pData['receiptAttachmentOriginalId'];
                                             $att = null;
                                             if ($attachmentMap !== null && isset($attachmentMap[$rid])) {
@@ -2738,7 +2800,20 @@ class VehicleImportExportController extends AbstractController
                             if (isset($motData['isRetest'])) {
                                 $motRecord->setIsRetest((bool)$motData['isRetest']);
                             }
-                            if (isset($motData['receiptAttachmentId'])) {
+                            
+                            // Handle embedded attachment (Option 3: attachment data embedded in entity)
+                            if (isset($motData['receiptAttachment']) && is_array($motData['receiptAttachment'])) {
+                                $att = $this->deserializeAttachment($motData['receiptAttachment'], $zipExtractDir, $user);
+                                if ($att) {
+                                    $att->setEntityType('mot');
+                                    $att->setVehicle($vehicle);
+                                    $entityManager->persist($att);
+                                    $motRecord->setReceiptAttachment($att);
+                                    $logger->debug('[import] Attached receipt to MOT', ['testDate' => $motData['testDate'] ?? 'unknown']);
+                                }
+                            }
+                            // Legacy support: receiptAttachmentId from old exports
+                            elseif (isset($motData['receiptAttachmentId'])) {
                                 if ($motData['receiptAttachmentId'] === null || $motData['receiptAttachmentId'] === '') {
                                     $motRecord->setReceiptAttachment(null);
                                 } else {
@@ -2840,7 +2915,19 @@ class VehicleImportExportController extends AbstractController
                                                 $existingPart->setPartCategory($pc);
                                             }
                                         }
-                                        if (isset($partData['receiptAttachmentId'])) {
+                                        
+                                        // Handle embedded attachment (Option 3: attachment data embedded in entity)
+                                        if (isset($partData['receiptAttachment']) && is_array($partData['receiptAttachment'])) {
+                                            $att = $this->deserializeAttachment($partData['receiptAttachment'], $zipExtractDir, $user);
+                                            if ($att) {
+                                                $att->setEntityType('part');
+                                                $att->setVehicle($vehicle);
+                                                $entityManager->persist($att);
+                                                $existingPart->setReceiptAttachment($att);
+                                            }
+                                        }
+                                        // Legacy support: receiptAttachmentId from old exports
+                                        elseif (isset($partData['receiptAttachmentId'])) {
                                             if ($partData['receiptAttachmentId'] === null || $partData['receiptAttachmentId'] === '') {
                                                 $existingPart->setReceiptAttachment(null);
                                             } else {
@@ -3025,7 +3112,19 @@ class VehicleImportExportController extends AbstractController
                                         if (!empty($consumableData['supplier'])) {
                                             $existingConsumable->setSupplier($consumableData['supplier']);
                                         }
-                                        if (isset($consumableData['receiptAttachmentId'])) {
+                                        
+                                        // Handle embedded attachment (Option 3: attachment data embedded in entity)
+                                        if (isset($consumableData['receiptAttachment']) && is_array($consumableData['receiptAttachment'])) {
+                                            $att = $this->deserializeAttachment($consumableData['receiptAttachment'], $zipExtractDir, $user);
+                                            if ($att) {
+                                                $att->setEntityType('consumable');
+                                                $att->setVehicle($vehicle);
+                                                $entityManager->persist($att);
+                                                $existingConsumable->setReceiptAttachment($att);
+                                            }
+                                        }
+                                        // Legacy support: receiptAttachmentId from old exports
+                                        elseif (isset($consumableData['receiptAttachmentId'])) {
                                             if ($consumableData['receiptAttachmentId'] === null || $consumableData['receiptAttachmentId'] === '') {
                                                 $existingConsumable->setReceiptAttachment(null);
                                             } else {
@@ -3437,6 +3536,29 @@ class VehicleImportExportController extends AbstractController
 
                                     $entityManager->persist($svc);
                                 }
+                            }
+                        }
+                    }
+
+                    // Import vehicle-level attachments
+                    if (!empty($vehicleData['attachments']) && is_array($vehicleData['attachments'])) {
+                        foreach ($vehicleData['attachments'] as $attData) {
+                            $att = $this->deserializeAttachment($attData, $zipExtractDir, $user);
+                            if ($att) {
+                                $att->setVehicle($vehicle);
+                                // Set entity type and ID from original data if available
+                                if (isset($attData['entityType'])) {
+                                    $att->setEntityType($attData['entityType']);
+                                }
+                                if (isset($attData['originalEntityId'])) {
+                                    $att->setEntityId($attData['originalEntityId']);
+                                }
+                                $entityManager->persist($att);
+                                $logger->debug('[import] Imported vehicle-level attachment', [
+                                    'filename' => $attData['filename'] ?? 'unknown',
+                                    'entityType' => $attData['entityType'] ?? null,
+                                    'originalEntityId' => $attData['originalEntityId'] ?? null
+                                ]);
                             }
                         }
                     }
