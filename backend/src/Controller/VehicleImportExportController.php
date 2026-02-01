@@ -1337,6 +1337,12 @@ class VehicleImportExportController extends AbstractController
         // Start transaction for data consistency
         $entityManager->beginTransaction();
 
+        $logger->info('[import] Function called', [
+            'attachmentMapProvided' => $attachmentMap !== null,
+            'attachmentMapCount' => $attachmentMap ? count($attachmentMap) : 0,
+            'attachmentMapKeys' => $attachmentMap ? array_slice(array_keys($attachmentMap), 0, 10) : []
+        ]);
+
         try {
             $user = $this->getUserEntity();
             if (!$user) {
