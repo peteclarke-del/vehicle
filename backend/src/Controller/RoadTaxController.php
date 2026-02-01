@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Controller\Trait\UserSecurityTrait;
+use App\Controller\Trait\JsonValidationTrait;
 use App\Entity\RoadTax;
 use App\Entity\Vehicle;
 use Doctrine\ORM\EntityManagerInterface;
@@ -17,6 +18,7 @@ use Symfony\Component\Routing\Annotation\Route;
 class RoadTaxController extends AbstractController
 {
     use UserSecurityTrait;
+    use JsonValidationTrait;
 
     private EntityManagerInterface $entityManager;
 
@@ -66,7 +68,11 @@ class RoadTaxController extends AbstractController
     #[Route('', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {
-        $data = json_decode($request->getContent(), true);
+        $validation = $this->validateJsonRequest($request);
+        if ($validation['error']) {
+            return $validation['error'];
+        }
+        $data = $validation['data'];
 
         $vehicle = $this->entityManager->getRepository(Vehicle::class)->find($data['vehicleId'] ?? null);
         $user = $this->getUserEntity();
@@ -101,7 +107,11 @@ class RoadTaxController extends AbstractController
             return new JsonResponse(['error' => 'Vehicle is road tax exempt'], 400);
         }
 
-        $data = json_decode($request->getContent(), true);
+        $validation = $this->validateJsonRequest($request);
+        if ($validation['error']) {
+            return $validation['error'];
+        }
+        $data = $validation['data'];
         $this->updateRoadTaxFromData($rt, $data);
 
         $this->entityManager->flush();

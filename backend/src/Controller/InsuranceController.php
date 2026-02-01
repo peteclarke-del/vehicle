@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Controller\Trait\UserSecurityTrait;
+use App\Controller\Trait\JsonValidationTrait;
 use App\Entity\InsurancePolicy;
 use App\Entity\Vehicle;
 use Doctrine\ORM\EntityManagerInterface;
@@ -17,6 +18,7 @@ use Symfony\Component\Routing\Annotation\Route;
 class InsuranceController extends AbstractController
 {
     use UserSecurityTrait;
+    use JsonValidationTrait;
 
     private EntityManagerInterface $entityManager;
 
@@ -68,7 +70,11 @@ class InsuranceController extends AbstractController
             return new JsonResponse(['error' => 'Unauthorized'], 401);
         }
 
-        $data = json_decode($request->getContent(), true);
+        $validation = $this->validateJsonRequest($request);
+        if ($validation['error']) {
+            return $validation['error'];
+        }
+        $data = $validation['data'];
         $policy = new InsurancePolicy();
         if (isset($data['provider'])) {
             $policy->setProvider($data['provider']);
@@ -207,7 +213,11 @@ class InsuranceController extends AbstractController
             return new JsonResponse(['error' => 'Not found'], 404);
         }
 
-        $data = json_decode($request->getContent(), true);
+        $validation = $this->validateJsonRequest($request);
+        if ($validation['error']) {
+            return $validation['error'];
+        }
+        $data = $validation['data'];
 
         if (isset($data['provider'])) {
             $policy->setProvider($data['provider']);
@@ -378,7 +388,11 @@ class InsuranceController extends AbstractController
             return new JsonResponse(['error' => 'Not found'], 404);
         }
 
-        $data = json_decode($request->getContent(), true);
+        $validation = $this->validateJsonRequest($request);
+        if ($validation['error']) {
+            return $validation['error'];
+        }
+        $data = $validation['data'];
         $vehicle = $this->entityManager
             ->getRepository(Vehicle::class)
             ->find($data['vehicleId'] ?? null);
@@ -461,7 +475,11 @@ class InsuranceController extends AbstractController
     #[Route('/insurance', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {
-        $data = json_decode($request->getContent(), true);
+        $validation = $this->validateJsonRequest($request);
+        if ($validation['error']) {
+            return $validation['error'];
+        }
+        $data = $validation['data'];
 
         $vehicle = $this->entityManager->getRepository(Vehicle::class)->find($data['vehicleId']);
         $user = $this->getUserEntity();
@@ -489,7 +507,11 @@ class InsuranceController extends AbstractController
             return new JsonResponse(['error' => 'Insurance policy not found'], 404);
         }
 
-        $data = json_decode($request->getContent(), true);
+        $validation = $this->validateJsonRequest($request);
+        if ($validation['error']) {
+            return $validation['error'];
+        }
+        $data = $validation['data'];
         $this->updatePolicyFromData($policy, $data);
 
         $this->entityManager->flush();
