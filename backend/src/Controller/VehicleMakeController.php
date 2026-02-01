@@ -11,10 +11,13 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
+use App\Controller\Trait\JsonValidationTrait;
 
 #[Route('/api/vehicle-makes')]
 class VehicleMakeController extends AbstractController
 {
+    use JsonValidationTrait;
+
     #[Route('', name: 'api_vehicle_makes_list', methods: ['GET'])]
     public function list(Request $request, EntityManagerInterface $em): JsonResponse
     {
@@ -41,11 +44,11 @@ class VehicleMakeController extends AbstractController
     #[Route('', name: 'api_vehicle_makes_create', methods: ['POST'])]
     public function create(Request $request, EntityManagerInterface $em): JsonResponse
     {
-        $data = json_decode($request->getContent(), true);
-
-        if (!is_array($data)) {
-            return $this->json(['error' => 'Invalid JSON body'], 400);
+        $validation = $this->validateJsonRequest($request);
+        if ($validation['error']) {
+            return $validation['error'];
         }
+        $data = $validation['data'];
 
         if (empty($data['vehicleTypeId'])) {
             return $this->json(['error' => 'Missing vehicleTypeId'], 400);
