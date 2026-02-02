@@ -196,7 +196,12 @@ class PartController extends AbstractController
         $serviceItem = $this->entityManager->getRepository(ServiceItem::class)
             ->findOneBy(['part' => $part]);
         if ($serviceItem) {
-            $serviceItem->setCost($part->getPrice() ?? $part->getCost());
+            // If part is not included in service cost (existing item purchased separately),
+            // set ServiceItem cost to 0 to prevent double-counting
+            $costToUse = $part->isIncludedInServiceCost() 
+                ? ($part->getPrice() ?? $part->getCost()) 
+                : '0.00';
+            $serviceItem->setCost($costToUse);
             $serviceItem->setQuantity($part->getQuantity() ?? 1);
             $serviceItem->setDescription($part->getDescription() ?? $part->getName());
             $this->entityManager->persist($serviceItem);

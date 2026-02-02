@@ -348,6 +348,7 @@ class VehicleImportExportController extends AbstractController
                             'notes' => $part->getNotes(),
                             'productUrl' => $part->getProductUrl(),
                             'createdAt' => $part->getCreatedAt()?->format('c'),
+                            'includedInServiceCost' => $part->isIncludedInServiceCost(),
                         ];
                         if ($includeAttachmentRefs) {
                             $partData['receiptAttachment'] = $this->serializeAttachment($part->getReceiptAttachment(), $zipDir);
@@ -379,6 +380,7 @@ class VehicleImportExportController extends AbstractController
                         'productUrl' => $consumable->getProductUrl(),
                         'createdAt' => $consumable->getCreatedAt()?->format('c'),
                         'updatedAt' => $consumable->getUpdatedAt()?->format('c'),
+                        'includedInServiceCost' => $consumable->isIncludedInServiceCost(),
                         ];
                         if ($includeAttachmentRefs) {
                             $consumableData['receiptAttachment'] = $this->serializeAttachment($consumable->getReceiptAttachment(), $zipDir);
@@ -429,6 +431,7 @@ class VehicleImportExportController extends AbstractController
                                     'notes' => $part->getNotes(),
                                     'productUrl' => $part->getProductUrl(),
                                     'createdAt' => $part->getCreatedAt()?->format('c'),
+                                    'includedInServiceCost' => $part->isIncludedInServiceCost(),
                                 ];
                                 if ($includeAttachmentRefs) {
                                     $partData['receiptAttachment'] = $this->serializeAttachment($part->getReceiptAttachment(), $zipDir);
@@ -452,6 +455,7 @@ class VehicleImportExportController extends AbstractController
                                     'cost' => $consumable->getCost(),
                                     'notes' => $consumable->getNotes(),
                                     'productUrl' => $consumable->getProductUrl(),
+                                    'includedInServiceCost' => $consumable->isIncludedInServiceCost(),
                                     'createdAt' => $consumable->getCreatedAt()?->format('c'),
                                     'updatedAt' => $consumable->getUpdatedAt()?->format('c'),
                                 ];
@@ -504,6 +508,7 @@ class VehicleImportExportController extends AbstractController
                                     'mileageAtInstallation' => $part->getMileageAtInstallation(),
                                     'notes' => $part->getNotes(),
                                     'productUrl' => $part->getProductUrl(),
+                                    'includedInServiceCost' => $part->isIncludedInServiceCost(),
                                     'createdAt' => $part->getCreatedAt()?->format('c'),
                                 ];
                                 if ($includeAttachmentRefs) {
@@ -528,6 +533,7 @@ class VehicleImportExportController extends AbstractController
                                     'cost' => $consumable->getCost(),
                                     'notes' => $consumable->getNotes(),
                                     'productUrl' => $consumable->getProductUrl(),
+                                    'includedInServiceCost' => $consumable->isIncludedInServiceCost(),
                                     'createdAt' => $consumable->getCreatedAt()?->format('c'),
                                 ];
                                 if ($includeAttachmentRefs) {
@@ -573,6 +579,7 @@ class VehicleImportExportController extends AbstractController
                                                 'mileageAtInstallation' => $part->getMileageAtInstallation(),
                                                 'notes' => $part->getNotes(),
                                                 'productUrl' => $part->getProductUrl(),
+                                                'includedInServiceCost' => $part->isIncludedInServiceCost(),
                                                 'createdAt' => $part->getCreatedAt()?->format('c'),
                                             ];
                                             if ($includeAttachmentRefs) {
@@ -597,6 +604,7 @@ class VehicleImportExportController extends AbstractController
                                                 'cost' => $consumable->getCost(),
                                                 'notes' => $consumable->getNotes(),
                                                 'productUrl' => $consumable->getProductUrl(),
+                                                'includedInServiceCost' => $consumable->isIncludedInServiceCost(),
                                                 'createdAt' => $consumable->getCreatedAt()?->format('c'),
                                                 'updatedAt' => $consumable->getUpdatedAt()?->format('c'),
                                             ];
@@ -2042,6 +2050,9 @@ class VehicleImportExportController extends AbstractController
                                     // ignore invalid createdAt
                                 }
                             }
+                            if (isset($partData['includedInServiceCost'])) {
+                                $part->setIncludedInServiceCost((bool) $partData['includedInServiceCost']);
+                            }
 
                             $entityManager->persist($part);
 
@@ -2162,6 +2173,9 @@ class VehicleImportExportController extends AbstractController
                                 } catch (\Exception $e) {
                                     // ignore invalid updatedAt
                                 }
+                            }
+                            if (isset($consumableData['includedInServiceCost'])) {
+                                $consumable->setIncludedInServiceCost((bool) $consumableData['includedInServiceCost']);
                             }
 
                             $entityManager->persist($consumable);
@@ -2364,7 +2378,25 @@ class VehicleImportExportController extends AbstractController
                                         $item->setQuantity($itemData['quantity']);
                                     }
 
+                                    // Check if this references an existing consumable (includedInServiceCost = false means it's a linked existing item)
+                                    $shouldLinkExisting = false;
                                     if (!empty($itemData['consumable']) && is_array($itemData['consumable'])) {
+                                        $shouldLinkExisting = isset($itemData['consumable']['includedInServiceCost']) 
+                                            && $itemData['consumable']['includedInServiceCost'] === false;
+                                    }
+
+                                    // If it's an existing item reference, try to link it first
+                                    if ($shouldLinkExisting && isset($itemData['consumableId']) && is_numeric($itemData['consumableId'])) {
+                                        $cid = (int) $itemData['consumableId'];
+                                        $consumable = $consumableImportMap[$cid] ?? null;
+                                        if ($consumable) {
+                                            $item->setConsumable($consumable);
+                                            // Don't set serviceRecord on the consumable - it's standalone
+                                        }
+                                    }
+
+                                    // Only create new consumable if we haven't linked an existing one
+                                    if (!$item->getConsumable() && !empty($itemData['consumable']) && is_array($itemData['consumable'])) {
                                         $cData = $itemData['consumable'];
                                         $consumableType = null;
                                         if (!empty($cData['consumableType'])) {
@@ -2424,6 +2456,9 @@ class VehicleImportExportController extends AbstractController
                                         if (!empty($cData['productUrl'])) {
                                             $consumable->setProductUrl($cData['productUrl']);
                                         }
+                                        if (isset($cData['includedInServiceCost'])) {
+                                            $consumable->setIncludedInServiceCost((bool) $cData['includedInServiceCost']);
+                                        }
                                         
                                         // Handle embedded attachment (Option 3: attachment data embedded in entity)
                                         if (isset($cData['receiptAttachment']) && is_array($cData['receiptAttachment'])) {
@@ -2445,7 +2480,25 @@ class VehicleImportExportController extends AbstractController
                                         }
                                     }
 
+                                    // Check if this references an existing part (includedInServiceCost = false means it's a linked existing item)
+                                    $shouldLinkExistingPart = false;
                                     if (!empty($itemData['part']) && is_array($itemData['part'])) {
+                                        $shouldLinkExistingPart = isset($itemData['part']['includedInServiceCost']) 
+                                            && $itemData['part']['includedInServiceCost'] === false;
+                                    }
+
+                                    // If it's an existing item reference, try to link it first
+                                    if ($shouldLinkExistingPart && isset($itemData['partId']) && is_numeric($itemData['partId'])) {
+                                        $pid = (int) $itemData['partId'];
+                                        $part = $partImportMap[$pid] ?? null;
+                                        if ($part) {
+                                            $item->setPart($part);
+                                            // Don't set serviceRecord on the part - it's standalone
+                                        }
+                                    }
+
+                                    // Only create new part if we haven't linked an existing one
+                                    if (!$item->getPart() && !empty($itemData['part']) && is_array($itemData['part'])) {
                                         $pData = $itemData['part'];
                                         $part = new Part();
                                         $part->setVehicle($vehicle);
@@ -2528,6 +2581,9 @@ class VehicleImportExportController extends AbstractController
                                         if ($partCategory) {
                                             $part->setPartCategory($partCategory);
                                         }
+                                        if (isset($pData['includedInServiceCost'])) {
+                                            $part->setIncludedInServiceCost((bool) $pData['includedInServiceCost']);
+                                        }
                                         
                                         // Handle embedded attachment (Option 3: attachment data embedded in entity)
                                         if (isset($pData['receiptAttachment']) && is_array($pData['receiptAttachment'])) {
@@ -2545,24 +2601,6 @@ class VehicleImportExportController extends AbstractController
 
                                         if (isset($pData['id']) && is_numeric($pData['id'])) {
                                             $partImportMap[(int) $pData['id']] = $part;
-                                        }
-                                    }
-
-                                    if (isset($itemData['consumableId']) && is_numeric($itemData['consumableId'])) {
-                                        $cid = (int) $itemData['consumableId'];
-                                        $consumable = $consumableImportMap[$cid] ?? null;
-                                        if ($consumable) {
-                                            $item->setConsumable($consumable);
-                                            $consumable->setServiceRecord($serviceRecord);
-                                        }
-                                    }
-
-                                    if (isset($itemData['partId']) && is_numeric($itemData['partId'])) {
-                                        $pid = (int) $itemData['partId'];
-                                        $part = $partImportMap[$pid] ?? null;
-                                        if ($part) {
-                                            $item->setPart($part);
-                                            $part->setServiceRecord($serviceRecord);
                                         }
                                     }
                                     $serviceRecord->addItem($item);
@@ -2735,6 +2773,9 @@ class VehicleImportExportController extends AbstractController
                                                 // ignore
                                             }
                                         }
+                                        if (isset($partData['includedInServiceCost'])) {
+                                            $existingPart->setIncludedInServiceCost((bool) $partData['includedInServiceCost']);
+                                        }
                                         $entityManager->persist($existingPart);
                                         continue;
                                     }
@@ -2823,6 +2864,9 @@ class VehicleImportExportController extends AbstractController
                                     if ($partCategory) {
                                         $part->setPartCategory($partCategory);
                                     }
+                                    if (isset($partData['includedInServiceCost'])) {
+                                        $part->setIncludedInServiceCost((bool) $partData['includedInServiceCost']);
+                                    }
 
                                     $entityManager->persist($part);
                                 }
@@ -2895,6 +2939,9 @@ class VehicleImportExportController extends AbstractController
                                                 // ignore
                                             }
                                         }
+                                        if (isset($consumableData['includedInServiceCost'])) {
+                                            $existingConsumable->setIncludedInServiceCost((bool) $consumableData['includedInServiceCost']);
+                                        }
                                         $entityManager->persist($existingConsumable);
                                         continue;
                                     }
@@ -2943,6 +2990,9 @@ class VehicleImportExportController extends AbstractController
                                         } catch (\Exception $e) {
                                             // ignore invalid createdAt
                                         }
+                                    }
+                                    if (isset($consumableData['includedInServiceCost'])) {
+                                        $consumable->setIncludedInServiceCost((bool) $consumableData['includedInServiceCost']);
                                     }
 
                                     $entityManager->persist($consumable);
@@ -3075,7 +3125,25 @@ class VehicleImportExportController extends AbstractController
                                                 $item->setQuantity($itemData['quantity']);
                                             }
 
+                                            // Check if this references an existing consumable (includedInServiceCost = false means it's a linked existing item)
+                                            $shouldLinkExisting = false;
                                             if (!empty($itemData['consumable']) && is_array($itemData['consumable'])) {
+                                                $shouldLinkExisting = isset($itemData['consumable']['includedInServiceCost']) 
+                                                    && $itemData['consumable']['includedInServiceCost'] === false;
+                                            }
+
+                                            // If it's an existing item reference, try to link it first
+                                            if ($shouldLinkExisting && isset($itemData['consumableId']) && is_numeric($itemData['consumableId'])) {
+                                                $cid = (int) $itemData['consumableId'];
+                                                $consumable = $consumableImportMap[$cid] ?? null;
+                                                if ($consumable) {
+                                                    $item->setConsumable($consumable);
+                                                    // Don't set serviceRecord on the consumable - it's standalone
+                                                }
+                                            }
+
+                                            // Only create new consumable if we haven't linked an existing one
+                                            if (!$item->getConsumable() && !empty($itemData['consumable']) && is_array($itemData['consumable'])) {
                                                 $cData = $itemData['consumable'];
                                                 $consumableType = null;
                                                 if (!empty($cData['consumableType'])) {
@@ -3135,6 +3203,9 @@ class VehicleImportExportController extends AbstractController
                                                 if (!empty($cData['productUrl'])) {
                                                     $consumable->setProductUrl($cData['productUrl']);
                                                 }
+                                                if (isset($cData['includedInServiceCost'])) {
+                                                    $consumable->setIncludedInServiceCost((bool) $cData['includedInServiceCost']);
+                                                }
 
                                                 $consumable->setServiceRecord($svc);
                                                 $entityManager->persist($consumable);
@@ -3145,7 +3216,25 @@ class VehicleImportExportController extends AbstractController
                                                 }
                                             }
 
+                                            // Check if this references an existing part (includedInServiceCost = false means it's a linked existing item)
+                                            $shouldLinkExistingPart = false;
                                             if (!empty($itemData['part']) && is_array($itemData['part'])) {
+                                                $shouldLinkExistingPart = isset($itemData['part']['includedInServiceCost']) 
+                                                    && $itemData['part']['includedInServiceCost'] === false;
+                                            }
+
+                                            // If it's an existing item reference, try to link it first
+                                            if ($shouldLinkExistingPart && isset($itemData['partId']) && is_numeric($itemData['partId'])) {
+                                                $pid = (int) $itemData['partId'];
+                                                $part = $partImportMap[$pid] ?? null;
+                                                if ($part) {
+                                                    $item->setPart($part);
+                                                    // Don't set serviceRecord on the part - it's standalone
+                                                }
+                                            }
+
+                                            // Only create new part if we haven't linked an existing one
+                                            if (!$item->getPart() && !empty($itemData['part']) && is_array($itemData['part'])) {
                                                 $pData = $itemData['part'];
                                                 $part = new Part();
                                                 $part->setVehicle($vehicle);
@@ -3190,6 +3279,9 @@ class VehicleImportExportController extends AbstractController
                                                 }
                                                 if (!empty($pData['productUrl'])) {
                                                     $part->setProductUrl($pData['productUrl']);
+                                                }
+                                                if (isset($pData['includedInServiceCost'])) {
+                                                    $part->setIncludedInServiceCost((bool) $pData['includedInServiceCost']);
                                                 }
 
                                                 $entityManager->persist($part);
