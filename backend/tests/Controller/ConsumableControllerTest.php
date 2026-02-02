@@ -18,7 +18,7 @@ class ConsumableControllerTest extends BaseWebTestCase
 
     protected function setUp(): void
     {
-        $this->client = static::createClient();
+        parent::setUp(); // Initialize $this->client from BaseWebTestCase
     }
 
 

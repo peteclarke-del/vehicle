@@ -18,145 +18,107 @@ abstract class BaseWebTestCase extends WebTestCase
     protected static string $authToken = '';
     protected static bool $usersSeeded = false;
     protected static bool $schemaCreated = false;
+    
     public static function setUpBeforeClass(): void
     {
-        // Ensure the test database schema exists for in-memory SQLite.
         parent::setUpBeforeClass();
-        try {
-            static::bootKernel();
-            $container = static::getContainer();
-            if ($container->has('doctrine')) {
-                $doctrine = $container->get('doctrine');
-                $em = $doctrine->getManager();
-                $metadata = $em->getMetadataFactory()->getAllMetadata();
-                if (!empty($metadata)) {
-                    $schemaTool = new \Doctrine\ORM\Tools\SchemaTool($em);
-                    $schemaTool->createSchema($metadata);
-                }
-            }
-        } catch (\Throwable $e) {
-            // If schema creation fails, swallow the exception and allow
-            // tests to provide their own setup. This keeps test runs
-            // resilient across CI and local environments.
-        } finally {
+        
+        // Create schema once per test class for in-memory SQLite
+        if (!self::$schemaCreated) {
             try {
-                static::ensureKernelShutdown();
-            } catch (\Throwable) {
-                // ignore
+                static::bootKernel();
+                $container = static::getContainer();
+                if ($container->has('doctrine')) {
+                    $doctrine = $container->get('doctrine');
+                    $em = $doctrine->getManager();
+                    $metadata = $em->getMetadataFactory()->getAllMetadata();
+                    if (!empty($metadata)) {
+                        $schemaTool = new \Doctrine\ORM\Tools\SchemaTool($em);
+                        $schemaTool->createSchema($metadata);
+                    }
+                }
+                self::$schemaCreated = true;
+            } catch (\Throwable $e) {
+                // Ignore schema creation errors
+            } finally {
+                try {
+                    static::ensureKernelShutdown();
+                } catch (\Throwable) {
+                }
             }
         }
     }
 
     protected function setUp(): void
     {
-        // Ensure schema exists for in-memory sqlite. Create once per test process.
-        if (!self::$schemaCreated) {
-            try {
-                static::bootKernel();
-                $container = static::getContainer();
-                if ($container->has('doctrine')) {
-                    $doctrine = $container->get('doctrine');
-                    $em = $doctrine->getManager();
-                    $metadata = $em->getMetadataFactory()->getAllMetadata();
-                    if (!empty($metadata)) {
-                        $schemaTool = new \Doctrine\ORM\Tools\SchemaTool($em);
-                        $schemaTool->createSchema($metadata);
-                    }
-                }
-            } catch (\Throwable $e) {
-                // swallow; tests will fail if schema cannot be created
-            } finally {
-                try {
-                    static::ensureKernelShutdown();
-                } catch (\Throwable) {
-                }
-            }
-            self::$schemaCreated = true;
-        }
-
+        parent::setUp();
+        
         // Ensure kernel is shut down before creating client
         static::ensureKernelShutdown();
 
-        // Create the client without default authentication headers.
-        // Individual tests should provide `HTTP_X_TEST_MOCK_AUTH` or
-        // `HTTP_AUTHORIZATION` when they need an authenticated request.
+        // Create the client
         $this->client = static::createClient();
 
-        // Avoid touching the real database in tests; provide a simple
-        // in-memory test auth token. Controllers and other tests that
-        // depend on persistence should use mocks where appropriate.
+        // Seed test user once
         if (!self::$usersSeeded) {
-            static::$authToken = 'admin@vehicle.local';
-            // Also set a security token in the test container so requests
-            // executed with the client are treated as authenticated when
-            // controllers call `$this->getUser()`.
-            try {
-                $container = static::getContainer();
-                // Persist a test user in the database so tests that create
-                // related entities (e.g. Vehicle->owner) can reference a
-                // managed user entity. Do NOT set a global security token
-                // here; tests that require authentication must send the
-                // appropriate header so we can accurately test unauthenticated
-                // behavior.
-                $userClass = User::class;
-                $user = new $userClass();
-                $user->setEmail(static::$authToken);
-                $user->setFirstName('Test');
-                $user->setLastName('User');
-
-                try {
-                    if ($container->has('doctrine')) {
-                        $doctrine = $container->get('doctrine');
-                        $em = $doctrine->getManager();
-                        $repo = $em->getRepository($userClass);
-                        $existing = $repo->findOneBy(['email' => static::$authToken]);
-                        if ($existing) {
-                            $user = $existing;
-                        } else {
-                            $em->persist($user);
-                            $em->flush();
-                            // reload to ensure managed instance
-                            $user = $repo->findOneBy(['email' => static::$authToken]) ?? $user;
-                        }
-                    }
-                } catch (\Throwable) {
-                    // ignore persistence failures; tests will add headers
-                }
-            } catch (\Throwable) {
-                // swallow; tests will rely on TestAuthSubscriber fallback
-            }
-
+            static::$authToken = 'test@example.com';
             self::$usersSeeded = true;
-        }
-
-        // Ensure schema exists for in-memory sqlite. Create once per test process.
-        if (!self::$schemaCreated) {
-            try {
-                static::bootKernel();
-                $container = static::getContainer();
-                if ($container->has('doctrine')) {
-                    $doctrine = $container->get('doctrine');
-                    $em = $doctrine->getManager();
-                    $metadata = $em->getMetadataFactory()->getAllMetadata();
-                    if (!empty($metadata)) {
-                        $schemaTool = new \Doctrine\ORM\Tools\SchemaTool($em);
-                        $schemaTool->createSchema($metadata);
-                    }
-                }
-            } catch (\Throwable $e) {
-                // swallow; tests will fail if schema cannot be created
-            } finally {
-                try {
-                    static::ensureKernelShutdown();
-                } catch (\Throwable) {
-                }
-            }
-            self::$schemaCreated = true;
         }
     }
 
     protected function getAuthToken(): string
     {
         return static::$authToken;
+    }
+
+    protected function getAdminToken(): string
+    {
+        // For tests, return the same token
+        return static::$authToken;
+    }
+
+    protected function getEntityManager(): \Doctrine\ORM\EntityManagerInterface
+    {
+        return static::getContainer()->get('doctrine')->getManager();
+    }
+
+    /**
+     * Get or create a VehicleType for testing
+     */
+    protected function getVehicleType(string $name = 'Car'): \App\Entity\VehicleType
+    {
+        $em = $this->getEntityManager();
+        $type = $em->getRepository(\App\Entity\VehicleType::class)->findOneBy(['name' => $name]);
+        
+        if (!$type) {
+            $type = new \App\Entity\VehicleType();
+            $type->setName($name);
+            $em->persist($type);
+            $em->flush();
+        }
+        
+        return $type;
+    }
+
+    /**
+     * Create a minimal valid vehicle for testing
+     */
+    protected function createTestVehicle(\App\Entity\User $owner, ?string $registration = null): \App\Entity\Vehicle
+    {
+        $em = $this->getEntityManager();
+        
+        $vehicle = new \App\Entity\Vehicle();
+        $vehicle->setOwner($owner);
+        $vehicle->setName($registration ?? 'Test-' . uniqid());
+        $vehicle->setRegistration($registration ?? 'TEST' . rand(100, 999));
+        $vehicle->setVehicleType($this->getVehicleType('Car'));
+        $vehicle->setMileage(10000);
+        $vehicle->setPurchaseCost('5000.00');
+        $vehicle->setPurchaseDate(new \DateTime('-1 year'));
+        
+        $em->persist($vehicle);
+        $em->flush();
+        
+        return $vehicle;
     }
 }

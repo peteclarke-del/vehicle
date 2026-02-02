@@ -276,6 +276,10 @@ class PartController extends AbstractController
         }
         if (isset($data['description'])) {
             $part->setDescription($data['description']);
+            // Auto-set name from description if name is empty (UI only provides description field)
+            if (!$part->getName()) {
+                $part->setName($data['description']);
+            }
         }
         if (isset($data['partNumber'])) {
             $part->setPartNumber($data['partNumber']);
