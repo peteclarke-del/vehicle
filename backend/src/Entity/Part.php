@@ -91,6 +91,9 @@ class Part
     #[ORM\Column(type: 'string', length: 500, nullable: true)]
     private ?string $productUrl = null;
 
+    #[ORM\Column(type: 'boolean', options: ['default' => false])]
+    private bool $includedInServiceCost = false;
+
     public function __construct()
     {
         $this->createdAt = new \DateTime();
@@ -395,5 +398,16 @@ class Part
         }
         $now = new \DateTime();
         return $now->diff($referenceDate)->days;
+    }
+
+    public function isIncludedInServiceCost(): bool
+    {
+        return $this->includedInServiceCost;
+    }
+
+    public function setIncludedInServiceCost(bool $includedInServiceCost): self
+    {
+        $this->includedInServiceCost = $includedInServiceCost;
+        return $this;
     }
 }

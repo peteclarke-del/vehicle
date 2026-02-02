@@ -62,6 +62,7 @@ class EntitySerializerService
                 'receiptAttachmentId' => $part->getReceiptAttachment()?->getId(),
                 'productUrl' => $part->getProductUrl(),
                 'createdAt' => $part->getCreatedAt()?->format('c'),
+                'includedInServiceCost' => $part->isIncludedInServiceCost(),
             ]);
         } else {
             // Include partCategory even in non-detailed mode for service records
@@ -116,6 +117,7 @@ class EntitySerializerService
                 'motTestNumber' => $consumable->getMotRecord()?->getMotTestNumber(),
                 'motTestDate' => $consumable->getMotRecord()?->getTestDate()?->format('Y-m-d'),
                 'createdAt' => $consumable->getCreatedAt()?->format('c'),
+                'includedInServiceCost' => $consumable->isIncludedInServiceCost(),
             ]);
         }
 

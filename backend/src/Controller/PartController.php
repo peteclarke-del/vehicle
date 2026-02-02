@@ -147,6 +147,14 @@ class PartController extends AbstractController
 
         $part = new Part();
         $part->setVehicle($vehicle);
+        
+        // Auto-detect if this part is being created as part of a service/MOT
+        // If serviceRecordId or motRecordId is present, mark as included in service cost
+        $createdInServiceContext = !empty($data['serviceRecordId']) || !empty($data['motRecordId']);
+        if ($createdInServiceContext) {
+            $part->setIncludedInServiceCost(true);
+        }
+        
         $this->updatePartFromData($part, $data);
 
         // Ensure required dates are set to now when not provided to avoid DB NOT NULL errors
