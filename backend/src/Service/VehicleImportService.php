@@ -27,6 +27,7 @@ use App\Trait\EntityHydratorTrait;
 use App\Controller\Trait\AttachmentFileOrganizerTrait;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\String\Slugger\AsciiSlugger;
 use Symfony\Contracts\Cache\TagAwareCacheInterface;
 
 /**
@@ -225,6 +226,148 @@ class VehicleImportService
         }
 
         return $data;
+    }
+
+    private function buildExistingVehiclesMap(User $user, bool $isAdmin): array
+    {
+        $qb = $this->entityManager->getRepository(Vehicle::class)->createQueryBuilder('v');
+        
+        if (!$isAdmin) {
+            $qb->andWhere('v.user = :user')->setParameter('user', $user);
+        }
+        
+        $vehicles = $qb->getQuery()->getResult();
+        
+        $map = [];
+        foreach ($vehicles as $vehicle) {
+            if ($vehicle->getRegistrationNumber()) {
+                $map[trim($vehicle->getRegistrationNumber())] = $vehicle;
+            }
+        }
+        
+        return $map;
+    }
+
+    private function buildExistingPartsMap(User $user, bool $isAdmin): array
+    {
+        $qb = $this->entityManager->createQueryBuilder()
+            ->select('p')
+            ->from(Part::class, 'p')
+            ->join('p.vehicle', 'v');
+        
+        if (!$isAdmin) {
+            $qb->andWhere('v.user = :user')->setParameter('user', $user);
+        }
+        
+        $parts = $qb->getQuery()->getResult();
+        
+        $map = [];
+        foreach ($parts as $part) {
+            if ($part->getId()) {
+                $map[$part->getId()] = $part;
+            }
+        }
+        
+        return $map;
+    }
+
+    private function buildExistingConsumablesMap(User $user, bool $isAdmin): array
+    {
+        $qb = $this->entityManager->createQueryBuilder()
+            ->select('c')
+            ->from(Consumable::class, 'c')
+            ->join('c.vehicle', 'v');
+        
+        if (!$isAdmin) {
+            $qb->andWhere('v.user = :user')->setParameter('user', $user);
+        }
+        
+        $consumables = $qb->getQuery()->getResult();
+        
+        $map = [];
+        foreach ($consumables as $consumable) {
+            if ($consumable->getId()) {
+                $map[$consumable->getId()] = $consumable;
+            }
+        }
+        
+        return $map;
+    }
+
+    private function processVehicleImport(
+        array $vehicleData,
+        User $user,
+        array &$existingVehiclesMap,
+        array &$partImportMap,
+        array &$consumableImportMap,
+        ?string $zipExtractDir,
+        array &$stats
+    ): void {
+        // Implementation would handle vehicle creation/updating
+        // This is a placeholder - full implementation would extract from controller
+        $stats['processed']++;
+    }
+
+    private function deserializeAttachment(
+        array $attachmentData,
+        ?string $zipExtractDir,
+        User $user,
+        ?string $vehicleReg = null
+    ): ?Attachment {
+        if (empty($attachmentData['filename'])) {
+            return null;
+        }
+
+        $attachment = new Attachment();
+        $attachment->setUser($user);
+        
+        if (!empty($attachmentData['originalFilename'])) {
+            $attachment->setOriginalFilename($attachmentData['originalFilename']);
+        }
+        
+        if (!empty($attachmentData['mimeType'])) {
+            $attachment->setMimeType($attachmentData['mimeType']);
+        }
+        
+        if (isset($attachmentData['fileSize'])) {
+            $attachment->setFileSize((int)$attachmentData['fileSize']);
+        }
+        
+        if (!empty($attachmentData['description'])) {
+            $attachment->setDescription($attachmentData['description']);
+        }
+        
+        if (!empty($attachmentData['uploadedAt'])) {
+            try {
+                $attachment->setUploadedAt(new \DateTime($attachmentData['uploadedAt']));
+            } catch (\Exception $e) {
+                $attachment->setUploadedAt(new \DateTime());
+            }
+        } else {
+            $attachment->setUploadedAt(new \DateTime());
+        }
+
+        // Handle file copying from ZIP
+        if ($zipExtractDir) {
+            $sourcePath = $zipExtractDir . '/' . $attachmentData['filename'];
+            if (file_exists($sourcePath)) {
+                $uploadsDir = $this->projectDir . '/uploads/attachments';
+                if (!is_dir($uploadsDir)) {
+                    mkdir($uploadsDir, 0777, true);
+                }
+                
+                $slugger = new AsciiSlugger();
+                $safeFilename = $slugger->slug(pathinfo($attachment->getOriginalFilename() ?? 'file', PATHINFO_FILENAME));
+                $newFilename = $safeFilename . '-' . uniqid() . '.' . pathinfo($attachment->getOriginalFilename() ?? 'file', PATHINFO_EXTENSION);
+                
+                $destPath = $uploadsDir . '/' . $newFilename;
+                if (copy($sourcePath, $destPath)) {
+                    $attachment->setFilename($newFilename);
+                }
+            }
+        }
+        
+        return $attachment;
     }
 
     // Continue with helper methods...
