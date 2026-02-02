@@ -129,6 +129,40 @@ class VehicleImportService
                 }
             }
 
+            // Flush after first pass
+            if (!$dryRun) {
+                $this->entityManager->flush();
+            }
+
+            // Second pass: import related entities
+            foreach ($data as $index => $vehicleData) {
+                $regNum = $vehicleData['registrationNumber'] ?? null;
+                if (!$regNum || !isset($stats['vehicleMap'][$regNum])) {
+                    continue;
+                }
+                
+                $vehicle = $stats['vehicleMap'][$regNum];
+                
+                try {
+                    $this->processRelatedEntities(
+                        $vehicle,
+                        $vehicleData,
+                        $user,
+                        $zipExtractDir,
+                        $partImportMap,
+                        $consumableImportMap,
+                        $stats
+                    );
+                } catch (\Exception $e) {
+                    $this->logger->error('[import] Related entities import failed', [
+                        'index' => $index,
+                        'registration' => $regNum,
+                        'error' => $e->getMessage()
+                    ]);
+                    $stats['errors'][] = "Related entities for vehicle at index $index: " . $e->getMessage();
+                }
+            }
+
             if (!$dryRun) {
                 $this->entityManager->flush();
                 $this->entityManager->commit();
@@ -583,6 +617,339 @@ class VehicleImportService
         }
         
         return $attachment;
+    }
+
+    private function processRelatedEntities(
+        Vehicle $vehicle,
+        array $vehicleData,
+        User $user,
+        ?string $zipExtractDir,
+        array &$partImportMap,
+        array &$consumableImportMap,
+        array &$stats
+    ): void {
+        // Import specification
+        if (!empty($vehicleData['specification']) && is_array($vehicleData['specification'])) {
+            $this->importSpecification($vehicle, $vehicleData['specification']);
+        }
+
+        // Import status history
+        if (!empty($vehicleData['statusHistory']) && is_array($vehicleData['statusHistory'])) {
+            $this->importStatusHistory($vehicle, $vehicleData['statusHistory'], $user);
+        }
+
+        // Import fuel records
+        if (!empty($vehicleData['fuelRecords']) && is_array($vehicleData['fuelRecords'])) {
+            $this->importFuelRecords($vehicle, $vehicleData['fuelRecords'], $user, $zipExtractDir);
+        }
+
+        // Import standalone parts (not linked to service or MOT)
+        if (!empty($vehicleData['parts']) && is_array($vehicleData['parts'])) {
+            $this->importParts($vehicle, $vehicleData['parts'], $user, $zipExtractDir, $partImportMap);
+        }
+
+        // Import standalone consumables (not linked to service or MOT)
+        if (!empty($vehicleData['consumables']) && is_array($vehicleData['consumables'])) {
+            $this->importConsumables($vehicle, $vehicleData['consumables'], $user, $zipExtractDir, $consumableImportMap);
+        }
+
+        // Import todos
+        if (!empty($vehicleData['todos']) && is_array($vehicleData['todos'])) {
+            $this->importTodos($vehicle, $vehicleData['todos']);
+        }
+
+        // Import attachments
+        if (!empty($vehicleData['attachments']) && is_array($vehicleData['attachments'])) {
+            $this->importAttachments($vehicle, $vehicleData['attachments'], $user, $zipExtractDir);
+        }
+
+        // Import vehicle images
+        if (!empty($vehicleData['vehicleImages']) && is_array($vehicleData['vehicleImages'])) {
+            $this->importVehicleImages($vehicle, $vehicleData['vehicleImages'], $user, $zipExtractDir);
+        }
+
+        // Note: Service records and MOT records will be added in next iteration
+    }
+
+    private function importSpecification(Vehicle $vehicle, array $specData): void
+    {
+        $spec = $this->entityManager->getRepository(\App\Entity\Specification::class)
+            ->findOneBy(['vehicle' => $vehicle]);
+        
+        if (!$spec) {
+            $spec = new \App\Entity\Specification();
+            $spec->setVehicle($vehicle);
+        }
+
+        // Trim all string fields
+        $stringFields = [
+            'engineType', 'displacement', 'power', 'torque', 'compression',
+            'bore', 'stroke', 'fuelSystem', 'cooling', 'sparkplugType',
+            'coolantType', 'coolantCapacity', 'gearbox', 'transmission',
+            'finalDrive', 'clutch', 'engineOilType', 'engineOilCapacity',
+            'transmissionOilType', 'transmissionOilCapacity',
+            'middleDriveOilType', 'middleDriveOilCapacity', 'frame',
+            'frontSuspension', 'rearSuspension', 'staticSagFront', 'staticSagRear',
+            'frontBrakes', 'rearBrakes', 'frontTyre', 'rearTyre',
+            'frontTyrePressure', 'rearTyrePressure', 'dryWeight', 'wetWeight',
+            'fuelCapacity', 'topSpeed', 'additionalInfo', 'sourceUrl'
+        ];
+
+        $trimmed = $this->trimArrayValues($specData, $stringFields);
+
+        // Set all fields
+        foreach ($trimmed as $field => $value) {
+            $setter = 'set' . ucfirst($field);
+            if (method_exists($spec, $setter)) {
+                $spec->$setter($value);
+            }
+        }
+
+        // Handle date fields
+        if (!empty($specData['scrapedAt'])) {
+            try {
+                $spec->setScrapedAt(new \DateTime($specData['scrapedAt']));
+            } catch (\Exception $e) {
+                // Ignore invalid date
+            }
+        }
+
+        $this->entityManager->persist($spec);
+    }
+
+    private function importStatusHistory(Vehicle $vehicle, array $historyData, User $user): void
+    {
+        foreach ($historyData as $h) {
+            try {
+                $history = new \App\Entity\VehicleStatusHistory();
+                $history->setVehicle($vehicle);
+
+                if (!empty($h['userEmail'])) {
+                    $u = $this->entityManager->getRepository(User::class)
+                        ->findOneBy(['email' => $h['userEmail']]);
+                    if ($u) {
+                        $history->setUser($u);
+                    }
+                }
+
+                if (!empty($h['oldStatus'])) {
+                    $history->setOldStatus($h['oldStatus']);
+                }
+                if (!empty($h['newStatus'])) {
+                    $history->setNewStatus($h['newStatus']);
+                }
+                if (!empty($h['notes'])) {
+                    $history->setNotes($h['notes']);
+                }
+
+                $dateFields = ['changeDate', 'createdAt'];
+                $dates = $this->hydrateDates($h, $dateFields);
+                
+                if (isset($dates['changeDate'])) {
+                    $history->setChangeDate($dates['changeDate']);
+                }
+                if (isset($dates['createdAt'])) {
+                    $history->setCreatedAt($dates['createdAt']);
+                }
+
+                $this->entityManager->persist($history);
+            } catch (\Exception $e) {
+                $this->logger->error('[import] Failed to import status history', [
+                    'vehicle' => $vehicle->getRegistrationNumber(),
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+    }
+
+    private function importFuelRecords(
+        Vehicle $vehicle,
+        array $fuelData,
+        User $user,
+        ?string $zipExtractDir
+    ): void {
+        foreach ($fuelData as $fuelRecord) {
+            $record = new FuelRecord();
+            $record->setVehicle($vehicle);
+
+            if (!empty($fuelRecord['date'])) {
+                try {
+                    $record->setDate(new \DateTime($fuelRecord['date']));
+                } catch (\Exception $e) {
+                    // Ignore
+                }
+            }
+
+            $numericFields = ['litres', 'cost', 'mileage'];
+            foreach ($numericFields as $field) {
+                if (isset($fuelRecord[$field])) {
+                    $value = $this->extractNumeric($fuelRecord, $field, false);
+                    $setter = 'set' . ucfirst($field);
+                    $record->$setter($value);
+                }
+            }
+
+            $stringFields = ['fuelType', 'station', 'notes'];
+            $trimmed = $this->trimArrayValues($fuelRecord, $stringFields);
+            
+            if (isset($trimmed['fuelType'])) $record->setFuelType($trimmed['fuelType']);
+            if (isset($trimmed['station'])) $record->setStation($trimmed['station']);
+            if (isset($trimmed['notes'])) $record->setNotes($trimmed['notes']);
+
+            // Handle receipt attachment
+            if (isset($fuelRecord['receiptAttachment']) && is_array($fuelRecord['receiptAttachment'])) {
+                $att = $this->deserializeAttachment(
+                    $fuelRecord['receiptAttachment'],
+                    $zipExtractDir,
+                    $user,
+                    $vehicle->getRegistrationNumber()
+                );
+                if ($att) {
+                    $att->setEntityType('fuel');
+                    $att->setVehicle($vehicle);
+                    $this->entityManager->persist($att);
+                    $record->setReceiptAttachment($att);
+                }
+            }
+
+            if (!empty($fuelRecord['createdAt'])) {
+                try {
+                    $record->setCreatedAt(new \DateTime($fuelRecord['createdAt']));
+                } catch (\Exception $e) {
+                    // Ignore
+                }
+            }
+
+            $this->entityManager->persist($record);
+        }
+    }
+
+    private function importParts(
+        Vehicle $vehicle,
+        array $partsData,
+        User $user,
+        ?string $zipExtractDir,
+        array &$partImportMap
+    ): void {
+        // Implementation will be added
+        // This handles standalone parts (not linked to service or MOT)
+    }
+
+    private function importConsumables(
+        Vehicle $vehicle,
+        array $consumablesData,
+        User $user,
+        ?string $zipExtractDir,
+        array &$consumableImportMap
+    ): void {
+        // Implementation will be added
+        // This handles standalone consumables (not linked to service or MOT)
+    }
+
+    private function importTodos(Vehicle $vehicle, array $todosData): void
+    {
+        foreach ($todosData as $todoData) {
+            $todo = new Todo();
+            $todo->setVehicle($vehicle);
+
+            if (!empty($todoData['title'])) {
+                $todo->setTitle($this->trimString($todoData['title']));
+            }
+            if (!empty($todoData['description'])) {
+                $todo->setDescription($this->trimString($todoData['description']));
+            }
+            if (isset($todoData['isCompleted'])) {
+                $todo->setIsCompleted($this->extractBoolean($todoData, 'isCompleted'));
+            }
+            if (isset($todoData['priority'])) {
+                $todo->setPriority($this->extractNumeric($todoData, 'priority', true));
+            }
+
+            $dateFields = ['dueDate', 'completedAt', 'createdAt'];
+            $dates = $this->hydrateDates($todoData, $dateFields);
+            
+            if (isset($dates['dueDate'])) $todo->setDueDate($dates['dueDate']);
+            if (isset($dates['completedAt'])) $todo->setCompletedAt($dates['completedAt']);
+            if (isset($dates['createdAt'])) $todo->setCreatedAt($dates['createdAt']);
+
+            $this->entityManager->persist($todo);
+        }
+    }
+
+    private function importAttachments(
+        Vehicle $vehicle,
+        array $attachmentsData,
+        User $user,
+        ?string $zipExtractDir
+    ): void {
+        foreach ($attachmentsData as $attachmentData) {
+            $attachment = $this->deserializeAttachment($attachmentData, $zipExtractDir, $user, $vehicle->getRegistrationNumber());
+            if ($attachment) {
+                $attachment->setVehicle($vehicle);
+                $attachment->setEntityType('vehicle');
+                $this->entityManager->persist($attachment);
+            }
+        }
+    }
+
+    private function importVehicleImages(
+        Vehicle $vehicle,
+        array $imagesData,
+        User $user,
+        ?string $zipExtractDir
+    ): void {
+        foreach ($imagesData as $imageData) {
+            $image = new \App\Entity\VehicleImage();
+            $image->setVehicle($vehicle);
+
+            if (!empty($imageData['caption'])) {
+                $image->setCaption($this->trimString($imageData['caption']));
+            }
+            if (isset($imageData['displayOrder'])) {
+                $image->setDisplayOrder($this->extractNumeric($imageData, 'displayOrder', true));
+            }
+            if (isset($imageData['isPrimary'])) {
+                $image->setIsPrimary($this->extractBoolean($imageData, 'isPrimary'));
+            }
+
+            if (!empty($imageData['uploadedAt'])) {
+                try {
+                    $image->setUploadedAt(new \DateTime($imageData['uploadedAt']));
+                } catch (\Exception $e) {
+                    $image->setUploadedAt(new \DateTime());
+                }
+            } else {
+                $image->setUploadedAt(new \DateTime());
+            }
+
+            // Handle file from ZIP
+            if ($zipExtractDir && !empty($imageData['filename'])) {
+                $sourcePath = $zipExtractDir . '/' . $imageData['filename'];
+                if (file_exists($sourcePath)) {
+                    $uploadsDir = $this->projectDir . '/uploads/vehicles';
+                    if (!is_dir($uploadsDir)) {
+                        mkdir($uploadsDir, 0777, true);
+                    }
+                    
+                    $slugger = new AsciiSlugger();
+                    $safeFilename = $slugger->slug(pathinfo($imageData['filename'], PATHINFO_FILENAME));
+                    $newFilename = $safeFilename . '-' . uniqid() . '.' . pathinfo($imageData['filename'], PATHINFO_EXTENSION);
+                    
+                    $destPath = $uploadsDir . '/' . $newFilename;
+                    if (copy($sourcePath, $destPath)) {
+                        $image->setFilename($newFilename);
+                        if (!empty($imageData['mimeType'])) {
+                            $image->setMimeType($imageData['mimeType']);
+                        }
+                        if (isset($imageData['fileSize'])) {
+                            $image->setFileSize((int)$imageData['fileSize']);
+                        }
+                    }
+                }
+            }
+
+            $this->entityManager->persist($image);
+        }
     }
 
     // Continue with helper methods...
