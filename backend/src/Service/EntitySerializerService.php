@@ -108,6 +108,7 @@ class EntitySerializerService
                 'supplier' => $consumable->getSupplier(),
                 'lastChanged' => $consumable->getLastChanged()?->format('Y-m-d'),
                 'mileageAtChange' => $consumable->getMileageAtChange(),
+                // Note: These values are stored in KM in the database
                 'replacementIntervalMiles' => $consumable->getReplacementIntervalMiles(),
                 'nextReplacementMileage' => $consumable->getNextReplacementMileage(),
                 'notes' => $consumable->getNotes(),

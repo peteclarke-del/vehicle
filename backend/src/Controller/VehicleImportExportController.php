@@ -47,9 +47,24 @@ class VehicleImportExportController extends AbstractController
     use UserSecurityTrait;
     use AttachmentFileOrganizerTrait;
 
+    /**
+     * @var LoggerInterface
+     */
     private LoggerInterface $logger;
+
+    /**
+     * @var SluggerInterface
+     */
     private SluggerInterface $slugger;
 
+    /**
+     * function __construct
+     *
+     * @param LoggerInterface $logger
+     * @param SluggerInterface $slugger
+     *
+     * @return void
+     */
     public function __construct(LoggerInterface $logger, SluggerInterface $slugger)
     {
         $this->logger = $logger;
@@ -57,7 +72,32 @@ class VehicleImportExportController extends AbstractController
     }
 
     /**
+     * function trimString
+     *
+     * Safely trim a string value, returning null if empty or not a string
+     *
+     * @param mixed $value
+     *
+     * @return string
+     */
+    private function trimString($value): ?string
+    {
+        if (!is_string($value)) {
+            return null;
+        }
+        $trimmed = trim($value);
+        return $trimmed === '' ? null : $trimmed;
+    }
+
+    /**
+     * function serializeAttachment
+     *
      * Serialize attachment data for export
+     *
+     * @param Attachment $attachment
+     * @param string $zipDir
+     *
+     * @return array
      */
     private function serializeAttachment(?Attachment $attachment, string $zipDir): ?array
     {
@@ -124,7 +164,16 @@ class VehicleImportExportController extends AbstractController
     }
 
     /**
+     * function deserializeAttachment
+     *
      * Deserialize attachment data during import and create Attachment entity
+     *
+     * @param array $attachmentData
+     * @param string $zipDir
+     * @param mixed $user
+     * @param string $vehicleRegNo
+     *
+     * @return Attachment
      */
     private function deserializeAttachment(?array $attachmentData, string $zipDir, $user, ?string $vehicleRegNo = null): ?Attachment
     {
@@ -149,7 +198,22 @@ class VehicleImportExportController extends AbstractController
         }
 
         // Determine storage path based on vehicle registration and category
-        $category = $attachmentData['category'] ?? 'misc';
+        // If no category provided, infer from entityType
+        $category = $attachmentData['category'] ?? null;
+        if (!$category && isset($attachmentData['entityType'])) {
+            $entityType = strtolower($attachmentData['entityType']);
+            // Map entity types to sensible category names
+            $category = match($entityType) {
+                'servicerecord' => 'service',
+                'motrecord' => 'mot',
+                'fuelrecord' => 'fuel',
+                'insurancepolicy' => 'insurance',
+                'part' => 'parts',
+                'consumable' => 'consumables',
+                default => 'misc'
+            };
+        }
+        $category = $category ?? 'misc';
         
         if ($vehicleRegNo) {
             // Sanitize registration number for filesystem use
@@ -217,7 +281,7 @@ class VehicleImportExportController extends AbstractController
      * @param Request $request
      * @param EntityManagerInterface $entityManager
      * @param LoggerInterface $logger
-     * @param string|null $zipDir Optional directory path for ZIP export (to copy attachment files)
+     * @param string $zipDir
      *
      * @return Response
      */
@@ -252,7 +316,10 @@ class VehicleImportExportController extends AbstractController
             // Fetch vehicle IDs first to avoid heavy eager-loading joins
             $idsQb = $entityManager->createQueryBuilder();
             $idsQb->select('v.id')
-                ->from(Vehicle::class, 'v');
+                ->from(Vehicle::class, 'v')
+                ->leftJoin('v.vehicleType', 'vt')
+                ->orderBy('vt.name', 'ASC')
+                ->addOrderBy('v.name', 'ASC');
 
             if (!$this->isAdminForUser($user)) {
                 $idsQb->where('v.owner = :user')
@@ -280,8 +347,11 @@ class VehicleImportExportController extends AbstractController
                 $batchQb = $entityManager->createQueryBuilder();
                 $batchQb->select('v')
                     ->from(Vehicle::class, 'v')
+                    ->leftJoin('v.vehicleType', 'vt')
                     ->where($batchQb->expr()->in('v.id', ':ids'))
-                    ->setParameter('ids', $batchIds);
+                    ->setParameter('ids', $batchIds)
+                    ->orderBy('vt.name', 'ASC')
+                    ->addOrderBy('v.name', 'ASC');
 
                 $vehicles = $batchQb->getQuery()->getResult();
                 $logger->info('[export] JSON batch loaded', ['offset' => $offset, 'count' => count($vehicles)]);
@@ -296,7 +366,8 @@ class VehicleImportExportController extends AbstractController
                             'elapsedMs' => (int) ((microtime(true) - $t0) * 1000)
                         ]);
                     }
-                // Export fuel records
+
+                    // Export fuel records
                     $fuelRecords = [];
                     foreach ($vehicle->getFuelRecords() as $fuelRecord) {
                         $record = [
@@ -320,7 +391,7 @@ class VehicleImportExportController extends AbstractController
                         $fuelRecords[] = $record;
                     }
 
-                // Export parts
+                    // Export parts
                     $parts = [];
                     foreach ($vehicle->getParts() as $part) {
                         // Skip parts already linked to an MOT or ServiceRecord — they will be exported under that parent record
@@ -329,7 +400,7 @@ class VehicleImportExportController extends AbstractController
                         }
                         $partData = [
                             'id' => $part->getId(),
-                            'name' => $part->getName(),
+                            'name' => $part->getName() ?: $part->getDescription(), // Use description as fallback if name is null
                             'price' => $part->getPrice(),
                             'sku' => $part->getSku(),
                             'quantity' => $part->getQuantity(),
@@ -356,7 +427,7 @@ class VehicleImportExportController extends AbstractController
                         $parts[] = $partData;
                     }
 
-                // Export consumables
+                    // Export consumables
                     $consumables = [];
                     foreach ($vehicle->getConsumables() as $consumable) {
                         // Skip consumables already linked to an MOT or ServiceRecord — they will be exported under that parent record
@@ -365,6 +436,7 @@ class VehicleImportExportController extends AbstractController
                         }
                         $consumableData = [
                         'id' => $consumable->getId(),
+                        'name' => $consumable->getDescription(),
                         'description' => $consumable->getDescription(),
                         'brand' => $consumable->getBrand(),
                         'partNumber' => $consumable->getPartNumber(),
@@ -388,7 +460,7 @@ class VehicleImportExportController extends AbstractController
                         $consumables[] = $consumableData;
                     }
 
-                // Export service records - already loaded via JOIN
+                    // Export service records - already loaded via JOIN
                     $serviceRecordsData = [];
                     foreach ($vehicle->getServiceRecords() as $serviceRecord) {
                         // Skip service records linked to an MOT — they will be exported under that MOT
@@ -415,6 +487,7 @@ class VehicleImportExportController extends AbstractController
                             $partData = null;
                             if ($part) {
                                 $partData = [
+                                    'name' => $part->getName() ?: $part->getDescription(),
                                     'price' => $part->getPrice(),
                                     'quantity' => $part->getQuantity(),
                                     'id' => $part->getId(),
@@ -442,6 +515,7 @@ class VehicleImportExportController extends AbstractController
                             if ($consumable) {
                                 $consumableData = [
                                     'id' => $consumable->getId(),
+                                    'name' => $consumable->getDescription(),
                                     'consumableType' => $consumable->getConsumableType()->getName(),
                                     'description' => $consumable->getDescription(),
                                     'brand' => $consumable->getBrand(),
@@ -488,7 +562,7 @@ class VehicleImportExportController extends AbstractController
                         $serviceRecordsData[] = $serviceData;
                     }
 
-                // Export MOT records - already loaded via JOIN, no additional query needed
+                    // Export MOT records - already loaded via JOIN, no additional query needed
                     $motRecordsData = [];
                     foreach ($vehicle->getMotRecords() as $motRecord) {
                         // gather parts/consumables/service records linked to this mot record
@@ -496,6 +570,7 @@ class VehicleImportExportController extends AbstractController
                         foreach ($vehicle->getParts() as $part) {
                             if ($part->getMotRecord() && $part->getMotRecord()->getId() === $motRecord->getId()) {
                                 $motPartData = [
+                                    'name' => $part->getName() ?: $part->getDescription(),
                                     'price' => $part->getPrice(),
                                     'quantity' => $part->getQuantity(),
                                     'purchaseDate' => $part->getPurchaseDate()?->format('Y-m-d'),
@@ -504,6 +579,8 @@ class VehicleImportExportController extends AbstractController
                                     'manufacturer' => $part->getManufacturer(),
                                     'supplier' => $part->getSupplier(),
                                     'cost' => $part->getCost(),
+                                    'partCategory' => $part->getPartCategory()?->getName(),
+                                    'partCategoryId' => $part->getPartCategory()?->getId(),
                                     'installationDate' => $part->getInstallationDate()?->format('Y-m-d'),
                                     'mileageAtInstallation' => $part->getMileageAtInstallation(),
                                     'notes' => $part->getNotes(),
@@ -522,6 +599,7 @@ class VehicleImportExportController extends AbstractController
                         foreach ($vehicle->getConsumables() as $consumable) {
                             if ($consumable->getMotRecord() && $consumable->getMotRecord()->getId() === $motRecord->getId()) {
                                 $motConsumableData = [
+                                    'name' => $consumable->getDescription(),
                                     'consumableType' => $consumable->getConsumableType()->getName(),
                                     'description' => $consumable->getDescription(),
                                     'brand' => $consumable->getBrand(),
@@ -566,6 +644,7 @@ class VehicleImportExportController extends AbstractController
                                         $partData = null;
                                         if ($part) {
                                             $partData = [
+                                                'name' => $part->getName() ?: $part->getDescription(),
                                                 'price' => $part->getPrice(),
                                                 'quantity' => $part->getQuantity(),
                                                 'id' => $part->getId(),
@@ -574,6 +653,8 @@ class VehicleImportExportController extends AbstractController
                                                 'manufacturer' => $part->getManufacturer(),
                                                 'supplier' => $part->getSupplier(),
                                                 'cost' => $part->getCost(),
+                                                'partCategory' => $part->getPartCategory()?->getName(),
+                                                'partCategoryId' => $part->getPartCategory()?->getId(),
                                                 'purchaseDate' => $part->getPurchaseDate()?->format('Y-m-d'),
                                                 'installationDate' => $part->getInstallationDate()?->format('Y-m-d'),
                                                 'mileageAtInstallation' => $part->getMileageAtInstallation(),
@@ -591,6 +672,7 @@ class VehicleImportExportController extends AbstractController
                                         if ($consumable) {
                                             $consumableData = [
                                                 'id' => $consumable->getId(),
+                                                'name' => $consumable->getDescription(),
                                                 'consumableType' => $consumable->getConsumableType()->getName(),
                                                 'description' => $consumable->getDescription(),
                                                 'brand' => $consumable->getBrand(),
@@ -660,7 +742,7 @@ class VehicleImportExportController extends AbstractController
                         $motRecordsData[] = $motRecordData;
                     }
 
-                // Export insurance records
+                    // Export insurance records
                     $insurancePolicies = $entityManager->getRepository(InsurancePolicy::class)->findAll();
                     $insuranceRecordsData = [];
                     foreach ($insurancePolicies as $policy) {
@@ -688,7 +770,7 @@ class VehicleImportExportController extends AbstractController
                         }
                     }
 
-                // Export road tax records - already loaded via JOIN
+                    // Export road tax records - already loaded via JOIN
                     $roadTaxRecordsData = [];
                     foreach ($vehicle->getRoadTaxRecords() as $roadTax) {
                         $roadTaxRecordsData[] = [
@@ -702,7 +784,7 @@ class VehicleImportExportController extends AbstractController
                         ];
                     }
 
-                // Export specification if present
+                    // Export specification if present
                     $specData = null;
                     $spec = $entityManager->getRepository(\App\Entity\Specification::class)->findOneBy(['vehicle' => $vehicle]);
                     if ($spec instanceof \App\Entity\Specification) {
@@ -757,17 +839,17 @@ class VehicleImportExportController extends AbstractController
 
                     $vehicleData = [
                     'originalId' => $vehicle->getId(),
-                    'name' => $vehicle->getName(),
-                    'vehicleType' => $vehicle->getVehicleType()->getName(),
-                    'make' => $vehicle->getMake(),
-                    'model' => $vehicle->getModel(),
+                    'name' => $this->trimString($vehicle->getName()),
+                    'vehicleType' => $this->trimString($vehicle->getVehicleType()->getName()),
+                    'make' => $this->trimString($vehicle->getMake()),
+                    'model' => $this->trimString($vehicle->getModel()),
                     'year' => $vehicle->getYear(),
-                    'vin' => $vehicle->getVin(),
+                    'vin' => $this->trimString($vehicle->getVin()),
                     'vinDecodedData' => $vehicle->getVinDecodedData(),
                     'vinDecodedAt' => $vehicle->getVinDecodedAt()?->format('c'),
-                    'registrationNumber' => $vehicle->getRegistrationNumber(),
-                    'engineNumber' => $vehicle->getEngineNumber(),
-                    'v5DocumentNumber' => $vehicle->getV5DocumentNumber(),
+                    'registrationNumber' => $this->trimString($vehicle->getRegistrationNumber()),
+                    'engineNumber' => $this->trimString($vehicle->getEngineNumber()),
+                    'v5DocumentNumber' => $this->trimString($vehicle->getV5DocumentNumber()),
                     'createdAt' => $vehicle->getCreatedAt()?->format('c'),
                     'purchaseCost' => $vehicle->getPurchaseCost(),
                     'purchaseDate' => $vehicle->getPurchaseDate()?->format('Y-m-d'),
@@ -893,7 +975,7 @@ class VehicleImportExportController extends AbstractController
                 return $response;
             }
 
-        // Default JSON export wraps vehicles under a top-level key.
+            // Default JSON export wraps vehicles under a top-level key.
             $logger->info('[export] JSON completed', ['vehicleCount' => $vehicleCount]);
             $logger->info('Export JSON completed', [
                 'vehicleCount' => $vehicleCount,
@@ -990,7 +1072,7 @@ class VehicleImportExportController extends AbstractController
                 'elapsedMs' => (int) ((microtime(true) - $t0) * 1000)
             ]);
 
-        // write vehicles json (no manifest needed - attachments are embedded in entity data)
+            // write vehicles json (no manifest needed - attachments are embedded in entity data)
             file_put_contents($tempDir . '/vehicles.json', $vehiclesJson);
 
             $logger->info('[export] ZIP wrote vehicles.json', [
@@ -1034,7 +1116,7 @@ class VehicleImportExportController extends AbstractController
                 'elapsedMs' => (int) ((microtime(true) - $t0) * 1000)
             ]);
 
-        // cleanup temp dir recursively
+            // cleanup temp dir recursively
             $deleteDir = function($dir) use (&$deleteDir) {
                 if (!is_dir($dir)) {
                     return;
@@ -1059,7 +1141,7 @@ class VehicleImportExportController extends AbstractController
             $response->headers->set('Content-Type', 'application/zip');
             $response->setContentDisposition(ResponseHeaderBag::DISPOSITION_ATTACHMENT, 'vehicles-export.zip');
 
-        // remove zip file after response sent? leave it for now; caller can delete temp files later
+            // remove zip file after response sent? leave it for now; caller can delete temp files later
             $logger->info('Export ZIP completed', [
                 'zipPath' => $zipPath,
                 'elapsedMs' => (int) ((microtime(true) - $t0) * 1000)
@@ -1086,6 +1168,7 @@ class VehicleImportExportController extends AbstractController
      * @param Request $request
      * @param EntityManagerInterface $entityManager
      * @param LoggerInterface $logger
+     * @param TagAwareCacheInterface $cache
      *
      * @return JsonResponse
      */
@@ -1177,11 +1260,11 @@ class VehicleImportExportController extends AbstractController
                 'manifestItems' => $manifest ? count($manifest) : 0
             ]);
 
-        // call existing import logic by creating a synthetic Request
+            // call existing import logic by creating a synthetic Request
             $importRequest = new Request([], [], [], [], [], [], json_encode($vehicles));
             $result = $this->import($importRequest, $entityManager, $logger, $cache, $tmpDir);
 
-        // build registration -> vehicle map for image import
+            // build registration -> vehicle map for image import
             $vehiclesList = $vehicles;
             $isSequential = array_keys($vehiclesList) === range(0, count($vehiclesList) - 1);
             if (!$isSequential) {
@@ -1209,7 +1292,7 @@ class VehicleImportExportController extends AbstractController
                 }
             }
 
-        // Import vehicle images if manifest.json is present
+            // Import vehicle images if manifest.json is present
             $vehicleImagesSkipped = false;
             $vehicleImagesImported = 0;
             
@@ -1306,7 +1389,7 @@ class VehicleImportExportController extends AbstractController
                 $logger->info('[import] No manifest.json found, skipping vehicle images');
             }
 
-        // cleanup tmp files
+            // cleanup tmp files
             @unlink($zipPath);
             if ($hasManifest) {
                 @unlink($manifestFile);
@@ -1350,7 +1433,7 @@ class VehicleImportExportController extends AbstractController
      * @param EntityManagerInterface $entityManager
      * @param LoggerInterface $logger
      * @param TagAwareCacheInterface $cache
-     * @param string|null $zipExtractDir Directory where ZIP was extracted (for embedded attachments)
+     * @param string $zipExtractDir
      *
      * @return JsonResponse
      */
@@ -1378,7 +1461,7 @@ class VehicleImportExportController extends AbstractController
             }
             $data = json_decode($content, true);
 
-        // If JSON decode fails, attempt to parse CSV payloads (tests use simple CSV inputs)
+            // If JSON decode fails, attempt to parse CSV payloads (tests use simple CSV inputs)
             if (!is_array($data)) {
                 $ct = strtolower((string)$request->headers->get('Content-Type', ''));
                 if (str_contains($ct, 'csv') || str_contains($content, ',')) {
@@ -1406,10 +1489,10 @@ class VehicleImportExportController extends AbstractController
                 return new JsonResponse(['error' => 'Invalid JSON format'], Response::HTTP_BAD_REQUEST);
             }
 
-        // Support wrapped payloads where vehicles are provided under a top-level
-        // key (for example: { "vehicles": [...], "count": 4, ... }).
-        // If the decoded JSON is an associative array, try to extract the
-        // actual vehicles array from common wrapper keys.
+            // Support wrapped payloads where vehicles are provided under a top-level
+            // key (for example: { "vehicles": [...], "count": 4, ... }).
+            // If the decoded JSON is an associative array, try to extract the
+            // actual vehicles array from common wrapper keys.
             $isSequential = array_keys($data) === range(0, count($data) - 1);
             if (!$isSequential) {
                 if (!empty($data['vehicles']) && is_array($data['vehicles'])) {
@@ -1438,7 +1521,7 @@ class VehicleImportExportController extends AbstractController
             $batchSize = 50;
             $entityCount = 0;
 
-        // First pass: create all vehicles
+            // First pass: create all vehicles
             foreach ($data as $index => $vehicleData) {
                 try {
                     // Normalize some common CSV header variations
@@ -1511,7 +1594,7 @@ class VehicleImportExportController extends AbstractController
 
                         if (!$vehicleMake) {
                             $vehicleMake = new VehicleMake();
-                            $vehicleMake->setName($vehicleData['make']);
+                            $vehicleMake->setName($this->trimString($vehicleData['make']));
                             $vehicleMake->setVehicleType($vehicleType);
                             $entityManager->persist($vehicleMake);
                             $entityManager->flush();
@@ -1528,7 +1611,7 @@ class VehicleImportExportController extends AbstractController
 
                             if (!$vehicleModel) {
                                 $vehicleModel = new VehicleModel();
-                                $vehicleModel->setName($vehicleData['model']);
+                                $vehicleModel->setName($this->trimString($vehicleData['model']));
                                 $vehicleModel->setMake($vehicleMake);
                                 $vehicleModel->setStartYear((int)$vehicleData['year']);
                                 $vehicleModel->setEndYear((int)$vehicleData['year']);
@@ -1541,20 +1624,20 @@ class VehicleImportExportController extends AbstractController
                     // Create vehicle
                     $vehicle = new Vehicle();
                     $vehicle->setOwner($user);
-                    $vehicle->setName($vehicleData['name']);
+                    $vehicle->setName($this->trimString($vehicleData['name']));
                     $vehicle->setVehicleType($vehicleType);
 
                     if (!empty($vehicleData['make'])) {
-                        $vehicle->setMake($vehicleData['make']);
+                        $vehicle->setMake($this->trimString($vehicleData['make']));
                     }
                     if (!empty($vehicleData['model'])) {
-                        $vehicle->setModel($vehicleData['model']);
+                        $vehicle->setModel($this->trimString($vehicleData['model']));
                     }
                     if (!empty($vehicleData['year'])) {
                         $vehicle->setYear((int)$vehicleData['year']);
                     }
                     if (!empty($vehicleData['vin'])) {
-                        $vehicle->setVin($vehicleData['vin']);
+                        $vehicle->setVin($this->trimString($vehicleData['vin']));
                     }
                     if (!empty($vehicleData['vinDecodedData'])) {
                         $vehicle->setVinDecodedData($vehicleData['vinDecodedData']);
@@ -1567,13 +1650,13 @@ class VehicleImportExportController extends AbstractController
                         }
                     }
                     if (!empty($vehicleData['registrationNumber'])) {
-                        $vehicle->setRegistrationNumber($vehicleData['registrationNumber']);
+                        $vehicle->setRegistrationNumber($this->trimString($vehicleData['registrationNumber']));
                     }
                     if (!empty($vehicleData['engineNumber'])) {
-                        $vehicle->setEngineNumber($vehicleData['engineNumber']);
+                        $vehicle->setEngineNumber($this->trimString($vehicleData['engineNumber']));
                     }
                     if (!empty($vehicleData['v5DocumentNumber'])) {
-                        $vehicle->setV5DocumentNumber($vehicleData['v5DocumentNumber']);
+                        $vehicle->setV5DocumentNumber($this->trimString($vehicleData['v5DocumentNumber']));
                     }
 
                     if (!empty($vehicleData['createdAt'])) {
@@ -1653,7 +1736,7 @@ class VehicleImportExportController extends AbstractController
 
             $entityManager->flush();
 
-        // Pre-load existing parts and consumables for all vehicles to optimize duplicate detection
+            // Pre-load existing parts and consumables for all vehicles to optimize duplicate detection
             $existingPartsMap = [];
             $existingConsumablesMap = [];
 
@@ -1679,7 +1762,7 @@ class VehicleImportExportController extends AbstractController
                 }
             }
 
-        // Second pass: import related data
+            // Second pass: import related data
             foreach ($data as $index => $vehicleData) {
                 if (empty($vehicleData['registrationNumber']) || !isset($vehicleMap[$vehicleData['registrationNumber']])) {
                     continue;
@@ -1972,13 +2055,13 @@ class VehicleImportExportController extends AbstractController
                             }
 
                             if (!empty($partData['name'])) {
-                                $part->setName($partData['name']);
+                                $part->setName($this->trimString($partData['name']));
                             }
                             if (isset($partData['price'])) {
                                 $part->setPrice($partData['price']);
                             }
                             if (!empty($partData['sku'])) {
-                                $part->setSku($partData['sku']);
+                                $part->setSku($this->trimString($partData['sku']));
                             }
                             if (isset($partData['quantity'])) {
                                 $part->setQuantity((int)$partData['quantity']);
@@ -1987,7 +2070,7 @@ class VehicleImportExportController extends AbstractController
                                 $part->setWarranty($partData['warrantyMonths']);
                             }
                             if (!empty($partData['imageUrl'])) {
-                                $part->setImageUrl($partData['imageUrl']);
+                                $part->setImageUrl($this->trimString($partData['imageUrl']));
                             }
 
                             if (!empty($partData['purchaseDate'])) {
@@ -1998,13 +2081,13 @@ class VehicleImportExportController extends AbstractController
                                 }
                             }
                             if (!empty($partData['description'])) {
-                                $part->setDescription($partData['description']);
+                                $part->setDescription($this->trimString($partData['description']));
                             }
                             if (!empty($partData['partNumber'])) {
-                                $part->setPartNumber($partData['partNumber']);
+                                $part->setPartNumber($this->trimString($partData['partNumber']));
                             }
                             if (!empty($partData['manufacturer'])) {
-                                $part->setManufacturer($partData['manufacturer']);
+                                $part->setManufacturer($this->trimString($partData['manufacturer']));
                             }
                             if (isset($partData['cost'])) {
                                 $part->setCost((string)$partData['cost']);
@@ -2022,11 +2105,43 @@ class VehicleImportExportController extends AbstractController
                                 $part->setMileageAtInstallation($partData['mileageAtInstallation']);
                             }
                             if (!empty($partData['notes'])) {
-                                $part->setNotes($partData['notes']);
+                                $part->setNotes($this->trimString($partData['notes']));
                             }
 
                             if (!empty($partData['supplier'])) {
-                                $part->setSupplier($partData['supplier']);
+                                $part->setSupplier($this->trimString($partData['supplier']));
+                            }
+                            
+                            // Handle part category - use same logic as service record parts for consistency
+                            $partCategory = null;
+                            if (!empty($partData['partCategoryId']) && is_numeric($partData['partCategoryId'])) {
+                                $partCategory = $entityManager->getRepository(PartCategory::class)->find((int)$partData['partCategoryId']);
+                            }
+                            if (!$partCategory && !empty($partData['partCategory'])) {
+                                $pcName = trim($partData['partCategory']);
+                                $vehicleType = $vehicle->getVehicleType();
+                                if ($vehicleType) {
+                                    $partCategory = $entityManager->getRepository(PartCategory::class)
+                                        ->findOneBy(['name' => $pcName, 'vehicleType' => $vehicleType]);
+                                }
+                                if (!$partCategory) {
+                                    $partCategory = $entityManager->getRepository(PartCategory::class)
+                                        ->findOneBy(['name' => $pcName]);
+                                }
+                                if (!$partCategory) {
+                                    $partCategory = new PartCategory();
+                                    $partCategory->setName($this->trimString($pcName));
+                                    if (!empty($vehicleType)) {
+                                        $partCategory->setVehicleType($vehicleType);
+                                    }
+                                    $entityManager->persist($partCategory);
+                                    $entityManager->flush();
+                                    $logger->debug('[import] Created new part category', ['name' => $pcName, 'vehicleType' => $vehicleType?->getName()]);
+                                }
+                            }
+                            if ($partCategory) {
+                                $part->setPartCategory($partCategory);
+                                $logger->debug('[import] Set part category', ['part' => $partData['description'] ?? 'unknown', 'category' => $partCategory->getName()]);
                             }
                             
                             // Handle embedded attachment (Option 3: attachment data embedded in entity)
@@ -2041,7 +2156,7 @@ class VehicleImportExportController extends AbstractController
                                 }
                             }
                             if (!empty($partData['productUrl'])) {
-                                $part->setProductUrl($partData['productUrl']);
+                                $part->setProductUrl($this->trimString($partData['productUrl']));
                             }
                             if (!empty($partData['createdAt'])) {
                                 try {
@@ -2075,7 +2190,7 @@ class VehicleImportExportController extends AbstractController
                             if (!$consumableType) {
                                 // Create consumable type if it doesn't exist
                                 $consumableType = new ConsumableType();
-                                $consumableType->setName($consumableData['consumableType']);
+                                $consumableType->setName($this->trimString($consumableData['consumableType']));
                                 $consumableType->setVehicleType($vehicle->getVehicleType());
                                 $entityManager->persist($consumableType);
                                 $entityManager->flush();
@@ -2107,22 +2222,19 @@ class VehicleImportExportController extends AbstractController
                             }
 
                             if (!empty($consumableData['name'])) {
-                                $consumable->setDescription($consumableData['name']);
+                                $consumable->setDescription($this->trimString($consumableData['name']));
                             }
                             if (!empty($consumableData['brand'])) {
-                                $consumable->setBrand($consumableData['brand']);
+                                $consumable->setBrand($this->trimString($consumableData['brand']));
                             }
                             if (!empty($consumableData['partNumber'])) {
-                                $consumable->setPartNumber($consumableData['partNumber']);
+                                $consumable->setPartNumber($this->trimString($consumableData['partNumber']));
                             }
                             if (isset($consumableData['replacementIntervalMiles'])) {
                                 $consumable->setReplacementInterval((int)$consumableData['replacementIntervalMiles']);
                             }
                             if (isset($consumableData['nextReplacementMileage'])) {
                                 $consumable->setNextReplacementMileage((int)$consumableData['nextReplacementMileage']);
-                            }
-                            if (!empty($consumableData['specification'])) {
-                                $consumable->setSpecification($consumableData['specification']);
                             }
                             if (isset($consumableData['quantity'])) {
                                 $consumable->setQuantity($consumableData['quantity']);
@@ -2139,11 +2251,11 @@ class VehicleImportExportController extends AbstractController
                                 $consumable->setCost($consumableData['cost']);
                             }
                             if (!empty($consumableData['notes'])) {
-                                $consumable->setNotes($consumableData['notes']);
+                                $consumable->setNotes($this->trimString($consumableData['notes']));
                             }
 
                             if (!empty($consumableData['supplier'])) {
-                                $consumable->setSupplier($consumableData['supplier']);
+                                $consumable->setSupplier($this->trimString($consumableData['supplier']));
                             }
                             
                             // Handle embedded attachment (Option 3: attachment data embedded in entity)
@@ -2158,7 +2270,7 @@ class VehicleImportExportController extends AbstractController
                                 }
                             }
                             if (!empty($consumableData['productUrl'])) {
-                                $consumable->setProductUrl($consumableData['productUrl']);
+                                $consumable->setProductUrl($this->trimString($consumableData['productUrl']));
                             }
                             if (!empty($consumableData['createdAt'])) {
                                 try {
@@ -2909,6 +3021,12 @@ class VehicleImportExportController extends AbstractController
 
                                     if ($existingConsumable) {
                                         $existingConsumable->setMotRecord($motRecord);
+                                        // Update description from description or name field
+                                        if (!empty($consumableData['description'])) {
+                                            $existingConsumable->setDescription($consumableData['description']);
+                                        } elseif (!empty($consumableData['name'])) {
+                                            $existingConsumable->setDescription($consumableData['name']);
+                                        }
                                         if (!empty($consumableData['brand'])) {
                                             $existingConsumable->setBrand($consumableData['brand']);
                                         }
@@ -2950,9 +3068,11 @@ class VehicleImportExportController extends AbstractController
                                     $consumable->setVehicle($vehicle);
                                     $consumable->setConsumableType($consumableType);
                                     $consumable->setMotRecord($motRecord);
-    // temporary to support legay files
-                                    if (!empty($consumableData['specification'])) {
-                                        $consumable->setDescription($consumableData['specification']);
+                                    // Set description from description or name field
+                                    if (!empty($consumableData['description'])) {
+                                        $consumable->setDescription($consumableData['description']);
+                                    } elseif (!empty($consumableData['name'])) {
+                                        $consumable->setDescription($consumableData['name']);
                                     }
                                     if (!empty($consumableData['brand'])) {
                                         $consumable->setBrand($consumableData['brand']);
@@ -3242,17 +3362,26 @@ class VehicleImportExportController extends AbstractController
                                                 if (empty($pData['purchaseDate'])) {
                                                     $part->setPurchaseDate(new \DateTime());
                                                 }
+                                                if (!empty($pData['name'])) {
+                                                    $part->setName($this->trimString($pData['name']));
+                                                }
+                                                if (isset($pData['price'])) {
+                                                    $part->setPrice($pData['price']);
+                                                }
+                                                if (isset($pData['quantity'])) {
+                                                    $part->setQuantity((int)$pData['quantity']);
+                                                }
                                                 if (!empty($pData['description'])) {
-                                                    $part->setDescription($pData['description']);
+                                                    $part->setDescription($this->trimString($pData['description']));
                                                 }
                                                 if (!empty($pData['partNumber'])) {
-                                                    $part->setPartNumber($pData['partNumber']);
+                                                    $part->setPartNumber($this->trimString($pData['partNumber']));
                                                 }
                                                 if (!empty($pData['manufacturer'])) {
-                                                    $part->setManufacturer($pData['manufacturer']);
+                                                    $part->setManufacturer($this->trimString($pData['manufacturer']));
                                                 }
                                                 if (!empty($pData['supplier'])) {
-                                                    $part->setSupplier($pData['supplier']);
+                                                    $part->setSupplier($this->trimString($pData['supplier']));
                                                 }
                                                 if (isset($pData['cost'])) {
                                                     $part->setCost((string) $pData['cost']);
@@ -3275,11 +3404,43 @@ class VehicleImportExportController extends AbstractController
                                                     $part->setMileageAtInstallation($pData['mileageAtInstallation']);
                                                 }
                                                 if (!empty($pData['notes'])) {
-                                                    $part->setNotes($pData['notes']);
+                                                    $part->setNotes($this->trimString($pData['notes']));
                                                 }
                                                 if (!empty($pData['productUrl'])) {
-                                                    $part->setProductUrl($pData['productUrl']);
+                                                    $part->setProductUrl($this->trimString($pData['productUrl']));
                                                 }
+                                                
+                                                // Handle part category - use same logic as other imports
+                                                $partCategory = null;
+                                                if (!empty($pData['partCategoryId']) && is_numeric($pData['partCategoryId'])) {
+                                                    $partCategory = $entityManager->getRepository(PartCategory::class)->find((int)$pData['partCategoryId']);
+                                                }
+                                                if (!$partCategory && !empty($pData['partCategory'])) {
+                                                    $pcName = trim($pData['partCategory']);
+                                                    $vehicleType = $vehicle->getVehicleType();
+                                                    if ($vehicleType) {
+                                                        $partCategory = $entityManager->getRepository(PartCategory::class)
+                                                            ->findOneBy(['name' => $pcName, 'vehicleType' => $vehicleType]);
+                                                    }
+                                                    if (!$partCategory) {
+                                                        $partCategory = $entityManager->getRepository(PartCategory::class)
+                                                            ->findOneBy(['name' => $pcName]);
+                                                    }
+                                                    if (!$partCategory) {
+                                                        $partCategory = new PartCategory();
+                                                        $partCategory->setName($pcName);
+                                                        if (!empty($vehicleType)) {
+                                                            $partCategory->setVehicleType($vehicleType);
+                                                        }
+                                                        $entityManager->persist($partCategory);
+                                                        $entityManager->flush();
+                                                        $logger->debug('[import] Created new part category in MOT service', ['name' => $pcName, 'vehicleType' => $vehicleType?->getName()]);
+                                                    }
+                                                }
+                                                if ($partCategory) {
+                                                    $part->setPartCategory($partCategory);
+                                                }
+                                                
                                                 if (isset($pData['includedInServiceCost'])) {
                                                     $part->setIncludedInServiceCost((bool) $pData['includedInServiceCost']);
                                                 }

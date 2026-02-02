@@ -104,8 +104,24 @@ if [ -f "$TARGET_DIR/bin/console" ]; then
   fi
 
   if [ "${APP_ENV:-dev}" != "prod" ] && [ "${SKIP_FIXTURES:-0}" != "1" ]; then
-    echo "[entrypoint] loading data fixtures (non-production only)"
-    (cd "$TARGET_DIR" && php bin/console doctrine:fixtures:load --no-interaction) || echo "[entrypoint] fixtures load failed or already loaded"
+    # Check if fixtures have already been loaded by checking if vehicle_types table has data
+    fixtures_loaded=$(php -r "
+      try {
+        \$pdo = new PDO('mysql:host='.\$_ENV['DB_HOST'].';port='.\$_ENV['DB_PORT'].';dbname='.\$_ENV['DB_NAME'], \$_ENV['DB_USER'], \$_ENV['DB_PASS']);
+        \$stmt = \$pdo->query('SELECT COUNT(*) FROM vehicle_types');
+        \$count = \$stmt->fetchColumn();
+        echo \$count > 0 ? 'yes' : 'no';
+      } catch (Exception \$e) {
+        echo 'no';
+      }
+    " 2>/dev/null)
+    
+    if [ "$fixtures_loaded" = "yes" ]; then
+      echo "[entrypoint] fixtures already loaded, skipping"
+    else
+      echo "[entrypoint] loading data fixtures (non-production only)"
+      (cd "$TARGET_DIR" && php bin/console doctrine:fixtures:load --no-interaction --append) || echo "[entrypoint] fixtures load failed"
+    fi
   else
     echo "[entrypoint] skipping fixtures (production or SKIP_FIXTURES set)"
   fi

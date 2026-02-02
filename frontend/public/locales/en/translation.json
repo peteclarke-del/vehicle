@@ -357,7 +357,7 @@
     "title": "Vehicle Details",
     "valuesTableTitle": "Depreciation Values",
     "costBreakdown": "Cost Breakdown",
-    "serviceCosts": "Service Costs",
+    "serviceCosts": "Service & M.O.T. Costs",
     "tooltip": {
       "avgFuelConsumption": "Average fuel consumption",
       "costPerDistance": "Cost per distance unit",

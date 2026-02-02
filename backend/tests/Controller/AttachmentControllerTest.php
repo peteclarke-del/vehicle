@@ -18,8 +18,8 @@ class AttachmentControllerTest extends BaseWebTestCase
 
     protected function setUp(): void
     {
-        $client = $this->client;
-        $this->token = $this->getAuthToken($client);
+        parent::setUp(); // Initialize $this->client first
+        $this->token = $this->getAuthToken();
     }
 
 

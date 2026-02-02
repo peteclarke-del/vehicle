@@ -26,11 +26,13 @@ class CostCalculator
 
     public function calculateTotalPartsCost(Vehicle $vehicle): float
     {
+        // Count standalone parts (not in service/MOT records) OR parts in service/MOT records but not included in their cost totals
         $dql = 'SELECT COALESCE(SUM(p.cost), 0) FROM App\Entity\Part p 
                 WHERE p.vehicle = :vehicle 
-                AND p.serviceRecord IS NULL 
-                AND p.motRecord IS NULL
-                AND p.includedInServiceCost = false';
+                AND (
+                    (p.serviceRecord IS NULL AND p.motRecord IS NULL)
+                    OR (p.includedInServiceCost = false)
+                )';
 
         return (float) $this->entityManager->createQuery($dql)
             ->setParameter('vehicle', $vehicle)
@@ -39,11 +41,13 @@ class CostCalculator
 
     public function calculateTotalConsumablesCost(Vehicle $vehicle): float
     {
+        // Count standalone consumables (not in service/MOT records) OR consumables in service/MOT records but not included in their cost totals
         $dql = 'SELECT COALESCE(SUM(c.cost), 0) FROM App\Entity\Consumable c 
                 WHERE c.vehicle = :vehicle 
-                AND c.serviceRecord IS NULL 
-                AND c.motRecord IS NULL
-                AND c.includedInServiceCost = false';
+                AND (
+                    (c.serviceRecord IS NULL AND c.motRecord IS NULL)
+                    OR (c.includedInServiceCost = false)
+                )';
 
         return (float) $this->entityManager->createQuery($dql)
             ->setParameter('vehicle', $vehicle)

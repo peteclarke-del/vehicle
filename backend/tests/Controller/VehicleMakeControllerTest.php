@@ -90,7 +90,7 @@ class VehicleMakeControllerTest extends BaseWebTestCase
     public function testCreateMake(): void
     {
         $client = $this->client;
-        $adminToken = $this->getAdminToken($client);
+        $adminToken = $this->getAdminToken();
         
         $client->request('POST', '/api/vehicle-makes', [], [], [
             'HTTP_AUTHORIZATION' => 'Bearer ' . $adminToken,
@@ -111,7 +111,7 @@ class VehicleMakeControllerTest extends BaseWebTestCase
     public function testCreateMakeValidatesRequiredFields(): void
     {
         $client = $this->client;
-        $adminToken = $this->getAdminToken($client);
+        $adminToken = $this->getAdminToken();
         
         $client->request('POST', '/api/vehicle-makes', [], [], [
             'HTTP_AUTHORIZATION' => 'Bearer ' . $adminToken,
@@ -124,7 +124,7 @@ class VehicleMakeControllerTest extends BaseWebTestCase
     public function testUpdateMake(): void
     {
         $client = $this->client;
-        $adminToken = $this->getAdminToken($client);
+        $adminToken = $this->getAdminToken();
         
         $client->request('PUT', '/api/vehicle-makes/1', [], [], [
             'HTTP_AUTHORIZATION' => 'Bearer ' . $adminToken,
@@ -143,7 +143,7 @@ class VehicleMakeControllerTest extends BaseWebTestCase
     public function testDeleteMake(): void
     {
         $client = $this->client;
-        $adminToken = $this->getAdminToken($client);
+        $adminToken = $this->getAdminToken();
         
         $client->request('DELETE', '/api/vehicle-makes/999', [], [], [
             'HTTP_AUTHORIZATION' => 'Bearer ' . $adminToken,
