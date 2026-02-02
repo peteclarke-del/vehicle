@@ -678,7 +678,15 @@ class VehicleImportService
             $this->importRoadTaxRecords($vehicle, $vehicleData['roadTaxRecords']);
         }
 
-        // Note: Service records and MOT records will be added in next iteration
+        // Import service records
+        if (!empty($vehicleData['serviceRecords']) && is_array($vehicleData['serviceRecords'])) {
+            $this->importServiceRecords($vehicle, $vehicleData['serviceRecords'], $user, $zipExtractDir, $partImportMap, $consumableImportMap);
+        }
+
+        // Import MOT records
+        if (!empty($vehicleData['motRecords']) && is_array($vehicleData['motRecords'])) {
+            $this->importMotRecords($vehicle, $vehicleData['motRecords'], $user, $zipExtractDir, $partImportMap, $consumableImportMap);
+        }
     }
 
     private function importSpecification(Vehicle $vehicle, array $specData): void
@@ -1284,6 +1292,508 @@ class VehicleImportService
 
             $this->entityManager->persist($roadTax);
         }
+    }
+
+    private function importServiceRecords(
+        Vehicle $vehicle,
+        array $serviceRecordsData,
+        User $user,
+        ?string $zipExtractDir,
+        array &$partImportMap,
+        array &$consumableImportMap
+    ): void {
+        foreach ($serviceRecordsData as $serviceData) {
+            $serviceRecord = new ServiceRecord();
+            $serviceRecord->setVehicle($vehicle);
+            $this->entityManager->persist($serviceRecord);
+
+            // String fields
+            $stringFields = ['serviceType', 'serviceProvider', 'workPerformed', 'notes', 'workshop'];
+            $trimmed = $this->trimArrayValues($serviceData, $stringFields);
+            
+            if (isset($trimmed['serviceType'])) $serviceRecord->setServiceType($trimmed['serviceType']);
+            if (isset($trimmed['serviceProvider'])) {
+                $serviceRecord->setServiceProvider($trimmed['serviceProvider']);
+            } elseif (isset($trimmed['workshop'])) {
+                // Legacy: map workshop to serviceProvider
+                $serviceRecord->setServiceProvider($trimmed['workshop']);
+            }
+            if (isset($trimmed['workPerformed'])) $serviceRecord->setWorkPerformed($trimmed['workPerformed']);
+            if (isset($trimmed['notes'])) $serviceRecord->setNotes($trimmed['notes']);
+
+            // Numeric fields
+            if (isset($serviceData['laborCost'])) {
+                $serviceRecord->setLaborCost($this->extractNumeric($serviceData, 'laborCost', false));
+            }
+            if (isset($serviceData['partsCost'])) {
+                $serviceRecord->setPartsCost($this->extractNumeric($serviceData, 'partsCost', false));
+            }
+            if (isset($serviceData['consumablesCost'])) {
+                $serviceRecord->setConsumablesCost($this->extractNumeric($serviceData, 'consumablesCost', false));
+            }
+            if (isset($serviceData['additionalCosts'])) {
+                $serviceRecord->setAdditionalCosts($this->extractNumeric($serviceData, 'additionalCosts', false));
+            }
+            if (isset($serviceData['mileage'])) {
+                $serviceRecord->setMileage($this->extractNumeric($serviceData, 'mileage', true));
+            }
+            if (isset($serviceData['nextServiceMileage'])) {
+                $serviceRecord->setNextServiceMileage($this->extractNumeric($serviceData, 'nextServiceMileage', true));
+            }
+
+            // Date fields
+            $dateFields = ['serviceDate', 'nextServiceDate', 'createdAt'];
+            $dates = $this->hydrateDates($serviceData, $dateFields);
+            
+            if (isset($dates['serviceDate'])) $serviceRecord->setServiceDate($dates['serviceDate']);
+            if (isset($dates['nextServiceDate'])) $serviceRecord->setNextServiceDate($dates['nextServiceDate']);
+            if (isset($dates['createdAt'])) $serviceRecord->setCreatedAt($dates['createdAt']);
+
+            // Handle receipt attachment
+            if (isset($serviceData['receiptAttachment']) && is_array($serviceData['receiptAttachment'])) {
+                $att = $this->deserializeAttachment(
+                    $serviceData['receiptAttachment'],
+                    $zipExtractDir,
+                    $user,
+                    $vehicle->getRegistrationNumber()
+                );
+                if ($att) {
+                    $att->setEntityType('service');
+                    $att->setVehicle($vehicle);
+                    $this->entityManager->persist($att);
+                    $serviceRecord->setReceiptAttachment($att);
+                }
+            }
+
+            // Import service items
+            if (!empty($serviceData['items']) && is_array($serviceData['items'])) {
+                $this->importServiceItems(
+                    $serviceRecord,
+                    $serviceData['items'],
+                    $vehicle,
+                    $user,
+                    $zipExtractDir,
+                    $partImportMap,
+                    $consumableImportMap
+                );
+            }
+
+            $this->entityManager->persist($serviceRecord);
+        }
+    }
+
+    private function importServiceItems(
+        ServiceRecord $serviceRecord,
+        array $items,
+        Vehicle $vehicle,
+        User $user,
+        ?string $zipExtractDir,
+        array &$partImportMap,
+        array &$consumableImportMap
+    ): void {
+        foreach ($items as $itemData) {
+            $item = new \App\Entity\ServiceItem();
+            $serviceRecord->addItem($item);
+
+            if (!empty($itemData['type'])) {
+                $item->setType($itemData['type']);
+            }
+            if (!empty($itemData['description'])) {
+                $item->setDescription($itemData['description']);
+            }
+            if (isset($itemData['cost'])) {
+                $item->setCost($this->extractNumeric($itemData, 'cost', false));
+            }
+            if (isset($itemData['quantity'])) {
+                $item->setQuantity($this->extractNumeric($itemData, 'quantity', true));
+            }
+
+            // Handle consumable (link existing or create new)
+            if (!empty($itemData['consumable']) && is_array($itemData['consumable'])) {
+                $shouldLinkExisting = isset($itemData['consumable']['includedInServiceCost']) 
+                    && $itemData['consumable']['includedInServiceCost'] === false;
+
+                if ($shouldLinkExisting && isset($itemData['consumableId']) && is_numeric($itemData['consumableId'])) {
+                    $consumable = $consumableImportMap[(int)$itemData['consumableId']] ?? null;
+                    if ($consumable) {
+                        $item->setConsumable($consumable);
+                    }
+                }
+
+                if (!$item->getConsumable()) {
+                    $consumable = $this->createConsumableFromData(
+                        $itemData['consumable'],
+                        $vehicle,
+                        $user,
+                        $zipExtractDir
+                    );
+                    $consumable->setServiceRecord($serviceRecord);
+                    $this->entityManager->persist($consumable);
+                    $item->setConsumable($consumable);
+
+                    if (isset($itemData['consumable']['id']) && is_numeric($itemData['consumable']['id'])) {
+                        $consumableImportMap[(int)$itemData['consumable']['id']] = $consumable;
+                    }
+                }
+            }
+
+            // Handle part (link existing or create new)
+            if (!empty($itemData['part']) && is_array($itemData['part'])) {
+                $shouldLinkExisting = isset($itemData['part']['includedInServiceCost']) 
+                    && $itemData['part']['includedInServiceCost'] === false;
+
+                if ($shouldLinkExisting && isset($itemData['partId']) && is_numeric($itemData['partId'])) {
+                    $part = $partImportMap[(int)$itemData['partId']] ?? null;
+                    if ($part) {
+                        $item->setPart($part);
+                    }
+                }
+
+                if (!$item->getPart()) {
+                    $part = $this->createPartFromData(
+                        $itemData['part'],
+                        $vehicle,
+                        $user,
+                        $zipExtractDir
+                    );
+                    $part->setServiceRecord($serviceRecord);
+                    $this->entityManager->persist($part);
+                    $item->setPart($part);
+
+                    if (isset($itemData['part']['id']) && is_numeric($itemData['part']['id'])) {
+                        $partImportMap[(int)$itemData['part']['id']] = $part;
+                    }
+                }
+            }
+        }
+    }
+
+    private function importMotRecords(
+        Vehicle $vehicle,
+        array $motRecordsData,
+        User $user,
+        ?string $zipExtractDir,
+        array &$partImportMap,
+        array &$consumableImportMap
+    ): void {
+        foreach ($motRecordsData as $motData) {
+            $motRecord = new MotRecord();
+            $motRecord->setVehicle($vehicle);
+
+            // String fields
+            $stringFields = ['result', 'testCenter', 'advisories', 'failures', 
+                            'repairDetails', 'notes', 'motTestNumber', 'testerName'];
+            $trimmed = $this->trimArrayValues($motData, $stringFields);
+            
+            foreach (['result', 'testCenter', 'advisories', 'failures', 'repairDetails', 
+                     'notes', 'motTestNumber', 'testerName'] as $field) {
+                if (isset($trimmed[$field])) {
+                    $setter = 'set' . ucfirst($field);
+                    $motRecord->$setter($trimmed[$field]);
+                }
+            }
+
+            // Numeric fields
+            if (isset($motData['testCost'])) {
+                $motRecord->setTestCost($this->extractNumeric($motData, 'testCost', false));
+            }
+            if (isset($motData['repairCost'])) {
+                $motRecord->setRepairCost($this->extractNumeric($motData, 'repairCost', false));
+            }
+            if (isset($motData['mileage'])) {
+                $motRecord->setMileage($this->extractNumeric($motData, 'mileage', true));
+            }
+
+            // Date fields
+            $dateFields = ['testDate', 'expiryDate', 'createdAt'];
+            $dates = $this->hydrateDates($motData, $dateFields);
+            
+            if (isset($dates['testDate'])) $motRecord->setTestDate($dates['testDate']);
+            if (isset($dates['expiryDate'])) $motRecord->setExpiryDate($dates['expiryDate']);
+            if (isset($dates['createdAt'])) $motRecord->setCreatedAt($dates['createdAt']);
+
+            // Boolean fields
+            if (isset($motData['isRetest'])) {
+                $motRecord->setIsRetest($this->extractBoolean($motData, 'isRetest'));
+            }
+
+            // Handle receipt attachment
+            if (isset($motData['receiptAttachment']) && is_array($motData['receiptAttachment'])) {
+                $att = $this->deserializeAttachment(
+                    $motData['receiptAttachment'],
+                    $zipExtractDir,
+                    $user,
+                    $vehicle->getRegistrationNumber()
+                );
+                if ($att) {
+                    $att->setEntityType('mot');
+                    $att->setVehicle($vehicle);
+                    $this->entityManager->persist($att);
+                    $motRecord->setReceiptAttachment($att);
+                }
+            }
+
+            $this->entityManager->persist($motRecord);
+
+            // Import MOT parts
+            if (!empty($motData['parts']) && is_array($motData['parts'])) {
+                $this->importMotParts($motRecord, $motData['parts'], $vehicle, $user, $zipExtractDir);
+            }
+
+            // Import MOT consumables
+            if (!empty($motData['consumables']) && is_array($motData['consumables'])) {
+                $this->importMotConsumables($motRecord, $motData['consumables'], $vehicle, $user, $zipExtractDir);
+            }
+
+            // Import MOT service records
+            if (!empty($motData['serviceRecords']) && is_array($motData['serviceRecords'])) {
+                $this->importMotServiceRecords($motRecord, $motData['serviceRecords'], $vehicle, $user, $zipExtractDir, $partImportMap, $consumableImportMap);
+            }
+        }
+    }
+
+    private function importMotParts(
+        MotRecord $motRecord,
+        array $partsData,
+        Vehicle $vehicle,
+        User $user,
+        ?string $zipExtractDir
+    ): void {
+        foreach ($partsData as $partData) {
+            $part = $this->createPartFromData($partData, $vehicle, $user, $zipExtractDir);
+            $part->setMotRecord($motRecord);
+            $this->entityManager->persist($part);
+        }
+    }
+
+    private function importMotConsumables(
+        MotRecord $motRecord,
+        array $consumablesData,
+        Vehicle $vehicle,
+        User $user,
+        ?string $zipExtractDir
+    ): void {
+        foreach ($consumablesData as $consumableData) {
+            if (empty($consumableData['consumableType'])) {
+                continue;
+            }
+
+            $consumable = $this->createConsumableFromData($consumableData, $vehicle, $user, $zipExtractDir);
+            $consumable->setMotRecord($motRecord);
+            $this->entityManager->persist($consumable);
+        }
+    }
+
+    private function importMotServiceRecords(
+        MotRecord $motRecord,
+        array $serviceRecordsData,
+        Vehicle $vehicle,
+        User $user,
+        ?string $zipExtractDir,
+        array &$partImportMap,
+        array &$consumableImportMap
+    ): void {
+        foreach ($serviceRecordsData as $serviceData) {
+            $serviceRecord = new ServiceRecord();
+            $serviceRecord->setVehicle($vehicle);
+            $serviceRecord->setMotRecord($motRecord);
+            $this->entityManager->persist($serviceRecord);
+
+            // Use same logic as regular service records
+            $stringFields = ['serviceType', 'serviceProvider', 'workPerformed', 'notes'];
+            $trimmed = $this->trimArrayValues($serviceData, $stringFields);
+            
+            if (isset($trimmed['serviceType'])) $serviceRecord->setServiceType($trimmed['serviceType']);
+            if (isset($trimmed['serviceProvider'])) $serviceRecord->setServiceProvider($trimmed['serviceProvider']);
+            if (isset($trimmed['workPerformed'])) $serviceRecord->setWorkPerformed($trimmed['workPerformed']);
+            if (isset($trimmed['notes'])) $serviceRecord->setNotes($trimmed['notes']);
+
+            if (isset($serviceData['laborCost'])) {
+                $serviceRecord->setLaborCost($this->extractNumeric($serviceData, 'laborCost', false));
+            }
+            if (isset($serviceData['mileage'])) {
+                $serviceRecord->setMileage($this->extractNumeric($serviceData, 'mileage', true));
+            }
+
+            $dateFields = ['serviceDate', 'createdAt'];
+            $dates = $this->hydrateDates($serviceData, $dateFields);
+            if (isset($dates['serviceDate'])) $serviceRecord->setServiceDate($dates['serviceDate']);
+            if (isset($dates['createdAt'])) $serviceRecord->setCreatedAt($dates['createdAt']);
+
+            // Import service items
+            if (!empty($serviceData['items']) && is_array($serviceData['items'])) {
+                $this->importServiceItems(
+                    $serviceRecord,
+                    $serviceData['items'],
+                    $vehicle,
+                    $user,
+                    $zipExtractDir,
+                    $partImportMap,
+                    $consumableImportMap
+                );
+            }
+
+            $this->entityManager->persist($serviceRecord);
+        }
+    }
+
+    private function createPartFromData(
+        array $partData,
+        Vehicle $vehicle,
+        User $user,
+        ?string $zipExtractDir
+    ): Part {
+        $part = new Part();
+        $part->setVehicle($vehicle);
+
+        // Ensure non-nullable purchaseDate
+        if (empty($partData['purchaseDate'])) {
+            $part->setPurchaseDate(new \DateTime());
+        }
+
+        // String fields
+        $stringFields = ['name', 'description', 'partNumber', 'manufacturer', 
+                        'supplier', 'notes', 'productUrl'];
+        $trimmed = $this->trimArrayValues($partData, $stringFields);
+        
+        foreach (['name', 'description', 'partNumber', 'manufacturer', 
+                 'supplier', 'notes', 'productUrl'] as $field) {
+            if (isset($trimmed[$field])) {
+                $setter = 'set' . ucfirst($field);
+                $part->$setter($trimmed[$field]);
+            }
+        }
+
+        // Numeric fields
+        if (isset($partData['cost'])) $part->setCost((string)$partData['cost']);
+        if (isset($partData['price'])) $part->setPrice($this->extractNumeric($partData, 'price', false));
+        if (isset($partData['quantity'])) $part->setQuantity($this->extractNumeric($partData, 'quantity', true));
+        if (isset($partData['mileageAtInstallation'])) {
+            $part->setMileageAtInstallation($this->extractNumeric($partData, 'mileageAtInstallation', true));
+        }
+
+        // Date fields
+        $dateFields = ['purchaseDate', 'installationDate', 'createdAt'];
+        $dates = $this->hydrateDates($partData, $dateFields);
+        if (isset($dates['purchaseDate'])) $part->setPurchaseDate($dates['purchaseDate']);
+        if (isset($dates['installationDate'])) $part->setInstallationDate($dates['installationDate']);
+        if (isset($dates['createdAt'])) $part->setCreatedAt($dates['createdAt']);
+
+        // Boolean fields
+        if (isset($partData['includedInServiceCost'])) {
+            $part->setIncludedInServiceCost($this->extractBoolean($partData, 'includedInServiceCost'));
+        }
+
+        // Category resolution
+        $this->resolvePartCategory($part, $partData, $vehicle);
+
+        // Receipt attachment
+        if (isset($partData['receiptAttachment']) && is_array($partData['receiptAttachment'])) {
+            $att = $this->deserializeAttachment(
+                $partData['receiptAttachment'],
+                $zipExtractDir,
+                $user,
+                $vehicle->getRegistrationNumber()
+            );
+            if ($att) {
+                $att->setEntityType('part');
+                $att->setVehicle($vehicle);
+                $this->entityManager->persist($att);
+                $part->setReceiptAttachment($att);
+            }
+        }
+
+        return $part;
+    }
+
+    private function createConsumableFromData(
+        array $consumableData,
+        Vehicle $vehicle,
+        User $user,
+        ?string $zipExtractDir
+    ): Consumable {
+        if (empty($consumableData['consumableType'])) {
+            throw new ImportException('Consumable type is required');
+        }
+
+        $consumableType = $this->resolveConsumableType(
+            $consumableData['consumableType'],
+            $vehicle->getVehicleType()
+        );
+
+        $consumable = new Consumable();
+        $consumable->setVehicle($vehicle);
+        $consumable->setConsumableType($consumableType);
+
+        // String fields (note: 'name' or 'description' map to description)
+        $stringFields = ['name', 'description', 'brand', 'partNumber', 'supplier', 'notes', 'productUrl'];
+        $trimmed = $this->trimArrayValues($consumableData, $stringFields);
+        
+        if (isset($trimmed['description'])) {
+            $consumable->setDescription($trimmed['description']);
+        } elseif (isset($trimmed['name'])) {
+            $consumable->setDescription($trimmed['name']);
+        }
+        if (isset($trimmed['brand'])) $consumable->setBrand($trimmed['brand']);
+        if (isset($trimmed['partNumber'])) $consumable->setPartNumber($trimmed['partNumber']);
+        if (isset($trimmed['supplier'])) $consumable->setSupplier($trimmed['supplier']);
+        if (isset($trimmed['notes'])) $consumable->setNotes($trimmed['notes']);
+        if (isset($trimmed['productUrl'])) $consumable->setProductUrl($trimmed['productUrl']);
+
+        // Numeric fields
+        if (isset($consumableData['replacementIntervalMiles'])) {
+            $consumable->setReplacementInterval(
+                $this->extractNumeric($consumableData, 'replacementIntervalMiles', true)
+            );
+        }
+        if (isset($consumableData['nextReplacementMileage'])) {
+            $consumable->setNextReplacementMileage(
+                $this->extractNumeric($consumableData, 'nextReplacementMileage', true)
+            );
+        }
+        if (isset($consumableData['mileageAtChange'])) {
+            $consumable->setMileageAtChange(
+                $this->extractNumeric($consumableData, 'mileageAtChange', true)
+            );
+        }
+        if (isset($consumableData['quantity'])) {
+            $consumable->setQuantity($this->extractNumeric($consumableData, 'quantity', false));
+        }
+        if (isset($consumableData['cost'])) {
+            $consumable->setCost($this->extractNumeric($consumableData, 'cost', false));
+        }
+
+        // Date fields
+        $dateFields = ['lastChanged', 'createdAt', 'updatedAt'];
+        $dates = $this->hydrateDates($consumableData, $dateFields);
+        if (isset($dates['lastChanged'])) $consumable->setLastChanged($dates['lastChanged']);
+        if (isset($dates['createdAt'])) $consumable->setCreatedAt($dates['createdAt']);
+        if (isset($dates['updatedAt'])) $consumable->setUpdatedAt($dates['updatedAt']);
+
+        // Boolean fields
+        if (isset($consumableData['includedInServiceCost'])) {
+            $consumable->setIncludedInServiceCost(
+                $this->extractBoolean($consumableData, 'includedInServiceCost')
+            );
+        }
+
+        // Receipt attachment
+        if (isset($consumableData['receiptAttachment']) && is_array($consumableData['receiptAttachment'])) {
+            $att = $this->deserializeAttachment(
+                $consumableData['receiptAttachment'],
+                $zipExtractDir,
+                $user,
+                $vehicle->getRegistrationNumber()
+            );
+            if ($att) {
+                $att->setEntityType('consumable');
+                $att->setVehicle($vehicle);
+                $this->entityManager->persist($att);
+                $consumable->setReceiptAttachment($att);
+            }
+        }
+
+        return $consumable;
     }
 
     // Continue with helper methods...
