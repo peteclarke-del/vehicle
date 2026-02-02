@@ -668,6 +668,16 @@ class VehicleImportService
             $this->importVehicleImages($vehicle, $vehicleData['vehicleImages'], $user, $zipExtractDir);
         }
 
+        // Import insurance records
+        if (!empty($vehicleData['insuranceRecords']) && is_array($vehicleData['insuranceRecords'])) {
+            $this->importInsuranceRecords($vehicle, $vehicleData['insuranceRecords'], $user);
+        }
+
+        // Import road tax records
+        if (!empty($vehicleData['roadTaxRecords']) && is_array($vehicleData['roadTaxRecords'])) {
+            $this->importRoadTaxRecords($vehicle, $vehicleData['roadTaxRecords']);
+        }
+
         // Note: Service records and MOT records will be added in next iteration
     }
 
@@ -831,8 +841,88 @@ class VehicleImportService
         ?string $zipExtractDir,
         array &$partImportMap
     ): void {
-        // Implementation will be added
-        // This handles standalone parts (not linked to service or MOT)
+        foreach ($partsData as $partData) {
+            $part = new Part();
+            $part->setVehicle($vehicle);
+
+            // Ensure non-nullable purchaseDate has a default
+            if (empty($partData['purchaseDate'])) {
+                $part->setPurchaseDate(new \DateTime());
+            }
+
+            // String fields
+            $stringFields = [
+                'name', 'description', 'partNumber', 'manufacturer', 
+                'supplier', 'notes', 'productUrl', 'sku', 'imageUrl'
+            ];
+            $trimmed = $this->trimArrayValues($partData, $stringFields);
+            
+            if (isset($trimmed['name'])) $part->setName($trimmed['name']);
+            if (isset($trimmed['description'])) $part->setDescription($trimmed['description']);
+            if (isset($trimmed['partNumber'])) $part->setPartNumber($trimmed['partNumber']);
+            if (isset($trimmed['manufacturer'])) $part->setManufacturer($trimmed['manufacturer']);
+            if (isset($trimmed['supplier'])) $part->setSupplier($trimmed['supplier']);
+            if (isset($trimmed['notes'])) $part->setNotes($trimmed['notes']);
+            if (isset($trimmed['productUrl'])) $part->setProductUrl($trimmed['productUrl']);
+            if (isset($trimmed['sku'])) $part->setSku($trimmed['sku']);
+            if (isset($trimmed['imageUrl'])) $part->setImageUrl($trimmed['imageUrl']);
+
+            // Numeric fields
+            if (isset($partData['price'])) {
+                $part->setPrice($this->extractNumeric($partData, 'price', false));
+            }
+            if (isset($partData['quantity'])) {
+                $part->setQuantity($this->extractNumeric($partData, 'quantity', true));
+            }
+            if (isset($partData['warrantyMonths'])) {
+                $part->setWarranty($this->extractNumeric($partData, 'warrantyMonths', true));
+            }
+            if (isset($partData['mileageAtInstallation'])) {
+                $part->setMileageAtInstallation($this->extractNumeric($partData, 'mileageAtInstallation', true));
+            }
+            if (isset($partData['cost'])) {
+                $part->setCost((string)$partData['cost']);
+            }
+
+            // Date fields
+            $dateFields = ['purchaseDate', 'installationDate', 'createdAt'];
+            $dates = $this->hydrateDates($partData, $dateFields);
+            
+            if (isset($dates['purchaseDate'])) $part->setPurchaseDate($dates['purchaseDate']);
+            if (isset($dates['installationDate'])) $part->setInstallationDate($dates['installationDate']);
+            if (isset($dates['createdAt'])) $part->setCreatedAt($dates['createdAt']);
+
+            // Boolean fields
+            if (isset($partData['includedInServiceCost'])) {
+                $part->setIncludedInServiceCost($this->extractBoolean($partData, 'includedInServiceCost'));
+            }
+
+            // Resolve part category
+            $this->resolvePartCategory($part, $partData, $vehicle);
+
+            // Handle receipt attachment
+            if (isset($partData['receiptAttachment']) && is_array($partData['receiptAttachment'])) {
+                $att = $this->deserializeAttachment(
+                    $partData['receiptAttachment'],
+                    $zipExtractDir,
+                    $user,
+                    $vehicle->getRegistrationNumber()
+                );
+                if ($att) {
+                    $att->setEntityType('part');
+                    $att->setVehicle($vehicle);
+                    $this->entityManager->persist($att);
+                    $part->setReceiptAttachment($att);
+                }
+            }
+
+            $this->entityManager->persist($part);
+
+            // Store in map for later reference
+            if (isset($partData['id']) && is_numeric($partData['id'])) {
+                $partImportMap[(int)$partData['id']] = $part;
+            }
+        }
     }
 
     private function importConsumables(
@@ -842,8 +932,161 @@ class VehicleImportService
         ?string $zipExtractDir,
         array &$consumableImportMap
     ): void {
-        // Implementation will be added
-        // This handles standalone consumables (not linked to service or MOT)
+        foreach ($consumablesData as $consumableData) {
+            if (empty($consumableData['consumableType'])) {
+                continue;
+            }
+
+            // Resolve or create consumable type
+            $consumableType = $this->resolveConsumableType(
+                $consumableData['consumableType'],
+                $vehicle->getVehicleType()
+            );
+
+            $consumable = new Consumable();
+            $consumable->setVehicle($vehicle);
+            $consumable->setConsumableType($consumableType);
+
+            // String fields (note: 'name' maps to 'description' in entity)
+            $stringFields = ['name', 'brand', 'partNumber', 'supplier', 'notes', 'productUrl'];
+            $trimmed = $this->trimArrayValues($consumableData, $stringFields);
+            
+            if (isset($trimmed['name'])) {
+                $consumable->setDescription($trimmed['name']);
+            }
+            if (isset($trimmed['brand'])) $consumable->setBrand($trimmed['brand']);
+            if (isset($trimmed['partNumber'])) $consumable->setPartNumber($trimmed['partNumber']);
+            if (isset($trimmed['supplier'])) $consumable->setSupplier($trimmed['supplier']);
+            if (isset($trimmed['notes'])) $consumable->setNotes($trimmed['notes']);
+            if (isset($trimmed['productUrl'])) $consumable->setProductUrl($trimmed['productUrl']);
+
+            // Numeric fields
+            if (isset($consumableData['replacementIntervalMiles'])) {
+                $consumable->setReplacementInterval(
+                    $this->extractNumeric($consumableData, 'replacementIntervalMiles', true)
+                );
+            }
+            if (isset($consumableData['nextReplacementMileage'])) {
+                $consumable->setNextReplacementMileage(
+                    $this->extractNumeric($consumableData, 'nextReplacementMileage', true)
+                );
+            }
+            if (isset($consumableData['mileageAtChange'])) {
+                $consumable->setMileageAtChange(
+                    $this->extractNumeric($consumableData, 'mileageAtChange', true)
+                );
+            }
+            if (isset($consumableData['quantity'])) {
+                $consumable->setQuantity($this->extractNumeric($consumableData, 'quantity', false));
+            }
+            if (isset($consumableData['cost'])) {
+                $consumable->setCost($this->extractNumeric($consumableData, 'cost', false));
+            }
+
+            // Date fields
+            $dateFields = ['lastChanged', 'createdAt', 'updatedAt'];
+            $dates = $this->hydrateDates($consumableData, $dateFields);
+            
+            if (isset($dates['lastChanged'])) $consumable->setLastChanged($dates['lastChanged']);
+            if (isset($dates['createdAt'])) $consumable->setCreatedAt($dates['createdAt']);
+            if (isset($dates['updatedAt'])) $consumable->setUpdatedAt($dates['updatedAt']);
+
+            // Boolean fields
+            if (isset($consumableData['includedInServiceCost'])) {
+                $consumable->setIncludedInServiceCost(
+                    $this->extractBoolean($consumableData, 'includedInServiceCost')
+                );
+            }
+
+            // Handle receipt attachment
+            if (isset($consumableData['receiptAttachment']) && is_array($consumableData['receiptAttachment'])) {
+                $att = $this->deserializeAttachment(
+                    $consumableData['receiptAttachment'],
+                    $zipExtractDir,
+                    $user,
+                    $vehicle->getRegistrationNumber()
+                );
+                if ($att) {
+                    $att->setEntityType('consumable');
+                    $att->setVehicle($vehicle);
+                    $this->entityManager->persist($att);
+                    $consumable->setReceiptAttachment($att);
+                }
+            }
+
+            $this->entityManager->persist($consumable);
+
+            // Store in map for later reference
+            if (isset($consumableData['id']) && is_numeric($consumableData['id'])) {
+                $consumableImportMap[(int)$consumableData['id']] = $consumable;
+            }
+        }
+    }
+
+    private function resolvePartCategory(Part $part, array $partData, Vehicle $vehicle): void
+    {
+        $partCategory = null;
+
+        // Try to find by ID first
+        if (!empty($partData['partCategoryId']) && is_numeric($partData['partCategoryId'])) {
+            $partCategory = $this->entityManager->getRepository(PartCategory::class)
+                ->find((int)$partData['partCategoryId']);
+        }
+
+        // Try to find by name
+        if (!$partCategory && !empty($partData['partCategory'])) {
+            $pcName = $this->trimString($partData['partCategory']);
+            if ($pcName) {
+                $vehicleType = $vehicle->getVehicleType();
+                
+                // Try with vehicle type first
+                if ($vehicleType) {
+                    $partCategory = $this->entityManager->getRepository(PartCategory::class)
+                        ->findOneBy(['name' => $pcName, 'vehicleType' => $vehicleType]);
+                }
+                
+                // Try without vehicle type
+                if (!$partCategory) {
+                    $partCategory = $this->entityManager->getRepository(PartCategory::class)
+                        ->findOneBy(['name' => $pcName]);
+                }
+                
+                // Create if not found
+                if (!$partCategory) {
+                    $partCategory = new PartCategory();
+                    $partCategory->setName($pcName);
+                    if ($vehicleType) {
+                        $partCategory->setVehicleType($vehicleType);
+                    }
+                    $this->entityManager->persist($partCategory);
+                    $this->entityManager->flush();
+                }
+            }
+        }
+
+        if ($partCategory) {
+            $part->setPartCategory($partCategory);
+        }
+    }
+
+    private function resolveConsumableType(string $typeName, ?VehicleType $vehicleType): ConsumableType
+    {
+        $typeName = $this->trimString($typeName);
+        
+        $consumableType = $this->entityManager->getRepository(ConsumableType::class)
+            ->findOneBy(['name' => $typeName]);
+
+        if (!$consumableType) {
+            $consumableType = new ConsumableType();
+            $consumableType->setName($typeName);
+            if ($vehicleType) {
+                $consumableType->setVehicleType($vehicleType);
+            }
+            $this->entityManager->persist($consumableType);
+            $this->entityManager->flush();
+        }
+
+        return $consumableType;
     }
 
     private function importTodos(Vehicle $vehicle, array $todosData): void
@@ -949,6 +1192,97 @@ class VehicleImportService
             }
 
             $this->entityManager->persist($image);
+        }
+    }
+
+    private function importInsuranceRecords(Vehicle $vehicle, array $insuranceData, User $user): void
+    {
+        foreach ($insuranceData as $data) {
+            $policy = new InsurancePolicy();
+            $policy->setHolderId($user->getId());
+            $policy->addVehicle($vehicle);
+
+            // String fields
+            $stringFields = ['provider', 'policyNumber', 'coverageType', 'excess', 'notes'];
+            $trimmed = $this->trimArrayValues($data, $stringFields);
+            
+            if (isset($trimmed['provider'])) $policy->setProvider($trimmed['provider']);
+            if (isset($trimmed['policyNumber'])) $policy->setPolicyNumber($trimmed['policyNumber']);
+            if (isset($trimmed['coverageType'])) $policy->setCoverageType($trimmed['coverageType']);
+            if (isset($trimmed['excess'])) $policy->setExcess($trimmed['excess']);
+            if (isset($trimmed['notes'])) $policy->setNotes($trimmed['notes']);
+
+            // Numeric fields
+            if (isset($data['annualCost'])) {
+                $policy->setAnnualCost($this->extractNumeric($data, 'annualCost', false));
+            }
+            if (isset($data['mileageLimit'])) {
+                $policy->setMileageLimit($this->extractNumeric($data, 'mileageLimit', true));
+            }
+            if (isset($data['ncdYears'])) {
+                $policy->setNcdYears($this->extractNumeric($data, 'ncdYears', true));
+            }
+
+            // Date fields
+            $dateFields = ['startDate', 'expiryDate', 'createdAt'];
+            $dates = $this->hydrateDates($data, $dateFields);
+            
+            if (isset($dates['startDate'])) $policy->setStartDate($dates['startDate']);
+            if (isset($dates['expiryDate'])) $policy->setExpiryDate($dates['expiryDate']);
+            if (isset($dates['createdAt'])) $policy->setCreatedAt($dates['createdAt']);
+
+            // Boolean fields
+            if (isset($data['autoRenewal'])) {
+                $policy->setAutoRenewal($this->extractBoolean($data, 'autoRenewal'));
+            }
+
+            // Handle multiple vehicles if provided
+            if (!empty($data['vehicleRegistrations']) && is_array($data['vehicleRegistrations'])) {
+                foreach ($data['vehicleRegistrations'] as $reg) {
+                    $v = $this->entityManager->getRepository(Vehicle::class)
+                        ->findOneBy(['registrationNumber' => $reg, 'owner' => $user]);
+                    if ($v && $v->getId() !== $vehicle->getId()) {
+                        $policy->addVehicle($v);
+                    }
+                }
+            }
+
+            $this->entityManager->persist($policy);
+        }
+    }
+
+    private function importRoadTaxRecords(Vehicle $vehicle, array $roadTaxData): void
+    {
+        foreach ($roadTaxData as $data) {
+            $roadTax = new RoadTax();
+            $roadTax->setVehicle($vehicle);
+
+            // String fields
+            $stringFields = ['frequency', 'notes'];
+            $trimmed = $this->trimArrayValues($data, $stringFields);
+            
+            if (isset($trimmed['frequency'])) $roadTax->setFrequency($trimmed['frequency']);
+            if (isset($trimmed['notes'])) $roadTax->setNotes($trimmed['notes']);
+
+            // Numeric fields
+            if (isset($data['amount'])) {
+                $roadTax->setAmount($this->extractNumeric($data, 'amount', false));
+            }
+
+            // Date fields
+            $dateFields = ['startDate', 'expiryDate', 'createdAt'];
+            $dates = $this->hydrateDates($data, $dateFields);
+            
+            if (isset($dates['startDate'])) $roadTax->setStartDate($dates['startDate']);
+            if (isset($dates['expiryDate'])) $roadTax->setExpiryDate($dates['expiryDate']);
+            if (isset($dates['createdAt'])) $roadTax->setCreatedAt($dates['createdAt']);
+
+            // Boolean fields
+            if (isset($data['sorn'])) {
+                $roadTax->setSorn($this->extractBoolean($data, 'sorn'));
+            }
+
+            $this->entityManager->persist($roadTax);
         }
     }
 
