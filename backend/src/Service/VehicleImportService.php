@@ -83,21 +83,51 @@ class VehicleImportService
             // Normalize data format
             $data = $this->normalizeImportData($data);
 
-            // Pre-load existing data for duplicate detection
-            $existingVehiclesMap = $this->buildExistingVehiclesMap($user);
-            $existingPartsMap = $this->buildExistingPartsMap($user);
-            $existingConsumablesMap = $this->buildExistingConsumablesMap($user);
+            // Pre-load existing data for duplicate detection  
+            $isAdmin = in_array('ROLE_ADMIN', $user->getRoles(), true);
+            $existingVehiclesMap = $this->buildExistingVehiclesMap($user, $isAdmin);
 
-            // Import vehicles
-            $result = $this->processVehicleImport(
-                $data,
-                $user,
-                $zipExtractDir,
-                $existingVehiclesMap,
-                $existingPartsMap,
-                $existingConsumablesMap,
-                $dryRun
-            );
+            // Process all vehicles
+            $stats = [
+                'processed' => 0,
+                'errors' => [],
+                'vehicleMap' => []
+            ];
+
+            $partImportMap = [];
+            $consumableImportMap = [];
+            $batchSize = $this->config->getBatchSize();
+            
+            foreach ($data as $index => $vehicleData) {
+                try {
+                    $vehicle = $this->processVehicleImport(
+                        $vehicleData,
+                        $user,
+                        $existingVehiclesMap,
+                        $partImportMap,
+                        $consumableImportMap,
+                        $zipExtractDir,
+                        $stats
+                    );
+                    
+                    $stats['vehicleMap'][$vehicleData['registrationNumber']] = $vehicle;
+                    
+                    // Batch flush
+                    if (($stats['processed'] % $batchSize) === 0) {
+                        if (!$dryRun) {
+                            $this->entityManager->flush();
+                        }
+                    }
+                    
+                } catch (\Exception $e) {
+                    $this->logger->error('[import] Vehicle import failed', [
+                        'index' => $index,
+                        'registration' => $vehicleData['registrationNumber'] ?? 'unknown',
+                        'error' => $e->getMessage()
+                    ]);
+                    $stats['errors'][] = "Vehicle at index $index: " . $e->getMessage();
+                }
+            }
 
             if (!$dryRun) {
                 $this->entityManager->flush();
@@ -108,22 +138,22 @@ class VehicleImportService
             }
 
             $statistics = [
-                'vehiclesImported' => $result['vehicleCount'],
-                'partsImported' => $result['partCount'],
-                'consumablesImported' => $result['consumableCount'],
-                'serviceRecordsImported' => $result['serviceRecordCount'],
-                'motRecordsImported' => $result['motRecordCount'],
-                'fuelRecordsImported' => $result['fuelRecordCount'],
+                'vehiclesImported' => $stats['processed'],
+                'errors' => count($stats['errors']),
                 'processingTimeSeconds' => round(microtime(true) - $startTime, 2),
                 'memoryPeakMB' => round(memory_get_peak_usage(true) / 1024 / 1024, 2),
             ];
 
             $this->logger->info('[import] Completed successfully', $statistics);
 
+            $message = count($stats['errors']) > 0 
+                ? "Import completed with " . count($stats['errors']) . " errors"
+                : "Import completed successfully";
+
             return ImportResult::createSuccess(
                 $statistics,
-                'Import completed successfully',
-                $result['vehicleMap']
+                $message,
+                $stats['vehicleMap']
             );
 
         } catch (\Exception $e) {
@@ -302,10 +332,195 @@ class VehicleImportService
         array &$consumableImportMap,
         ?string $zipExtractDir,
         array &$stats
-    ): void {
-        // Implementation would handle vehicle creation/updating
-        // This is a placeholder - full implementation would extract from controller
+    ): Vehicle {
+        // Check for duplicate
+        $regNum = trim($vehicleData['registrationNumber']);
+        if (isset($existingVehiclesMap[$regNum])) {
+            throw new ImportException("Vehicle with registration '$regNum' already exists");
+        }
+
+        // Resolve vehicle type
+        $vehicleType = $this->resolveVehicleType($vehicleData);
+        
+        // Create vehicle entity
+        $vehicle = new Vehicle();
+        $vehicle->setOwner($user);
+        $vehicle->setName($this->trimString($vehicleData['name']));
+        $vehicle->setVehicleType($vehicleType);
+
+        // Set basic fields
+        $this->hydrateVehicleBasicFields($vehicle, $vehicleData);
+        
+        // Set dates
+        $dateFields = ['createdAt', 'purchaseDate', 'vinDecodedAt'];
+        $dates = $this->hydrateDates($vehicleData, $dateFields);
+        
+        if (isset($dates['createdAt'])) {
+            $vehicle->setCreatedAt($dates['createdAt']);
+        }
+        if (isset($dates['purchaseDate'])) {
+            $vehicle->setPurchaseDate($dates['purchaseDate']);
+        } elseif (!empty($vehicleData['purchaseDate'])) {
+            try {
+                $vehicle->setPurchaseDate(new \DateTime($vehicleData['purchaseDate']));
+            } catch (\Exception $e) {
+                $vehicle->setPurchaseDate(new \DateTime());
+            }
+        }
+        if (isset($dates['vinDecodedAt'])) {
+            $vehicle->setVinDecodedAt($dates['vinDecodedAt']);
+        }
+
+        // Resolve make and model if provided
+        if (!empty($vehicleData['make'])) {
+            $this->resolveVehicleMakeModel($vehicle, $vehicleData, $vehicleType);
+        }
+
+        $this->entityManager->persist($vehicle);
+        $existingVehiclesMap[$regNum] = $vehicle;
+        
         $stats['processed']++;
+        
+        return $vehicle;
+    }
+
+    private function resolveVehicleType(array $vehicleData): VehicleType
+    {
+        $vehicleType = null;
+        
+        if (!empty($vehicleData['vehicleType'])) {
+            $vehicleType = $this->entityManager->getRepository(VehicleType::class)
+                ->findOneBy(['name' => $vehicleData['vehicleType']]);
+        }
+        
+        if (!$vehicleType) {
+            $vehicleType = $this->entityManager->getRepository(VehicleType::class)->findOneBy([]);
+        }
+        
+        if (!$vehicleType) {
+            $vehicleType = new VehicleType();
+            $vehicleType->setName('Car');
+            $this->entityManager->persist($vehicleType);
+            $this->entityManager->flush();
+        }
+        
+        return $vehicleType;
+    }
+
+    private function hydrateVehicleBasicFields(Vehicle $vehicle, array $data): void
+    {
+        $stringFields = [
+            'make', 'model', 'vin', 'registrationNumber', 'engineNumber',
+            'v5DocumentNumber', 'vehicleColor', 'securityFeatures',
+            'depreciationMethod'
+        ];
+        
+        $trimmed = $this->trimArrayValues($data, $stringFields);
+        
+        if (isset($trimmed['make'])) $vehicle->setMake($trimmed['make']);
+        if (isset($trimmed['model'])) $vehicle->setModel($trimmed['model']);
+        if (isset($trimmed['vin'])) $vehicle->setVin($trimmed['vin']);
+        if (isset($trimmed['registrationNumber'])) {
+            $vehicle->setRegistrationNumber($trimmed['registrationNumber']);
+        }
+        if (isset($trimmed['engineNumber'])) $vehicle->setEngineNumber($trimmed['engineNumber']);
+        if (isset($trimmed['v5DocumentNumber'])) {
+            $vehicle->setV5DocumentNumber($trimmed['v5DocumentNumber']);
+        }
+        if (isset($trimmed['vehicleColor'])) $vehicle->setVehicleColor($trimmed['vehicleColor']);
+        if (isset($trimmed['securityFeatures'])) {
+            $vehicle->setSecurityFeatures($trimmed['securityFeatures']);
+        }
+        if (isset($trimmed['depreciationMethod'])) {
+            $vehicle->setDepreciationMethod($trimmed['depreciationMethod']);
+        }
+
+        // Numeric fields
+        if (!empty($data['year'])) $vehicle->setYear((int)$data['year']);
+        if (isset($data['purchaseCost'])) {
+            $vehicle->setPurchaseCost((string)($data['purchaseCost'] ?? 0));
+        }
+        if (isset($data['purchaseMileage'])) {
+            $vehicle->setPurchaseMileage($this->extractNumeric($data, 'purchaseMileage', true));
+        }
+        if (isset($data['serviceIntervalMonths'])) {
+            $vehicle->setServiceIntervalMonths($this->extractNumeric($data, 'serviceIntervalMonths', true));
+        }
+        if (isset($data['serviceIntervalMiles'])) {
+            $vehicle->setServiceIntervalMiles($this->extractNumeric($data, 'serviceIntervalMiles', true));
+        }
+        if (isset($data['depreciationYears'])) {
+            $vehicle->setDepreciationYears($this->extractNumeric($data, 'depreciationYears', true));
+        }
+        if (isset($data['depreciationRate'])) {
+            $vehicle->setDepreciationRate($this->extractNumeric($data, 'depreciationRate', false));
+        }
+
+        // Boolean fields
+        if (isset($data['roadTaxExempt'])) {
+            $vehicle->setRoadTaxExempt($this->extractBoolean($data, 'roadTaxExempt'));
+        }
+        if (isset($data['motExempt'])) {
+            $vehicle->setMotExempt($this->extractBoolean($data, 'motExempt'));
+        }
+
+        // JSON data
+        if (!empty($data['vinDecodedData'])) {
+            $vehicle->setVinDecodedData($data['vinDecodedData']);
+        }
+
+        // Status with validation
+        if (!empty($data['status'])) {
+            $allowed = ['Live', 'Sold', 'Scrapped', 'Exported'];
+            $status = (string)$data['status'];
+            if (in_array($status, $allowed, true)) {
+                $vehicle->setStatus($status);
+            }
+        }
+    }
+
+    private function resolveVehicleMakeModel(
+        Vehicle $vehicle,
+        array $vehicleData,
+        VehicleType $vehicleType
+    ): void {
+        $makeName = $this->trimString($vehicleData['make']);
+        if (!$makeName) {
+            return;
+        }
+
+        $vehicleMake = $this->entityManager->getRepository(VehicleMake::class)
+            ->findOneBy(['name' => $makeName, 'vehicleType' => $vehicleType]);
+
+        if (!$vehicleMake) {
+            $vehicleMake = new VehicleMake();
+            $vehicleMake->setName($makeName);
+            $vehicleMake->setVehicleType($vehicleType);
+            $this->entityManager->persist($vehicleMake);
+            $this->entityManager->flush();
+        }
+
+        if (!empty($vehicleData['model']) && !empty($vehicleData['year'])) {
+            $modelName = $this->trimString($vehicleData['model']);
+            $year = (int)$vehicleData['year'];
+            
+            $vehicleModel = $this->entityManager->getRepository(VehicleModel::class)
+                ->findOneBy([
+                    'name' => $modelName,
+                    'make' => $vehicleMake,
+                    'startYear' => $year
+                ]);
+
+            if (!$vehicleModel) {
+                $vehicleModel = new VehicleModel();
+                $vehicleModel->setName($modelName);
+                $vehicleModel->setMake($vehicleMake);
+                $vehicleModel->setStartYear($year);
+                $vehicleModel->setEndYear($year);
+                $this->entityManager->persist($vehicleModel);
+                $this->entityManager->flush();
+            }
+        }
     }
 
     private function deserializeAttachment(
