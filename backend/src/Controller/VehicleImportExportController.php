@@ -35,6 +35,8 @@ use Symfony\Contracts\Cache\TagAwareCacheInterface;
 use Symfony\Component\String\Slugger\SluggerInterface;
 use App\Controller\Trait\UserSecurityTrait;
 use App\Controller\Trait\AttachmentFileOrganizerTrait;
+use App\Service\VehicleExportService;
+use App\Service\VehicleImportService;
 
 #[Route('/api/vehicles')]
 #[IsGranted('ROLE_USER')]
@@ -58,17 +60,35 @@ class VehicleImportExportController extends AbstractController
     private SluggerInterface $slugger;
 
     /**
+     * @var VehicleExportService
+     */
+    private VehicleExportService $exportService;
+
+    /**
+     * @var VehicleImportService
+     */
+    private VehicleImportService $importService;
+
+    /**
      * function __construct
      *
      * @param LoggerInterface $logger
      * @param SluggerInterface $slugger
+     * @param VehicleExportService $exportService
+     * @param VehicleImportService $importService
      *
      * @return void
      */
-    public function __construct(LoggerInterface $logger, SluggerInterface $slugger)
-    {
+    public function __construct(
+        LoggerInterface $logger,
+        SluggerInterface $slugger,
+        VehicleExportService $exportService,
+        VehicleImportService $importService
+    ) {
         $this->logger = $logger;
         $this->slugger = $slugger;
+        $this->exportService = $exportService;
+        $this->importService = $importService;
     }
 
     /**
