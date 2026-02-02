@@ -8,6 +8,10 @@ import {
   TextField,
   Grid,
   MenuItem,
+  Box,
+  FormControl,
+  Select,
+  InputLabel
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
@@ -45,9 +49,82 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
   const [motRecordId, setMotRecordId] = useState(null);
   const [serviceRecords, setServiceRecords] = useState([]);
   const [serviceRecordId, setServiceRecordId] = useState(null);
+  const [existingConsumables, setExistingConsumables] = useState([]);
+  const [selectedExistingConsumableId, setSelectedExistingConsumableId] = useState('');
+  const [isLinkingExisting, setIsLinkingExisting] = useState(false);
 
   // Determine the actual vehicle ID - use consumable's vehicleId if available, otherwise use prop
   const actualVehicleId = consumable?.vehicleId || vehicleId;
+
+  // Determine if we're in MOT/Service context
+  const isFromMotOrService = consumable?.motRecordId || consumable?.serviceRecordId;
+
+  // Load unassociated consumables when opened from MOT/Service context
+  useEffect(() => {
+    const loadUnassociated = async () => {
+      if (!open || !actualVehicleId || !isFromMotOrService) return;
+      try {
+        const resp = await api.get('/consumables', { params: { vehicleId: actualVehicleId, unassociated: 'true' } });
+        setExistingConsumables(resp.data || []);
+      } catch (e) {
+        logger.error('Failed to load unassociated consumables', e);
+        setExistingConsumables([]);
+      }
+    };
+    loadUnassociated();
+  }, [open, actualVehicleId, isFromMotOrService, api]);
+
+  // Handle selection of existing consumable from dropdown
+  const handleExistingConsumableSelected = async (consumableId) => {
+    setSelectedExistingConsumableId(consumableId);
+    if (!consumableId) {
+      // Clear form when "Create New" is selected
+      setIsLinkingExisting(false);
+      setFormData({
+        consumableTypeId: '',
+        consumableTypeName: '',
+        description: '',
+        quantity: '',
+        lastChanged: '',
+        mileageAtChange: '',
+        replacementIntervalMiles: '',
+        nextReplacementMileage: '',
+        cost: '',
+        brand: '',
+        partNumber: '',
+        supplier: '',
+        notes: ''
+      });
+      setReceiptAttachmentId(null);
+      setProductUrl('');
+      return;
+    }
+
+    try {
+      const resp = await api.get(`/consumables/${consumableId}`);
+      const existingConsumable = resp.data;
+      setIsLinkingExisting(true);
+      setFormData({
+        consumableTypeId: existingConsumable.consumableType?.id || '',
+        consumableTypeName: '',
+        description: existingConsumable.description || '',
+        quantity: existingConsumable.quantity || '',
+        lastChanged: existingConsumable.lastChanged || '',
+        mileageAtChange: existingConsumable.mileageAtChange ? Math.round(convert(existingConsumable.mileageAtChange)) : '',
+        replacementIntervalMiles: existingConsumable.replacementIntervalMiles ? Math.round(convert(existingConsumable.replacementIntervalMiles)) : '',
+        nextReplacementMileage: existingConsumable.nextReplacementMileage ? Math.round(convert(existingConsumable.nextReplacementMileage)) : '',
+        cost: existingConsumable.cost || '',
+        brand: existingConsumable.brand || '',
+        partNumber: existingConsumable.partNumber || '',
+        supplier: existingConsumable.supplier || '',
+        notes: existingConsumable.notes || ''
+      });
+      setReceiptAttachmentId(existingConsumable.receiptAttachmentId || null);
+      setProductUrl(existingConsumable.productUrl || '');
+    } catch (e) {
+      logger.error('Failed to load existing consumable', e);
+    }
+  };
 
   useEffect(() => {
     if (open && actualVehicleId) {
@@ -57,6 +134,8 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
 
   useEffect(() => {
     if (consumable) {
+      setSelectedExistingConsumableId('');
+      setIsLinkingExisting(false);
       setFormData({
         consumableTypeId: consumable.consumableType?.id || '',
         consumableTypeName: '',
@@ -77,6 +156,8 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
       setMotRecordId(consumable.motRecordId || null);
       setServiceRecordId(consumable.serviceRecordId || null);
     } else {
+      setSelectedExistingConsumableId('');
+      setIsLinkingExisting(false);
       setFormData({
         consumableTypeId: '',
         consumableTypeName: '',
@@ -196,7 +277,10 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
       // send `description` only
 
       let resp;
-      if (consumable && consumable.id) {
+      if (isLinkingExisting && selectedExistingConsumableId) {
+        // Update existing consumable to link with MOT/Service
+        resp = await api.put(`/consumables/${selectedExistingConsumableId}`, data);
+      } else if (consumable && consumable.id) {
         resp = await api.put(`/consumables/${consumable.id}`, data);
       } else {
         resp = await api.post('/consumables', data);
@@ -212,7 +296,30 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
   return (
     <Dialog open={open} onClose={() => onClose(false)} maxWidth="md" fullWidth>
       <DialogTitle>
-        {consumable ? t('consumables.editConsumable') : t('consumables.addConsumable')}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+          <Box sx={{ flexShrink: 0 }}>
+            {consumable ? t('consumables.editConsumable') : t('consumables.addConsumable')}
+          </Box>
+          {isFromMotOrService && existingConsumables.length > 0 && (
+            <Box sx={{ flexGrow: 1, minWidth: 300 }}>
+              <FormControl size="small" fullWidth>
+                <InputLabel>{t('consumables.linkExisting')}</InputLabel>
+                <Select
+                  value={selectedExistingConsumableId}
+                  onChange={(e) => handleExistingConsumableSelected(e.target.value)}
+                  label={t('consumables.linkExisting')}
+                >
+                  <MenuItem value="">{t('common.createNew')}</MenuItem>
+                  {existingConsumables.map((c) => (
+                    <MenuItem key={c.id} value={c.id}>
+                      {c.description || c.consumableType?.name || t('common.noName')} {c.brand ? `(${c.brand})` : ''} - {c.lastChanged || t('common.noDate')}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Box>
+          )}
+        </Box>
       </DialogTitle>
       <form onSubmit={handleSubmit}>
         <DialogContent>

@@ -56,13 +56,28 @@ class PartController extends AbstractController
         }
 
         $vehicleId = $request->query->get('vehicleId');
+        $unassociated = $request->query->get('unassociated') === 'true';
+        
         if ($vehicleId) {
             $vehicle = $this->entityManager->getRepository(Vehicle::class)->find($vehicleId);
             if (!$vehicle || (!$this->isAdminForUser($user) && $vehicle->getOwner()->getId() !== $user->getId())) {
                 return $this->json(['error' => 'Vehicle not found'], 404);
             }
-            $parts = $this->entityManager->getRepository(Part::class)
-                ->findBy(['vehicle' => $vehicle], ['purchaseDate' => 'DESC']);
+            
+            if ($unassociated) {
+                $qb = $this->entityManager->createQueryBuilder()
+                    ->select('p')
+                    ->from(Part::class, 'p')
+                    ->where('p.vehicle = :vehicle')
+                    ->andWhere('p.serviceRecord IS NULL')
+                    ->andWhere('p.motRecord IS NULL')
+                    ->setParameter('vehicle', $vehicle)
+                    ->orderBy('p.purchaseDate', 'DESC');
+                $parts = $qb->getQuery()->getResult();
+            } else {
+                $parts = $this->entityManager->getRepository(Part::class)
+                    ->findBy(['vehicle' => $vehicle], ['purchaseDate' => 'DESC']);
+            }
         } else {
             // Fetch parts for all vehicles the user can see
             $vehicleRepo = $this->entityManager->getRepository(Vehicle::class);
@@ -74,8 +89,14 @@ class PartController extends AbstractController
                     ->select('p')
                     ->from(Part::class, 'p')
                     ->where('p.vehicle IN (:vehicles)')
-                    ->setParameter('vehicles', $vehicles)
-                    ->orderBy('p.purchaseDate', 'DESC');
+                    ->setParameter('vehicles', $vehicles);
+                
+                if ($unassociated) {
+                    $qb->andWhere('p.serviceRecord IS NULL')
+                       ->andWhere('p.motRecord IS NULL');
+                }
+                
+                $qb->orderBy('p.purchaseDate', 'DESC');
 
                 $parts = $qb->getQuery()->getResult();
             }
