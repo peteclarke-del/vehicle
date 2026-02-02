@@ -264,7 +264,8 @@ const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose }) => {
       fullPartData = resp.data;
       const unitPrice = fullPartData.price ?? fullPartData.cost ?? currentItem.cost;
       const newQuantity = fullPartData.quantity ?? currentItem.quantity ?? 1;
-      const newCost = String(unitPrice ?? 0);
+      // If includedInServiceCost is false (existing item), set cost to 0
+      const newCost = fullPartData.includedInServiceCost === false ? '0.00' : String(unitPrice ?? 0);
       
       items[editingItemIndex] = { 
         ...currentItem, 
@@ -272,7 +273,8 @@ const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose }) => {
         cost: newCost,
         quantity: newQuantity,
         partId: fullPartData.id,
-        name: fullPartData.name
+        name: fullPartData.name,
+        includedInServiceCost: fullPartData.includedInServiceCost
       };
       
       // Update the ServiceItem in the database if it exists
@@ -321,7 +323,8 @@ const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose }) => {
       fullConsumableData = resp.data;
       const unitPrice = fullConsumableData.cost ?? currentItem.cost;
       const newQuantity = fullConsumableData.quantity ?? currentItem.quantity ?? 1;
-      const newCost = String(unitPrice ?? 0);
+      // If includedInServiceCost is false (existing item), set cost to 0
+      const newCost = fullConsumableData.includedInServiceCost === false ? '0.00' : String(unitPrice ?? 0);
       
       items[editingItemIndex] = { 
         ...currentItem, 
@@ -329,7 +332,8 @@ const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose }) => {
         cost: newCost,
         quantity: newQuantity,
         consumableId: fullConsumableData.id,
-        name: fullConsumableData.name || fullConsumableData.description
+        name: fullConsumableData.name || fullConsumableData.description,
+        includedInServiceCost: fullConsumableData.includedInServiceCost
       };
       
       // Update the ServiceItem in the database if it exists
@@ -429,7 +433,11 @@ const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose }) => {
         partsTotal = items.filter(i => i.type === 'part').reduce((s, i) => s + (parseFloat(i.cost || 0) * (parseFloat(i.quantity || 1))), 0);
       }
 
-      const consumablesTotal = (formData.items || []).filter(i => i.type === 'consumable').reduce((s, i) => s + (parseFloat(i.cost || 0) * (parseFloat(i.quantity || 1))), 0);
+      // Calculate consumables total from items
+      // This will correctly exclude existing items (which already have cost=0 in the items array)
+      const consumablesTotal = (formData.items || [])
+        .filter(i => i.type === 'consumable')
+        .reduce((s, i) => s + (parseFloat(i.cost || 0) * (parseFloat(i.quantity || 1))), 0);
 
       const data = { 
         ...formData, 
@@ -439,6 +447,7 @@ const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose }) => {
         items,
         laborCost: laborTotal.toFixed(2),
         partsCost: partsTotal.toFixed(2),
+        // Send calculated consumablesCost (items with cost=0 won't contribute to total)
         consumablesCost: consumablesTotal.toFixed(2),
         motRecordId: motRecordId || null,
         additionalCosts: parseFloat(formData.additionalCosts) || 0,
@@ -627,7 +636,12 @@ const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose }) => {
                         })()}
                       </Typography>
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', fontSize: '0.9em' }}>
-                        <span>{`${it.quantity || 1} × ${historicalPrice.toFixed(2)}`}</span>
+                        {/* Don't show cost for existing items (includedInServiceCost=false) */}
+                        {it.includedInServiceCost !== false ? (
+                          <span>{`${it.quantity || 1} × ${historicalPrice.toFixed(2)}`}</span>
+                        ) : (
+                          <span style={{ fontStyle: 'italic', color: '#666' }}>{t('service.existingItem') || 'Existing item'}</span>
+                        )}
                       </div>
                     </div>
                     <div>
@@ -762,7 +776,9 @@ const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose }) => {
             }
 
             // New item - add to items with historical snapshot
-            const newItem = { type: 'part', description: saved.description || saved.name || '', cost: String(saved.price || saved.cost || 0), quantity: saved.quantity || 1, partId: saved.id };
+            // If includedInServiceCost is false (existing item), set cost to 0
+            const itemCost = saved.includedInServiceCost === false ? '0.00' : String(saved.price || saved.cost || 0);
+            const newItem = { type: 'part', description: saved.description || saved.name || '', cost: itemCost, quantity: saved.quantity || 1, partId: saved.id, includedInServiceCost: saved.includedInServiceCost };
             setFormData(prev => ({ ...prev, items: [...(prev.items || []), newItem] }));
           }
 
@@ -786,8 +802,10 @@ const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose }) => {
             }
 
             // New item - add to items with historical snapshot
+            // If includedInServiceCost is false (existing item), set cost to 0
             const desc = saved.description || '';
-            const newItem = { type: 'consumable', description: desc, cost: String(saved.cost || 0), quantity: saved.quantity || 1, consumableId: saved.id };
+            const itemCost = saved.includedInServiceCost === false ? '0.00' : String(saved.cost || 0);
+            const newItem = { type: 'consumable', description: desc, cost: itemCost, quantity: saved.quantity || 1, consumableId: saved.id, includedInServiceCost: saved.includedInServiceCost };
             setFormData(prev => ({ ...prev, items: [...(prev.items || []), newItem] }));
           }
 

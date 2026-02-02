@@ -53,7 +53,8 @@ export default function PartDialog({ open, onClose, part, vehicleId }) {
   const actualVehicleId = part?.vehicleId || vehicleId;
 
   // Determine if we're in MOT/Service context (pre-filled IDs)
-  const isFromMotOrService = part?.motRecordId || part?.serviceRecordId;
+  // Only show link dropdown when creating NEW part from service/MOT, not when editing existing
+  const isFromMotOrService = !part?.id && (part?.motRecordId || part?.serviceRecordId);
 
   // Load unassociated parts when opened from MOT/Service context
   useEffect(() => {

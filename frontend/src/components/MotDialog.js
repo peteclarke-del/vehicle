@@ -82,11 +82,15 @@ const MotDialog = ({ open, motRecord, vehicleId, vehicles, onClose }) => {
     const services = motItems.serviceRecords || [];
     let total = 0;
     parts.forEach(p => {
+      // Exclude existing items (includedInServiceCost=false) from repair cost
+      if (p.includedInServiceCost === false) return;
       const cost = parseFloat(p.cost || 0) || 0;
       const qty = parseFloat(p.quantity || 1) || 1;
       total += cost * qty;
     });
     consumables.forEach(c => {
+      // Exclude existing items (includedInServiceCost=false) from repair cost
+      if (c.includedInServiceCost === false) return;
       const cost = parseFloat(c.cost || 0) || 0;
       const qty = parseFloat(c.quantity || 1) || 1;
       total += cost * qty;
@@ -127,11 +131,15 @@ const MotDialog = ({ open, motRecord, vehicleId, vehicles, onClose }) => {
         // compute repair total from items (parts, consumables, services)
         let total = 0;
         (items.parts || []).forEach(p => {
+          // Exclude existing items (includedInServiceCost=false) from repair cost
+          if (p.includedInServiceCost === false) return;
           const cost = parseFloat(p.cost || 0) || 0;
           const qty = parseFloat(p.quantity || 1) || 1;
           total += cost * qty;
         });
         (items.consumables || []).forEach(c => {
+          // Exclude existing items (includedInServiceCost=false) from repair cost
+          if (c.includedInServiceCost === false) return;
           const cost = parseFloat(c.cost || 0) || 0;
           const qty = parseFloat(c.quantity || 1) || 1;
           total += cost * qty;
@@ -487,7 +495,12 @@ const MotDialog = ({ open, motRecord, vehicleId, vehicles, onClose }) => {
                       <Typography component="button" onClick={async (e) => { e.preventDefault(); setSelectedPart(p); setOpenPartDialog(true); }} sx={{ background: 'none', border: 'none', padding: 0, textDecoration: 'underline', cursor: 'pointer', color: 'primary.main' }}>
                         <BuildIcon fontSize="small" sx={{ mr: 1, verticalAlign: 'middle' }} />{p.name || p.description}
                       </Typography>
-                      <span>— {p.quantity || 1} @ {p.cost || ''}</span>
+                      {/* Don't show cost for existing items (includedInServiceCost=false) */}
+                      {p.includedInServiceCost !== false ? (
+                        <span>— {p.quantity || 1} @ {p.cost || ''}</span>
+                      ) : (
+                        <span style={{ fontStyle: 'italic', color: '#666' }}>— {t('mot.existingItem') || 'Existing item'}</span>
+                      )}
                     </div>
                     <div>
                       <Tooltip title={t('common.delete')}>
@@ -531,7 +544,12 @@ const MotDialog = ({ open, motRecord, vehicleId, vehicles, onClose }) => {
                       <Typography component="button" onClick={async (e) => { e.preventDefault(); setSelectedConsumable(c); setOpenConsumableDialog(true); }} sx={{ background: 'none', border: 'none', padding: 0, textDecoration: 'underline', cursor: 'pointer', color: 'primary.main' }}>
                         <OpacityIcon fontSize="small" sx={{ mr: 1, verticalAlign: 'middle' }} />{c.name || c.description || ''}
                       </Typography>
-                      <span>— {c.quantity || 1} @ {c.cost || ''}</span>
+                      {/* Don't show cost for existing items (includedInServiceCost=false) */}
+                      {c.includedInServiceCost !== false ? (
+                        <span>— {c.quantity || 1} @ {c.cost || ''}</span>
+                      ) : (
+                        <span style={{ fontStyle: 'italic', color: '#666' }}>— {t('mot.existingItem') || 'Existing item'}</span>
+                      )}
                     </div>
                     <div>
                       <Tooltip title={t('common.delete')}>

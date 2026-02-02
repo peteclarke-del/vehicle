@@ -57,7 +57,8 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
   const actualVehicleId = consumable?.vehicleId || vehicleId;
 
   // Determine if we're in MOT/Service context
-  const isFromMotOrService = consumable?.motRecordId || consumable?.serviceRecordId;
+  // Only show link dropdown when creating NEW consumable from service/MOT, not when editing existing
+  const isFromMotOrService = !consumable?.id && (consumable?.motRecordId || consumable?.serviceRecordId);
 
   // Load unassociated consumables when opened from MOT/Service context
   useEffect(() => {

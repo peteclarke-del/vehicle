@@ -233,8 +233,15 @@ class ServiceRecordController extends AbstractController
             return new JsonResponse($this->serializeServiceRecord($serviceRecord));
         } catch (\Throwable $e) {
             $this->entityManager->rollback();
-            $this->logger->error('Error updating service record', ['exception' => $e->getMessage()]);
-            return new JsonResponse(['error' => 'Failed to update service record'], 500);
+            $this->logger->error('Error updating service record', [
+                'exception' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'serviceRecordId' => $id
+            ]);
+            return new JsonResponse([
+                'error' => 'Failed to update service record',
+                'message' => $e->getMessage()
+            ], 500);
         }
     }
 
@@ -414,6 +421,9 @@ class ServiceRecordController extends AbstractController
 
     private function serializeItem(ServiceItem $item): array
     {
+        $part = $item->getPart();
+        $consumable = $item->getConsumable();
+        
         return [
             'id' => $item->getId(),
             'type' => $item->getType(),
@@ -421,8 +431,10 @@ class ServiceRecordController extends AbstractController
             'cost' => $item->getCost(),
             'quantity' => $item->getQuantity(),
             'total' => $item->getTotal(),
-            'consumableId' => $item->getConsumable()?->getId(),
-            'partId' => $item->getPart()?->getId(),
+            'consumableId' => $consumable?->getId(),
+            'partId' => $part?->getId(),
+            // Include includedInServiceCost flag from linked part/consumable
+            'includedInServiceCost' => $part ? $part->isIncludedInServiceCost() : ($consumable ? $consumable->isIncludedInServiceCost() : true),
         ];
     }
 
@@ -615,14 +627,28 @@ class ServiceRecordController extends AbstractController
                 $si->setServiceRecord($service);
                 $si->setType($it['type']);
                 $si->setDescription($it['description']);
-                $si->setCost($it['cost']);
-                $si->setQuantity($quantity);
+                
+                // Determine if we should include the cost based on includedInServiceCost flag
+                $costToUse = $it['cost'];
+                $linkedItemCost = null;
+                
                 // If a consumableId is provided, link the ServiceItem to the Consumable entity
                 if (isset($it['consumableId']) && is_numeric($it['consumableId']) && (int)$it['consumableId'] > 0) {
                     $consumable = $consumablesMap[(int)$it['consumableId']] ?? null;
                     if ($consumable) {
                         $si->setConsumable($consumable);
                         $consumable->setServiceRecord($service);
+                        // If linking existing item (not included in service cost), set ServiceItem cost to 0
+                        try {
+                            if (!$consumable->isIncludedInServiceCost()) {
+                                $costToUse = '0.00';
+                            }
+                        } catch (\Throwable $e) {
+                            $this->logger->error('Error checking includedInServiceCost for consumable', [
+                                'consumableId' => $consumable->getId(),
+                                'error' => $e->getMessage()
+                            ]);
+                        }
                     } else {
                         // If provided id not found, leave consumable null but log
                         $this->logger->warning('Linked consumable not found', ['consumableId' => $it['consumableId']]);
@@ -636,10 +662,24 @@ class ServiceRecordController extends AbstractController
                     if ($part) {
                         $part->setServiceRecord($service);
                         $si->setPart($part);
+                        // If linking existing item (not included in service cost), set ServiceItem cost to 0
+                        try {
+                            if (!$part->isIncludedInServiceCost()) {
+                                $costToUse = '0.00';
+                            }
+                        } catch (\Throwable $e) {
+                            $this->logger->error('Error checking includedInServiceCost for part', [
+                                'partId' => $part->getId(),
+                                'error' => $e->getMessage()
+                            ]);
+                        }
                     } else {
                         $this->logger->warning('Linked part not found', ['partId' => $it['partId']]);
                     }
                 }
+                
+                $si->setCost($costToUse);
+                $si->setQuantity($quantity);
 
                 $this->entityManager->persist($si);
             }

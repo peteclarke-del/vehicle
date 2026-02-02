@@ -21,22 +21,34 @@ class RepairCostCalculator
         $this->entityManager->beginTransaction();
 
         try {
-            // Use single aggregate query to calculate total from all sources
-            $dql = 'SELECT 
-                        (SELECT COALESCE(SUM(p.cost * CASE WHEN p.quantity IS NULL THEN 1 ELSE p.quantity END), 0) 
+            // Calculate parts cost (include items created for MOT, exclude existing items that were linked)
+            $partsDql = 'SELECT COALESCE(SUM(p.cost * CASE WHEN p.quantity IS NULL THEN 1 ELSE p.quantity END), 0) 
                          FROM App\Entity\Part p 
-                         WHERE p.motRecord = :mot) +
-                        (SELECT COALESCE(SUM(c.cost * CASE WHEN c.quantity IS NULL THEN 1 ELSE c.quantity END), 0) 
-                         FROM App\Entity\Consumable c 
-                         WHERE c.motRecord = :mot) +
-                        (SELECT COALESCE(SUM(s.laborCost + s.partsCost + s.consumablesCost + s.additionalCosts), 0) 
-                         FROM App\Entity\ServiceRecord s 
-                         WHERE s.motRecord = :mot)
-                    AS total';
-
-            $total = (float) $this->entityManager->createQuery($dql)
+                         WHERE p.motRecord = :mot 
+                         AND (p.includedInServiceCost = true OR p.includedInServiceCost IS NULL)';
+            $partsTotal = (float) $this->entityManager->createQuery($partsDql)
                 ->setParameter('mot', $mot)
                 ->getSingleScalarResult();
+
+            // Calculate consumables cost (include items created for MOT, exclude existing items that were linked)
+            $consumablesDql = 'SELECT COALESCE(SUM(c.cost * CASE WHEN c.quantity IS NULL THEN 1 ELSE c.quantity END), 0) 
+                               FROM App\Entity\Consumable c 
+                               WHERE c.motRecord = :mot 
+                               AND (c.includedInServiceCost = true OR c.includedInServiceCost IS NULL)';
+            $consumablesTotal = (float) $this->entityManager->createQuery($consumablesDql)
+                ->setParameter('mot', $mot)
+                ->getSingleScalarResult();
+
+            // Calculate service records total
+            $servicesDql = 'SELECT COALESCE(SUM(s.laborCost + s.partsCost + s.consumablesCost + s.additionalCosts), 0) 
+                            FROM App\Entity\ServiceRecord s 
+                            WHERE s.motRecord = :mot';
+            $servicesTotal = (float) $this->entityManager->createQuery($servicesDql)
+                ->setParameter('mot', $mot)
+                ->getSingleScalarResult();
+
+            // Sum all components
+            $total = $partsTotal + $consumablesTotal + $servicesTotal;
 
             $mot->setRepairCost(number_format($total, 2, '.', ''));
             $this->entityManager->persist($mot);

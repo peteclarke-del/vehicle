@@ -249,7 +249,12 @@ class ConsumableController extends AbstractController
         $serviceItem = $this->entityManager->getRepository(ServiceItem::class)
             ->findOneBy(['consumable' => $consumable]);
         if ($serviceItem) {
-            $serviceItem->setCost($consumable->getCost());
+            // If consumable is not included in service cost (existing item purchased separately),
+            // set ServiceItem cost to 0 to prevent double-counting
+            $costToUse = $consumable->isIncludedInServiceCost() 
+                ? $consumable->getCost() 
+                : '0.00';
+            $serviceItem->setCost($costToUse);
             $serviceItem->setQuantity($consumable->getQuantity() ?? 1);
             $serviceItem->setDescription($consumable->getDescription());
             $this->entityManager->persist($serviceItem);
