@@ -29,7 +29,8 @@ class CostCalculator
         $dql = 'SELECT COALESCE(SUM(p.cost), 0) FROM App\Entity\Part p 
                 WHERE p.vehicle = :vehicle 
                 AND p.serviceRecord IS NULL 
-                AND p.motRecord IS NULL';
+                AND p.motRecord IS NULL
+                AND p.includedInServiceCost = false';
 
         return (float) $this->entityManager->createQuery($dql)
             ->setParameter('vehicle', $vehicle)
@@ -41,7 +42,8 @@ class CostCalculator
         $dql = 'SELECT COALESCE(SUM(c.cost), 0) FROM App\Entity\Consumable c 
                 WHERE c.vehicle = :vehicle 
                 AND c.serviceRecord IS NULL 
-                AND c.motRecord IS NULL';
+                AND c.motRecord IS NULL
+                AND c.includedInServiceCost = false';
 
         return (float) $this->entityManager->createQuery($dql)
             ->setParameter('vehicle', $vehicle)

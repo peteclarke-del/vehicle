@@ -82,6 +82,9 @@ class Consumable
     #[ORM\Column(type: 'string', length: 100, nullable: true)]
     private ?string $supplier = null;
 
+    #[ORM\Column(type: 'boolean', options: ['default' => false])]
+    private bool $includedInServiceCost = false;
+
     public function __construct()
     {
         $this->createdAt = new \DateTime();
@@ -434,6 +437,17 @@ class Consumable
     public function setSupplier(?string $supplier): self
     {
         $this->supplier = $supplier;
+        return $this;
+    }
+
+    public function isIncludedInServiceCost(): bool
+    {
+        return $this->includedInServiceCost;
+    }
+
+    public function setIncludedInServiceCost(bool $includedInServiceCost): self
+    {
+        $this->includedInServiceCost = $includedInServiceCost;
         return $this;
     }
 }

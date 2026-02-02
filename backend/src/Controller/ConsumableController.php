@@ -188,6 +188,14 @@ class ConsumableController extends AbstractController
         $consumable = new Consumable();
         $consumable->setVehicle($vehicle);
         $consumable->setConsumableType($consumableType);
+        
+        // Auto-detect if this consumable is being created as part of a service/MOT
+        // If serviceRecordId or motRecordId is present, mark as included in service cost
+        $createdInServiceContext = !empty($data['serviceRecordId']) || !empty($data['motRecordId']);
+        if ($createdInServiceContext) {
+            $consumable->setIncludedInServiceCost(true);
+        }
+        
         // Ensure description is set. Accept legacy `name` too.
         $desc = $data['description'] ?? $data['name'] ?? $consumableType->getName() ?? null;
         $desc = is_string($desc) ? trim($desc) : $desc;
