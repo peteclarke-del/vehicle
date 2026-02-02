@@ -74,14 +74,28 @@ class ConsumableController extends AbstractController
         }
 
         $vehicleId = $request->query->get('vehicleId');
+        $unassociated = $request->query->get('unassociated') === 'true';
 
         if ($vehicleId) {
             $vehicle = $this->entityManager->getRepository(Vehicle::class)->find($vehicleId);
             if (!$vehicle || (!$this->isAdminForUser($user) && $vehicle->getOwner()->getId() !== $user->getId())) {
                 return $this->json(['error' => 'Vehicle not found'], 404);
             }
-            $consumables = $this->entityManager->getRepository(Consumable::class)
-                ->findBy(['vehicle' => $vehicle]);
+            
+            if ($unassociated) {
+                $qb = $this->entityManager->createQueryBuilder()
+                    ->select('c')
+                    ->from(Consumable::class, 'c')
+                    ->where('c.vehicle = :vehicle')
+                    ->andWhere('c.serviceRecord IS NULL')
+                    ->andWhere('c.motRecord IS NULL')
+                    ->setParameter('vehicle', $vehicle)
+                    ->orderBy('c.lastChanged', 'DESC');
+                $consumables = $qb->getQuery()->getResult();
+            } else {
+                $consumables = $this->entityManager->getRepository(Consumable::class)
+                    ->findBy(['vehicle' => $vehicle]);
+            }
         } else {
             // Fetch consumables for all vehicles the user can see
             $vehicleRepo = $this->entityManager->getRepository(Vehicle::class);
@@ -93,8 +107,14 @@ class ConsumableController extends AbstractController
                     ->select('c')
                     ->from(Consumable::class, 'c')
                     ->where('c.vehicle IN (:vehicles)')
-                    ->setParameter('vehicles', $vehicles)
-                    ->orderBy('c.lastChanged', 'DESC');
+                    ->setParameter('vehicles', $vehicles);
+                
+                if ($unassociated) {
+                    $qb->andWhere('c.serviceRecord IS NULL')
+                       ->andWhere('c.motRecord IS NULL');
+                }
+                
+                $qb->orderBy('c.lastChanged', 'DESC');
 
                 $consumables = $qb->getQuery()->getResult();
             }

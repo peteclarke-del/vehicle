@@ -7,7 +7,11 @@ import {
   Button,
   TextField,
   Grid,
-  MenuItem
+  MenuItem,
+  Box,
+  FormControl,
+  Select,
+  InputLabel
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
@@ -41,9 +45,85 @@ export default function PartDialog({ open, onClose, part, vehicleId }) {
   const [motRecordId, setMotRecordId] = useState(null);
   const [serviceRecords, setServiceRecords] = useState([]);
   const [serviceRecordId, setServiceRecordId] = useState(null);
+  const [existingParts, setExistingParts] = useState([]);
+  const [selectedExistingPartId, setSelectedExistingPartId] = useState('');
+  const [isLinkingExisting, setIsLinkingExisting] = useState(false);
+
+  // Determine the actual vehicle ID - use part's vehicleId if available, otherwise use prop
+  const actualVehicleId = part?.vehicleId || vehicleId;
+
+  // Determine if we're in MOT/Service context (pre-filled IDs)
+  const isFromMotOrService = part?.motRecordId || part?.serviceRecordId;
+
+  // Load unassociated parts when opened from MOT/Service context
+  useEffect(() => {
+    const loadUnassociated = async () => {
+      if (!open || !actualVehicleId || !isFromMotOrService) return;
+      try {
+        const resp = await api.get('/parts', { params: { vehicleId: actualVehicleId, unassociated: 'true' } });
+        setExistingParts(resp.data || []);
+      } catch (e) {
+        logger.error('Failed to load unassociated parts', e);
+        setExistingParts([]);
+      }
+    };
+    loadUnassociated();
+  }, [open, actualVehicleId, isFromMotOrService, api]);
+
+  // Handle selection of existing part from dropdown
+  const handleExistingPartSelected = async (partId) => {
+    setSelectedExistingPartId(partId);
+    if (!partId) {
+      // Clear form when "Create New" is selected
+      setIsLinkingExisting(false);
+      setFormData({
+        description: '',
+        partNumber: '',
+        manufacturer: '',
+        partCategoryId: '',
+        price: '',
+        quantity: 1,
+        purchaseDate: '',
+        installationDate: '',
+        mileageAtInstallation: '',
+        warranty: '',
+        supplier: '',
+        notes: ''
+      });
+      setReceiptAttachmentId(null);
+      setProductUrl('');
+      return;
+    }
+
+    try {
+      const resp = await api.get(`/parts/${partId}`);
+      const existingPart = resp.data;
+      setIsLinkingExisting(true);
+      setFormData({
+        description: existingPart.description || '',
+        partNumber: existingPart.partNumber || '',
+        manufacturer: existingPart.manufacturer || '',
+        partCategoryId: existingPart.partCategoryId ?? existingPart.partCategory?.id ?? '',
+        price: existingPart.price ?? existingPart.cost ?? '',
+        quantity: existingPart.quantity ?? 1,
+        purchaseDate: existingPart.purchaseDate || '',
+        installationDate: existingPart.installationDate || '',
+        mileageAtInstallation: existingPart.mileageAtInstallation ? Math.round(convert(existingPart.mileageAtInstallation)) : '',
+        warranty: existingPart.warranty || '',
+        supplier: existingPart.supplier || '',
+        notes: existingPart.notes || ''
+      });
+      setReceiptAttachmentId(existingPart.receiptAttachmentId || null);
+      setProductUrl(existingPart.productUrl || '');
+    } catch (e) {
+      logger.error('Failed to load existing part', e);
+    }
+  };
 
   useEffect(() => {
     if (part) {
+      setSelectedExistingPartId('');
+      setIsLinkingExisting(false);
       setFormData({
         description: part.description || '',
         partNumber: part.partNumber || '',
@@ -63,6 +143,8 @@ export default function PartDialog({ open, onClose, part, vehicleId }) {
       setMotRecordId(part.motRecordId || null);
       setServiceRecordId(part.serviceRecordId || null);
     } else {
+      setSelectedExistingPartId('');
+      setIsLinkingExisting(false);
       setFormData({
         description: '',
         partNumber: '',
@@ -86,9 +168,6 @@ export default function PartDialog({ open, onClose, part, vehicleId }) {
 
   const [partCategories, setPartCategories] = useState([]);
   const [vehicleTypeId, setVehicleTypeId] = useState(null);
-  
-  // Determine the actual vehicle ID - use part's vehicleId if available, otherwise use prop
-  const actualVehicleId = part?.vehicleId || vehicleId;
   
   // Fetch vehicle to get vehicleTypeId
   useEffect(() => {
@@ -210,7 +289,10 @@ export default function PartDialog({ open, onClose, part, vehicleId }) {
       };
 
       let resp;
-      if (part && part.id) {
+      if (isLinkingExisting && selectedExistingPartId) {
+        // Update existing part to link with MOT/Service
+        resp = await api.put(`/parts/${selectedExistingPartId}`, data);
+      } else if (part && part.id) {
         resp = await api.put(`/parts/${part.id}`, data);
       } else {
         resp = await api.post('/parts', data);
@@ -226,7 +308,30 @@ export default function PartDialog({ open, onClose, part, vehicleId }) {
   return (
     <Dialog open={open} onClose={() => onClose(false)} maxWidth="md" fullWidth>
       <DialogTitle>
-        {part ? t('parts.editPart') : t('parts.addPart')}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+          <Box sx={{ flexShrink: 0 }}>
+            {part ? t('parts.editPart') : t('parts.addPart')}
+          </Box>
+          {isFromMotOrService && existingParts.length > 0 && (
+            <Box sx={{ flexGrow: 1, minWidth: 300 }}>
+              <FormControl size="small" fullWidth>
+                <InputLabel>{t('parts.linkExisting')}</InputLabel>
+                <Select
+                  value={selectedExistingPartId}
+                  onChange={(e) => handleExistingPartSelected(e.target.value)}
+                  label={t('parts.linkExisting')}
+                >
+                  <MenuItem value="">{t('common.createNew')}</MenuItem>
+                  {existingParts.map((p) => (
+                    <MenuItem key={p.id} value={p.id}>
+                      {p.description || p.name} {p.partNumber ? `(${p.partNumber})` : ''} - {p.purchaseDate || t('common.noDate')}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Box>
+          )}
+        </Box>
       </DialogTitle>
       <form onSubmit={handleSubmit}>
         <DialogContent>
