@@ -23,7 +23,7 @@ use App\Entity\RoadTax;
 use App\Entity\Todo;
 use App\Entity\Attachment;
 use App\Exception\ImportException;
-use App\Trait\EntityHydratorTrait;
+use App\Service\Trait\EntityHydratorTrait;
 use App\Controller\Trait\AttachmentFileOrganizerTrait;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
