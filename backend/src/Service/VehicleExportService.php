@@ -10,7 +10,7 @@ use App\Entity\User;
 use App\Entity\Vehicle;
 use App\Entity\Attachment;
 use App\Exception\ExportException;
-use App\Trait\EntityHydratorTrait;
+use App\Service\Trait\EntityHydratorTrait;
 use App\Controller\Trait\AttachmentFileOrganizerTrait;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
