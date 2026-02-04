@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -48,6 +48,7 @@ export default function PartDialog({ open, onClose, part, vehicleId }) {
   const [existingParts, setExistingParts] = useState([]);
   const [selectedExistingPartId, setSelectedExistingPartId] = useState('');
   const [isLinkingExisting, setIsLinkingExisting] = useState(false);
+  const initKeyRef = useRef(null);
 
   // Determine the actual vehicle ID - use part's vehicleId if available, otherwise use prop
   const actualVehicleId = part?.vehicleId || vehicleId;
@@ -122,6 +123,17 @@ export default function PartDialog({ open, onClose, part, vehicleId }) {
   };
 
   useEffect(() => {
+    if (!open) {
+      initKeyRef.current = null;
+      return;
+    }
+
+    const key = part?.id ?? 'new';
+    if (initKeyRef.current === key) {
+      return;
+    }
+    initKeyRef.current = key;
+
     if (part) {
       setSelectedExistingPartId('');
       setIsLinkingExisting(false);
@@ -165,7 +177,7 @@ export default function PartDialog({ open, onClose, part, vehicleId }) {
       setMotRecordId(null);
       setServiceRecordId(null);
     }
-  }, [part, open]);
+  }, [part, open, convert]);
 
   const [partCategories, setPartCategories] = useState([]);
   const [vehicleTypeId, setVehicleTypeId] = useState(null);
@@ -512,6 +524,7 @@ export default function PartDialog({ open, onClose, part, vehicleId }) {
             <Grid item xs={12}>
               <ReceiptUpload
                 entityType="part"
+                entityId={part?.id}
                 vehicleId={actualVehicleId}
                 receiptAttachmentId={receiptAttachmentId}
                 onReceiptUploaded={handleReceiptUploaded}

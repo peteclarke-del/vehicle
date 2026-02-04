@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -127,11 +127,35 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
     }
   };
 
+  const loadConsumableTypes = useCallback(async () => {
+    setLoadingTypes(true);
+    try {
+      // First get the vehicle to find its type
+      const vehicleResponse = await api.get(`/vehicles/${actualVehicleId}`);
+      const vehicleTypeId = vehicleResponse.data?.vehicleType?.id;
+      
+      if (!vehicleTypeId) {
+        logger.warn('Vehicle has no vehicleType, cannot load consumable types');
+        setConsumableTypes([]);
+        return;
+      }
+      
+      // Then get consumable types for this vehicle type
+      const typesResponse = await api.get(`/vehicle-types/${vehicleTypeId}/consumable-types`);
+      setConsumableTypes(Array.isArray(typesResponse.data) ? typesResponse.data : []);
+    } catch (error) {
+      logger.error('Error loading consumable types:', error);
+      setConsumableTypes([]);
+    } finally {
+      setLoadingTypes(false);
+    }
+  }, [api, actualVehicleId]);
+
   useEffect(() => {
     if (open && actualVehicleId) {
       loadConsumableTypes();
     }
-  }, [open, actualVehicleId]);
+  }, [open, actualVehicleId, loadConsumableTypes]);
 
   useEffect(() => {
     if (consumable) {
@@ -179,7 +203,7 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
       setMotRecordId(null);
       setServiceRecordId(null);
     }
-  }, [consumable, open]);
+  }, [consumable, open, convert]);
 
   useEffect(() => {
     const load = async () => {
@@ -201,22 +225,6 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
     if (open) load();
   }, [open, actualVehicleId, api]);
 
-  const loadConsumableTypes = async () => {
-    setLoadingTypes(true);
-    try {
-      // First get the vehicle to find its type
-      const vehicleResponse = await api.get(`/vehicles/${actualVehicleId}`);
-      const vehicleTypeId = vehicleResponse.data.vehicleType.id;
-      
-      // Then get consumable types for this vehicle type
-      const typesResponse = await api.get(`/vehicle-types/${vehicleTypeId}/consumable-types`);
-      setConsumableTypes(typesResponse.data);
-    } catch (error) {
-      logger.error('Error loading consumable types:', error);
-    } finally {
-      setLoadingTypes(false);
-    }
-  };
 
   const handleChange = (e) => {
     setFormData({
@@ -226,6 +234,7 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
   };
 
   const handleReceiptUploaded = (attachmentId, ocrData) => {
+    console.log('[ConsumableDialog] handleReceiptUploaded called', { attachmentId, ocrData });
     setReceiptAttachmentId(attachmentId);
     const updates = {};
     if (ocrData.name) updates.description = ocrData.name;
@@ -520,6 +529,7 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
               <Grid item xs={12}>
                 <ReceiptUpload
                   entityType="consumable"
+                  entityId={consumable?.id}
                   vehicleId={actualVehicleId}
                   receiptAttachmentId={receiptAttachmentId}
                   onReceiptUploaded={handleReceiptUploaded}
