@@ -512,6 +512,7 @@ export default function PartDialog({ open, onClose, part, vehicleId }) {
             <Grid item xs={12}>
               <ReceiptUpload
                 entityType="part"
+                vehicleId={actualVehicleId}
                 receiptAttachmentId={receiptAttachmentId}
                 onReceiptUploaded={handleReceiptUploaded}
                 onReceiptRemoved={() => setReceiptAttachmentId(null)}

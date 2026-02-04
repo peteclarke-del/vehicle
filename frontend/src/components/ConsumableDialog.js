@@ -520,6 +520,7 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
               <Grid item xs={12}>
                 <ReceiptUpload
                   entityType="consumable"
+                  vehicleId={actualVehicleId}
                   receiptAttachmentId={receiptAttachmentId}
                   onReceiptUploaded={handleReceiptUploaded}
                   onReceiptRemoved={() => setReceiptAttachmentId(null)}

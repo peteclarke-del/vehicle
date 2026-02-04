@@ -749,6 +749,7 @@ const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose }) => {
             <Grid item xs={12}>
               <ReceiptUpload
                 entityType="service"
+                vehicleId={vehicleId}
                 receiptAttachmentId={receiptAttachmentId}
                 onReceiptUploaded={handleReceiptUploaded}
                 onReceiptRemoved={() => setReceiptAttachmentId(null)}
