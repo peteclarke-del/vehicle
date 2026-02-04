@@ -8,6 +8,7 @@ services:
         bind:
             int $uploadMaxBytes: '%app.upload_max_bytes%'
             Symfony\Contracts\Cache\CacheInterface $lookupsCache: '@cache.lookups'
+            string $projectDir: '%kernel.project_dir%'
 
     # Redis cache with tag support
     Symfony\Contracts\Cache\TagAwareCacheInterface: '@cache.app'
@@ -89,3 +90,23 @@ services:
     App\Service\VinDecoderService:
         arguments:
             $apiNinjasKey: '%env(API_NINJAS_KEY)%'
+
+    # Import/Export Configuration
+    App\Config\ImportExportConfig:
+        arguments:
+            $batchSize: 25
+            $memoryLimitMB: 1024
+            $maxExecutionTime: 0
+            $allowedMimeTypes: ['application/zip', 'application/json']
+            $maxFileSizeMB: 100
+            $enableMemoryCleanup: true
+            $cleanupInterval: 25
+
+    # Import/Export Services
+    App\Service\VehicleExportService:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+
+    App\Service\VehicleImportService:
+        arguments:
+            $projectDir: '%kernel.project_dir%'

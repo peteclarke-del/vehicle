@@ -15,21 +15,19 @@ use App\Service\UrlScraperService;
 use Psr\Log\LoggerInterface;
 use App\Service\RepairCostCalculator;
 use App\Service\EntitySerializerService;
+use App\Service\AttachmentLinkingService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Component\String\Slugger\SluggerInterface;
 use App\Controller\Trait\UserSecurityTrait;
-use App\Controller\Trait\AttachmentFileOrganizerTrait;
 use App\Controller\Trait\JsonValidationTrait;
 
 #[Route('/api/parts')]
 class PartController extends AbstractController
 {
     use UserSecurityTrait;
-    use AttachmentFileOrganizerTrait;
     use JsonValidationTrait;
 
     public function __construct(
@@ -39,7 +37,7 @@ class PartController extends AbstractController
         private LoggerInterface $logger,
         private RepairCostCalculator $repairCostCalculator,
         private EntitySerializerService $serializer,
-        private SluggerInterface $slugger
+        private AttachmentLinkingService $attachmentLinkingService
     ) {
     }
 
@@ -164,6 +162,10 @@ class PartController extends AbstractController
         // Do not force-installationDate: leave as null unless explicitly provided
 
         $this->entityManager->persist($part);
+        $this->entityManager->flush();
+
+        // Finalize attachment link after flush (entity now has ID)
+        $this->attachmentLinkingService->finalizeAttachmentLink($part);
         $this->entityManager->flush();
 
         return $this->json($this->serializer->serializePart($part), 201);
@@ -420,16 +422,19 @@ class PartController extends AbstractController
                 }
             }
         }
-        if (isset($data['receiptAttachmentId'])) {
-            $att = $this->entityManager->getRepository(Attachment::class)->find($data['receiptAttachmentId']);
-            if ($att) {
-                $part->setReceiptAttachment($att);
-                // Update attachment's entity_id to link it to this part
-                $att->setEntityId($part->getId());
-                $att->setEntityType('part');
-                
-                // Reorganize file into proper directory structure
-                $this->reorganizeReceiptFile($att, $part->getVehicle());
+        if (array_key_exists('receiptAttachmentId', $data)) {
+            $attachmentId = $data['receiptAttachmentId'];
+            if ($attachmentId === null || $attachmentId === '' || $attachmentId === 0) {
+                if ($part->getReceiptAttachment()) {
+                    $this->attachmentLinkingService->unlinkAttachment($part->getReceiptAttachment(), $part);
+                }
+                $part->setReceiptAttachment(null);
+            } else {
+                $this->attachmentLinkingService->processReceiptAttachmentId(
+                    (int) $attachmentId,
+                    $part,
+                    'part'
+                );
             }
         }
         if (isset($data['productUrl'])) {

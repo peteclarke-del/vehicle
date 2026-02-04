@@ -14,16 +14,14 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Component\String\Slugger\SluggerInterface;
 use App\Controller\Trait\UserSecurityTrait;
-use App\Controller\Trait\AttachmentFileOrganizerTrait;
 use App\Controller\Trait\JsonValidationTrait;
+use App\Service\AttachmentLinkingService;
 
 #[Route('/api/fuel-records')]
 class FuelRecordController extends AbstractController
 {
     use UserSecurityTrait;
-    use AttachmentFileOrganizerTrait;
     use JsonValidationTrait;
 
     private const FUEL_TYPES = [
@@ -42,7 +40,7 @@ class FuelRecordController extends AbstractController
     public function __construct(
         private EntityManagerInterface $entityManager,
         private LoggerInterface $logger,
-        private SluggerInterface $slugger
+        private AttachmentLinkingService $attachmentLinkingService
     ) {
     }
 
@@ -141,6 +139,10 @@ class FuelRecordController extends AbstractController
         $this->entityManager->persist($record);
         $this->entityManager->flush();
 
+        // Finalize attachment link after flush (entity now has ID)
+        $this->attachmentLinkingService->finalizeAttachmentLink($record);
+        $this->entityManager->flush();
+
         if (isset($data['mileage']) && $data['mileage'] > ($vehicle->getCurrentMileage() ?? 0)) {
             $vehicle->setCurrentMileage($data['mileage']);
             $this->entityManager->flush();
@@ -235,14 +237,19 @@ class FuelRecordController extends AbstractController
         if (isset($data['notes'])) {
             $record->setNotes($data['notes']);
         }
-        if (isset($data['receiptAttachmentId'])) {
-            $att = $this->entityManager->getRepository(Attachment::class)->find($data['receiptAttachmentId']);
-            if ($att) {
-                $record->setReceiptAttachment($att);
-                // Update attachment's entity_id to link it to this fuel record
-                $att->setEntityId($record->getId());
-                $att->setEntityType('fuel');
-                $this->reorganizeReceiptFile($att, $record->getVehicle());
+        if (array_key_exists('receiptAttachmentId', $data)) {
+            $attachmentId = $data['receiptAttachmentId'];
+            if ($attachmentId === null || $attachmentId === '' || $attachmentId === 0) {
+                if ($record->getReceiptAttachment()) {
+                    $this->attachmentLinkingService->unlinkAttachment($record->getReceiptAttachment(), $record);
+                }
+                $record->setReceiptAttachment(null);
+            } else {
+                $this->attachmentLinkingService->processReceiptAttachmentId(
+                    (int) $attachmentId,
+                    $record,
+                    'fuel_record'
+                );
             }
         }
     }

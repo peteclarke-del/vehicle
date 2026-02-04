@@ -49,7 +49,7 @@ import {
 } from '@mui/icons-material';
 
 const Dashboard = () => {
-  const { api, user } = useAuth();
+  const { api } = useAuth();
   const { vehicles, loading, refreshVehicles } = useVehicles();
   const { convert, format } = useDistance();
   const [last12FuelTotal, setLast12FuelTotal] = useState(0);
@@ -510,8 +510,12 @@ const Dashboard = () => {
     const safeRoadTaxData = Array.isArray(roadTaxData) ? roadTaxData : [];
     const vehicleRecords = safeRoadTaxData.filter(r => r.vehicleId === vehicleId);
     if (vehicleRecords.length === 0) return null;
+    const getRecordDate = (record) => {
+      const dateStr = record.startDate || record.expiryDate || record.createdAt;
+      return dateStr ? new Date(dateStr) : new Date(0);
+    };
     return vehicleRecords.reduce((latest, current) => 
-      new Date(current.startDate) > new Date(latest.startDate) ? current : latest
+      getRecordDate(current) > getRecordDate(latest) ? current : latest
     );
   };
 
@@ -540,10 +544,11 @@ const Dashboard = () => {
           stats.expiredMot++;
         }
         
-        // For expired tax, exclude vehicles with SORN as the latest record
+        // For expired tax, use latest road tax record dates and exclude SORN vehicles
         const latestRoadTax = getLatestRoadTaxRecord(vehicle.id);
         const hasActiveSorn = latestRoadTax && latestRoadTax.sorn === true;
-        if (!hasActiveSorn && (!vehicle.roadTaxExpiryDate || new Date(vehicle.roadTaxExpiryDate) < now)) {
+        const roadTaxExpiryDate = latestRoadTax?.expiryDate || vehicle.roadTaxExpiryDate;
+        if (!hasActiveSorn && (!roadTaxExpiryDate || new Date(roadTaxExpiryDate) < now)) {
           stats.expiredTax++;
         }
         
@@ -583,7 +588,11 @@ const Dashboard = () => {
         return !vehicle.motExpiryDate || new Date(vehicle.motExpiryDate) < now;
       }
       if (activeFilter === 'expiredTax') {
-        return !vehicle.roadTaxExpiryDate || new Date(vehicle.roadTaxExpiryDate) < now;
+        const latestRoadTax = getLatestRoadTaxRecord(vehicle.id);
+        const hasActiveSorn = latestRoadTax && latestRoadTax.sorn === true;
+        if (hasActiveSorn) return false;
+        const roadTaxExpiryDate = latestRoadTax?.expiryDate || vehicle.roadTaxExpiryDate;
+        return !roadTaxExpiryDate || new Date(roadTaxExpiryDate) < now;
       }
       if (activeFilter === 'expiredInsurance') {
         return !vehicle.insuranceExpiryDate || new Date(vehicle.insuranceExpiryDate) < now;
@@ -595,8 +604,12 @@ const Dashboard = () => {
         // Check if vehicle has SORN status from latest road tax record
         const vehicleRecords = roadTaxData.filter(r => r.vehicleId === vehicle.id);
         if (vehicleRecords.length === 0) return false;
+        const getRecordDate = (record) => {
+          const dateStr = record.startDate || record.expiryDate || record.createdAt;
+          return dateStr ? new Date(dateStr) : new Date(0);
+        };
         const latestRecord = vehicleRecords.reduce((latest, current) => 
-          new Date(current.startDate) > new Date(latest.startDate) ? current : latest
+          getRecordDate(current) > getRecordDate(latest) ? current : latest
         );
         return latestRecord.sorn === true;
       }
