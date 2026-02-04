@@ -32,6 +32,8 @@ class AttachmentLinkingService
         'motrecord' => 'mot',
         'servicerecord' => 'service',
         'fuelrecord' => 'fuel',
+        'part' => 'parts',
+        'consumable' => 'consumables',
     ];
 
     /**
