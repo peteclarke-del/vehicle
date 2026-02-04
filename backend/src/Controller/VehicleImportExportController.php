@@ -34,7 +34,6 @@ use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 use Symfony\Contracts\Cache\TagAwareCacheInterface;
 use Symfony\Component\String\Slugger\SluggerInterface;
 use App\Controller\Trait\UserSecurityTrait;
-use App\Controller\Trait\AttachmentFileOrganizerTrait;
 use App\Service\VehicleExportService;
 use App\Service\VehicleImportService;
 
@@ -47,7 +46,6 @@ use App\Service\VehicleImportService;
 class VehicleImportExportController extends AbstractController
 {
     use UserSecurityTrait;
-    use AttachmentFileOrganizerTrait;
 
     /**
      * @var LoggerInterface

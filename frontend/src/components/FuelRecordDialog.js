@@ -216,6 +216,8 @@ const FuelRecordDialog = ({ open, record, vehicleId, onClose }) => {
             <Grid item xs={12}>
               <ReceiptUpload
                 entityType="fuel_record"
+                entityId={record?.id}
+                vehicleId={vehicleId}
                 receiptAttachmentId={formData.receiptAttachmentId}
                 onReceiptUploaded={handleReceiptUploaded}
                 onReceiptRemoved={handleReceiptRemoved}

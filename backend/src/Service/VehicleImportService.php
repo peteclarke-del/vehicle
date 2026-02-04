@@ -24,20 +24,41 @@ use App\Entity\Todo;
 use App\Entity\Attachment;
 use App\Exception\ImportException;
 use App\Service\Trait\EntityHydratorTrait;
-use App\Controller\Trait\AttachmentFileOrganizerTrait;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\String\Slugger\AsciiSlugger;
 use Symfony\Contracts\Cache\TagAwareCacheInterface;
 
 /**
+ * class VehicleImportService
+ *
  * Service for importing vehicle data
  */
 class VehicleImportService
 {
     use EntityHydratorTrait;
-    use AttachmentFileOrganizerTrait;
 
+    /**
+     * @var array
+     */
+    private array $insurancePolicyMap = [];
+
+    /**
+     * @var array
+     */
+    private array $importedAttachmentsByKey = [];
+
+    /**
+     * function __construct
+     *
+     * @param EntityManagerInterface $entityManager
+     * @param LoggerInterface $logger
+     * @param ImportExportConfig $config
+     * @param TagAwareCacheInterface $cache
+     * @param string $projectDir
+     *
+     * @return void
+     */
     public function __construct(
         private EntityManagerInterface $entityManager,
         private LoggerInterface $logger,
@@ -47,7 +68,16 @@ class VehicleImportService
     ) {}
 
     /**
+     * function importVehicles
+     *
      * Import vehicles from JSON data
+     *
+     * @param array $data
+     * @param User $user
+     * @param string $zipExtractDir
+     * @param bool $dryRun
+     *
+     * @return ImportResult
      */
     public function importVehicles(
         array $data,
@@ -165,10 +195,23 @@ class VehicleImportService
 
             if (!$dryRun) {
                 $this->entityManager->flush();
+                $this->resolveAttachmentEntityLinks();
+                $this->entityManager->flush();
                 $this->entityManager->commit();
                 
                 // Clear caches
-                $this->cache->invalidateTags(['vehicles', 'parts', 'consumables']);
+                $this->cache->invalidateTags([
+                    'vehicles',
+                    'vehicle_list',
+                    'dashboard',
+                    'parts',
+                    'consumables',
+                    'vehicle_makes',
+                    'vehicle_models',
+                    'vehicle_types',
+                    'security_features',
+                    'user.' . $user->getId(),
+                ]);
             }
 
             $statistics = [
@@ -211,7 +254,13 @@ class VehicleImportService
     }
 
     /**
+     * function validateImportData
+     *
      * Validate import data structure
+     *
+     * @param array $data
+     *
+     * @return array
      */
     public function validateImportData(array $data): array
     {
@@ -251,7 +300,13 @@ class VehicleImportService
     }
 
     /**
+     * function normalizeImportData
+     *
      * Normalize import data format
+     *
+     * @param array $data
+     *
+     * @return array
      */
     private function normalizeImportData(array $data): array
     {
@@ -292,12 +347,20 @@ class VehicleImportService
         return $data;
     }
 
+    /**
+     * function buildExistingVehiclesMap
+     *
+     * @param User $user
+     * @param bool $isAdmin
+     *
+     * @return array
+     */
     private function buildExistingVehiclesMap(User $user, bool $isAdmin): array
     {
         $qb = $this->entityManager->getRepository(Vehicle::class)->createQueryBuilder('v');
         
         if (!$isAdmin) {
-            $qb->andWhere('v.user = :user')->setParameter('user', $user);
+            $qb->andWhere('v.owner = :user')->setParameter('user', $user);
         }
         
         $vehicles = $qb->getQuery()->getResult();
@@ -312,6 +375,14 @@ class VehicleImportService
         return $map;
     }
 
+    /**
+     * function buildExistingPartsMap
+     *
+     * @param User $user
+     * @param bool $isAdmin
+     *
+     * @return array
+     */
     private function buildExistingPartsMap(User $user, bool $isAdmin): array
     {
         $qb = $this->entityManager->createQueryBuilder()
@@ -320,7 +391,7 @@ class VehicleImportService
             ->join('p.vehicle', 'v');
         
         if (!$isAdmin) {
-            $qb->andWhere('v.user = :user')->setParameter('user', $user);
+            $qb->andWhere('v.owner = :user')->setParameter('user', $user);
         }
         
         $parts = $qb->getQuery()->getResult();
@@ -335,6 +406,14 @@ class VehicleImportService
         return $map;
     }
 
+    /**
+     * function buildExistingConsumablesMap
+     *
+     * @param User $user
+     * @param bool $isAdmin
+     *
+     * @return array
+     */
     private function buildExistingConsumablesMap(User $user, bool $isAdmin): array
     {
         $qb = $this->entityManager->createQueryBuilder()
@@ -343,7 +422,7 @@ class VehicleImportService
             ->join('c.vehicle', 'v');
         
         if (!$isAdmin) {
-            $qb->andWhere('v.user = :user')->setParameter('user', $user);
+            $qb->andWhere('v.owner = :user')->setParameter('user', $user);
         }
         
         $consumables = $qb->getQuery()->getResult();
@@ -358,6 +437,19 @@ class VehicleImportService
         return $map;
     }
 
+    /**
+     * function processVehicleImport
+     *
+     * @param array $vehicleData
+     * @param User $user
+     * @param array $existingVehiclesMap
+     * @param array $partImportMap
+     * @param array $consumableImportMap
+     * @param string $zipExtractDir
+     * @param array $stats
+     *
+     * @return Vehicle
+     */
     private function processVehicleImport(
         array $vehicleData,
         User $user,
@@ -418,6 +510,13 @@ class VehicleImportService
         return $vehicle;
     }
 
+    /**
+     * function resolveVehicleType
+     *
+     * @param array $vehicleData
+     *
+     * @return VehicleType
+     */
     private function resolveVehicleType(array $vehicleData): VehicleType
     {
         $vehicleType = null;
@@ -441,6 +540,14 @@ class VehicleImportService
         return $vehicleType;
     }
 
+    /**
+     * function hydrateVehicleBasicFields
+     *
+     * @param Vehicle $vehicle
+     * @param array $data
+     *
+     * @return void
+     */
     private function hydrateVehicleBasicFields(Vehicle $vehicle, array $data): void
     {
         $stringFields = [
@@ -487,7 +594,10 @@ class VehicleImportService
             $vehicle->setDepreciationYears($this->extractNumeric($data, 'depreciationYears', true));
         }
         if (isset($data['depreciationRate'])) {
-            $vehicle->setDepreciationRate($this->extractNumeric($data, 'depreciationRate', false));
+            $rate = $this->extractNumeric($data, 'depreciationRate', false);
+            if ($rate !== null && $rate !== '') {
+                $vehicle->setDepreciationRate((string)$rate);
+            }
         }
 
         // Boolean fields
@@ -513,6 +623,15 @@ class VehicleImportService
         }
     }
 
+    /**
+     * function resolveVehicleMakeModel
+     *
+     * @param Vehicle $vehicle
+     * @param array $vehicleData
+     * @param VehicleType $vehicleType
+     *
+     * @return void
+     */
     private function resolveVehicleMakeModel(
         Vehicle $vehicle,
         array $vehicleData,
@@ -557,13 +676,23 @@ class VehicleImportService
         }
     }
 
+    /**
+     * function deserializeAttachment
+     *
+     * @param array $attachmentData
+     * @param string $zipExtractDir
+     * @param User $user
+     * @param string $vehicleReg
+     *
+     * @return Attachment
+     */
     private function deserializeAttachment(
         array $attachmentData,
         ?string $zipExtractDir,
         User $user,
         ?string $vehicleReg = null
     ): ?Attachment {
-        if (empty($attachmentData['filename'])) {
+        if (empty($attachmentData['filename']) && empty($attachmentData['exportFilename'])) {
             return null;
         }
 
@@ -572,14 +701,26 @@ class VehicleImportService
         
         if (!empty($attachmentData['originalFilename'])) {
             $attachment->setOriginalFilename($attachmentData['originalFilename']);
+        } elseif (!empty($attachmentData['originalName'])) {
+            $attachment->setOriginalFilename($attachmentData['originalName']);
+        } elseif (!empty($attachmentData['filename'])) {
+            $attachment->setOriginalFilename($attachmentData['filename']);
         }
         
         if (!empty($attachmentData['mimeType'])) {
             $attachment->setMimeType($attachmentData['mimeType']);
+        } elseif (!empty($attachmentData['mimetype'])) {
+            $attachment->setMimeType($attachmentData['mimetype']);
         }
         
         if (isset($attachmentData['fileSize'])) {
             $attachment->setFileSize((int)$attachmentData['fileSize']);
+        } elseif (isset($attachmentData['filesize'])) {
+            $attachment->setFileSize((int)$attachmentData['filesize']);
+        }
+
+        if (!empty($attachmentData['category'])) {
+            $attachment->setCategory($attachmentData['category']);
         }
         
         if (!empty($attachmentData['description'])) {
@@ -598,20 +739,29 @@ class VehicleImportService
 
         // Handle file copying from ZIP
         if ($zipExtractDir) {
-            $sourcePath = $zipExtractDir . '/' . $attachmentData['filename'];
+            $exportFilename = $attachmentData['exportFilename'] ?? $attachmentData['filename'] ?? null;
+            $sourcePath = $exportFilename ? $zipExtractDir . '/attachments/' . $exportFilename : null;
             if (file_exists($sourcePath)) {
-                $uploadsDir = $this->projectDir . '/uploads/attachments';
-                if (!is_dir($uploadsDir)) {
-                    mkdir($uploadsDir, 0777, true);
+                $storagePath = $attachmentData['storagePath'] ?? null;
+                $originalName = $attachment->getOriginalName() ?: ($attachmentData['filename'] ?? 'file');
+                $defaultFilename = $attachmentData['filename'] ?? basename((string)$storagePath) ?: $originalName;
+
+                if ($storagePath) {
+                    $storagePath = ltrim($storagePath, '/');
+                    $destPath = $this->projectDir . '/uploads/' . $storagePath;
+                } else {
+                    $storagePath = 'attachments/' . $defaultFilename;
+                    $destPath = $this->projectDir . '/uploads/' . $storagePath;
                 }
-                
-                $slugger = new AsciiSlugger();
-                $safeFilename = $slugger->slug(pathinfo($attachment->getOriginalFilename() ?? 'file', PATHINFO_FILENAME));
-                $newFilename = $safeFilename . '-' . uniqid() . '.' . pathinfo($attachment->getOriginalFilename() ?? 'file', PATHINFO_EXTENSION);
-                
-                $destPath = $uploadsDir . '/' . $newFilename;
+
+                $destDir = dirname($destPath);
+                if (!is_dir($destDir)) {
+                    mkdir($destDir, 0777, true);
+                }
+
                 if (copy($sourcePath, $destPath)) {
-                    $attachment->setFilename($newFilename);
+                    $attachment->setFilename(basename($storagePath));
+                    $attachment->setStoragePath($storagePath);
                 }
             }
         }
@@ -619,6 +769,316 @@ class VehicleImportService
         return $attachment;
     }
 
+    /**
+     * function inferEntityTypeFromStoragePath
+     *
+     * @param string $storagePath
+     * @param string $vehicleReg
+     * @param string $category
+     *
+     * @return string
+     */
+    private function inferEntityTypeFromStoragePath(
+        ?string $storagePath,
+        ?string $vehicleReg,
+        ?string $category = null
+    ): ?string
+    {
+        $knownTypes = [
+            'fuel' => 'fuelRecord',
+            'part' => 'part',
+            'consumable' => 'consumable',
+            'service' => 'serviceRecord',
+            'service_record' => 'serviceRecord',
+            'mot' => 'mot_records',
+            'mot_record' => 'mot_records',
+            'insurancepolicy' => 'insurancePolicy',
+            'insurance-policy' => 'insurancePolicy',
+            'insurance_policy' => 'insurancePolicy',
+        ];
+
+        if ($category) {
+            $categoryKey = strtolower((string) $category);
+            if (isset($knownTypes[$categoryKey])) {
+                return $knownTypes[$categoryKey];
+            }
+        }
+
+        if (!$storagePath) {
+            return null;
+        }
+
+        $path = ltrim($storagePath, '/');
+        $parts = explode('/', $path);
+        if (count($parts) < 3) {
+            return null;
+        }
+
+        if ($parts[0] === 'attachments' || $parts[0] === 'vehicles') {
+            $candidate = strtolower((string) ($parts[1] ?? ''));
+            if (isset($knownTypes[$candidate])) {
+                return $knownTypes[$candidate];
+            }
+
+            $candidate = strtolower((string) ($parts[2] ?? ''));
+            return $knownTypes[$candidate] ?? ($parts[2] ?? null);
+        }
+
+        return null;
+    }
+
+    /**
+     * function normalizeAttachmentEntityType
+     *
+     * @param string $entityType
+     *
+     * @return string
+     */
+    private function normalizeAttachmentEntityType(?string $entityType): ?string
+    {
+        if (!$entityType) {
+            return null;
+        }
+
+        $type = strtolower((string) $entityType);
+        $map = [
+            'service' => 'service_record',
+            'service_record' => 'service_record',
+            'mot' => 'mot_record',
+            'mot_record' => 'mot_record',
+        ];
+
+        return $map[$type] ?? $entityType;
+    }
+
+    /**
+     * function registerAttachmentEntityLink
+     *
+     * @param Attachment $attachment
+     * @param object $entity
+     * @param string $entityType
+     *
+     * @return void
+     */
+    private function registerAttachmentEntityLink(Attachment $attachment, object $entity, string $entityType): void
+    {
+        $this->pendingAttachmentLinks[] = [
+            'attachment' => $attachment,
+            'entity' => $entity,
+            'entityType' => $entityType,
+        ];
+    }
+
+    /**
+     * function resolveAttachmentEntityLinks
+     *
+     * @return void
+     */
+    private function resolveAttachmentEntityLinks(): void
+    {
+        if (empty($this->pendingAttachmentLinks)) {
+            return;
+        }
+
+        foreach ($this->pendingAttachmentLinks as $link) {
+            $attachment = $link['attachment'];
+            $entity = $link['entity'];
+            $entityType = $this->normalizeAttachmentEntityType($link['entityType']);
+
+            if (!method_exists($entity, 'getId')) {
+                continue;
+            }
+
+            $entityId = $entity->getId();
+            if ($entityId) {
+                $attachment->setEntityType($entityType);
+                $attachment->setEntityId((int)$entityId);
+                $this->entityManager->persist($attachment);
+            }
+        }
+
+        $this->pendingAttachmentLinks = [];
+    }
+
+    /**
+     * function getAttachmentKeyFromData
+     *
+     * @param array $attachmentData
+     * @param Attachment $attachment
+     *
+     * @return string
+     */
+    private function getAttachmentKeyFromData(array $attachmentData, ?Attachment $attachment = null): ?string
+    {
+        $originalId = $attachmentData['originalId'] ?? $attachmentData['original_id'] ?? null;
+        if ($originalId) {
+            return 'original:' . (string) $originalId;
+        }
+
+        $storagePath = $attachmentData['storagePath'] ?? $attachment?->getStoragePath();
+        if (!empty($storagePath)) {
+            return 'path:' . ltrim((string) $storagePath, '/');
+        }
+
+        $filename = $attachmentData['filename'] ?? $attachment?->getFilename();
+        $originalName = $attachmentData['originalFilename']
+            ?? $attachmentData['originalName']
+            ?? $attachment?->getOriginalName();
+        $filesize = $attachmentData['fileSize']
+            ?? $attachmentData['filesize']
+            ?? $attachment?->getFileSize();
+
+        if (!empty($filename)) {
+            return 'file:' . $filename . '|' . ($originalName ?? '') . '|' . ((string) ($filesize ?? ''));
+        }
+
+        return null;
+    }
+
+    /**
+     * function registerImportedAttachment
+     *
+     * @param Attachment $attachment
+     * @param array $attachmentData
+     *
+     * @return void
+     */
+    private function registerImportedAttachment(Attachment $attachment, array $attachmentData = []): void
+    {
+        $key = $this->getAttachmentKeyFromData($attachmentData, $attachment);
+        if ($key) {
+            $this->importedAttachmentsByKey[$key] = $attachment;
+        }
+
+        $originalId = $attachmentData['originalId'] ?? $attachmentData['original_id'] ?? null;
+        if ($originalId) {
+            $this->importedAttachmentsByOriginalId[(string) $originalId] = $attachment;
+        }
+    }
+
+    /**
+     * function getOrCreateAttachment
+     *
+     * @param array $attachmentData
+     * @param string $zipExtractDir
+     * @param User $user
+     * @param string $vehicleReg
+     *
+     * @return Attachment
+     */
+    private function getOrCreateAttachment(
+        array $attachmentData,
+        ?string $zipExtractDir,
+        User $user,
+        ?string $vehicleReg
+    ): ?Attachment {
+        $originalId = $attachmentData['originalId'] ?? $attachmentData['original_id'] ?? null;
+        if ($originalId && isset($this->importedAttachmentsByOriginalId[(string) $originalId])) {
+            return $this->importedAttachmentsByOriginalId[(string) $originalId];
+        }
+
+        $key = $this->getAttachmentKeyFromData($attachmentData, null);
+        if ($key && isset($this->importedAttachmentsByKey[$key])) {
+            return $this->importedAttachmentsByKey[$key];
+        }
+
+        $attachment = $this->deserializeAttachment(
+            $attachmentData,
+            $zipExtractDir,
+            $user,
+            $vehicleReg
+        );
+
+        if ($attachment) {
+            $this->registerImportedAttachment($attachment, $attachmentData);
+        }
+
+        return $attachment;
+    }
+
+    /**
+     * function createAndLinkReceiptAttachment
+     *
+     * Create attachment and maintain 2-way relationship with entity
+     * IMPORTANT: Entity MUST be persisted and flushed before calling this method
+     *
+     * @param object $entity - The entity (ServiceRecord, MotRecord, Part, etc)
+     * @param array $attachmentData - Attachment data from JSON
+     * @param string $entityType - Entity type (service_record, mot_record, part, consumable, fuel_record)
+     * @param string|null $zipExtractDir - Path to extracted ZIP files
+     * @param User $user
+     * @param Vehicle $vehicle
+     *
+     * @return Attachment|null
+     */
+    private function createAndLinkReceiptAttachment(
+        object $entity,
+        array $attachmentData,
+        string $entityType,
+        ?string $zipExtractDir,
+        User $user,
+        Vehicle $vehicle
+    ): ?Attachment {
+        // Ensure entity has ID (must be flushed first)
+        if (!method_exists($entity, 'getId') || !$entity->getId()) {
+            $this->logger->error('[import] Entity must be flushed before creating attachment', [
+                'entityType' => $entityType,
+                'entityClass' => get_class($entity)
+            ]);
+            return null;
+        }
+
+        // Create or get attachment
+        $attachment = $this->getOrCreateAttachment(
+            $attachmentData,
+            $zipExtractDir,
+            $user,
+            $vehicle->getRegistrationNumber()
+        );
+
+        if (!$attachment) {
+            return null;
+        }
+
+        // CRITICAL: Persist and flush the attachment FIRST to get its ID
+        // This must happen before setting relationships
+        if (!$attachment->getId()) {
+            $this->entityManager->persist($attachment);
+            $this->entityManager->flush();
+        }
+
+        // Set 2-way relationship fields
+        // 1. Attachment -> Entity (entityType and entityId)
+        $attachment->setEntityType($entityType);
+        $attachment->setEntityId((int) $entity->getId());
+        $attachment->setVehicle($vehicle);
+
+        // 2. Entity -> Attachment (receipt_attachment_id)
+        if (method_exists($entity, 'setReceiptAttachment')) {
+            $entity->setReceiptAttachment($attachment);
+            // Explicitly persist entity to ensure relationship is tracked
+            $this->entityManager->persist($entity);
+        }
+
+        // Persist attachment with updated metadata - flush will happen at end of batch
+        $this->entityManager->persist($attachment);
+        
+        return $attachment;
+    }
+
+    /**
+     * function processRelatedEntities
+     *
+     * @param Vehicle $vehicle
+     * @param array $vehicleData
+     * @param User $user
+     * @param string $zipExtractDir
+     * @param array $partImportMap
+     * @param array $consumableImportMap
+     * @param array $stats
+     *
+     * @return void
+     */
     private function processRelatedEntities(
         Vehicle $vehicle,
         array $vehicleData,
@@ -689,6 +1149,14 @@ class VehicleImportService
         }
     }
 
+    /**
+     * function importSpecification
+     *
+     * @param Vehicle $vehicle
+     * @param array $specData
+     *
+     * @return void
+     */
     private function importSpecification(Vehicle $vehicle, array $specData): void
     {
         $spec = $this->entityManager->getRepository(\App\Entity\Specification::class)
@@ -715,11 +1183,14 @@ class VehicleImportService
 
         $trimmed = $this->trimArrayValues($specData, $stringFields);
 
-        // Set all fields
-        foreach ($trimmed as $field => $value) {
+        // Set string fields only
+        foreach ($stringFields as $field) {
+            if (!array_key_exists($field, $trimmed)) {
+                continue;
+            }
             $setter = 'set' . ucfirst($field);
             if (method_exists($spec, $setter)) {
-                $spec->$setter($value);
+                $spec->$setter($trimmed[$field]);
             }
         }
 
@@ -735,6 +1206,15 @@ class VehicleImportService
         $this->entityManager->persist($spec);
     }
 
+    /**
+     * function importStatusHistory
+     *
+     * @param Vehicle $vehicle
+     * @param array $historyData
+     * @param User $user
+     *
+     * @return void
+     */
     private function importStatusHistory(Vehicle $vehicle, array $historyData, User $user): void
     {
         foreach ($historyData as $h) {
@@ -780,13 +1260,25 @@ class VehicleImportService
         }
     }
 
+    /**
+     * function importFuelRecords
+     *
+     * @param Vehicle $vehicle
+     * @param array $fuelData
+     * @param User $user
+     * @param string $zipExtractDir
+     *
+     * @return void
+     */
     private function importFuelRecords(
         Vehicle $vehicle,
         array $fuelData,
         User $user,
         ?string $zipExtractDir
     ): void {
-        foreach ($fuelData as $fuelRecord) {
+        $records = [];
+        
+        foreach ($fuelData as $index => $fuelRecord) {
             $record = new FuelRecord();
             $record->setVehicle($vehicle);
 
@@ -798,13 +1290,15 @@ class VehicleImportService
                 }
             }
 
-            $numericFields = ['litres', 'cost', 'mileage'];
-            foreach ($numericFields as $field) {
-                if (isset($fuelRecord[$field])) {
-                    $value = $this->extractNumeric($fuelRecord, $field, false);
-                    $setter = 'set' . ucfirst($field);
-                    $record->$setter($value);
-                }
+            // Handle numeric fields - mileage is int, others are float
+            if (isset($fuelRecord['litres'])) {
+                $record->setLitres($this->extractNumeric($fuelRecord, 'litres', false));
+            }
+            if (isset($fuelRecord['cost'])) {
+                $record->setCost($this->extractNumeric($fuelRecord, 'cost', false));
+            }
+            if (isset($fuelRecord['mileage'])) {
+                $record->setMileage($this->extractNumeric($fuelRecord, 'mileage', true));
             }
 
             $stringFields = ['fuelType', 'station', 'notes'];
@@ -813,22 +1307,6 @@ class VehicleImportService
             if (isset($trimmed['fuelType'])) $record->setFuelType($trimmed['fuelType']);
             if (isset($trimmed['station'])) $record->setStation($trimmed['station']);
             if (isset($trimmed['notes'])) $record->setNotes($trimmed['notes']);
-
-            // Handle receipt attachment
-            if (isset($fuelRecord['receiptAttachment']) && is_array($fuelRecord['receiptAttachment'])) {
-                $att = $this->deserializeAttachment(
-                    $fuelRecord['receiptAttachment'],
-                    $zipExtractDir,
-                    $user,
-                    $vehicle->getRegistrationNumber()
-                );
-                if ($att) {
-                    $att->setEntityType('fuel');
-                    $att->setVehicle($vehicle);
-                    $this->entityManager->persist($att);
-                    $record->setReceiptAttachment($att);
-                }
-            }
 
             if (!empty($fuelRecord['createdAt'])) {
                 try {
@@ -839,9 +1317,41 @@ class VehicleImportService
             }
 
             $this->entityManager->persist($record);
+            $records[$index] = $record;
         }
+        
+        // Batch flush all fuel records to get IDs
+        $this->entityManager->flush();
+        
+        // Now handle attachments for all records
+        foreach ($fuelData as $index => $fuelRecord) {
+            if (isset($fuelRecord['receiptAttachment']) && is_array($fuelRecord['receiptAttachment'])) {
+                $this->createAndLinkReceiptAttachment(
+                    $records[$index],
+                    $fuelRecord['receiptAttachment'],
+                    'fuel_record',
+                    $zipExtractDir,
+                    $user,
+                    $vehicle
+                );
+            }
+        }
+        
+        // Final flush for all attachments and relationships
+        $this->entityManager->flush();
     }
 
+    /**
+     * function importParts
+     *
+     * @param Vehicle $vehicle
+     * @param array $partsData
+     * @param User $user
+     * @param string $zipExtractDir
+     * @param array $partImportMap
+     *
+     * @return void
+     */
     private function importParts(
         Vehicle $vehicle,
         array $partsData,
@@ -849,7 +1359,9 @@ class VehicleImportService
         ?string $zipExtractDir,
         array &$partImportMap
     ): void {
-        foreach ($partsData as $partData) {
+        $parts = [];
+        
+        foreach ($partsData as $index => $partData) {
             $part = new Part();
             $part->setVehicle($vehicle);
 
@@ -908,31 +1420,49 @@ class VehicleImportService
             // Resolve part category
             $this->resolvePartCategory($part, $partData, $vehicle);
 
-            // Handle receipt attachment
+            $this->entityManager->persist($part);
+            $parts[$index] = $part;
+        }
+        
+        // Batch flush all parts to get IDs
+        $this->entityManager->flush();
+        
+        // Now handle attachments and build import map
+        foreach ($partsData as $index => $partData) {
+            $part = $parts[$index];
+            
             if (isset($partData['receiptAttachment']) && is_array($partData['receiptAttachment'])) {
-                $att = $this->deserializeAttachment(
+                $this->createAndLinkReceiptAttachment(
+                    $part,
                     $partData['receiptAttachment'],
+                    'part',
                     $zipExtractDir,
                     $user,
-                    $vehicle->getRegistrationNumber()
+                    $vehicle
                 );
-                if ($att) {
-                    $att->setEntityType('part');
-                    $att->setVehicle($vehicle);
-                    $this->entityManager->persist($att);
-                    $part->setReceiptAttachment($att);
-                }
             }
-
-            $this->entityManager->persist($part);
 
             // Store in map for later reference
             if (isset($partData['id']) && is_numeric($partData['id'])) {
                 $partImportMap[(int)$partData['id']] = $part;
             }
         }
+        
+        // Final flush for all attachments and relationships
+        $this->entityManager->flush();
     }
 
+    /**
+     * function importConsumables
+     *
+     * @param Vehicle $vehicle
+     * @param array $consumablesData
+     * @param User $user
+     * @param string $zipExtractDir
+     * @param array $consumableImportMap
+     *
+     * @return void
+     */
     private function importConsumables(
         Vehicle $vehicle,
         array $consumablesData,
@@ -940,7 +1470,9 @@ class VehicleImportService
         ?string $zipExtractDir,
         array &$consumableImportMap
     ): void {
-        foreach ($consumablesData as $consumableData) {
+        $consumables = [];
+        
+        foreach ($consumablesData as $index => $consumableData) {
             if (empty($consumableData['consumableType'])) {
                 continue;
             }
@@ -1006,31 +1538,51 @@ class VehicleImportService
                 );
             }
 
-            // Handle receipt attachment
+            $this->entityManager->persist($consumable);
+            $consumables[$index] = $consumable;
+        }
+        
+        // Batch flush all consumables to get IDs
+        $this->entityManager->flush();
+        
+        // Now handle attachments and build import map
+        foreach ($consumablesData as $index => $consumableData) {
+            if (empty($consumableData['consumableType'])) {
+                continue;
+            }
+            
+            $consumable = $consumables[$index];
+            
             if (isset($consumableData['receiptAttachment']) && is_array($consumableData['receiptAttachment'])) {
-                $att = $this->deserializeAttachment(
+                $this->createAndLinkReceiptAttachment(
+                    $consumable,
                     $consumableData['receiptAttachment'],
+                    'consumable',
                     $zipExtractDir,
                     $user,
-                    $vehicle->getRegistrationNumber()
+                    $vehicle
                 );
-                if ($att) {
-                    $att->setEntityType('consumable');
-                    $att->setVehicle($vehicle);
-                    $this->entityManager->persist($att);
-                    $consumable->setReceiptAttachment($att);
-                }
             }
-
-            $this->entityManager->persist($consumable);
 
             // Store in map for later reference
             if (isset($consumableData['id']) && is_numeric($consumableData['id'])) {
                 $consumableImportMap[(int)$consumableData['id']] = $consumable;
             }
         }
+        
+        // Final flush for all attachments and relationships
+        $this->entityManager->flush();
     }
 
+    /**
+     * function resolvePartCategory
+     *
+     * @param Part $part
+     * @param array $partData
+     * @param Vehicle $vehicle
+     *
+     * @return void
+     */
     private function resolvePartCategory(Part $part, array $partData, Vehicle $vehicle): void
     {
         $partCategory = null;
@@ -1077,6 +1629,14 @@ class VehicleImportService
         }
     }
 
+    /**
+     * function resolveConsumableType
+     *
+     * @param string $typeName
+     * @param VehicleType $vehicleType
+     *
+     * @return ConsumableType
+     */
     private function resolveConsumableType(string $typeName, ?VehicleType $vehicleType): ConsumableType
     {
         $typeName = $this->trimString($typeName);
@@ -1097,6 +1657,14 @@ class VehicleImportService
         return $consumableType;
     }
 
+    /**
+     * function importTodos
+     *
+     * @param Vehicle $vehicle
+     * @param array $todosData
+     *
+     * @return void
+     */
     private function importTodos(Vehicle $vehicle, array $todosData): void
     {
         foreach ($todosData as $todoData) {
@@ -1127,6 +1695,16 @@ class VehicleImportService
         }
     }
 
+    /**
+     * function importAttachments
+     *
+     * @param Vehicle $vehicle
+     * @param array $attachmentsData
+     * @param User $user
+     * @param string $zipExtractDir
+     *
+     * @return void
+     */
     private function importAttachments(
         Vehicle $vehicle,
         array $attachmentsData,
@@ -1134,15 +1712,85 @@ class VehicleImportService
         ?string $zipExtractDir
     ): void {
         foreach ($attachmentsData as $attachmentData) {
-            $attachment = $this->deserializeAttachment($attachmentData, $zipExtractDir, $user, $vehicle->getRegistrationNumber());
+            // Check if this attachment was already imported (as receiptAttachment on an entity)
+            // by checking originalId first - this is the primary deduplication mechanism
+            $originalId = $attachmentData['originalId'] ?? $attachmentData['original_id'] ?? null;
+            if ($originalId && isset($this->importedAttachmentsByOriginalId[(string) $originalId])) {
+                $this->logger->debug('[import] Skipping duplicate attachment in vehicle attachments array', [
+                    'originalId' => $originalId,
+                    'filename' => $attachmentData['filename'] ?? 'unknown'
+                ]);
+                // Attachment already imported, ensure vehicle is set
+                $existing = $this->importedAttachmentsByOriginalId[(string) $originalId];
+                if (!$existing->getVehicle()) {
+                    $existing->setVehicle($vehicle);
+                    $this->entityManager->persist($existing);
+                }
+                continue;
+            }
+
+            $attachment = $this->getOrCreateAttachment(
+                $attachmentData,
+                $zipExtractDir,
+                $user,
+                $vehicle->getRegistrationNumber()
+            );
             if ($attachment) {
+                $entityType = $this->normalizeAttachmentEntityType(
+                    $attachmentData['entityType'] ?? null
+                );
+                if (!$entityType) {
+                    $entityType = $this->inferEntityTypeFromStoragePath(
+                        $attachmentData['storagePath'] ?? null,
+                        $vehicle->getRegistrationNumber(),
+                        $attachmentData['category'] ?? null
+                    );
+                }
+
+                $key = $this->getAttachmentKeyFromData($attachmentData, $attachment);
+                if ($key && isset($this->importedAttachmentsByKey[$key])) {
+                    $existing = $this->importedAttachmentsByKey[$key];
+                    $this->logger->debug('[import] Found existing attachment by key', [
+                        'key' => $key,
+                        'filename' => $attachment->getFilename()
+                    ]);
+                    if ($entityType && !$existing->getEntityType()) {
+                        $existing->setEntityType($entityType);
+                    }
+                    $entityId = $attachmentData['entityId'] ?? null;
+                    if ($entityId && !$existing->getEntityId()) {
+                        $existing->setEntityId((int) $entityId);
+                    }
+                    if (!$existing->getVehicle()) {
+                        $existing->setVehicle($vehicle);
+                    }
+                    $this->entityManager->persist($existing);
+                    continue;
+                }
+
                 $attachment->setVehicle($vehicle);
-                $attachment->setEntityType('vehicle');
+                $attachment->setEntityType($entityType ?: 'vehicle');
+                $entityId = $attachmentData['entityId'] ?? null;
+                if ($entityId) {
+                    $attachment->setEntityId((int) $entityId);
+                } elseif ($attachment->getEntityType() === 'vehicle') {
+                    $attachment->setEntityId($vehicle->getId());
+                }
                 $this->entityManager->persist($attachment);
             }
         }
     }
 
+    /**
+     * function importVehicleImages
+     *
+     * @param Vehicle $vehicle
+     * @param array $imagesData
+     * @param User $user
+     * @param string $zipExtractDir
+     *
+     * @return void
+     */
     private function importVehicleImages(
         Vehicle $vehicle,
         array $imagesData,
@@ -1203,18 +1851,68 @@ class VehicleImportService
         }
     }
 
+    /**
+     * function importInsuranceRecords
+     *
+     * @param Vehicle $vehicle
+     * @param array $insuranceData
+     * @param User $user
+     *
+     * @return void
+     */
     private function importInsuranceRecords(Vehicle $vehicle, array $insuranceData, User $user): void
     {
         foreach ($insuranceData as $data) {
-            $policy = new InsurancePolicy();
-            $policy->setHolderId($user->getId());
+            if (empty($data['provider']) && !empty($data['insuranceProvider'])) {
+                $data['provider'] = $data['insuranceProvider'];
+            }
+            if (empty($data['coverageType']) && !empty($data['coverType'])) {
+                $data['coverageType'] = $data['coverType'];
+            }
+            if (!isset($data['annualCost']) && isset($data['premium'])) {
+                $data['annualCost'] = $data['premium'];
+            }
+            if (empty($data['expiryDate']) && !empty($data['endDate'])) {
+                $data['expiryDate'] = $data['endDate'];
+            }
+            if (!isset($data['ncdYears']) && isset($data['ncd'])) {
+                $data['ncdYears'] = $data['ncd'];
+            }
+            if (!isset($data['mileageLimit']) && isset($data['mileage_limit'])) {
+                $data['mileageLimit'] = $data['mileage_limit'];
+            }
+
+            $providerKey = isset($data['provider']) ? trim((string)$data['provider']) : '';
+            if ($providerKey === '') {
+                $providerKey = 'unknown';
+            }
+            $policyNumberKey = isset($data['policyNumber']) ? trim((string)$data['policyNumber']) : '';
+            $startKey = isset($data['startDate']) ? (string)$data['startDate'] : '';
+            $expiryKey = isset($data['expiryDate']) ? (string)$data['expiryDate'] : '';
+            $costKey = isset($data['annualCost']) ? (string)$data['annualCost'] : '';
+            $ncdKey = isset($data['ncdYears']) ? (string)$data['ncdYears'] : '';
+            $mileageKey = isset($data['mileageLimit']) ? (string)$data['mileageLimit'] : '';
+            $policyKey = strtolower($providerKey . '|' . $policyNumberKey . '|' . $startKey . '|' . $expiryKey . '|' . $costKey . '|' . $ncdKey . '|' . $mileageKey);
+
+            if (isset($this->insurancePolicyMap[$policyKey])) {
+                $policy = $this->insurancePolicyMap[$policyKey];
+            } else {
+                $policy = new InsurancePolicy();
+                $policy->setHolderId($user->getId());
+                $this->insurancePolicyMap[$policyKey] = $policy;
+            }
+
             $policy->addVehicle($vehicle);
 
             // String fields
             $stringFields = ['provider', 'policyNumber', 'coverageType', 'excess', 'notes'];
             $trimmed = $this->trimArrayValues($data, $stringFields);
             
-            if (isset($trimmed['provider'])) $policy->setProvider($trimmed['provider']);
+            $provider = $trimmed['provider'] ?? null;
+            if (!$provider) {
+                $provider = 'Unknown';
+            }
+            $policy->setProvider($provider);
             if (isset($trimmed['policyNumber'])) $policy->setPolicyNumber($trimmed['policyNumber']);
             if (isset($trimmed['coverageType'])) $policy->setCoverageType($trimmed['coverageType']);
             if (isset($trimmed['excess'])) $policy->setExcess($trimmed['excess']);
@@ -1259,6 +1957,14 @@ class VehicleImportService
         }
     }
 
+    /**
+     * function importRoadTaxRecords
+     *
+     * @param Vehicle $vehicle
+     * @param array $roadTaxData
+     *
+     * @return void
+     */
     private function importRoadTaxRecords(Vehicle $vehicle, array $roadTaxData): void
     {
         foreach ($roadTaxData as $data) {
@@ -1274,7 +1980,10 @@ class VehicleImportService
 
             // Numeric fields
             if (isset($data['amount'])) {
-                $roadTax->setAmount($this->extractNumeric($data, 'amount', false));
+                $amount = $this->extractNumeric($data, 'amount', false);
+                if ($amount !== null && $amount !== '') {
+                    $roadTax->setAmount((string)$amount);
+                }
             }
 
             // Date fields
@@ -1294,6 +2003,18 @@ class VehicleImportService
         }
     }
 
+    /**
+     * function importServiceRecords
+     *
+     * @param Vehicle $vehicle
+     * @param array $serviceRecordsData
+     * @param User $user
+     * @param string $zipExtractDir
+     * @param array $partImportMap
+     * @param array $consumableImportMap
+     *
+     * @return void
+     */
     private function importServiceRecords(
         Vehicle $vehicle,
         array $serviceRecordsData,
@@ -1302,10 +2023,11 @@ class VehicleImportService
         array &$partImportMap,
         array &$consumableImportMap
     ): void {
-        foreach ($serviceRecordsData as $serviceData) {
+        $serviceRecords = [];
+        
+        foreach ($serviceRecordsData as $index => $serviceData) {
             $serviceRecord = new ServiceRecord();
             $serviceRecord->setVehicle($vehicle);
-            $this->entityManager->persist($serviceRecord);
 
             // String fields
             $stringFields = ['serviceType', 'serviceProvider', 'workPerformed', 'notes', 'workshop'];
@@ -1349,20 +2071,27 @@ class VehicleImportService
             if (isset($dates['nextServiceDate'])) $serviceRecord->setNextServiceDate($dates['nextServiceDate']);
             if (isset($dates['createdAt'])) $serviceRecord->setCreatedAt($dates['createdAt']);
 
+            $this->entityManager->persist($serviceRecord);
+            $serviceRecords[$index] = $serviceRecord;
+        }
+        
+        // Batch flush all service records to get IDs
+        $this->entityManager->flush();
+        
+        // Now handle attachments and service items
+        foreach ($serviceRecordsData as $index => $serviceData) {
+            $serviceRecord = $serviceRecords[$index];
+            
             // Handle receipt attachment
             if (isset($serviceData['receiptAttachment']) && is_array($serviceData['receiptAttachment'])) {
-                $att = $this->deserializeAttachment(
+                $this->createAndLinkReceiptAttachment(
+                    $serviceRecord,
                     $serviceData['receiptAttachment'],
+                    'service_record',
                     $zipExtractDir,
                     $user,
-                    $vehicle->getRegistrationNumber()
+                    $vehicle
                 );
-                if ($att) {
-                    $att->setEntityType('service');
-                    $att->setVehicle($vehicle);
-                    $this->entityManager->persist($att);
-                    $serviceRecord->setReceiptAttachment($att);
-                }
             }
 
             // Import service items
@@ -1377,11 +2106,25 @@ class VehicleImportService
                     $consumableImportMap
                 );
             }
-
-            $this->entityManager->persist($serviceRecord);
         }
+        
+        // Final flush for all attachments and relationships
+        $this->entityManager->flush();
     }
 
+    /**
+     * function importServiceItems
+     *
+     * @param ServiceRecord $serviceRecord
+     * @param array $items
+     * @param Vehicle $vehicle
+     * @param User $user
+     * @param string $zipExtractDir
+     * @param array $partImportMap
+     * @param array $consumableImportMap
+     *
+     * @return void
+     */
     private function importServiceItems(
         ServiceRecord $serviceRecord,
         array $items,
@@ -1391,7 +2134,10 @@ class VehicleImportService
         array &$partImportMap,
         array &$consumableImportMap
     ): void {
-        foreach ($items as $itemData) {
+        $newConsumables = [];
+        $newParts = [];
+        
+        foreach ($items as $index => $itemData) {
             $item = new \App\Entity\ServiceItem();
             $serviceRecord->addItem($item);
 
@@ -1429,11 +2175,13 @@ class VehicleImportService
                     );
                     $consumable->setServiceRecord($serviceRecord);
                     $this->entityManager->persist($consumable);
-                    $item->setConsumable($consumable);
-
-                    if (isset($itemData['consumable']['id']) && is_numeric($itemData['consumable']['id'])) {
-                        $consumableImportMap[(int)$itemData['consumable']['id']] = $consumable;
-                    }
+                    
+                    $newConsumables[$index] = [
+                        'consumable' => $consumable,
+                        'item' => $item,
+                        'attachmentData' => $itemData['consumable']['receiptAttachment'] ?? null,
+                        'originalId' => $itemData['consumable']['id'] ?? null
+                    ];
                 }
             }
 
@@ -1458,16 +2206,78 @@ class VehicleImportService
                     );
                     $part->setServiceRecord($serviceRecord);
                     $this->entityManager->persist($part);
-                    $item->setPart($part);
-
-                    if (isset($itemData['part']['id']) && is_numeric($itemData['part']['id'])) {
-                        $partImportMap[(int)$itemData['part']['id']] = $part;
-                    }
+                    
+                    $newParts[$index] = [
+                        'part' => $part,
+                        'item' => $item,
+                        'attachmentData' => $itemData['part']['receiptAttachment'] ?? null,
+                        'originalId' => $itemData['part']['id'] ?? null
+                    ];
                 }
             }
         }
+        
+        // Batch flush new consumables/parts to get IDs
+        if (!empty($newConsumables) || !empty($newParts)) {
+            $this->entityManager->flush();
+            
+            // Link consumables to items and handle attachments
+            foreach ($newConsumables as $data) {
+                $data['item']->setConsumable($data['consumable']);
+                
+                if ($data['attachmentData'] && is_array($data['attachmentData'])) {
+                    $this->createAndLinkReceiptAttachment(
+                        $data['consumable'],
+                        $data['attachmentData'],
+                        'consumable',
+                        $zipExtractDir,
+                        $user,
+                        $vehicle
+                    );
+                }
+                
+                if ($data['originalId'] && is_numeric($data['originalId'])) {
+                    $consumableImportMap[(int)$data['originalId']] = $data['consumable'];
+                }
+            }
+            
+            // Link parts to items and handle attachments
+            foreach ($newParts as $data) {
+                $data['item']->setPart($data['part']);
+                
+                if ($data['attachmentData'] && is_array($data['attachmentData'])) {
+                    $this->createAndLinkReceiptAttachment(
+                        $data['part'],
+                        $data['attachmentData'],
+                        'part',
+                        $zipExtractDir,
+                        $user,
+                        $vehicle
+                    );
+                }
+                
+                if ($data['originalId'] && is_numeric($data['originalId'])) {
+                    $partImportMap[(int)$data['originalId']] = $data['part'];
+                }
+            }
+            
+            // Final flush for attachments
+            $this->entityManager->flush();
+        }
     }
 
+    /**
+     * function importMotRecords
+     *
+     * @param Vehicle $vehicle
+     * @param array $motRecordsData
+     * @param User $user
+     * @param string $zipExtractDir
+     * @param array $partImportMap
+     * @param array $consumableImportMap
+     *
+     * @return void
+     */
     private function importMotRecords(
         Vehicle $vehicle,
         array $motRecordsData,
@@ -1476,7 +2286,25 @@ class VehicleImportService
         array &$partImportMap,
         array &$consumableImportMap
     ): void {
-        foreach ($motRecordsData as $motData) {
+        $motRecords = [];
+        
+        foreach ($motRecordsData as $index => $motData) {
+            if (empty($motData['testDate']) && !empty($motData['motDate'])) {
+                $motData['testDate'] = $motData['motDate'];
+            }
+            if (empty($motData['motTestNumber']) && !empty($motData['testNumber'])) {
+                $motData['motTestNumber'] = $motData['testNumber'];
+            }
+            if (empty($motData['testCenter']) && !empty($motData['testingStation'])) {
+                $motData['testCenter'] = $motData['testingStation'];
+            }
+            if (!isset($motData['testCost']) && isset($motData['cost'])) {
+                $motData['testCost'] = $motData['cost'];
+            }
+            if (empty($motData['testDate']) && !empty($motData['test_date'])) {
+                $motData['testDate'] = $motData['test_date'];
+            }
+
             $motRecord = new MotRecord();
             $motRecord->setVehicle($vehicle);
 
@@ -1495,10 +2323,16 @@ class VehicleImportService
 
             // Numeric fields
             if (isset($motData['testCost'])) {
-                $motRecord->setTestCost($this->extractNumeric($motData, 'testCost', false));
+                $testCost = $this->extractNumeric($motData, 'testCost', false);
+                if ($testCost !== null && $testCost !== '') {
+                    $motRecord->setTestCost((string)$testCost);
+                }
             }
             if (isset($motData['repairCost'])) {
-                $motRecord->setRepairCost($this->extractNumeric($motData, 'repairCost', false));
+                $repairCost = $this->extractNumeric($motData, 'repairCost', false);
+                if ($repairCost !== null && $repairCost !== '') {
+                    $motRecord->setRepairCost((string)$repairCost);
+                }
             }
             if (isset($motData['mileage'])) {
                 $motRecord->setMileage($this->extractNumeric($motData, 'mileage', true));
@@ -1508,7 +2342,11 @@ class VehicleImportService
             $dateFields = ['testDate', 'expiryDate', 'createdAt'];
             $dates = $this->hydrateDates($motData, $dateFields);
             
-            if (isset($dates['testDate'])) $motRecord->setTestDate($dates['testDate']);
+            if (isset($dates['testDate'])) {
+                $motRecord->setTestDate($dates['testDate']);
+            } else {
+                continue;
+            }
             if (isset($dates['expiryDate'])) $motRecord->setExpiryDate($dates['expiryDate']);
             if (isset($dates['createdAt'])) $motRecord->setCreatedAt($dates['createdAt']);
 
@@ -1517,23 +2355,29 @@ class VehicleImportService
                 $motRecord->setIsRetest($this->extractBoolean($motData, 'isRetest'));
             }
 
+            $this->entityManager->persist($motRecord);
+            $motRecords[$index] = ['motRecord' => $motRecord, 'motData' => $motData];
+        }
+        
+        // Batch flush all MOT records to get IDs
+        $this->entityManager->flush();
+        
+        // Now handle attachments and nested entities
+        foreach ($motRecords as $data) {
+            $motRecord = $data['motRecord'];
+            $motData = $data['motData'];
+            
             // Handle receipt attachment
             if (isset($motData['receiptAttachment']) && is_array($motData['receiptAttachment'])) {
-                $att = $this->deserializeAttachment(
+                $this->createAndLinkReceiptAttachment(
+                    $motRecord,
                     $motData['receiptAttachment'],
+                    'mot_record',
                     $zipExtractDir,
                     $user,
-                    $vehicle->getRegistrationNumber()
+                    $vehicle
                 );
-                if ($att) {
-                    $att->setEntityType('mot');
-                    $att->setVehicle($vehicle);
-                    $this->entityManager->persist($att);
-                    $motRecord->setReceiptAttachment($att);
-                }
             }
-
-            $this->entityManager->persist($motRecord);
 
             // Import MOT parts
             if (!empty($motData['parts']) && is_array($motData['parts'])) {
@@ -1550,8 +2394,22 @@ class VehicleImportService
                 $this->importMotServiceRecords($motRecord, $motData['serviceRecords'], $vehicle, $user, $zipExtractDir, $partImportMap, $consumableImportMap);
             }
         }
+        
+        // Final flush for all attachments and nested entities
+        $this->entityManager->flush();
     }
 
+    /**
+     * function importMotParts
+     *
+     * @param MotRecord $motRecord
+     * @param array $partsData
+     * @param Vehicle $vehicle
+     * @param User $user
+     * @param string $zipExtractDir
+     *
+     * @return void
+     */
     private function importMotParts(
         MotRecord $motRecord,
         array $partsData,
@@ -1559,13 +2417,47 @@ class VehicleImportService
         User $user,
         ?string $zipExtractDir
     ): void {
-        foreach ($partsData as $partData) {
+        $parts = [];
+        
+        foreach ($partsData as $index => $partData) {
             $part = $this->createPartFromData($partData, $vehicle, $user, $zipExtractDir);
             $part->setMotRecord($motRecord);
             $this->entityManager->persist($part);
+            $parts[$index] = ['part' => $part, 'attachmentData' => $partData['receiptAttachment'] ?? null];
         }
+        
+        // Batch flush to get IDs
+        $this->entityManager->flush();
+        
+        // Handle attachments
+        foreach ($parts as $data) {
+            if ($data['attachmentData'] && is_array($data['attachmentData'])) {
+                $this->createAndLinkReceiptAttachment(
+                    $data['part'],
+                    $data['attachmentData'],
+                    'part',
+                    $zipExtractDir,
+                    $user,
+                    $vehicle
+                );
+            }
+        }
+        
+        // Final flush for attachments
+        $this->entityManager->flush();
     }
 
+    /**
+     * function importMotConsumables
+     *
+     * @param MotRecord $motRecord
+     * @param array $consumablesData
+     * @param Vehicle $vehicle
+     * @param User $user
+     * @param string $zipExtractDir
+     *
+     * @return void
+     */
     private function importMotConsumables(
         MotRecord $motRecord,
         array $consumablesData,
@@ -1573,7 +2465,9 @@ class VehicleImportService
         User $user,
         ?string $zipExtractDir
     ): void {
-        foreach ($consumablesData as $consumableData) {
+        $consumables = [];
+        
+        foreach ($consumablesData as $index => $consumableData) {
             if (empty($consumableData['consumableType'])) {
                 continue;
             }
@@ -1581,9 +2475,43 @@ class VehicleImportService
             $consumable = $this->createConsumableFromData($consumableData, $vehicle, $user, $zipExtractDir);
             $consumable->setMotRecord($motRecord);
             $this->entityManager->persist($consumable);
+            $consumables[$index] = ['consumable' => $consumable, 'attachmentData' => $consumableData['receiptAttachment'] ?? null];
         }
+        
+        // Batch flush to get IDs
+        $this->entityManager->flush();
+        
+        // Handle attachments
+        foreach ($consumables as $data) {
+            if ($data['attachmentData'] && is_array($data['attachmentData'])) {
+                $this->createAndLinkReceiptAttachment(
+                    $data['consumable'],
+                    $data['attachmentData'],
+                    'consumable',
+                    $zipExtractDir,
+                    $user,
+                    $vehicle
+                );
+            }
+        }
+        
+        // Final flush for attachments
+        $this->entityManager->flush();
     }
 
+    /**
+     * function importMotServiceRecords
+     *
+     * @param MotRecord $motRecord
+     * @param array $serviceRecordsData
+     * @param Vehicle $vehicle
+     * @param User $user
+     * @param string $zipExtractDir
+     * @param array $partImportMap
+     * @param array $consumableImportMap
+     *
+     * @return void
+     */
     private function importMotServiceRecords(
         MotRecord $motRecord,
         array $serviceRecordsData,
@@ -1637,6 +2565,16 @@ class VehicleImportService
         }
     }
 
+    /**
+     * function createPartFromData
+     *
+     * @param array $partData
+     * @param Vehicle $vehicle
+     * @param User $user
+     * @param string $zipExtractDir
+     *
+     * @return Part
+     */
     private function createPartFromData(
         array $partData,
         Vehicle $vehicle,
@@ -1687,25 +2625,21 @@ class VehicleImportService
         // Category resolution
         $this->resolvePartCategory($part, $partData, $vehicle);
 
-        // Receipt attachment
-        if (isset($partData['receiptAttachment']) && is_array($partData['receiptAttachment'])) {
-            $att = $this->deserializeAttachment(
-                $partData['receiptAttachment'],
-                $zipExtractDir,
-                $user,
-                $vehicle->getRegistrationNumber()
-            );
-            if ($att) {
-                $att->setEntityType('part');
-                $att->setVehicle($vehicle);
-                $this->entityManager->persist($att);
-                $part->setReceiptAttachment($att);
-            }
-        }
-
+        // NOTE: Receipt attachment handling is done by caller after persist/flush
+        
         return $part;
     }
 
+    /**
+     * function createConsumableFromData
+     *
+     * @param array $consumableData
+     * @param Vehicle $vehicle
+     * @param User $user
+     * @param string $zipExtractDir
+     *
+     * @return Consumable
+     */
     private function createConsumableFromData(
         array $consumableData,
         Vehicle $vehicle,
@@ -1777,21 +2711,7 @@ class VehicleImportService
             );
         }
 
-        // Receipt attachment
-        if (isset($consumableData['receiptAttachment']) && is_array($consumableData['receiptAttachment'])) {
-            $att = $this->deserializeAttachment(
-                $consumableData['receiptAttachment'],
-                $zipExtractDir,
-                $user,
-                $vehicle->getRegistrationNumber()
-            );
-            if ($att) {
-                $att->setEntityType('consumable');
-                $att->setVehicle($vehicle);
-                $this->entityManager->persist($att);
-                $consumable->setReceiptAttachment($att);
-            }
-        }
+        // NOTE: Receipt attachment handling is done by caller after persist/flush
 
         return $consumable;
     }

@@ -27,6 +27,8 @@ import logger from '../utils/logger';
 
 export default function ReceiptUpload({ 
   entityType, 
+  entityId,
+  vehicleId,
   receiptAttachmentId, 
   onReceiptUploaded, 
   onReceiptRemoved 
@@ -50,6 +52,12 @@ export default function ReceiptUpload({
       const formData = new FormData();
       formData.append('file', file);
       formData.append('entityType', entityType);
+      if (entityId) {
+        formData.append('entityId', entityId);
+      }
+      if (vehicleId) {
+        formData.append('vehicleId', vehicleId);
+      }
       if (description) {
         formData.append('description', description);
       }
