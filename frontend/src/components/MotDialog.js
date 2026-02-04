@@ -454,12 +454,13 @@ const MotDialog = ({ open, motRecord, vehicleId, vehicles, onClose }) => {
                     <Grid item>
                       <Button onClick={async () => {
                         // Prefill dialogs with MOT data where possible
+                        // mileage from motRecord is in km (backend), convert to display units for prefill
+                        const mileageDisplay = motRecord?.mileage ? Math.round(convert(motRecord.mileage)) : '';
                         const motPrefill = {
                           motRecordId: motRecord?.id || null,
                           motTestNumber: motRecord?.motTestNumber || '',
-                          // mileage and dates are stored in km in backend; pass raw values so dialogs convert
                           date: motRecord?.testDate || '',
-                          mileage: motRecord?.mileage || null,
+                          mileage: mileageDisplay,
                         };
 
                         if (selectedAddType === 'part') {
