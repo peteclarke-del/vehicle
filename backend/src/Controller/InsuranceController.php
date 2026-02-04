@@ -131,6 +131,8 @@ class InsuranceController extends AbstractController
             !empty($data['pendingAttachmentIds'])
             && is_array($data['pendingAttachmentIds'])
         ) {
+            $firstVehicle = $policy->getVehicles()->first();
+            $vehicleForAttachment = $firstVehicle instanceof Vehicle ? $firstVehicle : null;
             foreach ($data['pendingAttachmentIds'] as $aid) {
                 $aidInt = (int) $aid;
                 $attachment = $this->entityManager
@@ -146,6 +148,9 @@ class InsuranceController extends AbstractController
 
                 $attachment->setEntityType('insurancePolicy');
                 $attachment->setEntityId($policy->getId());
+                if ($vehicleForAttachment) {
+                    $attachment->setVehicle($vehicleForAttachment);
+                }
             }
 
             $this->entityManager->flush();
@@ -307,6 +312,8 @@ class InsuranceController extends AbstractController
             !empty($data['pendingAttachmentIds'])
             && is_array($data['pendingAttachmentIds'])
         ) {
+            $firstVehicle = $policy->getVehicles()->first();
+            $vehicleForAttachment = $firstVehicle instanceof Vehicle ? $firstVehicle : null;
             foreach ($data['pendingAttachmentIds'] as $aid) {
                 $attachment = $this->entityManager
                     ->getRepository(\App\Entity\Attachment::class)
@@ -322,6 +329,9 @@ class InsuranceController extends AbstractController
 
                 $attachment->setEntityType('insurancePolicy');
                 $attachment->setEntityId($policy->getId());
+                if ($vehicleForAttachment) {
+                    $attachment->setVehicle($vehicleForAttachment);
+                }
             }
 
             $this->entityManager->flush();

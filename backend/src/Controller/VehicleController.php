@@ -178,13 +178,13 @@ class VehicleController extends AbstractController
             }
         }
 
-        // Batch query for latest MOT expiry dates
+        // Batch query for latest MOT expiry dates by latest test date
         $latestMots = $this->entityManager->createQuery(
             'SELECT IDENTITY(mr.vehicle) AS vehicleId, mr.expiryDate, mr.testDate
              FROM App\Entity\MotRecord mr
              WHERE mr.vehicle IN (:ids)
-             AND mr.id IN (
-                 SELECT MAX(mr2.id)
+             AND mr.testDate = (
+                 SELECT MAX(mr2.testDate)
                  FROM App\Entity\MotRecord mr2
                  WHERE mr2.vehicle = mr.vehicle
              )'

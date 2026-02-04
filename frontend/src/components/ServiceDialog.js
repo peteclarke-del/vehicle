@@ -86,16 +86,17 @@ const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose }) => {
         setMotRecordId(null);
       }
     }
-  }, [open, serviceRecord]);
+  }, [open, serviceRecord, convert]);
 
   useEffect(() => {
     if (!open || !vehicleId) return;
     (async () => {
       try {
         const resp = await api.get(`/mot-records?vehicleId=${vehicleId}`);
-        setMotRecords(resp.data || []);
+        setMotRecords(Array.isArray(resp.data) ? resp.data : []);
       } catch (err) {
         logger.error('Error loading MOT records', err);
+        setMotRecords([]);
       }
     })();
   }, [open, vehicleId, api]);
@@ -104,11 +105,6 @@ const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose }) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const updateItem = (index, key, value) => {
-    const items = [...(formData.items || [])];
-    items[index] = { ...(items[index] || {}), [key]: value };
-    setFormData({ ...formData, items });
-  };
 
   const addItem = async () => {
     const svcPrefill = {
@@ -145,70 +141,10 @@ const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose }) => {
 
   // No current vs historical comparison shown in UI
 
-  const removeItem = (index) => {
-    const it = (formData.items || [])[index];
-    if (!it) return;
-    const confirmDelete = window.confirm(t('service.deletePermanentlyPrompt'));
-    if (confirmDelete) {
-      // attempt to delete from backend if we have an id and type
-      (async () => {
-        try {
-          if (it.id || it.consumableId) {
-            const targetId = it.consumableId || it.id;
-            if (it.type === 'part') await api.delete(`/parts/${targetId}`);
-            else if (it.type === 'consumable') await api.delete(`/consumables/${targetId}`);
-            else if (it.type === 'service') await api.delete(`/service-records/${targetId}`);
-          }
-        } catch (err) {
-          // ignore delete errors
-        }
-      })();
-    }
-    // in both cases remove association from this service form
-    const items = [...(formData.items || [])];
-    items.splice(index, 1);
-    setFormData({ ...formData, items });
-  };
 
   // (AddRepairItemModal removed) adding/linking handled via child dialogs and addItem()
 
   // edit handlers
-  const handleEditItem = async (index) => {
-    const it = (formData.items || [])[index];
-    if (!it) return;
-    setEditingItemIndex(index);
-    if (it.type === 'part') {
-      const partId = it.partId || it.id;
-      if (partId) {
-        try {
-          const resp = await api.get(`/parts/${partId}`);
-          setSelectedPart(resp.data);
-        } catch (err) {
-          logger.error('Error loading part', err);
-          setSelectedPart(it);
-        }
-      } else {
-        setSelectedPart(it);
-      }
-      setOpenPartDialog(true);
-    } else if (it.type === 'consumable') {
-      const consumableId = it.consumableId || it.id;
-      if (consumableId) {
-        try {
-          const resp = await api.get(`/consumables/${consumableId}`);
-          setSelectedConsumable(resp.data);
-        } catch (err) {
-          logger.error('Error loading consumable', err);
-          setSelectedConsumable(it);
-        }
-      } else {
-        setSelectedConsumable(it);
-      }
-      setOpenConsumableDialog(true);
-    } else if (it.type === 'labour') {
-      setLabourEditorIndex(index);
-    }
-  };
 
   const handleLabourSave = (index, updated) => {
     const items = [...(formData.items || [])];
@@ -749,6 +685,8 @@ const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose }) => {
             <Grid item xs={12}>
               <ReceiptUpload
                 entityType="service"
+                entityId={serviceRecord?.id}
+                vehicleId={formData.vehicleId || vehicleId}
                 receiptAttachmentId={receiptAttachmentId}
                 onReceiptUploaded={handleReceiptUploaded}
                 onReceiptRemoved={() => setReceiptAttachmentId(null)}

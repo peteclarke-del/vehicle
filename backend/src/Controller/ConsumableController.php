@@ -14,14 +14,13 @@ use App\Service\UrlScraperService;
 use Psr\Log\LoggerInterface;
 use App\Service\RepairCostCalculator;
 use App\Service\EntitySerializerService;
+use App\Service\AttachmentLinkingService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Component\String\Slugger\SluggerInterface;
 use App\Controller\Trait\UserSecurityTrait;
-use App\Controller\Trait\AttachmentFileOrganizerTrait;
 use App\Controller\Trait\JsonValidationTrait;
 
 #[Route('/api/consumables')]
@@ -32,7 +31,6 @@ use App\Controller\Trait\JsonValidationTrait;
 class ConsumableController extends AbstractController
 {
     use UserSecurityTrait;
-    use AttachmentFileOrganizerTrait;
     use JsonValidationTrait;
 
     /**
@@ -53,7 +51,7 @@ class ConsumableController extends AbstractController
         private LoggerInterface $logger,
         private RepairCostCalculator $repairCostCalculator,
         private EntitySerializerService $serializer,
-        private SluggerInterface $slugger
+        private AttachmentLinkingService $attachmentLinkingService
     ) {
     }
 
@@ -206,6 +204,10 @@ class ConsumableController extends AbstractController
         $this->updateConsumableFromData($consumable, $data);
 
         $this->entityManager->persist($consumable);
+        $this->entityManager->flush();
+
+        // Finalize attachment link after flush (entity now has ID)
+        $this->attachmentLinkingService->finalizeAttachmentLink($consumable);
         $this->entityManager->flush();
 
         return $this->json($this->serializer->serializeConsumable($consumable), 201);
@@ -390,20 +392,19 @@ class ConsumableController extends AbstractController
         if (isset($data['notes'])) {
             $consumable->setNotes($data['notes']);
         }
-        if (isset($data['receiptAttachmentId'])) {
-            if ($data['receiptAttachmentId'] === null || $data['receiptAttachmentId'] === '') {
+        if (array_key_exists('receiptAttachmentId', $data)) {
+            $attachmentId = $data['receiptAttachmentId'];
+            if ($attachmentId === null || $attachmentId === '' || $attachmentId === 0) {
+                if ($consumable->getReceiptAttachment()) {
+                    $this->attachmentLinkingService->unlinkAttachment($consumable->getReceiptAttachment(), $consumable);
+                }
                 $consumable->setReceiptAttachment(null);
             } else {
-                $att = $this->entityManager->getRepository(\App\Entity\Attachment::class)->find($data['receiptAttachmentId']);
-                if ($att) {
-                    $consumable->setReceiptAttachment($att);
-                    // Update attachment's entity_id to link it to this consumable
-                    $att->setEntityId($consumable->getId());
-                    $att->setEntityType('consumable');
-                    $this->reorganizeReceiptFile($att, $consumable->getVehicle());
-                } else {
-                    $consumable->setReceiptAttachment(null);
-                }
+                $this->attachmentLinkingService->processReceiptAttachmentId(
+                    (int) $attachmentId,
+                    $consumable,
+                    'consumable'
+                );
             }
         }
         if (isset($data['productUrl'])) {
