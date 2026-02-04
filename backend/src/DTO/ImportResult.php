@@ -42,6 +42,33 @@ class ImportResult
         return $this->vehicleMap;
     }
 
+    public function getImportedCount(): int
+    {
+        $imported = (int)($this->statistics['vehiclesImported'] ?? 0);
+        if ($imported === 0 && is_array($this->vehicleMap)) {
+            return count($this->vehicleMap);
+        }
+        return $imported;
+    }
+
+    public function getFailedCount(): int
+    {
+        return (int)($this->statistics['errors'] ?? 0);
+    }
+
+    public function getTotalCount(): int
+    {
+        $imported = $this->getImportedCount();
+        $failed = $this->getFailedCount();
+        return (int)($this->statistics['total'] ?? ($imported + $failed));
+    }
+
+    public function getExecutionTime(): ?float
+    {
+        $time = $this->statistics['processingTimeSeconds'] ?? null;
+        return $time !== null ? (float)$time : null;
+    }
+
     public function hasErrors(): bool
     {
         return !empty($this->errors);

@@ -8,10 +8,10 @@ use App\Config\ImportExportConfig;
 use App\DTO\ExportResult;
 use App\Entity\User;
 use App\Entity\Vehicle;
+use App\Entity\Specification;
 use App\Entity\Attachment;
 use App\Exception\ExportException;
 use App\Service\Trait\EntityHydratorTrait;
-use App\Controller\Trait\AttachmentFileOrganizerTrait;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\String\Slugger\SluggerInterface;
@@ -22,7 +22,13 @@ use Symfony\Component\String\Slugger\SluggerInterface;
 class VehicleExportService
 {
     use EntityHydratorTrait;
-    use AttachmentFileOrganizerTrait;
+
+    /**
+     * Tracks attachment IDs that have been serialized as receiptAttachment on entities.
+     * Used to prevent duplicates in the vehicle-level attachments array.
+     * Reset per vehicle during export.
+     */
+    private array $exportedAttachmentIds = [];
 
     public function __construct(
         private EntityManagerInterface $entityManager,
@@ -199,6 +205,9 @@ class VehicleExportService
         bool $includeAttachmentRefs,
         ?string $zipDir
     ): array {
+        // Reset exported attachment tracking for this vehicle
+        $this->exportedAttachmentIds = [];
+
         // Export fuel records
         $fuelRecords = $this->exportFuelRecords($vehicle, $includeAttachmentRefs, $zipDir);
         
@@ -226,13 +235,19 @@ class VehicleExportService
         // Export todos
         $todosData = $this->exportTodos($vehicle);
         
-        // Export attachments
-        $attachmentsData = $this->exportAttachments($vehicle, $includeAttachmentRefs, $zipDir);
-        
-        // Export vehicle images
-        $vehicleImages = $this->exportVehicleImages($vehicle);
+        $includeMedia = $zipDir !== null;
 
-        return [
+        // Export attachments (ZIP export only)
+        $attachmentsData = $includeMedia
+            ? $this->exportAttachments($vehicle, $includeAttachmentRefs, $zipDir)
+            : null;
+        
+        // Export vehicle images (ZIP export only)
+        $vehicleImages = $includeMedia
+            ? $this->exportVehicleImages($vehicle)
+            : null;
+
+        $data = [
             'originalId' => $vehicle->getId(),
             'name' => $this->trimString($vehicle->getName()),
             'vehicleType' => $this->trimString($vehicle->getVehicleType()->getName()),
@@ -251,6 +266,15 @@ class VehicleExportService
             'purchaseMileage' => $vehicle->getPurchaseMileage(),
             'status' => $vehicle->getStatus(),
             'statusHistory' => $this->exportStatusHistory($vehicle),
+            'roadTaxExempt' => $vehicle->getRoadTaxExempt() ?? false,
+            'motExempt' => $vehicle->getMotExempt() ?? false,
+            'securityFeatures' => $this->trimString($vehicle->getSecurityFeatures()),
+            'vehicleColor' => $this->trimString($vehicle->getVehicleColor()),
+            'serviceIntervalMonths' => $vehicle->getServiceIntervalMonths(),
+            'serviceIntervalMiles' => $vehicle->getServiceIntervalMiles(),
+            'depreciationMethod' => $vehicle->getDepreciationMethod(),
+            'depreciationYears' => $vehicle->getDepreciationYears(),
+            'depreciationRate' => $vehicle->getDepreciationRate(),
             'fuelRecords' => $fuelRecords,
             'parts' => $parts,
             'consumables' => $consumables,
@@ -259,18 +283,25 @@ class VehicleExportService
             'specification' => $specData,
             'insuranceRecords' => $insuranceRecordsData,
             'roadTaxRecords' => $roadTaxRecordsData,
-            'attachments' => $attachmentsData,
             'todos' => $todosData,
-            'vehicleImages' => $vehicleImages,
         ];
+
+        if ($includeMedia) {
+            if ($includeAttachmentRefs) {
+                $data['attachments'] = $attachmentsData ?? [];
+            }
+            $data['vehicleImages'] = $vehicleImages ?? [];
+        }
+
+        return $data;
     }
 
     /**
      * Serialize attachment data for export
      */
-    private function serializeAttachment(?Attachment $attachment, string $zipDir): ?array
+    private function serializeAttachment(?Attachment $attachment, ?string $zipDir): ?array
     {
-        if (!$attachment || !$zipDir) {
+        if (!$attachment) {
             return null;
         }
 
@@ -279,38 +310,48 @@ class VehicleExportService
             return null;
         }
 
+        // Track this attachment as exported (for deduplication)
+        if ($attachment->getId()) {
+            $this->exportedAttachmentIds[$attachment->getId()] = true;
+        }
+
         $attachmentData = [
             'filename' => $attachment->getFilename(),
+            'originalFilename' => $attachment->getOriginalName(),
             'storagePath' => $attachment->getStoragePath(),
             'mimetype' => $attachment->getMimeType(),
             'filesize' => $attachment->getFileSize(),
             'uploadedAt' => $attachment->getUploadedAt()?->format('c'),
             'category' => $attachment->getCategory(),
             'description' => $attachment->getDescription(),
+            'entityType' => $attachment->getEntityType(),
+            'entityId' => $attachment->getEntityId(),
+            'originalId' => $attachment->getId(),
         ];
 
-        // Copy the physical file to ZIP directory
-        $storagePath = $attachment->getStoragePath() ?: ('attachments/' . $attachment->getFilename());
-        $sourcePath = $this->projectDir . '/uploads/' . ltrim($storagePath, '/');
-        
-        if (file_exists($sourcePath)) {
-            $safeName = 'attachment_' . $attachment->getId() . '_' . basename($attachment->getFilename());
-            $targetPath = $zipDir . '/attachments/' . $safeName;
-            $destDir = dirname($targetPath);
+        // Copy the physical file to ZIP directory (only if zipDir provided)
+        if ($zipDir) {
+            $storagePath = $attachment->getStoragePath() ?: ('attachments/' . $attachment->getFilename());
+            $sourcePath = $this->projectDir . '/uploads/' . ltrim($storagePath, '/');
             
-            try {
-                if (!is_dir($destDir)) {
-                    mkdir($destDir, 0755, true);
-                }
+            if (file_exists($sourcePath)) {
+                $safeName = 'attachment_' . $attachment->getId() . '_' . basename($attachment->getFilename());
+                $targetPath = $zipDir . '/attachments/' . $safeName;
+                $destDir = dirname($targetPath);
                 
-                if (!copy($sourcePath, $targetPath)) {
-                    throw new \RuntimeException('Failed to copy file');
-                }
-                
-                $attachmentData['exportFilename'] = $safeName;
-                $this->logger->debug('[export] Copied attachment file', [
-                    'source' => $sourcePath,
-                    'target' => $targetPath
+                try {
+                    if (!is_dir($destDir)) {
+                        mkdir($destDir, 0755, true);
+                    }
+                    
+                    if (!copy($sourcePath, $targetPath)) {
+                        throw new \RuntimeException('Failed to copy file');
+                    }
+                    
+                    $attachmentData['exportFilename'] = $safeName;
+                    $this->logger->debug('[export] Copied attachment file', [
+                        'source' => $sourcePath,
+                        'target' => $targetPath
                 ]);
             } catch (\Exception $e) {
                 $this->logger->error('[export] Failed to copy attachment', [
@@ -320,6 +361,7 @@ class VehicleExportService
             }
         } else {
             $this->logger->warning('[export] Attachment file not found', ['path' => $sourcePath]);
+        }
         }
 
         return $attachmentData;
@@ -453,7 +495,7 @@ class VehicleExportService
      */
     private function exportServiceRecordData($serviceRecord, bool $includeAttachmentRefs, ?string $zipDir): array
     {
-        return [
+        $data = [
             'serviceDate' => $serviceRecord->getServiceDate()?->format('Y-m-d'),
             'serviceType' => $serviceRecord->getServiceType(),
             'laborCost' => $serviceRecord->getLaborCost(),
@@ -469,6 +511,12 @@ class VehicleExportService
             'items' => $this->exportServiceItems($serviceRecord, $includeAttachmentRefs, $zipDir),
             'createdAt' => $serviceRecord->getCreatedAt()?->format('c'),
         ];
+        
+        if ($includeAttachmentRefs) {
+            $data['receiptAttachment'] = $this->serializeAttachment($serviceRecord->getReceiptAttachment(), $zipDir);
+        }
+        
+        return $data;
     }
 
     /**
@@ -544,7 +592,7 @@ class VehicleExportService
                 'part' => $partData,
                 'consumable' => $consumableData,
             ];
-        }, $serviceRecord->getItems()->toArray());
+        }, is_array($items = $serviceRecord->getItems()) ? $items : $items->toArray());
     }
 
     /**
@@ -555,17 +603,28 @@ class VehicleExportService
         $motRecordsData = [];
         foreach ($vehicle->getMotRecords() as $motRecord) {
             $motData = [
-                'motDate' => $motRecord->getMotDate()?->format('Y-m-d'),
+                'motDate' => $motRecord->getTestDate()?->format('Y-m-d'),
+                'testDate' => $motRecord->getTestDate()?->format('Y-m-d'),
                 'expiryDate' => $motRecord->getExpiryDate()?->format('Y-m-d'),
                 'result' => $motRecord->getResult(),
                 'mileage' => $motRecord->getMileage(),
-                'testNumber' => $motRecord->getTestNumber(),
-                'testingStation' => $motRecord->getTestingStation(),
+                'testNumber' => $motRecord->getMotTestNumber(),
+                'motTestNumber' => $motRecord->getMotTestNumber(),
+                'testingStation' => $motRecord->getTestCenter(),
+                'testCenter' => $motRecord->getTestCenter(),
+                'testerName' => $motRecord->getTesterName(),
                 'advisories' => $motRecord->getAdvisories(),
                 'failures' => $motRecord->getFailures(),
+                'repairDetails' => $motRecord->getRepairDetails(),
                 'notes' => $motRecord->getNotes(),
                 'cost' => $motRecord->getCost(),
+                'testCost' => $motRecord->getTestCost(),
+                'repairCost' => $motRecord->getRepairCost(),
+                'isRetest' => $motRecord->getIsRetest(),
                 'createdAt' => $motRecord->getCreatedAt()?->format('c'),
+                'receiptAttachment' => $includeAttachmentRefs
+                    ? $this->serializeAttachment($motRecord->getReceiptAttachment(), $zipDir)
+                    : null,
                 'parts' => $this->exportMotParts($vehicle, $motRecord, $includeAttachmentRefs, $zipDir),
                 'consumables' => $this->exportMotConsumables($vehicle, $motRecord, $includeAttachmentRefs, $zipDir),
                 'serviceRecords' => $this->exportMotServiceRecords($vehicle, $motRecord, $includeAttachmentRefs, $zipDir),
@@ -667,14 +726,16 @@ class VehicleExportService
         $insuranceRecordsData = [];
         foreach ($vehicle->getInsurancePolicies() as $policy) {
             $insuranceRecordsData[] = [
-                'insuranceProvider' => $policy->getInsuranceProvider(),
+                'insuranceProvider' => $policy->getProvider(),
                 'policyNumber' => $policy->getPolicyNumber(),
-                'coverType' => $policy->getCoverType(),
+                'coverType' => $policy->getCoverageType(),
                 'startDate' => $policy->getStartDate()?->format('Y-m-d'),
-                'endDate' => $policy->getEndDate()?->format('Y-m-d'),
-                'premium' => $policy->getPremium(),
+                'endDate' => $policy->getExpiryDate()?->format('Y-m-d'),
+                'premium' => $policy->getAnnualCost(),
                 'excess' => $policy->getExcess(),
-                'renewalDate' => $policy->getRenewalDate()?->format('Y-m-d'),
+                'ncdYears' => $policy->getNcdYears(),
+                'mileageLimit' => $policy->getMileageLimit(),
+                'autoRenewal' => $policy->getAutoRenewal(),
                 'notes' => $policy->getNotes(),
                 'createdAt' => $policy->getCreatedAt()?->format('c'),
             ];
@@ -690,13 +751,11 @@ class VehicleExportService
         $roadTaxRecordsData = [];
         foreach ($vehicle->getRoadTaxRecords() as $tax) {
             $roadTaxRecordsData[] = [
-                'taxType' => $tax->getTaxType(),
-                'cost' => $tax->getCost(),
+                'frequency' => $tax->getFrequency(),
+                'amount' => $tax->getAmount(),
                 'startDate' => $tax->getStartDate()?->format('Y-m-d'),
-                'endDate' => $tax->getEndDate()?->format('Y-m-d'),
-                'paymentDate' => $tax->getPaymentDate()?->format('Y-m-d'),
-                'paymentMethod' => $tax->getPaymentMethod(),
-                'reference' => $tax->getReference(),
+                'expiryDate' => $tax->getExpiryDate()?->format('Y-m-d'),
+                'sorn' => $tax->getSorn(),
                 'notes' => $tax->getNotes(),
                 'createdAt' => $tax->getCreatedAt()?->format('c'),
             ];
@@ -709,61 +768,61 @@ class VehicleExportService
      */
     private function exportSpecification(Vehicle $vehicle): ?array
     {
-        $spec = $vehicle->getSpecification();
-        if (!$spec) {
+        // Fetch specification via repository (OneToOne relationship from Specification to Vehicle)
+        $specification = $this->entityManager
+            ->getRepository(Specification::class)
+            ->findOneBy(['vehicle' => $vehicle]);
+        
+        if (!$specification) {
             return null;
         }
 
         return [
-            'engineType' => $spec->getEngineType(),
-            'displacement' => $spec->getDisplacement(),
-            'bore' => $spec->getBore(),
-            'stroke' => $spec->getStroke(),
-            'compressionRatio' => $spec->getCompressionRatio(),
-            'valvesPerCylinder' => $spec->getValvesPerCylinder(),
-            'maxPower' => $spec->getMaxPower(),
-            'maxTorque' => $spec->getMaxTorque(),
-            'fuelSystem' => $spec->getFuelSystem(),
-            'ignition' => $spec->getIgnition(),
-            'starting' => $spec->getStarting(),
-            'lubrication' => $spec->getLubrication(),
-            'cooling' => $spec->getCooling(),
-            'sparkplugType' => $spec->getSparkplugType(),
-            'coolantType' => $spec->getCoolantType(),
-            'coolantCapacity' => $spec->getCoolantCapacity(),
-            'gearbox' => $spec->getGearbox(),
-            'transmission' => $spec->getTransmission(),
-            'finalDrive' => $spec->getFinalDrive(),
-            'clutch' => $spec->getClutch(),
-            'engineOilType' => $spec->getEngineOilType(),
-            'engineOilCapacity' => $spec->getEngineOilCapacity(),
-            'transmissionOilType' => $spec->getTransmissionOilType(),
-            'transmissionOilCapacity' => $spec->getTransmissionOilCapacity(),
-            'middleDriveOilType' => $spec->getMiddleDriveOilType(),
-            'middleDriveOilCapacity' => $spec->getMiddleDriveOilCapacity(),
-            'frame' => $spec->getFrame(),
-            'frontSuspension' => $spec->getFrontSuspension(),
-            'rearSuspension' => $spec->getRearSuspension(),
-            'staticSagFront' => $spec->getStaticSagFront(),
-            'staticSagRear' => $spec->getStaticSagRear(),
-            'frontBrakes' => $spec->getFrontBrakes(),
-            'rearBrakes' => $spec->getRearBrakes(),
-            'frontTyre' => $spec->getFrontTyre(),
-            'rearTyre' => $spec->getRearTyre(),
-            'frontTyrePressure' => $spec->getFrontTyrePressure(),
-            'rearTyrePressure' => $spec->getRearTyrePressure(),
-            'frontWheelTravel' => $spec->getFrontWheelTravel(),
-            'rearWheelTravel' => $spec->getRearWheelTravel(),
-            'wheelbase' => $spec->getWheelbase(),
-            'seatHeight' => $spec->getSeatHeight(),
-            'groundClearance' => $spec->getGroundClearance(),
-            'dryWeight' => $spec->getDryWeight(),
-            'wetWeight' => $spec->getWetWeight(),
-            'fuelCapacity' => $spec->getFuelCapacity(),
-            'topSpeed' => $spec->getTopSpeed(),
-            'additionalInfo' => $spec->getAdditionalInfo(),
-            'scrapedAt' => $spec->getScrapedAt()?->format('c'),
-            'sourceUrl' => $spec->getSourceUrl(),
+            'engineType' => $specification->getEngineType(),
+            'displacement' => $specification->getDisplacement(),
+            'power' => $specification->getPower(),
+            'torque' => $specification->getTorque(),
+            'compression' => $specification->getCompression(),
+            'bore' => $specification->getBore(),
+            'stroke' => $specification->getStroke(),
+            'fuelSystem' => $specification->getFuelSystem(),
+            'cooling' => $specification->getCooling(),
+            'sparkplugType' => $specification->getSparkplugType(),
+            'coolantType' => $specification->getCoolantType(),
+            'coolantCapacity' => $specification->getCoolantCapacity(),
+            'gearbox' => $specification->getGearbox(),
+            'transmission' => $specification->getTransmission(),
+            'finalDrive' => $specification->getFinalDrive(),
+            'clutch' => $specification->getClutch(),
+            'engineOilType' => $specification->getEngineOilType(),
+            'engineOilCapacity' => $specification->getEngineOilCapacity(),
+            'transmissionOilType' => $specification->getTransmissionOilType(),
+            'transmissionOilCapacity' => $specification->getTransmissionOilCapacity(),
+            'middleDriveOilType' => $specification->getMiddleDriveOilType(),
+            'middleDriveOilCapacity' => $specification->getMiddleDriveOilCapacity(),
+            'frame' => $specification->getFrame(),
+            'frontSuspension' => $specification->getFrontSuspension(),
+            'rearSuspension' => $specification->getRearSuspension(),
+            'staticSagFront' => $specification->getStaticSagFront(),
+            'staticSagRear' => $specification->getStaticSagRear(),
+            'frontBrakes' => $specification->getFrontBrakes(),
+            'rearBrakes' => $specification->getRearBrakes(),
+            'frontTyre' => $specification->getFrontTyre(),
+            'rearTyre' => $specification->getRearTyre(),
+            'frontTyrePressure' => $specification->getFrontTyrePressure(),
+            'rearTyrePressure' => $specification->getRearTyrePressure(),
+            'frontWheelTravel' => $specification->getFrontWheelTravel(),
+            'rearWheelTravel' => $specification->getRearWheelTravel(),
+            'wheelbase' => $specification->getWheelbase(),
+            'seatHeight' => $specification->getSeatHeight(),
+            'groundClearance' => $specification->getGroundClearance(),
+            'dryWeight' => $specification->getDryWeight(),
+            'wetWeight' => $specification->getWetWeight(),
+            'fuelCapacity' => $specification->getFuelCapacity(),
+            'topSpeed' => $specification->getTopSpeed(),
+            'additionalInfo' => $specification->getAdditionalInfo(),
+            'scrapedAt' => $specification->getScrapedAt()?->format('c'),
+            'sourceUrl' => $specification->getSourceUrl(),
         ];
     }
 
@@ -773,15 +832,28 @@ class VehicleExportService
     private function exportTodos(Vehicle $vehicle): array
     {
         $todosData = [];
-        foreach ($vehicle->getTodos() as $todo) {
-            $todosData[] = [
-                'description' => $todo->getDescription(),
-                'dueDate' => $todo->getDueDate()?->format('Y-m-d'),
-                'completed' => $todo->isCompleted(),
-                'priority' => $todo->getPriority(),
-                'notes' => $todo->getNotes(),
-                'createdAt' => $todo->getCreatedAt()?->format('c'),
-            ];
+        // Check if vehicle has todos (using reflection since no public getter exists)
+        try {
+            $reflection = new \ReflectionClass($vehicle);
+            $property = $reflection->getProperty('todos');
+            $property->setAccessible(true);
+            $todos = $property->getValue($vehicle);
+            
+            if ($todos) {
+                foreach ($todos as $todo) {
+                    $todosData[] = [
+                        'title' => $todo->getTitle(),
+                        'description' => $todo->getDescription(),
+                        'dueDate' => $todo->getDueDate()?->format('Y-m-d'),
+                        'completedBy' => $todo->getCompletedBy()?->format('Y-m-d H:i:s'),
+                        'parts' => $todo->getParts(),
+                        'consumables' => $todo->getConsumables(),
+                        'createdAt' => $todo->getCreatedAt()?->format('c'),
+                    ];
+                }
+            }
+        } catch (\ReflectionException $e) {
+            // Todos not available on this entity
         }
         return $todosData;
     }
@@ -795,17 +867,36 @@ class VehicleExportService
             return [];
         }
 
-        $attachments = $this->entityManager->getRepository(Attachment::class)
-            ->findBy(['vehicle' => $vehicle]);
+        // Only export attachments that are directly linked to the vehicle (entity_type='vehicle')
+        // and NOT already exported as receiptAttachment on service/MOT/fuel/part/consumable records.
+        // This prevents duplicates in the export.
+        
+        $attachmentRepo = $this->entityManager->getRepository(Attachment::class);
+        
+        // Get only vehicle-level attachments (documents, manuals, etc. directly attached to vehicle)
+        $vehicleAttachments = $attachmentRepo->findBy([
+            'vehicle' => $vehicle,
+            'entityType' => 'vehicle'
+        ]);
         
         $attachmentsData = [];
-        foreach ($attachments as $att) {
+        foreach ($vehicleAttachments as $att) {
+            // Skip if already exported as receiptAttachment on an entity
+            if ($att->getId() && isset($this->exportedAttachmentIds[$att->getId()])) {
+                $this->logger->debug('[export] Skipping duplicate attachment', [
+                    'attachmentId' => $att->getId(),
+                    'filename' => $att->getFilename()
+                ]);
+                continue;
+            }
+            
             $attData = $this->serializeAttachment($att, $zipDir);
             if ($attData) {
                 $attData['originalId'] = $att->getId();
                 $attachmentsData[] = $attData;
             }
         }
+        
         return $attachmentsData;
     }
 
@@ -820,7 +911,7 @@ class VehicleExportService
             'caption' => $img->getCaption(),
             'displayOrder' => $img->getDisplayOrder(),
             'createdAt' => $img->getCreatedAt()?->format('c'),
-        ], $vehicle->getVehicleImages()->toArray());
+        ], $vehicle->getImages()->toArray());
     }
 
     /**

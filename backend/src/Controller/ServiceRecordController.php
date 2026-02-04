@@ -18,32 +18,54 @@ use Psr\Log\LoggerInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use App\Service\RepairCostCalculator;
 use App\Service\EntitySerializerService;
+use App\Service\AttachmentLinkingService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
-use Symfony\Component\String\Slugger\SluggerInterface;
-use App\Controller\Trait\AttachmentFileOrganizerTrait;
 
 #[Route('/api')]
+
+/**
+ * class ServiceRecordController
+ */
 class ServiceRecordController extends AbstractController
 {
     use JsonValidationTrait;
     use UserSecurityTrait;
-    use AttachmentFileOrganizerTrait;
 
+    /**
+     * function __construct
+     *
+     * @param EntityManagerInterface $entityManager
+     * @param LoggerInterface $logger
+     * @param RepairCostCalculator $repairCostCalculator
+     * @param ValidatorInterface $validator
+     * @param EntitySerializerService $serializer
+     * @param AttachmentLinkingService $attachmentLinkingService
+     *
+     * @return void
+     */
     public function __construct(
         private EntityManagerInterface $entityManager,
         private LoggerInterface $logger,
         private RepairCostCalculator $repairCostCalculator,
         private ValidatorInterface $validator,
         private EntitySerializerService $serializer,
-        private SluggerInterface $slugger
+        private AttachmentLinkingService $attachmentLinkingService
     ) {
     }
 
     #[Route('/service-records', methods: ['GET'])]
+
+    /**
+     * function list
+     *
+     * @param Request $request
+     *
+     * @return JsonResponse
+     */
     public function list(Request $request): JsonResponse
     {
         $user = $this->getUserEntity();
@@ -103,6 +125,14 @@ class ServiceRecordController extends AbstractController
     }
 
     #[Route('/service-records/{id}', methods: ['GET'])]
+
+    /**
+     * function get
+     *
+     * @param mixed $id
+     *
+     * @return JsonResponse
+     */
     public function get(int|string $id): JsonResponse
     {
         if (!is_numeric($id) || (int)$id <= 0) {
@@ -121,6 +151,14 @@ class ServiceRecordController extends AbstractController
     }
 
     #[Route('/service-records', methods: ['POST'])]
+
+    /**
+     * function create
+     *
+     * @param Request $request
+     *
+     * @return JsonResponse
+     */
     public function create(Request $request): JsonResponse
     {
         $user = $this->getUserEntity();
@@ -166,6 +204,10 @@ class ServiceRecordController extends AbstractController
             $this->entityManager->persist($serviceRecord);
             $this->entityManager->flush();
 
+            // Finalize attachment link after flush (entity now has ID)
+            $this->attachmentLinkingService->finalizeAttachmentLink($serviceRecord);
+            $this->entityManager->flush();
+
             return new JsonResponse($this->serializeServiceRecord($serviceRecord), 201);
         } catch (\Exception $e) {
             $this->logger->error('Failed to create service record', ['exception' => $e->getMessage()]);
@@ -174,6 +216,15 @@ class ServiceRecordController extends AbstractController
     }
 
     #[Route('/service-records/{id}', methods: ['PUT'])]
+
+    /**
+     * function update
+     *
+     * @param mixed $id
+     * @param Request $request
+     *
+     * @return JsonResponse
+     */
     public function update(int|string $id, Request $request): JsonResponse
     {
         if (!is_numeric($id) || (int)$id <= 0) {
@@ -246,6 +297,14 @@ class ServiceRecordController extends AbstractController
     }
 
     #[Route('/service-records/{id}', methods: ['DELETE'])]
+
+    /**
+     * function delete
+     *
+     * @param mixed $id
+     *
+     * @return JsonResponse
+     */
     public function delete(int|string $id): JsonResponse
     {
         if (!is_numeric($id) || (int)$id <= 0) {
@@ -284,6 +343,14 @@ class ServiceRecordController extends AbstractController
     }
 
     #[Route('/service-records/{id}/items', methods: ['GET'])]
+
+    /**
+     * function getItems
+     *
+     * @param mixed $id
+     *
+     * @return JsonResponse
+     */
     public function getItems(int|string $id): JsonResponse
     {
         if (!is_numeric($id) || (int)$id <= 0) {
@@ -349,6 +416,13 @@ class ServiceRecordController extends AbstractController
         ]);
     }
 
+    /**
+     * function isAdminForUser
+     *
+     * @param User $user
+     *
+     * @return bool
+     */
     private function isAdminForUser(?User $user): bool
     {
         if (!$user) {
@@ -358,6 +432,14 @@ class ServiceRecordController extends AbstractController
         return in_array('ROLE_ADMIN', $roles, true);
     }
 
+    /**
+     * function serializeServiceRecord
+     *
+     * @param ServiceRecord $service
+     * @param bool $detailed
+     *
+     * @return array
+     */
     private function serializeServiceRecord(ServiceRecord $service, bool $detailed = false): array
     {
         // Initialize cost variables with defaults or explicit entity values
@@ -419,6 +501,13 @@ class ServiceRecordController extends AbstractController
         return $data;
     }
 
+    /**
+     * function serializeItem
+     *
+     * @param ServiceItem $item
+     *
+     * @return array
+     */
     private function serializeItem(ServiceItem $item): array
     {
         $part = $item->getPart();
@@ -438,6 +527,14 @@ class ServiceRecordController extends AbstractController
         ];
     }
 
+    /**
+     * function updateServiceRecordFromData
+     *
+     * @param ServiceRecord $service
+     * @param array $data
+     *
+     * @return void
+     */
     private function updateServiceRecordFromData(ServiceRecord $service, array $data): void
     {
         if (isset($data['serviceDate'])) {
@@ -531,20 +628,19 @@ class ServiceRecordController extends AbstractController
                 'receiptAttachmentId' => $data['receiptAttachmentId']
             ]);
 
-            if ($data['receiptAttachmentId'] === null || $data['receiptAttachmentId'] === '') {
+            $attachmentId = $data['receiptAttachmentId'];
+            if ($attachmentId === null || $attachmentId === '' || $attachmentId === 0) {
+                // Unlink current attachment
+                if ($service->getReceiptAttachment()) {
+                    $this->attachmentLinkingService->unlinkAttachment($service->getReceiptAttachment(), $service);
+                }
                 $service->setReceiptAttachment(null);
             } else {
-                $att = $this->entityManager->getRepository(Attachment::class)->find($data['receiptAttachmentId']);
-                if ($att) {
-                    $service->setReceiptAttachment($att);
-                    // Update attachment's entity_id to link it to this service
-                    $att->setEntityId($service->getId());
-                    $att->setEntityType('service');
-                    $this->reorganizeReceiptFile($att, $service->getVehicle());
-                } else {
-                    $service->setReceiptAttachment(null);
-                    $this->logger->warning('Attachment not found', ['attachmentId' => $data['receiptAttachmentId']]);
-                }
+                $this->attachmentLinkingService->processReceiptAttachmentId(
+                    (int) $attachmentId,
+                    $service,
+                    'service_record'
+                );
             }
         }
 
@@ -686,6 +782,14 @@ class ServiceRecordController extends AbstractController
         }
     }
 
+    /**
+     * function calculateTotal
+     *
+     * @param string $cost
+     * @param string $quantity
+     *
+     * @return string
+     */
     private function calculateTotal(string $cost, string $quantity): string
     {
         if (function_exists('bcmul')) {
@@ -698,6 +802,15 @@ class ServiceRecordController extends AbstractController
     }
 
     #[Route('/service-items/{id}', methods: ['PATCH'])]
+
+    /**
+     * function updateServiceItem
+     *
+     * @param Request $request
+     * @param mixed $id
+     *
+     * @return JsonResponse
+     */
     public function updateServiceItem(Request $request, int|string $id): JsonResponse
     {
         if (!is_numeric($id) || (int)$id <= 0) {
@@ -748,6 +861,15 @@ class ServiceRecordController extends AbstractController
     }
 
     #[Route('/service-items/{id}', methods: ['DELETE'])]
+
+    /**
+     * function deleteServiceItem
+     *
+     * @param Request $request
+     * @param mixed $id
+     *
+     * @return JsonResponse
+     */
     public function deleteServiceItem(Request $request, int|string $id): JsonResponse
     {
         if (!is_numeric($id) || (int)$id <= 0) {
