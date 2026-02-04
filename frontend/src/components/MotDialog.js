@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -24,7 +24,6 @@ import ConsumableDialog from './ConsumableDialog';
 import KnightRiderLoader from './KnightRiderLoader';
 import { IconButton, Typography, Tooltip } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
-import LinkIcon from '@mui/icons-material/Link';
 import BuildIcon from '@mui/icons-material/Build';
 import OpacityIcon from '@mui/icons-material/Opacity';
 import MiscellaneousServicesIcon from '@mui/icons-material/MiscellaneousServices';
@@ -51,7 +50,6 @@ const MotDialog = ({ open, motRecord, vehicleId, vehicles, onClose }) => {
   const [loading, setLoading] = useState(false);
   const [receiptAttachmentId, setReceiptAttachmentId] = useState(null);
   const [motItems, setMotItems] = useState({ parts: [], consumables: [] });
-  const [addItemOpen, setAddItemOpen] = useState(false);
   const [selectedPart, setSelectedPart] = useState(null);
   const [selectedConsumable, setSelectedConsumable] = useState(null);
   const [selectedAddType, setSelectedAddType] = useState('part');
@@ -60,12 +58,13 @@ const MotDialog = ({ open, motRecord, vehicleId, vehicles, onClose }) => {
   const [openConsumableDialog, setOpenConsumableDialog] = useState(false);
   const [selectedServiceRecord, setSelectedServiceRecord] = useState(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const lastLoadedMotIdRef = useRef(null);
   const [confirmTarget, setConfirmTarget] = useState(null); // { type, id, name }
   const { api } = useAuth();
   const { t } = useTranslation();
   const { convert, toKm, getLabel } = useDistance();
 
-  const loadMotItems = async (id) => {
+  const loadMotItems = useCallback(async (id) => {
     if (!id) return;
     try {
       const res = await api.get(`/mot-records/${id}/items`);
@@ -73,7 +72,7 @@ const MotDialog = ({ open, motRecord, vehicleId, vehicles, onClose }) => {
     } catch (err) {
       logger.error('Error loading MOT items', err);
     }
-  };
+  }, [api]);
 
   // Recompute repair cost when mot items change
   useEffect(() => {
@@ -206,13 +205,15 @@ const MotDialog = ({ open, motRecord, vehicleId, vehicles, onClose }) => {
         setReceiptAttachmentId(null);
       }
     }
-    // load linked items for this mot record
-    if (open && motRecord && motRecord.id) {
+    // load linked items for this mot record (only if not already loaded for this ID)
+    if (open && motRecord && motRecord.id && lastLoadedMotIdRef.current !== motRecord.id) {
+      lastLoadedMotIdRef.current = motRecord.id;
       loadMotItems(motRecord.id);
-    } else {
+    } else if (!open) {
       setMotItems({ parts: [], consumables: [] });
+      lastLoadedMotIdRef.current = null;
     }
-  }, [open, motRecord]);
+  }, [open, motRecord, convert, vehicleId]); // Removed loadMotItems from dependencies to prevent infinite loop
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -579,7 +580,8 @@ const MotDialog = ({ open, motRecord, vehicleId, vehicles, onClose }) => {
             <Grid item xs={12}>
               <ReceiptUpload
                 entityType="mot"
-                vehicleId={vehicleId}
+                entityId={motRecord?.id}
+                vehicleId={formData.vehicleId || vehicleId}
                 receiptAttachmentId={receiptAttachmentId}
                 onReceiptUploaded={(id, ocrData) => setReceiptAttachmentId(id)}
                 onReceiptRemoved={() => setReceiptAttachmentId(null)}

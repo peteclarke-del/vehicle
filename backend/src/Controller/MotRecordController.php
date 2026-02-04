@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Controller\Trait\UserSecurityTrait;
-use App\Controller\Trait\AttachmentFileOrganizerTrait;
 use App\Controller\Trait\JsonValidationTrait;
+use App\Entity\Attachment;
 use App\Entity\MotRecord;
 use App\Entity\Vehicle;
 use App\Entity\Part;
@@ -16,17 +16,16 @@ use Psr\Log\LoggerInterface;
 use App\Service\DvsaApiService;
 use App\Service\RepairCostCalculator;
 use App\Service\EntitySerializerService;
+use App\Service\AttachmentLinkingService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Component\String\Slugger\SluggerInterface;
 
 #[Route('/api')]
 class MotRecordController extends AbstractController
 {
     use UserSecurityTrait;
-    use AttachmentFileOrganizerTrait;
     use JsonValidationTrait;
 
     public function __construct(
@@ -35,7 +34,7 @@ class MotRecordController extends AbstractController
         private LoggerInterface $logger,
         private RepairCostCalculator $repairCostCalculator,
         private EntitySerializerService $serializer,
-        private SluggerInterface $slugger
+        private AttachmentLinkingService $attachmentLinkingService
     ) {
     }
 
@@ -59,6 +58,10 @@ class MotRecordController extends AbstractController
         $this->updateMotRecordFromData($motRecord, $data);
 
         $this->entityManager->persist($motRecord);
+        $this->entityManager->flush();
+
+        // Finalize attachment link after flush (entity now has ID)
+        $this->attachmentLinkingService->finalizeAttachmentLink($motRecord);
         $this->entityManager->flush();
 
         return new JsonResponse($this->serializer->serializeMotRecord($motRecord), 201);
@@ -438,20 +441,20 @@ class MotRecordController extends AbstractController
         if (isset($data['testCenter'])) {
             $mot->setTestCenter($data['testCenter']);
         }
-        if (isset($data['receiptAttachmentId'])) {
-            if ($data['receiptAttachmentId'] === null || $data['receiptAttachmentId'] === '') {
+        if (array_key_exists('receiptAttachmentId', $data)) {
+            $attachmentId = $data['receiptAttachmentId'];
+            if ($attachmentId === null || $attachmentId === '' || $attachmentId === 0) {
+                // Unlink current attachment
+                if ($mot->getReceiptAttachment()) {
+                    $this->attachmentLinkingService->unlinkAttachment($mot->getReceiptAttachment(), $mot);
+                }
                 $mot->setReceiptAttachment(null);
             } else {
-                $att = $this->entityManager->getRepository(\App\Entity\Attachment::class)->find($data['receiptAttachmentId']);
-                if ($att) {
-                    $mot->setReceiptAttachment($att);
-                    // Update attachment's entity_id to link it to this MOT record
-                    $att->setEntityId($mot->getId());
-                    $att->setEntityType('mot');
-                    $this->reorganizeReceiptFile($att, $mot->getVehicle());
-                } else {
-                    $mot->setReceiptAttachment(null);
-                }
+                $this->attachmentLinkingService->processReceiptAttachmentId(
+                    (int) $attachmentId,
+                    $mot,
+                    'mot_record'
+                );
             }
         }
         if (isset($data['advisories'])) {

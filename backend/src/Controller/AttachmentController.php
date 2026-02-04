@@ -5,20 +5,30 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Entity\Attachment;
+use App\Entity\Vehicle;
+use App\Entity\FuelRecord;
+use App\Entity\Part;
+use App\Entity\Consumable;
+use App\Entity\ServiceRecord;
+use App\Entity\MotRecord;
+use App\Entity\RoadTax;
+use App\Entity\InsurancePolicy;
+use App\Entity\Todo;
+use App\Service\ReceiptOcrService;
+use App\Service\AttachmentLinkingService;
+use App\Controller\Trait\UserSecurityTrait;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\Filesystem\Filesystem;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\File\Exception\FileException;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\String\Slugger\SluggerInterface;
-use App\Service\ReceiptOcrService;
-use App\Entity\Vehicle;
-use App\Controller\Trait\UserSecurityTrait;
 
 #[Route('/api/attachments')]
 
@@ -41,12 +51,25 @@ class AttachmentController extends AbstractController
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     ];
 
+    private const MAX_FILE_SIZE_MB = 100; // Configurable
+    private const OCR_SUPPORTED_TYPES = [
+        'image/jpeg',
+        'image/png',
+        'image/gif',
+        'image/webp',
+        'application/pdf'
+    ];
+
     /**
      * function __construct
      *
      * @param EntityManagerInterface $entityManager
      * @param SluggerInterface $slugger
      * @param ReceiptOcrService $ocrService
+     * @param LoggerInterface $logger
+     * @param Filesystem $filesystem
+     * @param string $projectDir
+     * @param int $uploadMaxBytes
      *
      * @return void
      */
@@ -54,8 +77,11 @@ class AttachmentController extends AbstractController
         private EntityManagerInterface $entityManager,
         private SluggerInterface $slugger,
         private ReceiptOcrService $ocrService,
-        private int $uploadMaxBytes,
-        private LoggerInterface $logger
+        private LoggerInterface $logger,
+        private Filesystem $filesystem,
+        private AttachmentLinkingService $attachmentLinkingService,
+        private string $projectDir,
+        private int $uploadMaxBytes
     ) {
     }
 
@@ -66,32 +92,218 @@ class AttachmentController extends AbstractController
      */
     private function getUploadDir(): string
     {
-        return $this->getParameter('kernel.project_dir') . '/uploads/attachments';
+        return $this->projectDir . '/uploads/vehicles';
     }
 
+    /**
+     * function getAttachmentFilePath
+     *
+     * @param Attachment $attachment
+     *
+     * @return string
+     */
     private function getAttachmentFilePath(Attachment $attachment): string
     {
-        $uploadsRoot = $this->getParameter('kernel.project_dir') . '/uploads';
         $storagePath = $attachment->getStoragePath();
+        
         if ($storagePath) {
-            return $uploadsRoot . '/' . ltrim($storagePath, '/');
+            return $this->projectDir . '/uploads/' . ltrim($storagePath, '/');
         }
 
         return $this->getUploadDir() . '/' . $attachment->getFilename();
     }
 
     /**
-     * Reorganize attachment file into proper directory structure based on vehicle and entity type
-     * Moves file from misc/ to <regno>/<entity_type>/ structure
+     * function generateFilename
      *
-     * @param Attachment $attachment The attachment to reorganize
-     * @param Vehicle $vehicle The vehicle to organize under
-     * @return bool True if file was moved, false if already in correct location or error
+     * @param UploadedFile $file
+     *
+     * @return string
+     */
+    private function generateFilename(UploadedFile $file): string
+    {
+        $originalFilename = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+        $safeFilename = $this->slugger->slug($originalFilename);
+        
+        return sprintf(
+            '%s-%s.%s',
+            $safeFilename,
+            uniqid('', true),
+            $file->guessExtension()
+        );
+    }
+
+    /**
+     * function getStorageSubdirectory
+     *
+     * @param Vehicle $vehicle
+     * @param string $category
+     *
+     * @return string
+     */
+    private function getStorageSubdirectory(?Vehicle $vehicle, ?string $category): string
+    {
+        if (!$vehicle) {
+            return 'misc';
+        }
+
+        $reg = $vehicle->getRegistrationNumber()
+            ?: $vehicle->getName()
+            ?: ('vehicle-' . $vehicle->getId());
+
+        $regSlug = strtolower((string) $this->slugger->slug($reg));
+        $categorySlug = $category ? strtolower((string) $this->slugger->slug($category)) : 'misc';
+
+        return $regSlug . '/' . $categorySlug;
+    }
+
+    /**
+     * function resolveVehicleForAttachment
+     *
+     * @param string $entityType
+     * @param int $entityId
+     *
+     * @return Vehicle
+     */
+    private function resolveVehicleForAttachment(?string $entityType, ?int $entityId): ?Vehicle
+    {
+        if (!$entityType || !$entityId) {
+            return null;
+        }
+
+        return match ($entityType) {
+            'vehicle' => $this->entityManager->getRepository(Vehicle::class)->find($entityId),
+            'fuel' => $this->entityManager->getRepository(FuelRecord::class)->find($entityId)?->getVehicle(),
+            'part' => $this->entityManager->getRepository(Part::class)->find($entityId)?->getVehicle(),
+            'consumable' => $this->entityManager->getRepository(Consumable::class)->find($entityId)?->getVehicle(),
+            'service' => $this->entityManager->getRepository(ServiceRecord::class)->find($entityId)?->getVehicle(),
+            'mot' => $this->entityManager->getRepository(MotRecord::class)->find($entityId)?->getVehicle(),
+            'roadTax' => $this->entityManager->getRepository(RoadTax::class)->find($entityId)?->getVehicle(),
+            'insurancePolicy' => $this->entityManager->getRepository(InsurancePolicy::class)->find($entityId)?->getVehicles()->first() ?: null,
+            'todo' => $this->entityManager->getRepository(Todo::class)->find($entityId)?->getVehicle(),
+            default => null,
+        };
+    }
+
+    /**
+     * function validateUploadedFile
+     *
+     * @param UploadedFile $file
+     *
+     * @return string
+     */
+    private function validateUploadedFile(UploadedFile $file): ?string
+    {
+        // Check file size
+        if ($file->getSize() > $this->uploadMaxBytes) {
+            $maxMb = (int) ceil($this->uploadMaxBytes / (1024 * 1024));
+            return "File too large (max {$maxMb}MB)";
+        }
+
+        // Check MIME type
+        $mimeType = $file->getMimeType();
+        if (!in_array($mimeType, self::ALLOWED_MIME_TYPES, true)) {
+            return "File type not allowed: {$mimeType}";
+        }
+
+        // Additional security check: verify file extension matches MIME type
+        $allowedExtensions = [
+            'image/jpeg' => ['jpg', 'jpeg'],
+            'image/png' => ['png'],
+            'image/gif' => ['gif'],
+            'image/webp' => ['webp'],
+            'application/pdf' => ['pdf'],
+            'application/msword' => ['doc'],
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => ['docx'],
+            'application/vnd.ms-excel' => ['xls'],
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' => ['xlsx'],
+        ];
+
+        $extension = strtolower($file->getClientOriginalExtension());
+        if (isset($allowedExtensions[$mimeType]) && !in_array($extension, $allowedExtensions[$mimeType], true)) {
+            return "File extension does not match MIME type";
+        }
+
+        return null;
+    }
+
+    /**
+     * function createAttachmentEntity
+     *
+     * @param UploadedFile $file
+     * @param string $filename
+     * @param string $storagePath
+     * @param string $entityType
+     * @param int $entityId
+     * @param string $description
+     * @param string $category
+     *
+     * @return Attachment
+     */
+    private function createAttachmentEntity(
+        string $filename,
+        string $originalName,
+        string $mimeType,
+        int $fileSize,
+        string $storagePath,
+        ?Vehicle $vehicle = null,
+        ?string $entityType = null,
+        ?int $entityId = null,
+        ?string $description = null,
+        ?string $category = null
+    ): Attachment {
+        $attachment = new Attachment();
+        $attachment
+            ->setFilename($filename)
+            ->setOriginalName($originalName)
+            ->setMimeType($mimeType)
+            ->setFileSize($fileSize)
+            ->setUser($this->getUserEntity())
+            ->setStoragePath($storagePath);
+
+        if ($entityType) {
+            $attachment->setEntityType($entityType);
+        }
+        
+        if ($entityId) {
+            $attachment->setEntityId($entityId);
+            
+            if ($entityType === 'vehicle') {
+                $vehicle = $this->entityManager->getRepository(Vehicle::class)->find($entityId);
+                if ($vehicle) {
+                    $attachment->setVehicle($vehicle);
+                }
+            }
+        }
+
+        if ($vehicle) {
+            $attachment->setVehicle($vehicle);
+        }
+        
+        if ($description) {
+            $attachment->setDescription($description);
+        }
+        
+        if ($category) {
+            $attachment->setCategory($category);
+        }
+
+        return $attachment;
+    }
+
+    /**
+     * function reorganizeAttachmentFile
+     *
+     * @param Attachment $attachment
+     * @param Vehicle $vehicle
+     *
+     * @return bool
      */
     private function reorganizeAttachmentFile(Attachment $attachment, Vehicle $vehicle): bool
     {
         $currentPath = $this->getAttachmentFilePath($attachment);
-        if (!file_exists($currentPath)) {
+        
+        if (!$this->filesystem->exists($currentPath)) {
             $this->logger->warning('Cannot reorganize - file not found', ['path' => $currentPath]);
             return false;
         }
@@ -102,51 +314,31 @@ class AttachmentController extends AbstractController
             return false;
         }
 
-        // Map entityType to category folder name
-        $category = match (strtolower($entityType)) {
-            'servicerecord', 'service' => 'service',
-            'motrecord', 'mot' => 'mot',
-            'fuelrecord', 'fuel_record', 'fuel' => 'fuel',
-            'insurancepolicy', 'policy' => 'insurance',
-            'part' => 'parts',
-            'consumable' => 'consumables',
-            default => 'misc'
-        };
-
-        $reg = $vehicle->getRegistrationNumber() ?: $vehicle->getName() ?: ('vehicle-' . $vehicle->getId());
+        $reg = $vehicle->getRegistrationNumber() 
+            ?: $vehicle->getName() 
+            ?: ('vehicle-' . $vehicle->getId());
         $regSlug = strtolower((string) $this->slugger->slug($reg));
+        $category = $attachment->getCategory() ?: 'misc';
+        $categorySlug = strtolower((string) $this->slugger->slug($category));
         
-        // New structure: vehicles/<regno>/<category>/
-        $uploadsRoot = $this->getParameter('kernel.project_dir') . '/uploads';
-        $newSubDir = $regSlug . '/' . $category;
-        $newDir = $uploadsRoot . '/vehicles/' . $newSubDir;
+        $newSubDir = $regSlug . '/' . $categorySlug;
+        $newDir = $this->getUploadDir() . '/' . $newSubDir;
 
         // Check if already in correct location
         $currentStoragePath = $attachment->getStoragePath();
-        if ($currentStoragePath && str_contains($currentStoragePath, 'vehicles/' . $newSubDir . '/')) {
+        if ($currentStoragePath && str_contains($currentStoragePath, $newSubDir . '/')) {
             $this->logger->debug('File already in correct location', ['path' => $currentStoragePath]);
             return false;
         }
 
-        // Create new directory
-        if (!is_dir($newDir)) {
-            if (!@mkdir($newDir, 0755, true) && !is_dir($newDir)) {
-                $this->logger->error('Failed to create directory for reorganization', ['path' => $newDir]);
-                return false;
-            }
-        }
-
-        $filename = $attachment->getFilename();
-        $newPath = $newDir . '/' . $filename;
-
-        // Move the file
         try {
-            if (!rename($currentPath, $newPath)) {
-                $this->logger->error('Failed to move file', ['from' => $currentPath, 'to' => $newPath]);
-                return false;
-            }
-
-            // Update storage path in attachment
+            $this->filesystem->mkdir($newDir);
+            
+            $filename = $attachment->getFilename();
+            $newPath = $newDir . '/' . $filename;
+            
+            $this->filesystem->rename($currentPath, $newPath);
+            
             $newStoragePath = 'vehicles/' . $newSubDir . '/' . $filename;
             $attachment->setStoragePath($newStoragePath);
             
@@ -161,7 +353,7 @@ class AttachmentController extends AbstractController
             $this->logger->error('Error reorganizing file', [
                 'error' => $e->getMessage(),
                 'from' => $currentPath,
-                'to' => $newPath
+                'to' => $newPath ?? null
             ]);
             return false;
         }
@@ -184,118 +376,99 @@ class AttachmentController extends AbstractController
         }
 
         $entityType = $request->request->get('entityType');
-        $entityId = $request->request->get('entityId');
-        $vehicleId = $request->request->get('vehicleId');
+        $entityId = $request->request->getInt('entityId');
+        $vehicleId = $request->request->getInt('vehicleId');
         $description = $request->request->get('description');
         $category = $request->request->get('category');
+        
+        $this->logger->info('[AttachmentUpload] Request params', [
+            'entityType' => $entityType,
+            'entityId' => $entityId,
+            'vehicleId' => $vehicleId,
+            'category' => $category
+        ]);
+        
+        // Use entityType as category if not explicitly provided
+        // This ensures files are stored in the correct folder (e.g., mot_record, service_record)
+        if (!$category && $entityType) {
+            $category = $this->attachmentLinkingService->normalizeEntityType($entityType);
+        }
 
-        /** @var UploadedFile $file */
+        /** @var UploadedFile|null $file */
         $file = $request->files->get('file');
         if (!$file) {
             return $this->json(['error' => 'No file provided'], 400);
         }
 
-        // Log upload attempt
-        $fileSize = $file->getSize();
-        $this->logger->info('Upload attempt', ['filename' => $file->getClientOriginalName(), 'size' => $fileSize]);
+        $this->logger->info('Upload attempt', [
+            'filename' => $file->getClientOriginalName(),
+            'size' => $file->getSize()
+        ]);
 
-        // Validate file size
-        $contentLength = (int) $request->server->get('CONTENT_LENGTH', 0);
-        if ($contentLength > $this->uploadMaxBytes) {
-            $maxMb = (int) ceil($this->uploadMaxBytes / (1024 * 1024));
-            return $this->json(['error' => 'File too large (max ' . $maxMb . 'MB)'], 413);
+        // File validation
+        if ($error = $this->validateUploadedFile($file)) {
+            return $this->json(['error' => $error], 400);
         }
 
-        // Validate MIME type
-        $mimeType = $file->getMimeType();
-        if (!in_array($mimeType, self::ALLOWED_MIME_TYPES)) {
-            return $this->json(['error' => 'File type not allowed: ' . $mimeType], 400);
+        // Capture metadata before moving the file
+        $originalName = $file->getClientOriginalName();
+        $mimeType = (string) $file->getMimeType();
+        $fileSize = (int) ($file->getSize() ?? 0);
+
+        // Generate unique filename
+        $filename = $this->generateFilename($file);
+        $vehicle = $this->resolveVehicleForAttachment($entityType, $entityId);
+        
+        // If entity doesn't exist yet, try to resolve vehicle directly from vehicleId
+        if (!$vehicle && $vehicleId) {
+            $vehicle = $this->entityManager->getRepository(Vehicle::class)->find($vehicleId);
         }
-
-        $originalFilename = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
-        $safeFilename = $this->slugger->slug($originalFilename);
-        $newFilename = $safeFilename . '-' . uniqid() . '.' . $file->guessExtension();
-
-        // Determine vehicle from vehicleId parameter or from entityType/entityId
-        $vehicle = null;
-        if ($vehicleId) {
-            $vehicle = $this->entityManager->getRepository(Vehicle::class)->find((int) $vehicleId);
-        } elseif ($entityType === 'vehicle' && $entityId) {
-            $vehicle = $this->entityManager->getRepository(Vehicle::class)->find((int) $entityId);
-        }
-
-        // Determine category from entityType if not explicitly provided
-        $resolvedCategory = $category;
-        if (!$resolvedCategory && $entityType) {
-            $resolvedCategory = match (strtolower($entityType)) {
-                'servicerecord', 'service' => 'service',
-                'motrecord', 'mot' => 'mot',
-                'fuelrecord', 'fuel_record', 'fuel' => 'fuel',
-                'insurancepolicy', 'policy' => 'insurance',
-                'part' => 'parts',
-                'consumable' => 'consumables',
-                default => 'misc'
-            };
-        }
-        $resolvedCategory = $resolvedCategory ?? 'misc';
-
-        // Build upload path: vehicles/<regno>/<category>/ for vehicle-associated uploads
-        // or attachments/misc/ for orphaned uploads
-        $uploadsRoot = $this->getParameter('kernel.project_dir') . '/uploads';
-        if ($vehicle) {
-            $reg = $vehicle->getRegistrationNumber() ?: $vehicle->getName() ?: ('vehicle-' . $vehicle->getId());
-            $regSlug = strtolower((string) $this->slugger->slug($reg));
-            $uploadDir = $uploadsRoot . '/vehicles/' . $regSlug . '/' . $resolvedCategory;
-            $storagePath = 'vehicles/' . $regSlug . '/' . $resolvedCategory . '/' . $newFilename;
-        } else {
-            $uploadDir = $uploadsRoot . '/attachments/misc';
-            $storagePath = 'attachments/misc/' . $newFilename;
-        }
-
-        $this->logger->debug('Upload directory', ['path' => $uploadDir]);
-        $this->logger->debug('Directory status', ['exists' => is_dir($uploadDir), 'writable' => is_writable(dirname($uploadDir))]);
-
-        if (!is_dir($uploadDir)) {
-            if (!@mkdir($uploadDir, 0755, true) && !is_dir($uploadDir)) {
-                $this->logger->error('Failed to create directory', ['path' => $uploadDir]);
-                return $this->json(['error' => 'Failed to create upload directory: ' . $uploadDir], 500);
-            }
-            $this->logger->info('Created directory', ['path' => $uploadDir]);
-        }
+        
+        $storageSubDir = $this->getStorageSubdirectory($vehicle, $category);
+        $uploadDir = $this->getUploadDir() . '/' . $storageSubDir;
 
         try {
-            $file->move($uploadDir, $newFilename);
-            $this->logger->info('File uploaded successfully', ['path' => $uploadDir . '/' . $newFilename]);
+            $this->filesystem->mkdir($uploadDir);
+            $file->move($uploadDir, $filename);
+            
+            $this->logger->info('File uploaded successfully', [
+                'path' => $uploadDir . '/' . $filename
+            ]);
         } catch (FileException $e) {
             $this->logger->error('Upload failed', ['error' => $e->getMessage()]);
-            return $this->json(['error' => 'Failed to upload file: ' . $e->getMessage()], 500);
+            return $this->json(['error' => 'Failed to upload file'], 500);
         }
 
-        $attachment = new Attachment();
-        $attachment->setFilename($newFilename);
-        $attachment->setOriginalName($file->getClientOriginalName());
-        $attachment->setMimeType($mimeType);
-        $attachment->setFileSize($fileSize ?? (int) @filesize($uploadDir . '/' . $newFilename));
-        $attachment->setUser($user);
-        $attachment->setStoragePath($storagePath);
-        if ($vehicle) {
-            $attachment->setVehicle($vehicle);
-        }
-
-        if ($entityType) {
-            $attachment->setEntityType($entityType);
-        }
-        if ($entityId) {
-            $attachment->setEntityId((int)$entityId);
-        }
-        if ($description) {
-            $attachment->setDescription($description);
-        }
-        // Always set category from resolved value
-        $attachment->setCategory($resolvedCategory);
+        $storagePath = 'vehicles/' . $storageSubDir . '/' . $filename;
+        $attachment = $this->createAttachmentEntity(
+            $filename,
+            $originalName,
+            $mimeType,
+            $fileSize,
+            $storagePath,
+            $vehicle,
+            $entityType,
+            $entityId,
+            $description,
+            $category
+        );
 
         $this->entityManager->persist($attachment);
         $this->entityManager->flush();
+
+        // If entity exists, create bidirectional link (entity -> attachment)
+        if ($entityType && $entityId) {
+            $entity = $this->attachmentLinkingService->resolveEntityByTypeAndId($entityType, $entityId);
+            if ($entity && method_exists($entity, 'setReceiptAttachment')) {
+                $this->attachmentLinkingService->linkAttachmentToEntity($attachment, $entity, $entityType, false);
+                $this->entityManager->flush();
+                $this->logger->info('Linked attachment to entity at upload time', [
+                    'attachmentId' => $attachment->getId(),
+                    'entityType' => $entityType,
+                    'entityId' => $entityId
+                ]);
+            }
+        }
 
         return $this->json($this->serializeAttachment($attachment), 201);
     }
@@ -317,25 +490,27 @@ class AttachmentController extends AbstractController
             return $this->json(['error' => 'Unauthorized'], 401);
         }
 
-        $attachment = $this->entityManager->getRepository(Attachment::class)->find($id);
-        if (!$attachment || $attachment->getUser()->getId() !== $user->getId()) {
+        $attachment = $this->entityManager->getRepository(Attachment::class)->findOneBy([
+            'id' => $id,
+            'user' => $user
+        ]);
+        
+        if (!$attachment) {
             return $this->json(['error' => 'Attachment not found'], 404);
         }
 
         $filePath = $this->getAttachmentFilePath($attachment);
-        if (!file_exists($filePath)) {
+        if (!$this->filesystem->exists($filePath)) {
             return $this->json(['error' => 'File not found'], 404);
         }
 
         $mimeType = $attachment->getMimeType();
-        $imageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-        if (!in_array($mimeType, $imageTypes) && $mimeType !== 'application/pdf') {
+        if (!in_array($mimeType, self::OCR_SUPPORTED_TYPES, true)) {
             return $this->json(['error' => 'OCR only supports images and PDFs'], 400);
         }
 
-        // Determine OCR type from query parameter (fuel, part, service)
         $type = $request->query->get('type', 'fuel');
-
+        
         $data = match ($type) {
             'part', 'consumable' => $this->ocrService->extractPartReceiptData($filePath),
             'service' => $this->ocrService->extractServiceReceiptData($filePath),
@@ -362,7 +537,7 @@ class AttachmentController extends AbstractController
         }
 
         $entityType = $request->query->get('entityType');
-        $entityId = $request->query->get('entityId');
+        $entityId = $request->query->getInt('entityId');
         $category = $request->query->get('category');
 
         $qb = $this->entityManager->getRepository(Attachment::class)
@@ -380,8 +555,6 @@ class AttachmentController extends AbstractController
                 ->setParameter('entityId', $entityId);
         }
 
-        // Only filter by category if explicitly provided
-        // If category is passed, match it (including NULL if category='null' or empty)
         if ($category !== null && $category !== '') {
             $qb->andWhere('a.category = :category')
                 ->setParameter('category', $category);
@@ -391,7 +564,12 @@ class AttachmentController extends AbstractController
             ->getQuery()
             ->getResult();
 
-        return $this->json(array_map([$this, 'serializeAttachment'], $attachments));
+        $data = [];
+        foreach ($attachments as $attachment) {
+            $data[] = $this->serializeAttachment($attachment);
+        }
+
+        return $this->json($data);
     }
 
     #[Route('/{id}', methods: ['GET'])]
@@ -411,18 +589,21 @@ class AttachmentController extends AbstractController
             return $this->json(['error' => 'Unauthorized'], 401);
         }
 
-        $attachment = $this->entityManager->getRepository(Attachment::class)->find($id);
-        if (!$attachment || $attachment->getUser() !== $user) {
+        $attachment = $this->entityManager->getRepository(Attachment::class)->findOneBy([
+            'id' => $id,
+            'user' => $user
+        ]);
+        
+        if (!$attachment) {
             return $this->json(['error' => 'Attachment not found'], 404);
         }
 
-        // If metadata=true query parameter is present, return JSON metadata instead of file
         if ($request->query->get('metadata') === 'true') {
             return $this->json($this->serializeAttachment($attachment));
         }
 
         $filePath = $this->getAttachmentFilePath($attachment);
-        if (!file_exists($filePath)) {
+        if (!$this->filesystem->exists($filePath)) {
             return $this->json(['error' => 'File not found'], 404);
         }
 
@@ -451,14 +632,18 @@ class AttachmentController extends AbstractController
             return $this->json(['error' => 'Unauthorized'], 401);
         }
 
-        $attachment = $this->entityManager->getRepository(Attachment::class)->find($id);
-        if (!$attachment || $attachment->getUser() !== $user) {
+        $attachment = $this->entityManager->getRepository(Attachment::class)->findOneBy([
+            'id' => $id,
+            'user' => $user
+        ]);
+        
+        if (!$attachment) {
             return $this->json(['error' => 'Attachment not found'], 404);
         }
 
         $filePath = $this->getAttachmentFilePath($attachment);
-        if (file_exists($filePath)) {
-            unlink($filePath);
+        if ($this->filesystem->exists($filePath)) {
+            $this->filesystem->remove($filePath);
         }
 
         $this->entityManager->remove($attachment);
@@ -484,27 +669,54 @@ class AttachmentController extends AbstractController
             return $this->json(['error' => 'Unauthorized'], 401);
         }
 
-        $attachment = $this->entityManager->getRepository(Attachment::class)->find($id);
-        if (!$attachment || $attachment->getUser() !== $user) {
+        $attachment = $this->entityManager->getRepository(Attachment::class)->findOneBy([
+            'id' => $id,
+            'user' => $user
+        ]);
+        
+        if (!$attachment) {
             return $this->json(['error' => 'Attachment not found'], 404);
         }
 
         $data = json_decode($request->getContent(), true);
+        
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            return $this->json(['error' => 'Invalid JSON data'], 400);
+        }
 
+        // Handle simple field updates
         if (isset($data['description'])) {
             $attachment->setDescription($data['description']);
         }
-
-        if (isset($data['entityType'])) {
-            $attachment->setEntityType($data['entityType']);
-        }
-
         if (isset($data['category'])) {
             $attachment->setCategory($data['category']);
         }
 
-        if (isset($data['entityId'])) {
-            $attachment->setEntityId($data['entityId']);
+        // Handle entity linking - use AttachmentLinkingService for consistency
+        if (array_key_exists('entityType', $data) || array_key_exists('entityId', $data)) {
+            $entityType = $data['entityType'] ?? $attachment->getEntityType();
+            $entityId = $data['entityId'] ?? $attachment->getEntityId();
+
+            if ($entityType && $entityId) {
+                // Resolve the entity and link properly
+                $entity = $this->attachmentLinkingService->resolveEntityByTypeAndId($entityType, $entityId);
+                if ($entity) {
+                    $this->attachmentLinkingService->linkAttachmentToEntity(
+                        $attachment,
+                        $entity,
+                        $entityType,
+                        true // reorganize file
+                    );
+                } else {
+                    // Entity not found, just set the raw values
+                    $attachment->setEntityType($entityType);
+                    $attachment->setEntityId($entityId);
+                }
+            } elseif (!$entityType && !$entityId) {
+                // Clear entity association
+                $attachment->setEntityType(null);
+                $attachment->setEntityId(null);
+            }
         }
 
         $this->entityManager->flush();

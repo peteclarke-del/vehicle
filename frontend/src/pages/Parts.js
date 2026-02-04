@@ -59,9 +59,10 @@ const Parts = () => {
       } else {
         response = await api.get(`/parts?vehicleId=${selectedVehicle}`);
       }
-      setParts(response.data);
+      setParts(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       logger.error('Error loading parts:', error);
+      setParts([]);
     }
   }, [api, selectedVehicle]);
 

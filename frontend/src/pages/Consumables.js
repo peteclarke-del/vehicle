@@ -61,9 +61,10 @@ const Consumables = () => {
     try {
       const url = (!selectedVehicle || selectedVehicle === '__all__') ? '/consumables' : `/consumables?vehicleId=${selectedVehicle}`;
       const response = await api.get(url);
-      setConsumables(response.data);
+      setConsumables(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       logger.error('Error loading consumables:', error);
+      setConsumables([]);
     }
   }, [api, selectedVehicle]);
 
