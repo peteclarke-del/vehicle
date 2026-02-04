@@ -579,6 +579,7 @@ const MotDialog = ({ open, motRecord, vehicleId, vehicles, onClose }) => {
             <Grid item xs={12}>
               <ReceiptUpload
                 entityType="mot"
+                vehicleId={vehicleId}
                 receiptAttachmentId={receiptAttachmentId}
                 onReceiptUploaded={(id, ocrData) => setReceiptAttachmentId(id)}
                 onReceiptRemoved={() => setReceiptAttachmentId(null)}

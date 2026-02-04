@@ -29,7 +29,7 @@ import AttachmentViewerDialog from './AttachmentViewerDialog';
 import { useDragDrop } from '../hooks/useDragDrop';
 import logger from '../utils/logger';
 
-const AttachmentUpload = ({ entityType, entityId, onChange, compact = false }) => {
+const AttachmentUpload = ({ entityType, entityId, vehicleId, onChange, compact = false }) => {
   const [attachments, setAttachments] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -79,6 +79,7 @@ const AttachmentUpload = ({ entityType, entityId, onChange, compact = false }) =
       formData.append('file', file);
       if (entityType) formData.append('entityType', entityType);
       if (entityId) formData.append('entityId', entityId);
+      if (vehicleId) formData.append('vehicleId', vehicleId);
 
       try {
         const response = await api.post('/attachments', formData, {

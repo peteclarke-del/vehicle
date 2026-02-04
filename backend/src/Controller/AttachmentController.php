@@ -102,16 +102,28 @@ class AttachmentController extends AbstractController
             return false;
         }
 
+        // Map entityType to category folder name
+        $category = match (strtolower($entityType)) {
+            'servicerecord', 'service' => 'service',
+            'motrecord', 'mot' => 'mot',
+            'fuelrecord', 'fuel_record', 'fuel' => 'fuel',
+            'insurancepolicy', 'policy' => 'insurance',
+            'part' => 'parts',
+            'consumable' => 'consumables',
+            default => 'misc'
+        };
+
         $reg = $vehicle->getRegistrationNumber() ?: $vehicle->getName() ?: ('vehicle-' . $vehicle->getId());
         $regSlug = strtolower((string) $this->slugger->slug($reg));
         
-        // New structure: <regno>/<entity_type>/
-        $newSubDir = $regSlug . '/' . $entityType;
-        $newDir = $this->getUploadDir() . '/' . $newSubDir;
+        // New structure: vehicles/<regno>/<category>/
+        $uploadsRoot = $this->getParameter('kernel.project_dir') . '/uploads';
+        $newSubDir = $regSlug . '/' . $category;
+        $newDir = $uploadsRoot . '/vehicles/' . $newSubDir;
 
         // Check if already in correct location
         $currentStoragePath = $attachment->getStoragePath();
-        if ($currentStoragePath && str_contains($currentStoragePath, $newSubDir . '/')) {
+        if ($currentStoragePath && str_contains($currentStoragePath, 'vehicles/' . $newSubDir . '/')) {
             $this->logger->debug('File already in correct location', ['path' => $currentStoragePath]);
             return false;
         }
@@ -135,7 +147,7 @@ class AttachmentController extends AbstractController
             }
 
             // Update storage path in attachment
-            $newStoragePath = 'attachments/' . $newSubDir . '/' . $filename;
+            $newStoragePath = 'vehicles/' . $newSubDir . '/' . $filename;
             $attachment->setStoragePath($newStoragePath);
             
             $this->logger->info('Reorganized attachment file', [
@@ -173,6 +185,7 @@ class AttachmentController extends AbstractController
 
         $entityType = $request->request->get('entityType');
         $entityId = $request->request->get('entityId');
+        $vehicleId = $request->request->get('vehicleId');
         $description = $request->request->get('description');
         $category = $request->request->get('category');
 
@@ -203,21 +216,44 @@ class AttachmentController extends AbstractController
         $safeFilename = $this->slugger->slug($originalFilename);
         $newFilename = $safeFilename . '-' . uniqid() . '.' . $file->guessExtension();
 
-        $uploadDir = $this->getUploadDir();
-        $storageSubDir = 'misc';
+        // Determine vehicle from vehicleId parameter or from entityType/entityId
         $vehicle = null;
-        if ($entityType === 'vehicle' && $entityId) {
+        if ($vehicleId) {
+            $vehicle = $this->entityManager->getRepository(Vehicle::class)->find((int) $vehicleId);
+        } elseif ($entityType === 'vehicle' && $entityId) {
             $vehicle = $this->entityManager->getRepository(Vehicle::class)->find((int) $entityId);
-            $reg = $vehicle?->getRegistrationNumber() ?: $vehicle?->getName() ?: ('vehicle-' . $entityId);
-            $storageSubDir = strtolower((string) $this->slugger->slug($reg));
-        } elseif ($entityType && $entityId) {
-            $storageSubDir = strtolower((string) $this->slugger->slug($entityType . '-' . $entityId));
         }
 
-        $uploadDir = $uploadDir . '/' . $storageSubDir;
+        // Determine category from entityType if not explicitly provided
+        $resolvedCategory = $category;
+        if (!$resolvedCategory && $entityType) {
+            $resolvedCategory = match (strtolower($entityType)) {
+                'servicerecord', 'service' => 'service',
+                'motrecord', 'mot' => 'mot',
+                'fuelrecord', 'fuel_record', 'fuel' => 'fuel',
+                'insurancepolicy', 'policy' => 'insurance',
+                'part' => 'parts',
+                'consumable' => 'consumables',
+                default => 'misc'
+            };
+        }
+        $resolvedCategory = $resolvedCategory ?? 'misc';
+
+        // Build upload path: vehicles/<regno>/<category>/ for vehicle-associated uploads
+        // or attachments/misc/ for orphaned uploads
+        $uploadsRoot = $this->getParameter('kernel.project_dir') . '/uploads';
+        if ($vehicle) {
+            $reg = $vehicle->getRegistrationNumber() ?: $vehicle->getName() ?: ('vehicle-' . $vehicle->getId());
+            $regSlug = strtolower((string) $this->slugger->slug($reg));
+            $uploadDir = $uploadsRoot . '/vehicles/' . $regSlug . '/' . $resolvedCategory;
+            $storagePath = 'vehicles/' . $regSlug . '/' . $resolvedCategory . '/' . $newFilename;
+        } else {
+            $uploadDir = $uploadsRoot . '/attachments/misc';
+            $storagePath = 'attachments/misc/' . $newFilename;
+        }
+
         $this->logger->debug('Upload directory', ['path' => $uploadDir]);
         $this->logger->debug('Directory status', ['exists' => is_dir($uploadDir), 'writable' => is_writable(dirname($uploadDir))]);
-        // Logged above with directory status
 
         if (!is_dir($uploadDir)) {
             if (!@mkdir($uploadDir, 0755, true) && !is_dir($uploadDir)) {
@@ -234,8 +270,6 @@ class AttachmentController extends AbstractController
             $this->logger->error('Upload failed', ['error' => $e->getMessage()]);
             return $this->json(['error' => 'Failed to upload file: ' . $e->getMessage()], 500);
         }
-
-        $storagePath = 'attachments/' . $storageSubDir . '/' . $newFilename;
 
         $attachment = new Attachment();
         $attachment->setFilename($newFilename);
@@ -257,9 +291,8 @@ class AttachmentController extends AbstractController
         if ($description) {
             $attachment->setDescription($description);
         }
-        if ($category) {
-            $attachment->setCategory($category);
-        }
+        // Always set category from resolved value
+        $attachment->setCategory($resolvedCategory);
 
         $this->entityManager->persist($attachment);
         $this->entityManager->flush();

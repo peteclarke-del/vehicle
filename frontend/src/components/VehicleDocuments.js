@@ -115,6 +115,7 @@ const VehicleDocuments = ({ vehicle, category }) => {
     formData.append('file', file);
     formData.append('entityType', 'vehicle');
     formData.append('entityId', vehicle.id.toString());
+    formData.append('vehicleId', vehicle.id.toString());
     formData.append('category', category);
     if (description) {
       formData.append('description', description);
