@@ -58,7 +58,8 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
 
   // Determine if we're in MOT/Service context
   // Only show link dropdown when creating NEW consumable from service/MOT, not when editing existing
-  const isFromMotOrService = !consumable?.id && (consumable?.motRecordId || consumable?.serviceRecordId);
+  // Check if the consumable prop has the key (even if null) to detect context
+  const isFromMotOrService = !consumable?.id && consumable && ('motRecordId' in consumable || 'serviceRecordId' in consumable);
 
   // Load unassociated consumables when opened from MOT/Service context
   useEffect(() => {
@@ -161,15 +162,23 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
     if (consumable) {
       setSelectedExistingConsumableId('');
       setIsLinkingExisting(false);
+      // Only convert mileage if this is backend data (has id), prefill data is already in display units
+      const isBackendData = !!consumable.id;
       setFormData({
         consumableTypeId: consumable.consumableType?.id || '',
         consumableTypeName: '',
         description: consumable.description || '',
         quantity: consumable.quantity || '',
         lastChanged: consumable.lastChanged || '',
-        mileageAtChange: consumable.mileageAtChange ? Math.round(convert(consumable.mileageAtChange)) : '',
-        replacementIntervalMiles: consumable.replacementIntervalMiles ? Math.round(convert(consumable.replacementIntervalMiles)) : '',
-        nextReplacementMileage: consumable.nextReplacementMileage ? Math.round(convert(consumable.nextReplacementMileage)) : '',
+        mileageAtChange: consumable.mileageAtChange
+          ? (isBackendData ? Math.round(convert(consumable.mileageAtChange)) : consumable.mileageAtChange)
+          : '',
+        replacementIntervalMiles: consumable.replacementIntervalMiles
+          ? (isBackendData ? Math.round(convert(consumable.replacementIntervalMiles)) : consumable.replacementIntervalMiles)
+          : '',
+        nextReplacementMileage: consumable.nextReplacementMileage
+          ? (isBackendData ? Math.round(convert(consumable.nextReplacementMileage)) : consumable.nextReplacementMileage)
+          : '',
         cost: consumable.cost || '',
         brand: consumable.brand || '',
         partNumber: consumable.partNumber || '',

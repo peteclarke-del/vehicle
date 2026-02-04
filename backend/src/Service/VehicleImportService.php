@@ -699,6 +699,12 @@ class VehicleImportService
         $attachment = new Attachment();
         $attachment->setUser($user);
         
+        // Set filename early - this is required
+        $filename = $attachmentData['filename'] ?? $attachmentData['exportFilename'] ?? null;
+        if ($filename) {
+            $attachment->setFilename(basename($filename));
+        }
+        
         if (!empty($attachmentData['originalFilename'])) {
             $attachment->setOriginalFilename($attachmentData['originalFilename']);
         } elseif (!empty($attachmentData['originalName'])) {
@@ -737,21 +743,52 @@ class VehicleImportService
             $attachment->setUploadedAt(new \DateTime());
         }
 
+        // Set storagePath from data if available (needed for both ZIP and JSON imports)
+        if (!empty($attachmentData['storagePath'])) {
+            $attachment->setStoragePath(ltrim($attachmentData['storagePath'], '/'));
+        }
+
         // Handle file copying from ZIP
         if ($zipExtractDir) {
-            $exportFilename = $attachmentData['exportFilename'] ?? $attachmentData['filename'] ?? null;
-            $sourcePath = $exportFilename ? $zipExtractDir . '/attachments/' . $exportFilename : null;
-            if (file_exists($sourcePath)) {
-                $storagePath = $attachmentData['storagePath'] ?? null;
-                $originalName = $attachment->getOriginalName() ?: ($attachmentData['filename'] ?? 'file');
-                $defaultFilename = $attachmentData['filename'] ?? basename((string)$storagePath) ?: $originalName;
+            $exportFilename = $attachmentData['exportFilename'] ?? null;
+            $filename = $attachmentData['filename'] ?? null;
+            $storagePath = $attachmentData['storagePath'] ?? null;
+            
+            // Try multiple possible source paths in order of preference
+            $possiblePaths = [];
+            if ($exportFilename) {
+                $possiblePaths[] = $zipExtractDir . '/attachments/' . $exportFilename;
+            }
+            if ($filename) {
+                $possiblePaths[] = $zipExtractDir . '/attachments/' . $filename;
+                // Also try with attachment ID prefix if we have originalId
+                if (!empty($attachmentData['originalId'])) {
+                    $possiblePaths[] = $zipExtractDir . '/attachments/attachment_' . $attachmentData['originalId'] . '_' . $filename;
+                }
+            }
+            if ($storagePath) {
+                // Try the full storage path relative to ZIP
+                $possiblePaths[] = $zipExtractDir . '/' . ltrim($storagePath, '/');
+            }
+            
+            $sourcePath = null;
+            foreach ($possiblePaths as $path) {
+                if (file_exists($path)) {
+                    $sourcePath = $path;
+                    break;
+                }
+            }
+            
+            if ($sourcePath) {
+                $originalName = $attachment->getOriginalName() ?: ($filename ?? 'file');
+                $defaultFilename = $filename ?? basename((string)$storagePath) ?: $originalName;
 
                 if ($storagePath) {
-                    $storagePath = ltrim($storagePath, '/');
-                    $destPath = $this->projectDir . '/uploads/' . $storagePath;
+                    $destStoragePath = ltrim($storagePath, '/');
+                    $destPath = $this->projectDir . '/uploads/' . $destStoragePath;
                 } else {
-                    $storagePath = 'attachments/' . $defaultFilename;
-                    $destPath = $this->projectDir . '/uploads/' . $storagePath;
+                    $destStoragePath = 'attachments/' . $defaultFilename;
+                    $destPath = $this->projectDir . '/uploads/' . $destStoragePath;
                 }
 
                 $destDir = dirname($destPath);
@@ -760,9 +797,20 @@ class VehicleImportService
                 }
 
                 if (copy($sourcePath, $destPath)) {
-                    $attachment->setFilename(basename($storagePath));
-                    $attachment->setStoragePath($storagePath);
+                    $attachment->setFilename(basename($destStoragePath));
+                    $attachment->setStoragePath($destStoragePath);
+                    $this->logger->debug('[import] Copied attachment file', [
+                        'source' => $sourcePath,
+                        'dest' => $destPath
+                    ]);
                 }
+            } else {
+                $this->logger->warning('[import] Attachment file not found in ZIP, skipping', [
+                    'triedPaths' => $possiblePaths,
+                    'attachmentData' => array_intersect_key($attachmentData, array_flip(['filename', 'exportFilename', 'storagePath', 'originalId']))
+                ]);
+                // Return null if we can't find the file - don't create an orphan attachment
+                return null;
             }
         }
         
@@ -1807,7 +1855,10 @@ class VehicleImportService
             if (isset($imageData['displayOrder'])) {
                 $image->setDisplayOrder($this->extractNumeric($imageData, 'displayOrder', true));
             }
-            if (isset($imageData['isPrimary'])) {
+            // Handle both isMain (from export) and isPrimary
+            if (isset($imageData['isMain'])) {
+                $image->setIsPrimary((bool)$imageData['isMain']);
+            } elseif (isset($imageData['isPrimary'])) {
                 $image->setIsPrimary($this->extractBoolean($imageData, 'isPrimary'));
             }
 
@@ -1817,37 +1868,52 @@ class VehicleImportService
                 } catch (\Exception $e) {
                     $image->setUploadedAt(new \DateTime());
                 }
+            } elseif (!empty($imageData['createdAt'])) {
+                try {
+                    $image->setUploadedAt(new \DateTime($imageData['createdAt']));
+                } catch (\Exception $e) {
+                    $image->setUploadedAt(new \DateTime());
+                }
             } else {
                 $image->setUploadedAt(new \DateTime());
             }
 
+            // Get the export filename - check both exportFilename and filename
+            $exportFilename = $imageData['exportFilename'] ?? $imageData['filename'] ?? null;
+            
             // Handle file from ZIP
-            if ($zipExtractDir && !empty($imageData['filename'])) {
-                $sourcePath = $zipExtractDir . '/' . $imageData['filename'];
+            if ($zipExtractDir && $exportFilename) {
+                $sourcePath = $zipExtractDir . '/images/' . $exportFilename;
                 if (file_exists($sourcePath)) {
-                    $uploadsDir = $this->projectDir . '/uploads/vehicles';
+                    // Create vehicle-specific directory
+                    $vehicleSlug = strtolower(str_replace(' ', '-', $vehicle->getRegistrationNumber() ?: ('vehicle-' . $vehicle->getId())));
+                    $uploadsDir = $this->projectDir . '/uploads/vehicles/' . $vehicleSlug;
                     if (!is_dir($uploadsDir)) {
                         mkdir($uploadsDir, 0777, true);
                     }
                     
                     $slugger = new AsciiSlugger();
-                    $safeFilename = $slugger->slug(pathinfo($imageData['filename'], PATHINFO_FILENAME));
-                    $newFilename = $safeFilename . '-' . uniqid() . '.' . pathinfo($imageData['filename'], PATHINFO_EXTENSION);
+                    $safeFilename = $slugger->slug(pathinfo($exportFilename, PATHINFO_FILENAME));
+                    $newFilename = date('Ymd-His') . '-' . uniqid() . '.' . pathinfo($exportFilename, PATHINFO_EXTENSION);
                     
                     $destPath = $uploadsDir . '/' . $newFilename;
                     if (copy($sourcePath, $destPath)) {
-                        $image->setFilename($newFilename);
-                        if (!empty($imageData['mimeType'])) {
-                            $image->setMimeType($imageData['mimeType']);
-                        }
-                        if (isset($imageData['fileSize'])) {
-                            $image->setFileSize((int)$imageData['fileSize']);
-                        }
+                        // Path should be relative to uploads and start with /uploads
+                        $image->setPath('/uploads/vehicles/' . $vehicleSlug . '/' . $newFilename);
+                        $this->entityManager->persist($image);
                     }
+                } else {
+                    $this->logger->warning('[import] Vehicle image file not found in ZIP', [
+                        'expectedPath' => $sourcePath,
+                        'exportFilename' => $exportFilename
+                    ]);
                 }
+            } elseif (!empty($imageData['imagePath'])) {
+                // If we have imagePath but no file (JSON import without ZIP), skip
+                $this->logger->info('[import] Skipping vehicle image without file', [
+                    'imagePath' => $imageData['imagePath']
+                ]);
             }
-
-            $this->entityManager->persist($image);
         }
     }
 

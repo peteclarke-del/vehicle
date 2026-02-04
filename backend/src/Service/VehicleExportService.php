@@ -244,7 +244,7 @@ class VehicleExportService
         
         // Export vehicle images (ZIP export only)
         $vehicleImages = $includeMedia
-            ? $this->exportVehicleImages($vehicle)
+            ? $this->exportVehicleImages($vehicle, $zipDir)
             : null;
 
         $data = [
@@ -903,15 +903,73 @@ class VehicleExportService
     /**
      * Export vehicle images
      */
-    private function exportVehicleImages(Vehicle $vehicle): array
+    private function exportVehicleImages(Vehicle $vehicle, ?string $zipDir): array
     {
-        return array_map(fn($img) => [
-            'imagePath' => $img->getImagePath(),
-            'isMain' => $img->isMain(),
-            'caption' => $img->getCaption(),
-            'displayOrder' => $img->getDisplayOrder(),
-            'createdAt' => $img->getCreatedAt()?->format('c'),
-        ], $vehicle->getImages()->toArray());
+        $images = [];
+        $imageCollection = $vehicle->getImages()->toArray();
+        $this->logger->info('[export] Exporting vehicle images', [
+            'vehicleId' => $vehicle->getId(),
+            'imageCount' => count($imageCollection),
+            'zipDir' => $zipDir
+        ]);
+        
+        foreach ($imageCollection as $img) {
+            $imageData = [
+                'imagePath' => $img->getPath(),
+                'isMain' => $img->getIsPrimary(),
+                'caption' => $img->getCaption(),
+                'displayOrder' => $img->getDisplayOrder(),
+                'createdAt' => $img->getUploadedAt()?->format('c'),
+            ];
+
+            // Copy the physical image file to ZIP directory
+            if ($zipDir && $img->getPath()) {
+                // Path already includes /uploads prefix, so just prepend project dir
+                $sourcePath = $this->projectDir . $img->getPath();
+                
+                $this->logger->info('[export] Checking image file', [
+                    'imagePath' => $img->getPath(),
+                    'sourcePath' => $sourcePath,
+                    'exists' => file_exists($sourcePath)
+                ]);
+                
+                if (file_exists($sourcePath)) {
+                    // Create a safe filename with image ID to avoid collisions
+                    $safeName = 'image_' . $img->getId() . '_' . basename($img->getPath());
+                    $targetPath = $zipDir . '/images/' . $safeName;
+                    $destDir = dirname($targetPath);
+                    
+                    try {
+                        if (!is_dir($destDir)) {
+                            mkdir($destDir, 0755, true);
+                        }
+                        
+                        if (copy($sourcePath, $targetPath)) {
+                            $imageData['exportFilename'] = $safeName;
+                            $this->logger->debug('[export] Copied vehicle image', [
+                                'source' => $sourcePath,
+                                'target' => $targetPath
+                            ]);
+                        } else {
+                            $this->logger->error('[export] Failed to copy vehicle image', [
+                                'source' => $sourcePath
+                            ]);
+                        }
+                    } catch (\Exception $e) {
+                        $this->logger->error('[export] Exception copying vehicle image', [
+                            'source' => $sourcePath,
+                            'error' => $e->getMessage()
+                        ]);
+                    }
+                } else {
+                    $this->logger->warning('[export] Vehicle image file not found', ['path' => $sourcePath]);
+                }
+            }
+            
+            $images[] = $imageData;
+        }
+        
+        return $images;
     }
 
     /**

@@ -51,13 +51,17 @@ const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose }) => {
   useEffect(() => {
     if (open) {
       if (serviceRecord) {
+        // Only convert mileage if this is backend data (has id), prefill data is already in display units
+        const isBackendData = !!serviceRecord.id;
         setFormData({
           serviceDate: serviceRecord.serviceDate || '',
           serviceType: serviceRecord.serviceType || 'Full Service',
           laborCost: serviceRecord.laborCost || '',
           partsCost: serviceRecord.partsCost || '0',
           items: (serviceRecord.items || []).map(it => ({ ...it, description: it.description || it.name || null })),
-          mileage: serviceRecord.mileage ? Math.round(convert(serviceRecord.mileage)) : '',
+          mileage: serviceRecord.mileage
+            ? (isBackendData ? Math.round(convert(serviceRecord.mileage)) : serviceRecord.mileage)
+            : '',
           serviceProvider: serviceRecord.serviceProvider || '',
           workPerformed: serviceRecord.workPerformed || '',
           additionalCosts: serviceRecord.additionalCosts || '0.00',
@@ -110,7 +114,8 @@ const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose }) => {
     const svcPrefill = {
       serviceRecordId: serviceRecord?.id || null,
       serviceDate: formData.serviceDate || '',
-      mileage: formData.mileage ? Math.round(toKm(parseFloat(formData.mileage))) : null,
+      // Pass mileage in display units - child dialogs will display as-is and convert on save
+      mileage: formData.mileage || '',
     };
     if (selectedAddType === 'part') {
       setSelectedPart({ serviceRecordId: svcPrefill.serviceRecordId, installationDate: svcPrefill.serviceDate, mileageAtInstallation: svcPrefill.mileage });
