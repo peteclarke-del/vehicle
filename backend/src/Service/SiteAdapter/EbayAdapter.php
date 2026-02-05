@@ -15,6 +15,10 @@ class EbayAdapter implements SiteAdapterInterface
     private ?string $clientSecret;
     private ?string $marketplace;
     private ?string $accessToken;
+    private ?string $cacheDir;
+
+    // Token cache keys
+    private const TOKEN_CACHE_FILE = 'ebay_oauth_token.json';
 
     public function __construct(
         LoggerInterface $logger,
@@ -22,7 +26,8 @@ class EbayAdapter implements SiteAdapterInterface
         ?string $ebayClientId = null,
         ?string $ebayClientSecret = null,
         string $ebayMarketplace = 'EBAY_GB',
-        ?string $ebayAccessToken = null
+        ?string $ebayAccessToken = null,
+        ?string $cacheDir = null
     ) {
         $this->logger = $logger;
         $this->httpClient = $httpClient;
@@ -30,6 +35,7 @@ class EbayAdapter implements SiteAdapterInterface
         $this->clientSecret = $ebayClientSecret;
         $this->marketplace = $ebayMarketplace;
         $this->accessToken = $ebayAccessToken;
+        $this->cacheDir = $cacheDir ?? sys_get_temp_dir();
     }
 
     public function setContext(array $context): void
@@ -89,16 +95,24 @@ class EbayAdapter implements SiteAdapterInterface
      */
     public function fetchFromApi(string $itemId): array
     {
+        return $this->doFetchFromApi($itemId, false);
+    }
+
+    /**
+     * Internal method to fetch from API with retry logic for expired tokens
+     */
+    private function doFetchFromApi(string $itemId, bool $isRetry): array
+    {
         try {
-            // Use pre-generated token if available, otherwise generate new one
-            $token = $this->accessToken ?? $this->getOAuthToken();
+            // On retry, force a fresh token by skipping cached/configured token
+            $token = $isRetry ? $this->generateFreshToken() : ($this->accessToken ?? $this->getOAuthToken());
             if (!$token) {
                 $this->logger->warning('eBay: No access token available');
                 return [];
             }
 
             // Call Browse API
-            $this->logger->info('eBay: Fetching item via API', ['item_id' => $itemId]);
+            $this->logger->info('eBay: Fetching item via API', ['item_id' => $itemId, 'is_retry' => $isRetry]);
 
             $response = $this->httpClient->request('GET', "https://api.ebay.com/buy/browse/v1/item/v1|{$itemId}|0", [
                 'headers' => [
@@ -110,6 +124,13 @@ class EbayAdapter implements SiteAdapterInterface
 
             $status = $response->getStatusCode();
             $data = $response->toArray(false);
+
+            // On 401 (invalid/expired token), retry once with a fresh token
+            if ($status === 401 && !$isRetry) {
+                $this->logger->warning('eBay: Token expired/invalid, retrying with fresh token');
+                $this->clearCachedToken();
+                return $this->doFetchFromApi($itemId, true);
+            }
 
             // Explicitly surface 404 (item not found) so callers do not fall back to fragile HTML scraping
             if ($status === 404) {
@@ -200,12 +221,25 @@ class EbayAdapter implements SiteAdapterInterface
 
     private function getOAuthToken(): ?string
     {
+        // First, check if we have a pre-configured token
+        if ($this->accessToken) {
+            return $this->accessToken;
+        }
+
         if (!$this->clientId || !$this->clientSecret) {
             $this->logger->info('eBay: Client credentials not configured, cannot generate token');
             return null;
         }
 
+        // Check for cached token
+        $cachedToken = $this->getCachedToken();
+        if ($cachedToken) {
+            $this->logger->info('eBay: Using cached OAuth token');
+            return $cachedToken;
+        }
+
         try {
+            $this->logger->info('eBay: Generating new OAuth token');
             $credentials = base64_encode($this->clientId . ':' . $this->clientSecret);
 
             $response = $this->httpClient->request('POST', 'https://api.ebay.com/identity/v1/oauth2/token', [
@@ -220,10 +254,121 @@ class EbayAdapter implements SiteAdapterInterface
             ]);
 
             $data = $response->toArray(false);
-            return $data['access_token'] ?? null;
+            $token = $data['access_token'] ?? null;
+            $expiresIn = $data['expires_in'] ?? 7200; // Default 2 hours
+
+            if ($token) {
+                $this->cacheToken($token, (int)$expiresIn);
+            }
+
+            return $token;
         } catch (\Exception $e) {
             $this->logger->error('eBay OAuth error: ' . $e->getMessage());
             return null;
+        }
+    }
+
+    /**
+     * Get cached OAuth token if still valid
+     */
+    private function getCachedToken(): ?string
+    {
+        $cacheFile = $this->cacheDir . '/' . self::TOKEN_CACHE_FILE;
+
+        if (!file_exists($cacheFile)) {
+            return null;
+        }
+
+        try {
+            $data = json_decode(file_get_contents($cacheFile), true);
+            if (!$data || !isset($data['token'], $data['expires_at'])) {
+                return null;
+            }
+
+            // Check if token is still valid (with 5-minute buffer)
+            if ($data['expires_at'] > (time() + 300)) {
+                return $data['token'];
+            }
+
+            $this->logger->info('eBay: Cached token expired');
+            return null;
+        } catch (\Exception $e) {
+            $this->logger->warning('eBay: Failed to read cached token: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Clear the cached OAuth token
+     */
+    private function clearCachedToken(): void
+    {
+        $cacheFile = $this->cacheDir . '/' . self::TOKEN_CACHE_FILE;
+
+        if (file_exists($cacheFile)) {
+            @unlink($cacheFile);
+            $this->logger->info('eBay: Cleared cached token');
+        }
+    }
+
+    /**
+     * Generate a fresh OAuth token, bypassing any cached or configured token
+     */
+    private function generateFreshToken(): ?string
+    {
+        if (!$this->clientId || !$this->clientSecret) {
+            $this->logger->info('eBay: Client credentials not configured, cannot generate token');
+            return null;
+        }
+
+        try {
+            $this->logger->info('eBay: Generating fresh OAuth token');
+            $credentials = base64_encode($this->clientId . ':' . $this->clientSecret);
+
+            $response = $this->httpClient->request('POST', 'https://api.ebay.com/identity/v1/oauth2/token', [
+                'headers' => [
+                    'Content-Type' => 'application/x-www-form-urlencoded',
+                    'Authorization' => 'Basic ' . $credentials,
+                ],
+                'body' => [
+                    'grant_type' => 'client_credentials',
+                    'scope' => 'https://api.ebay.com/oauth/api_scope',
+                ],
+            ]);
+
+            $data = $response->toArray(false);
+            $token = $data['access_token'] ?? null;
+            $expiresIn = $data['expires_in'] ?? 7200;
+
+            if ($token) {
+                $this->cacheToken($token, (int)$expiresIn);
+            }
+
+            return $token;
+        } catch (\Exception $e) {
+            $this->logger->error('eBay OAuth error: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Cache OAuth token to file
+     */
+    private function cacheToken(string $token, int $expiresIn): void
+    {
+        $cacheFile = $this->cacheDir . '/' . self::TOKEN_CACHE_FILE;
+
+        try {
+            $data = [
+                'token' => $token,
+                'expires_at' => time() + $expiresIn,
+                'created_at' => time(),
+            ];
+
+            file_put_contents($cacheFile, json_encode($data), LOCK_EX);
+            $this->logger->info('eBay: Cached OAuth token', ['expires_in' => $expiresIn]);
+        } catch (\Exception $e) {
+            $this->logger->warning('eBay: Failed to cache token: ' . $e->getMessage());
         }
     }
 

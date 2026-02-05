@@ -55,6 +55,7 @@ services:
             $ebayClientSecret: '%env(EBAY_CLIENT_SECRET)%'
             $ebayMarketplace: '%env(EBAY_MARKETPLACE)%'
             $ebayAccessToken: '%env(EBAY_ACCESS_TOKEN)%'
+            $cacheDir: '%kernel.project_dir%/var/cache'
 
     App\Service\SiteAdapter\AmazonAdapter:
         arguments:
