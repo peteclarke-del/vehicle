@@ -39,10 +39,11 @@ class RepairCostCalculator
                 ->setParameter('mot', $mot)
                 ->getSingleScalarResult();
 
-            // Calculate service records total
+            // Calculate service records total only if includedInMotCost is true (checked)
             $servicesDql = 'SELECT COALESCE(SUM(s.laborCost + s.partsCost + s.consumablesCost + s.additionalCosts), 0) 
                             FROM App\Entity\ServiceRecord s 
-                            WHERE s.motRecord = :mot';
+                            WHERE s.motRecord = :mot
+                            AND s.includedInMotCost = true';
             $servicesTotal = (float) $this->entityManager->createQuery($servicesDql)
                 ->setParameter('mot', $mot)
                 ->getSingleScalarResult();

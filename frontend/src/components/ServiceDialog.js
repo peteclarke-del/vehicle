@@ -11,6 +11,12 @@ import {
   IconButton,
   Tooltip,
   Typography,
+  Checkbox,
+  FormControlLabel,
+  Box,
+  FormControl,
+  InputLabel,
+  Select,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import BuildIcon from '@mui/icons-material/Build';
@@ -25,7 +31,7 @@ import ConsumableDialog from './ConsumableDialog';
 import KnightRiderLoader from './KnightRiderLoader';
 import logger from '../utils/logger';
 
-const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose }) => {
+const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose, unlinkedServices = [] }) => {
   const [formData, setFormData] = useState({
     serviceDate: new Date().toISOString().split('T')[0],
     serviceType: 'Full Service',
@@ -44,6 +50,10 @@ const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose }) => {
   const [receiptAttachmentId, setReceiptAttachmentId] = useState(null);
   const [motRecords, setMotRecords] = useState([]);
   const [motRecordId, setMotRecordId] = useState(null);
+  const [includedInMotCost, setIncludedInMotCost] = useState(true);
+  const [includesMotTestCost, setIncludesMotTestCost] = useState(false);
+  const [selectedExistingServiceId, setSelectedExistingServiceId] = useState('');
+  const [isLinkingExisting, setIsLinkingExisting] = useState(false);
   const { api } = useAuth();
   const { t } = useTranslation();
   const { convert, toKm, getLabel } = useDistance();
@@ -71,6 +81,10 @@ const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose }) => {
         });
         setReceiptAttachmentId(serviceRecord.receiptAttachmentId || null);
         setMotRecordId(serviceRecord.motRecordId || null);
+        setIncludedInMotCost(serviceRecord.includedInMotCost !== false);
+        setIncludesMotTestCost(serviceRecord.includesMotTestCost === true);
+        setSelectedExistingServiceId('');
+        setIsLinkingExisting(false);
       } else {
         setFormData({
           serviceDate: new Date().toISOString().split('T')[0],
@@ -88,9 +102,66 @@ const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose }) => {
         });
         setReceiptAttachmentId(null);
         setMotRecordId(null);
+        setIncludedInMotCost(true);
+        setIncludesMotTestCost(false);
+        setSelectedExistingServiceId('');
+        setIsLinkingExisting(false);
       }
     }
   }, [open, serviceRecord, convert]);
+
+  // Detect if we're in MOT context (have prefilled motRecordId and no existing id)
+  const isFromMot = !serviceRecord?.id && serviceRecord && 'motRecordId' in serviceRecord;
+
+  // Handle selection of existing service from dropdown
+  const handleExistingServiceSelected = async (svcId) => {
+    setSelectedExistingServiceId(svcId);
+    if (!svcId) {
+      // Clear form when "Create New" is selected
+      setIsLinkingExisting(false);
+      setFormData({
+        serviceDate: serviceRecord?.serviceDate || new Date().toISOString().split('T')[0],
+        serviceType: 'Full Service',
+        laborCost: '',
+        partsCost: '0',
+        items: [],
+        mileage: serviceRecord?.mileage || '',
+        serviceProvider: '',
+        workPerformed: '',
+        additionalCosts: '0.00',
+        nextServiceDate: '',
+        nextServiceMileage: '',
+        notes: '',
+      });
+      setReceiptAttachmentId(null);
+      return;
+    }
+
+    try {
+      const resp = await api.get(`/service-records/${svcId}`);
+      const existingService = resp.data;
+      setIsLinkingExisting(true);
+      setFormData({
+        serviceDate: existingService.serviceDate || '',
+        serviceType: existingService.serviceType || 'Full Service',
+        laborCost: existingService.laborCost || '',
+        partsCost: existingService.partsCost || '0',
+        items: (existingService.items || []).map(it => ({ ...it, description: it.description || it.name || null })),
+        mileage: existingService.mileage ? Math.round(convert(existingService.mileage)) : '',
+        serviceProvider: existingService.serviceProvider || '',
+        workPerformed: existingService.workPerformed || '',
+        additionalCosts: existingService.additionalCosts || '0.00',
+        nextServiceDate: existingService.nextServiceDate || '',
+        nextServiceMileage: existingService.nextServiceMileage || '',
+        notes: existingService.notes || '',
+      });
+      setReceiptAttachmentId(existingService.receiptAttachmentId || null);
+      // When linking existing, default to NOT including cost (since it's already counted in service)
+      setIncludedInMotCost(false);
+    } catch (e) {
+      logger.error('Failed to load existing service', e);
+    }
+  };
 
   useEffect(() => {
     if (!open || !vehicleId) return;
@@ -391,11 +462,20 @@ const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose }) => {
         // Send calculated consumablesCost (items with cost=0 won't contribute to total)
         consumablesCost: consumablesTotal.toFixed(2),
         motRecordId: motRecordId || null,
+        includedInMotCost: motRecordId ? includedInMotCost : true,
+        includesMotTestCost: motRecordId ? includesMotTestCost : false,
         additionalCosts: parseFloat(formData.additionalCosts) || 0,
         nextServiceDate: formData.nextServiceDate || null,
         nextServiceMileage: formData.nextServiceMileage ? Math.round(toKm(parseFloat(formData.nextServiceMileage))) : null,
       };
-      if (serviceRecord && serviceRecord.id) {
+
+      // If linking an existing service to MOT, just update it with motRecordId
+      if (isLinkingExisting && selectedExistingServiceId) {
+        await api.put(`/service-records/${selectedExistingServiceId}`, {
+          motRecordId: motRecordId || serviceRecord?.motRecordId || null,
+          includedInMotCost: includedInMotCost,
+        });
+      } else if (serviceRecord && serviceRecord.id) {
         await api.put(`/service-records/${serviceRecord.id}`, data);
       } else {
         await api.post('/service-records', data);
@@ -412,11 +492,48 @@ const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose }) => {
   return (
     <Dialog open={open} onClose={() => onClose(false)} maxWidth="md" fullWidth>
       <DialogTitle>
-        {serviceRecord ? t('service.editService') : t('service.addService')}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+          <Box sx={{ flexShrink: 0 }}>
+            {serviceRecord?.id ? t('service.editService') : (isLinkingExisting ? t('mot.linkExistingService') : t('service.addService'))}
+          </Box>
+          {isFromMot && unlinkedServices.length > 0 && (
+            <Box sx={{ flexGrow: 1, minWidth: 300 }}>
+              <FormControl size="small" fullWidth>
+                <InputLabel>{t('service.selectExistingOrNew') || 'Select Existing or Create New'}</InputLabel>
+                <Select
+                  value={selectedExistingServiceId}
+                  onChange={(e) => handleExistingServiceSelected(e.target.value)}
+                  label={t('service.selectExistingOrNew') || 'Select Existing or Create New'}
+                >
+                  <MenuItem value="">{t('service.createNew') || '+ Create New Service'}</MenuItem>
+                  {unlinkedServices.map((s) => (
+                    <MenuItem key={s.id} value={s.id}>
+                      {s.serviceDate} - {s.serviceType || ''} - £{s.totalCost || s.total || '0'}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Box>
+          )}
+        </Box>
       </DialogTitle>
       <form onSubmit={handleSubmit}>
         <DialogContent>
           <Grid container spacing={2}>
+            {/* Show cost inclusion checkbox when linking existing */}
+            {isLinkingExisting && (
+              <Grid item xs={12}>
+                <FormControlLabel
+                  control={
+                    <Checkbox 
+                      checked={includedInMotCost} 
+                      onChange={(e) => setIncludedInMotCost(e.target.checked)}
+                    />
+                  }
+                  label={t('service.includeCostInMotRepair') || 'Include cost in MOT repair total'}
+                />
+              </Grid>
+            )}
             <Grid item xs={12} sm={6}>
               <TextField
                 fullWidth
@@ -640,7 +757,7 @@ const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose }) => {
                 onChange={handleChange}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid item xs={12} sm={4}>
               <TextField
                 fullWidth
                 name="serviceProvider"
@@ -649,22 +766,48 @@ const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose }) => {
                 onChange={handleChange}
               />
             </Grid>
-            {/* workPerformed removed — use notes for freeform descriptions */}
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  select
-                  name="motRecord"
-                  label={t('mot.associateWithMot')}
-                  value={motRecordId || ''}
-                  onChange={(e) => setMotRecordId(e.target.value || null)}
-                >
-                  <MenuItem value="">{t('common.none')}</MenuItem>
-                  {motRecords.map((m) => (
-                    <MenuItem key={m.id} value={m.id}>{`${m.testDate} - ${m.result || ''}`}</MenuItem>
-                  ))}
-                </TextField>
-              </Grid>
+            {/* MOT association */}
+            <Grid item xs={12} sm={4}>
+              <TextField
+                fullWidth
+                select
+                name="motRecord"
+                label={t('mot.associateWithMot')}
+                value={motRecordId || ''}
+                onChange={(e) => setMotRecordId(e.target.value || null)}
+              >
+                <MenuItem value="">{t('common.none')}</MenuItem>
+                {motRecords.map((m) => (
+                  <MenuItem key={m.id} value={m.id}>{`${m.testDate} - ${m.result || ''}`}</MenuItem>
+                ))}
+              </TextField>
+            </Grid>
+            <Grid item xs={12} sm={4} sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+              {motRecordId ? (
+                <>
+                  <FormControlLabel
+                    control={
+                      <Checkbox 
+                        checked={includedInMotCost} 
+                        onChange={(e) => setIncludedInMotCost(e.target.checked)}
+                        size="small"
+                      />
+                    }
+                    label={<Typography variant="body2">{t('service.includeCostInMotRepair') || 'Include in MOT repair total'}</Typography>}
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox 
+                        checked={includesMotTestCost} 
+                        onChange={(e) => setIncludesMotTestCost(e.target.checked)}
+                        size="small"
+                      />
+                    }
+                    label={<Typography variant="body2">{t('service.includeMotTestCost') || 'Includes MOT test cost'}</Typography>}
+                  />
+                </>
+              ) : null}
+            </Grid>
             <Grid item xs={12}>
               <TextField
                 fullWidth

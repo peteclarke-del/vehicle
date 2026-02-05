@@ -2137,6 +2137,14 @@ class VehicleImportService
             if (isset($dates['nextServiceDate'])) $serviceRecord->setNextServiceDate($dates['nextServiceDate']);
             if (isset($dates['createdAt'])) $serviceRecord->setCreatedAt($dates['createdAt']);
 
+            // Boolean fields for MOT cost linking
+            if (isset($serviceData['includedInMotCost'])) {
+                $serviceRecord->setIncludedInMotCost((bool)$serviceData['includedInMotCost']);
+            }
+            if (isset($serviceData['includesMotTestCost'])) {
+                $serviceRecord->setIncludesMotTestCost((bool)$serviceData['includesMotTestCost']);
+            }
+
             $this->entityManager->persist($serviceRecord);
             $serviceRecords[$index] = $serviceRecord;
         }
@@ -2613,6 +2621,14 @@ class VehicleImportService
             $dates = $this->hydrateDates($serviceData, $dateFields);
             if (isset($dates['serviceDate'])) $serviceRecord->setServiceDate($dates['serviceDate']);
             if (isset($dates['createdAt'])) $serviceRecord->setCreatedAt($dates['createdAt']);
+
+            // Boolean fields for MOT cost linking
+            if (isset($serviceData['includedInMotCost'])) {
+                $serviceRecord->setIncludedInMotCost((bool)$serviceData['includedInMotCost']);
+            }
+            if (isset($serviceData['includesMotTestCost'])) {
+                $serviceRecord->setIncludesMotTestCost((bool)$serviceData['includesMotTestCost']);
+            }
 
             // Import service items
             if (!empty($serviceData['items']) && is_array($serviceData['items'])) {

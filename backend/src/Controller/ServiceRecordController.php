@@ -74,6 +74,8 @@ class ServiceRecordController extends AbstractController
         }
 
         $vehicleId = $request->query->get('vehicleId');
+        $unassociated = $request->query->get('unassociated') === 'true';
+
         if ($vehicleId && !is_numeric($vehicleId)) {
             return new JsonResponse(['error' => 'Invalid vehicle ID'], 400);
         }
@@ -86,7 +88,7 @@ class ServiceRecordController extends AbstractController
             }
 
             // Eager load service records with all relationships
-            $serviceRecords = $this->entityManager->createQueryBuilder()
+            $qb = $this->entityManager->createQueryBuilder()
                 ->select('s', 'v', 'mot', 'att', 'items')
                 ->from(ServiceRecord::class, 's')
                 ->leftJoin('s.vehicle', 'v')
@@ -94,8 +96,13 @@ class ServiceRecordController extends AbstractController
                 ->leftJoin('s.receiptAttachment', 'att')
                 ->leftJoin('s.items', 'items')
                 ->where('s.vehicle = :vehicle')
-                ->setParameter('vehicle', $vehicle)
-                ->orderBy('s.serviceDate', 'DESC')
+                ->setParameter('vehicle', $vehicle);
+            
+            if ($unassociated) {
+                $qb->andWhere('s.motRecord IS NULL');
+            }
+            
+            $serviceRecords = $qb->orderBy('s.serviceDate', 'DESC')
                 ->getQuery()
                 ->getResult();
         } else {
@@ -115,8 +122,13 @@ class ServiceRecordController extends AbstractController
                 ->leftJoin('s.receiptAttachment', 'att')
                 ->leftJoin('s.items', 'items')
                 ->where('s.vehicle IN (:vehicles)')
-                ->setParameter('vehicles', $vehicles)
-                ->orderBy('s.serviceDate', 'DESC');
+                ->setParameter('vehicles', $vehicles);
+            
+            if ($unassociated) {
+                $qb->andWhere('s.motRecord IS NULL');
+            }
+            
+            $qb->orderBy('s.serviceDate', 'DESC');
 
             $serviceRecords = $qb->getQuery()->getResult();
         }
@@ -548,6 +560,13 @@ class ServiceRecordController extends AbstractController
         $totalCost = bcadd(bcadd($laborCost, $partsCost, 2), $consumablesCost, 2);
         $totalCost = bcadd($totalCost, $additionalCosts, 2);
 
+        // Include linked MOT test cost if this service bundles it
+        $motTestCost = '0.00';
+        if ($service->getMotRecord() && $service->includesMotTestCost()) {
+            $motTestCost = $service->getMotRecord()->getTestCost() ?? '0.00';
+            $totalCost = bcadd($totalCost, $motTestCost, 2);
+        }
+
         $data = [
             'id' => $service->getId(),
             'vehicleId' => $service->getVehicle()->getId(),
@@ -556,6 +575,9 @@ class ServiceRecordController extends AbstractController
             'motRecordId' => $service->getMotRecord()?->getId(),
             'motTestNumber' => $service->getMotRecord()?->getMotTestNumber(),
             'motTestDate' => $service->getMotRecord()?->getTestDate()?->format('Y-m-d'),
+            'motTestCost' => $motTestCost,
+            'includedInMotCost' => $service->isIncludedInMotCost(),
+            'includesMotTestCost' => $service->includesMotTestCost(),
             'laborCost' => $laborCost,
             'partsCost' => $partsCost,
             'consumablesCost' => $consumablesCost,
@@ -768,9 +790,9 @@ class ServiceRecordController extends AbstractController
                 'motRecordId' => $data['motRecordId']
             ]);
 
-            if ($data['motRecordId'] === null || $data['motRecordId'] === '') {
+            if ($data['motRecordId'] === null || $data['motRecordId'] === '' || $data['motRecordId'] === 0 || $data['motRecordId'] === '0') {
                 $service->setMotRecord(null);
-                $this->logger->info('ServiceRecord disassociated from MOT (explicit null)', [
+                $this->logger->info('ServiceRecord disassociated from MOT (explicit null/0)', [
                     'serviceId' => $service->getId()
                 ]);
             } else {
@@ -790,6 +812,16 @@ class ServiceRecordController extends AbstractController
                     ]);
                 }
             }
+        }
+
+        // Handle includedInMotCost flag
+        if (array_key_exists('includedInMotCost', $data)) {
+            $service->setIncludedInMotCost((bool)$data['includedInMotCost']);
+        }
+
+        // Handle includesMotTestCost flag
+        if (array_key_exists('includesMotTestCost', $data)) {
+            $service->setIncludesMotTestCost((bool)$data['includesMotTestCost']);
         }
 
         // Handle itemised entries (parts / labour / consumables)
