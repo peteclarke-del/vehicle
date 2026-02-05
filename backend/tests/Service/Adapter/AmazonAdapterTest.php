@@ -7,13 +7,15 @@ namespace App\Tests\Service\Adapter;
 use App\Service\SiteAdapter\AmazonAdapter;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpClient\MockHttpClient;
-use Symfony\Component\HttpClient\Response\MockResponse;
 use Psr\Log\NullLogger;
 
 /**
  * Amazon Adapter Test
  * 
- * Unit tests for Amazon product scraping adapter
+ * Unit tests for Amazon product scraping adapter.
+ * Constructor: (LoggerInterface $logger, HttpClientInterface $httpClient, ...)
+ * supports(): (string $host, string $html) - checks if host contains 'amazon.'
+ * parse(): (string $html) - returns name, price, description, manufacturer
  */
 class AmazonAdapterTest extends TestCase
 {
@@ -23,26 +25,25 @@ class AmazonAdapterTest extends TestCase
     protected function setUp(): void
     {
         $this->httpClient = new MockHttpClient();
+        // Constructor order: LoggerInterface $logger, HttpClientInterface $httpClient
         $this->adapter = new AmazonAdapter(new NullLogger(), $this->httpClient);
     }
 
-    public function testSupportsAmazonUrl(): void
+    public function testSupportsAmazonDomains(): void
     {
-        $this->assertTrue($this->adapter->supports('https://www.amazon.com/dp/B001234567'));
-        $this->assertTrue($this->adapter->supports('https://www.amazon.co.uk/dp/B001234567'));
-        $this->assertTrue($this->adapter->supports('https://amazon.com/gp/product/B001234567'));
-        $this->assertFalse($this->adapter->supports('https://ebay.com/itm/123'));
+        // supports() takes (host, html) not a full URL
+        $this->assertTrue($this->adapter->supports('www.amazon.com', ''));
+        $this->assertTrue($this->adapter->supports('www.amazon.co.uk', ''));
+        $this->assertTrue($this->adapter->supports('amazon.de', ''));
+        $this->assertFalse($this->adapter->supports('ebay.com', ''));
+        $this->assertFalse($this->adapter->supports('www.ebay.com', ''));
     }
 
     public function testExtractsProductName(): void
     {
         $html = '<html><body><span id="productTitle">Brake Pads Set</span></body></html>';
-        $mockResponse = new MockResponse($html);
 
-        $this->httpClient = new MockHttpClient([$mockResponse]);
-        $this->adapter = new AmazonAdapter($this->httpClient, new NullLogger());
-
-        $result = $this->adapter->parse($html, 'https://www.amazon.com/dp/B001234567');
+        $result = $this->adapter->parse($html);
 
         $this->assertArrayHasKey('name', $result);
         $this->assertSame('Brake Pads Set', $result['name']);
@@ -51,168 +52,119 @@ class AmazonAdapterTest extends TestCase
     public function testExtractsPrice(): void
     {
         $html = '<html><body><span class="a-price-whole">25.</span><span class="a-price-fraction">99</span></body></html>';
-        $mockResponse = new MockResponse($html);
 
-        $this->httpClient = new MockHttpClient([$mockResponse]);
-        $this->adapter = new AmazonAdapter($this->httpClient, new NullLogger());
-
-        $result = $this->adapter->parse($html, 'https://www.amazon.com/dp/B001234567');
+        $result = $this->adapter->parse($html);
 
         $this->assertArrayHasKey('price', $result);
-        $this->assertSame(25.99, $result['price']);
+        $this->assertEquals('25.99', $result['price']);
     }
 
-    public function testExtractsImage(): void
+    public function testExtractsPriceWithCommas(): void
     {
-        $html = '<html><body><img id="landingImage" src="https://m.media-amazon.com/images/I/image.jpg" /></body></html>';
-        $mockResponse = new MockResponse($html);
+        $html = '<html><body><span class="a-price-whole">1,299.</span><span class="a-price-fraction">99</span></body></html>';
 
-        $this->httpClient = new MockHttpClient([$mockResponse]);
-        $this->adapter = new AmazonAdapter($this->httpClient, new NullLogger());
+        $result = $this->adapter->parse($html);
 
-        $result = $this->adapter->parse($html, 'https://www.amazon.com/dp/B001234567');
-
-        $this->assertArrayHasKey('image', $result);
-        $this->assertSame('https://m.media-amazon.com/images/I/image.jpg', $result['image']);
+        $this->assertArrayHasKey('price', $result);
+        $this->assertEquals('1299.99', $result['price']);
     }
 
-    public function testExtractsAsin(): void
+    public function testExtractsAlternativePrice(): void
     {
-        $html = '<html><body><input type="hidden" name="ASIN" value="B001234567" /></body></html>';
-        $mockResponse = new MockResponse($html);
+        $html = '<html><body><span class="a-offscreen">£45.99</span></body></html>';
 
-        $this->httpClient = new MockHttpClient([$mockResponse]);
-        $this->adapter = new AmazonAdapter($this->httpClient, new NullLogger());
+        $result = $this->adapter->parse($html);
 
-        $result = $this->adapter->parse($html, 'https://www.amazon.com/dp/B001234567');
-
-        $this->assertArrayHasKey('sku', $result);
-        $this->assertSame('B001234567', $result['sku']);
+        $this->assertArrayHasKey('price', $result);
+        $this->assertEquals('45.99', $result['price']);
     }
 
-    public function testExtractsBrand(): void
+    public function testExtractsDescription(): void
     {
-        $html = '<html><body><a id="bylineInfo">Bosch</a></body></html>';
-        $mockResponse = new MockResponse($html);
+        $html = '<html><body><div id="feature-bullets">High quality brake pads for your vehicle</div></body></html>';
 
-        $this->httpClient = new MockHttpClient([$mockResponse]);
-        $this->adapter = new AmazonAdapter($this->httpClient, new NullLogger());
+        $result = $this->adapter->parse($html);
 
-        $result = $this->adapter->parse($html, 'https://www.amazon.com/dp/B001234567');
-
-        $this->assertArrayHasKey('brand', $result);
-        $this->assertSame('Bosch', $result['brand']);
+        $this->assertArrayHasKey('description', $result);
+        $this->assertSame('High quality brake pads for your vehicle', $result['description']);
     }
 
-    public function testExtractsRating(): void
+    public function testExtractsManufacturer(): void
     {
-        $html = '<html><body><span class="a-icon-alt">4.5 out of 5 stars</span></body></html>';
-        $mockResponse = new MockResponse($html);
+        $html = '<html><body><a id="bylineInfo">Bosch Automotive</a></body></html>';
 
-        $this->httpClient = new MockHttpClient([$mockResponse]);
-        $this->adapter = new AmazonAdapter($this->httpClient, new NullLogger());
+        $result = $this->adapter->parse($html);
 
-        $result = $this->adapter->parse($html, 'https://www.amazon.com/dp/B001234567');
-
-        $this->assertArrayHasKey('rating', $result);
-        $this->assertSame(4.5, $result['rating']);
+        $this->assertArrayHasKey('manufacturer', $result);
+        $this->assertSame('Bosch Automotive', $result['manufacturer']);
     }
 
-    public function testExtractsReviewCount(): void
+    public function testExtractsManufacturerRemovesVisitThePrefix(): void
     {
-        $html = '<html><body><span id="acrCustomerReviewText">1,234 ratings</span></body></html>';
-        $mockResponse = new MockResponse($html);
+        $html = '<html><body><a id="bylineInfo">Visit the Bosch Store</a></body></html>';
 
-        $this->httpClient = new MockHttpClient([$mockResponse]);
-        $this->adapter = new AmazonAdapter($this->httpClient, new NullLogger());
+        $result = $this->adapter->parse($html);
 
-        $result = $this->adapter->parse($html, 'https://www.amazon.com/dp/B001234567');
-
-        $this->assertArrayHasKey('reviewCount', $result);
-        $this->assertSame(1234, $result['reviewCount']);
+        $this->assertArrayHasKey('manufacturer', $result);
+        $this->assertSame('Bosch Store', $result['manufacturer']);
     }
 
-    public function testExtractsAvailability(): void
+    public function testExtractsManufacturerRemovesBrandPrefix(): void
     {
-        $html = '<html><body><span id="availability">In Stock</span></body></html>';
-        $mockResponse = new MockResponse($html);
+        $html = '<html><body><a id="bylineInfo">Brand: Bosch</a></body></html>';
 
-        $this->httpClient = new MockHttpClient([$mockResponse]);
-        $this->adapter = new AmazonAdapter($this->httpClient, new NullLogger());
+        $result = $this->adapter->parse($html);
 
-        $result = $this->adapter->parse($html, 'https://www.amazon.com/dp/B001234567');
-
-        $this->assertArrayHasKey('availability', $result);
-        $this->assertSame('In Stock', $result['availability']);
-    }
-
-    public function testHandlesOutOfStock(): void
-    {
-        $html = '<html><body><span id="availability">Currently unavailable</span></body></html>';
-        $mockResponse = new MockResponse($html);
-
-        $this->httpClient = new MockHttpClient([$mockResponse]);
-        $this->adapter = new AmazonAdapter($this->httpClient, new NullLogger());
-
-        $result = $this->adapter->parse($html, 'https://www.amazon.com/dp/B001234567');
-
-        $this->assertSame('Currently unavailable', $result['availability']);
+        $this->assertArrayHasKey('manufacturer', $result);
+        $this->assertSame('Bosch', $result['manufacturer']);
     }
 
     public function testHandlesMissingElements(): void
     {
         $html = '<html><body></body></html>';
-        $mockResponse = new MockResponse($html);
 
-        $this->httpClient = new MockHttpClient([$mockResponse]);
-        $this->adapter = new AmazonAdapter($this->httpClient, new NullLogger());
-
-        $result = $this->adapter->parse($html, 'https://www.amazon.com/dp/B001234567');
+        $result = $this->adapter->parse($html);
 
         $this->assertIsArray($result);
+        $this->assertEmpty($result);
     }
 
-    public function testParsesAsinFromUrl(): void
+    public function testHandlesPartialData(): void
     {
-        $url = 'https://www.amazon.com/dp/B001234567';
-        $asin = $this->adapter->extractAsinFromUrl($url);
+        $html = '<html><body><span id="productTitle">Test Product</span></body></html>';
 
-        $this->assertSame('B001234567', $asin);
+        $result = $this->adapter->parse($html);
+
+        $this->assertArrayHasKey('name', $result);
+        $this->assertArrayNotHasKey('price', $result);
+        $this->assertArrayNotHasKey('description', $result);
     }
 
-    public function testParsesAsinFromProductUrl(): void
+    public function testFiltersEmptyValues(): void
     {
-        $url = 'https://www.amazon.com/Product-Name/dp/B001234567/ref=xyz';
-        $asin = $this->adapter->extractAsinFromUrl($url);
+        // The parse method uses array_filter, so empty values should be removed
+        $html = '<html><body><span id="productTitle">  </span></body></html>';
 
-        $this->assertSame('B001234567', $asin);
+        $result = $this->adapter->parse($html);
+
+        // Empty string after trim should be filtered out
+        $this->assertArrayNotHasKey('name', $result);
     }
 
-    public function testHandlesUkAmazonUrl(): void
+    public function testExtractsCompleteProduct(): void
     {
-        $url = 'https://www.amazon.co.uk/dp/B001234567';
-        
-        $this->assertTrue($this->adapter->supports($url));
-    }
+        $html = '<html><body>
+            <span id="productTitle">Oil Filter</span>
+            <span class="a-price-whole">12.</span><span class="a-price-fraction">99</span>
+            <div id="feature-bullets">Premium oil filter for all vehicles</div>
+            <a id="bylineInfo">Mann Filter</a>
+        </body></html>';
 
-    public function testHandlesDeAmazonUrl(): void
-    {
-        $url = 'https://www.amazon.de/dp/B001234567';
-        
-        $this->assertTrue($this->adapter->supports($url));
-    }
+        $result = $this->adapter->parse($html);
 
-    public function testDetectsCurrency(): void
-    {
-        $html = '<html><body><span class="a-price-symbol">£</span><span class="a-price-whole">25.</span></body></html>';
-        $mockResponse = new MockResponse($html);
-
-        $this->httpClient = new MockHttpClient([$mockResponse]);
-        $this->adapter = new AmazonAdapter($this->httpClient, new NullLogger());
-
-        $result = $this->adapter->parse($html, 'https://www.amazon.co.uk/dp/B001234567');
-
-        $this->assertArrayHasKey('currency', $result);
-        $this->assertSame('GBP', $result['currency']);
+        $this->assertSame('Oil Filter', $result['name']);
+        $this->assertEquals('12.99', $result['price']);
+        $this->assertSame('Premium oil filter for all vehicles', $result['description']);
+        $this->assertSame('Mann Filter', $result['manufacturer']);
     }
 }
