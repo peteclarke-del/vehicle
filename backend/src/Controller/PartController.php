@@ -409,6 +409,7 @@ class PartController extends AbstractController
             }
             if ($svcId === null || $svcId === '' || $svcId === 0 || $svcId === '0') {
                 $part->setServiceRecord(null);
+                $part->setIncludedInServiceCost(false);
                 $this->logger->info('Part disassociated from Service (explicit)', ['partId' => $part->getId()]);
             } else {
                 $svcId = is_numeric($svcId) ? (int)$svcId : $svcId;
@@ -418,6 +419,7 @@ class PartController extends AbstractController
                     $this->logger->info('Part associated with Service', ['partId' => $part->getId(), 'serviceId' => $svc->getId()]);
                 } else {
                     $part->setServiceRecord(null);
+                    $part->setIncludedInServiceCost(false);
                     $this->logger->info('Part disassociated from Service (not found)', ['partId' => $part->getId(), 'serviceId' => $svcId]);
                 }
             }

@@ -1050,10 +1050,12 @@ class ServiceRecordController extends AbstractController
             if ($removeLinked === 0) {
                 if ($consumable && $consumable->getServiceRecord() && $consumable->getServiceRecord()->getId() === $service->getId()) {
                     $consumable->setServiceRecord(null);
+                    $consumable->setIncludedInServiceCost(false);
                     $this->entityManager->persist($consumable);
                 }
                 if ($part && $part->getServiceRecord() && $part->getServiceRecord()->getId() === $service->getId()) {
                     $part->setServiceRecord(null);
+                    $part->setIncludedInServiceCost(false);
                     $this->entityManager->persist($part);
                 }
             }

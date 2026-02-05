@@ -447,6 +447,7 @@ class ConsumableController extends AbstractController
 
             if ($svcId === null || $svcId === '' || $svcId === 0 || $svcId === '0') {
                 $consumable->setServiceRecord(null);
+                $consumable->setIncludedInServiceCost(false);
                 $this->logger->info('Consumable disassociated from Service (explicit)', [
                     'consumableId' => $consumable->getId(),
                 ]);
@@ -461,6 +462,7 @@ class ConsumableController extends AbstractController
                     ]);
                 } else {
                     $consumable->setServiceRecord(null);
+                    $consumable->setIncludedInServiceCost(false);
                     $this->logger->info('Consumable disassociated from Service (not found)', [
                         'consumableId' => $consumable->getId(),
                         'serviceId' => $svcId,
