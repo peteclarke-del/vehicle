@@ -13,6 +13,7 @@ import {
   FormControl,
   InputLabel,
   Select,
+  Box,
 } from '@mui/material';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
@@ -27,6 +28,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import BuildIcon from '@mui/icons-material/Build';
 import OpacityIcon from '@mui/icons-material/Opacity';
 import MiscellaneousServicesIcon from '@mui/icons-material/MiscellaneousServices';
+import LinkIcon from '@mui/icons-material/Link';
 import logger from '../utils/logger';
 
 const MotDialog = ({ open, motRecord, vehicleId, vehicles, onClose }) => {
@@ -60,6 +62,11 @@ const MotDialog = ({ open, motRecord, vehicleId, vehicles, onClose }) => {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const lastLoadedMotIdRef = useRef(null);
   const [confirmTarget, setConfirmTarget] = useState(null); // { type, id, name }
+  const [unlinkedServices, setUnlinkedServices] = useState([]);
+  const [selectedExistingServiceId, setSelectedExistingServiceId] = useState('');
+  const [linkServiceDialogOpen, setLinkServiceDialogOpen] = useState(false);
+  const [serviceToLink, setServiceToLink] = useState(null);
+  const [includeCostInMot, setIncludeCostInMot] = useState(true);
   const { api } = useAuth();
   const { t } = useTranslation();
   const { convert, toKm, getLabel } = useDistance();
@@ -73,6 +80,29 @@ const MotDialog = ({ open, motRecord, vehicleId, vehicles, onClose }) => {
       logger.error('Error loading MOT items', err);
     }
   }, [api]);
+
+  // Load unlinked services for the vehicle when dialog opens
+  const loadUnlinkedServices = useCallback(async (vId) => {
+    if (!vId) return;
+    try {
+      const resp = await api.get('/service-records', { params: { vehicleId: vId, unassociated: 'true' } });
+      setUnlinkedServices(resp.data || []);
+    } catch (err) {
+      logger.error('Error loading unlinked services', err);
+      setUnlinkedServices([]);
+    }
+  }, [api]);
+
+  // Load unlinked services when dialog opens
+  useEffect(() => {
+    const vId = formData.vehicleId || vehicleId;
+    if (open && vId && motRecord?.id) {
+      loadUnlinkedServices(vId);
+    } else if (!open) {
+      setUnlinkedServices([]);
+      setSelectedExistingServiceId('');
+    }
+  }, [open, formData.vehicleId, vehicleId, motRecord?.id, loadUnlinkedServices]);
 
   // Recompute repair cost when mot items change
   useEffect(() => {
@@ -95,11 +125,61 @@ const MotDialog = ({ open, motRecord, vehicleId, vehicles, onClose }) => {
       total += cost * qty;
     });
     services.forEach(s => {
+      // Exclude services where includedInMotCost=false from repair cost
+      if (s.includedInMotCost === false) return;
       const t = parseFloat(s.totalCost || s.total || 0) || 0;
       total += t;
     });
     setFormData(prev => ({ ...prev, repairCost: total.toFixed(2) }));
   }, [motItems]);
+
+  // Handle selecting a service to link - show dialog first
+  const handleSelectServiceToLink = (serviceId) => {
+    setSelectedExistingServiceId(serviceId);
+    if (!serviceId) return;
+    
+    const service = unlinkedServices.find(s => s.id === parseInt(serviceId, 10));
+    if (service) {
+      setServiceToLink(service);
+      setIncludeCostInMot(true); // Default to including cost
+      setLinkServiceDialogOpen(true);
+    }
+  };
+
+  // Actually link the service with the chosen cost option
+  const handleConfirmLinkService = async () => {
+    if (!serviceToLink || !motRecord?.id) return;
+
+    try {
+      // Update the service record to link it to this MOT with cost option
+      await api.put(`/service-records/${serviceToLink.id}`, { 
+        motRecordId: motRecord.id,
+        includedInMotCost: includeCostInMot
+      });
+      // Reload items and unlinked services
+      await loadMotItems(motRecord.id);
+      const vId = formData.vehicleId || vehicleId;
+      if (vId) await loadUnlinkedServices(vId);
+      setSelectedExistingServiceId('');
+      setLinkServiceDialogOpen(false);
+      setServiceToLink(null);
+    } catch (err) {
+      logger.error('Error linking existing service to MOT', err);
+    }
+  };
+
+  // Toggle cost inclusion for an already-linked service
+  const handleToggleServiceCostInclusion = async (service) => {
+    try {
+      await api.put(`/service-records/${service.id}`, { 
+        includedInMotCost: !service.includedInMotCost
+      });
+      // Reload items to reflect the change
+      if (motRecord?.id) await loadMotItems(motRecord.id);
+    } catch (err) {
+      logger.error('Error toggling service cost inclusion', err);
+    }
+  };
 
   const handleConfirmAction = async (action) => {
     if (!confirmTarget) return;
@@ -144,6 +224,8 @@ const MotDialog = ({ open, motRecord, vehicleId, vehicles, onClose }) => {
           total += cost * qty;
         });
         (items.serviceRecords || []).forEach(s => {
+          // Exclude services where includedInMotCost=false from repair cost
+          if (s.includedInMotCost === false) return;
           const t = parseFloat(s.totalCost || s.total || 0) || 0;
           total += t;
         });
@@ -516,6 +598,14 @@ const MotDialog = ({ open, motRecord, vehicleId, vehicles, onClose }) => {
                 {motItems.serviceRecords && motItems.serviceRecords.map((s) => (
                   <div key={`svc-${s.id}`} style={{ padding: 6, borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <Tooltip title={s.includedInMotCost ? t('mot.costIncluded') || 'Cost included in MOT' : t('mot.costNotIncluded') || 'Cost not included in MOT'}>
+                        <Checkbox 
+                          size="small" 
+                          checked={s.includedInMotCost !== false}
+                          onChange={() => handleToggleServiceCostInclusion(s)}
+                          sx={{ p: 0, mr: 1 }}
+                        />
+                      </Tooltip>
                       <Typography component="button" onClick={async (e) => {
                         e.preventDefault();
                         try {
@@ -529,7 +619,11 @@ const MotDialog = ({ open, motRecord, vehicleId, vehicles, onClose }) => {
                         <MiscellaneousServicesIcon fontSize="small" sx={{ mr: 1, verticalAlign: 'middle' }} />
                         { (s.items && s.items.length > 0) ? (s.items.map(it => it.description || '').filter(Boolean).join(', ')) : (s.workPerformed || s.serviceProvider || (t('service.service') || 'Service')) }
                       </Typography>
-                      <span>— {s.totalCost || s.total || ''} ({s.mileage || ''})</span>
+                      {s.includedInMotCost !== false ? (
+                        <span>— {s.totalCost || s.total || ''} ({s.mileage || ''})</span>
+                      ) : (
+                        <span style={{ fontStyle: 'italic', color: '#666' }}>— {t('mot.linkedService') || 'Linked (cost separate)'}</span>
+                      )}
                     </div>
                     <div>
                       <Tooltip title={t('common.delete')}>
@@ -602,10 +696,16 @@ const MotDialog = ({ open, motRecord, vehicleId, vehicles, onClose }) => {
         open={openServiceDialog}
         serviceRecord={selectedServiceRecord}
         vehicleId={vehicleId}
+        unlinkedServices={unlinkedServices}
         onClose={async (saved) => {
           setOpenServiceDialog(false);
           setSelectedServiceRecord(null);
-          if (saved && motRecord?.id) await loadMotItems(motRecord.id);
+          if (saved && motRecord?.id) {
+            await loadMotItems(motRecord.id);
+            // Also reload unlinked services since one may have been linked
+            const vId = formData.vehicleId || vehicleId;
+            if (vId) await loadUnlinkedServices(vId);
+          }
         }}
       />
       <PartDialog

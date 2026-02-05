@@ -508,6 +508,8 @@ class VehicleExportService
             'nextServiceMileage' => $serviceRecord->getNextServiceMileage(),
             'workPerformed' => $serviceRecord->getWorkPerformed(),
             'notes' => $serviceRecord->getNotes(),
+            'includedInMotCost' => $serviceRecord->isIncludedInMotCost(),
+            'includesMotTestCost' => $serviceRecord->includesMotTestCost(),
             'items' => $this->exportServiceItems($serviceRecord, $includeAttachmentRefs, $zipDir),
             'createdAt' => $serviceRecord->getCreatedAt()?->format('c'),
         ];

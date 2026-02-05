@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import logger from '../utils/logger';
 import SafeStorage from '../utils/SafeStorage';
 import {
@@ -37,6 +38,7 @@ import ViewAttachmentIconButton from '../components/ViewAttachmentIconButton';
 import KnightRiderLoader from '../components/KnightRiderLoader';
 
 const MotRecords = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [motRecords, setMotRecords] = useState([]);
   const [selectedVehicle, setSelectedVehicle] = useState('');
   const [loading, setLoading] = useState(true);
@@ -54,6 +56,7 @@ const MotRecords = () => {
   const { convert, format, getLabel } = useDistance();
   const { defaultVehicleId, setDefaultVehicle } = useUserPreferences();
   const [hasManualSelection, setHasManualSelection] = useState(false);
+  const urlMotIdHandledRef = useRef(false);
 
   const loadMotRecords = useCallback(async () => {
     setLoading(true);
@@ -97,6 +100,32 @@ const MotRecords = () => {
       }
     }
   }, [vehicles, selectedVehicle, defaultVehicleId]);
+
+  // Handle URL params to auto-open a specific MOT record
+  useEffect(() => {
+    const urlVehicleId = searchParams.get('vehicleId');
+    const urlMotId = searchParams.get('motId');
+    
+    // Set vehicle from URL if provided
+    if (urlVehicleId && vehicles.length > 0 && !hasManualSelection) {
+      const found = vehicles.find((v) => String(v.id) === String(urlVehicleId));
+      if (found && String(selectedVehicle) !== String(urlVehicleId)) {
+        setSelectedVehicle(urlVehicleId);
+      }
+    }
+    
+    // Open MOT dialog if motId in URL and records loaded
+    if (urlMotId && motRecords.length > 0 && !urlMotIdHandledRef.current) {
+      const mot = motRecords.find((m) => String(m.id) === String(urlMotId));
+      if (mot) {
+        setEditingMot(mot);
+        setDialogOpen(true);
+        urlMotIdHandledRef.current = true;
+        // Clear URL params after opening
+        setSearchParams({}, { replace: true });
+      }
+    }
+  }, [searchParams, vehicles, motRecords, selectedVehicle, hasManualSelection, setSearchParams]);
 
   const handleAdd = () => {
     setEditingMot(null);
