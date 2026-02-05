@@ -147,6 +147,13 @@ exit($errors > 0 ? 1 : 0);
 
 // ==================== Helper Functions ====================
 
+/**
+ * function convertStoragePath
+ *
+ * @param string $path
+ *
+ * @return string
+ */
 function convertStoragePath(string $path): string
 {
     if (!str_starts_with($path, 'attachments/')) {
@@ -156,23 +163,16 @@ function convertStoragePath(string $path): string
     // Replace 'attachments/' with 'vehicles/'
     $newPath = 'vehicles/' . substr($path, strlen('attachments/'));
     
-    // Fix category names to match the new standard
-    // part -> parts, consumable -> consumables
-    $categoryMappings = [
-        '/part/' => '/parts/',
-        '/consumable/' => '/consumables/',
-    ];
-    
-    foreach ($categoryMappings as $old => $new) {
-        if (str_contains($newPath, $old)) {
-            $newPath = str_replace($old, $new, $newPath);
-            break;
-        }
-    }
-
     return $newPath;
 }
 
+/**
+ * function removeEmptyDirectories
+ *
+ * @param string $dir
+ *
+ * @return void
+ */
 function removeEmptyDirectories(string $dir): void
 {
     if (!is_dir($dir)) {

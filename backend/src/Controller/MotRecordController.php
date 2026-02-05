@@ -8,6 +8,7 @@ use App\Controller\Trait\UserSecurityTrait;
 use App\Controller\Trait\JsonValidationTrait;
 use App\Entity\Attachment;
 use App\Entity\MotRecord;
+use App\Entity\ServiceRecord;
 use App\Entity\Vehicle;
 use App\Entity\Part;
 use App\Entity\Consumable;
@@ -64,7 +65,7 @@ class MotRecordController extends AbstractController
         $this->attachmentLinkingService->finalizeAttachmentLink($motRecord);
         $this->entityManager->flush();
 
-        return new JsonResponse($this->serializer->serializeMotRecord($motRecord), 201);
+        return new JsonResponse($this->addTestCostBundledFlag($this->serializer->serializeMotRecord($motRecord), $motRecord), 201);
     }
 
     #[Route('/mot-records/{id}', methods: ['PUT'])]
@@ -91,7 +92,7 @@ class MotRecordController extends AbstractController
             $this->logger->error('Error recalculating repair cost after MOT update', ['exception' => $e->getMessage()]);
         }
 
-        return new JsonResponse($this->serializer->serializeMotRecord($motRecord));
+        return new JsonResponse($this->addTestCostBundledFlag($this->serializer->serializeMotRecord($motRecord), $motRecord));
     }
 
     #[Route('/mot-records/{id}', methods: ['DELETE'])]
@@ -136,17 +137,19 @@ class MotRecordController extends AbstractController
             ->getResult();
 
         return new JsonResponse([
-            'motRecord' => $this->serializer->serializeMotRecord($motRecord),
+            'motRecord' => $this->addTestCostBundledFlag($this->serializer->serializeMotRecord($motRecord), $motRecord),
             'parts' => array_map(fn($p) => $this->serializer->serializePart($p), $parts),
             'consumables' => array_map(fn($c) => $this->serializer->serializeConsumable($c), $consumables),
             'serviceRecords' => array_map(fn($s) => [
                 'id' => $s->getId(),
+                'serviceDate' => $s->getServiceDate()?->format('Y-m-d'),
                 'laborCost' => $s->getLaborCost(),
                 'partsCost' => $s->getPartsCost(),
                 'totalCost' => $s->getTotalCost(),
                 'mileage' => $s->getMileage(),
                 'serviceProvider' => $s->getServiceProvider(),
                 'workPerformed' => $s->getWorkPerformed(),
+                'includedInMotCost' => $s->isIncludedInMotCost(),
                 'items' => array_map(fn($it) => [
                     'id' => $it->getId(),
                     'type' => $it->getType(),
@@ -205,8 +208,21 @@ class MotRecordController extends AbstractController
             $records = $qb->getQuery()->getResult();
         }
 
-        $out = array_map(fn($r) => $this->serializer->serializeMotRecord($r), $records);
+        $out = array_map(fn($r) => $this->addTestCostBundledFlag($this->serializer->serializeMotRecord($r), $r), $records);
         return new JsonResponse($out);
+    }
+
+    /**
+     * Check if any service record has bundled this MOT's test cost
+     */
+    private function addTestCostBundledFlag(array $serialized, MotRecord $mot): array
+    {
+        $serviceRecord = $this->entityManager->getRepository(ServiceRecord::class)->findOneBy([
+            'motRecord' => $mot,
+            'includesMotTestCost' => true
+        ]);
+        $serialized['testCostBundledInService'] = $serviceRecord !== null;
+        return $serialized;
     }
 
     #[Route('/mot-records/import-dvsa', methods: ['POST'])]

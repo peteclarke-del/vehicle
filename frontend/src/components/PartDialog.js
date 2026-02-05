@@ -55,7 +55,8 @@ export default function PartDialog({ open, onClose, part, vehicleId }) {
 
   // Determine if we're in MOT/Service context (pre-filled IDs)
   // Only show link dropdown when creating NEW part from service/MOT, not when editing existing
-  const isFromMotOrService = !part?.id && (part?.motRecordId || part?.serviceRecordId);
+  // Check if the part prop has the key (even if null) to detect context
+  const isFromMotOrService = !part?.id && part && ('motRecordId' in part || 'serviceRecordId' in part);
 
   // Load unassociated parts when opened from MOT/Service context
   useEffect(() => {
@@ -137,6 +138,10 @@ export default function PartDialog({ open, onClose, part, vehicleId }) {
     if (part) {
       setSelectedExistingPartId('');
       setIsLinkingExisting(false);
+      // Only convert mileage if this is backend data (has id), prefill data is already in display units
+      const mileageValue = part.mileageAtInstallation
+        ? (part.id ? Math.round(convert(part.mileageAtInstallation)) : part.mileageAtInstallation)
+        : '';
       setFormData({
         description: part.description || '',
         partNumber: part.partNumber || '',
@@ -146,7 +151,7 @@ export default function PartDialog({ open, onClose, part, vehicleId }) {
         quantity: part.quantity ?? 1,
         purchaseDate: part.purchaseDate || '',
         installationDate: part.installationDate || '',
-        mileageAtInstallation: part.mileageAtInstallation ? Math.round(convert(part.mileageAtInstallation)) : '',
+        mileageAtInstallation: mileageValue,
         warranty: part.warranty || '',
         supplier: part.supplier || '',
         notes: part.notes || ''

@@ -382,7 +382,7 @@ const VehicleImages = ({ vehicle }) => {
               {images[currentIndex] && (
                 <>
                   <img
-                    src={`${process.env.REACT_APP_API_URL || 'http://localhost:8000'}${
+                    src={`${(process.env.REACT_APP_API_URL || 'http://localhost:8000').replace(/\/api\/?$/, '')}${
                       images[currentIndex].path
                     }`}
                     alt={images[currentIndex].caption || 'Vehicle image'}
