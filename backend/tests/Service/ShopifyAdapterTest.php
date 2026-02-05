@@ -158,20 +158,17 @@ class ShopifyAdapterTest extends TestCase
      */
     public function testFallbackToEmbeddedJsonParsing(): void
     {
+        // The regex in parseEmbeddedJson looks for:
+        // ShopifyAnalytics.meta.product = {...};
         $html = <<<HTML
 <html>
 <script>
-ShopifyAnalytics.meta = {
-    "product": {
-        "id": 123,
-        "vendor": "Test Vendor",
-        "type": "Test Type",
-        "variants": [{"id": 456, "price": 5000, "sku": "SKU-001"}]
-    },
-    "page": {
-        "title": "Test Product",
-        "pageType": "product"
-    }
+ShopifyAnalytics.meta.product = {
+    "id": 123,
+    "title": "Test Product",
+    "vendor": "Test Vendor",
+    "type": "Test Type",
+    "variants": [{"id": 456, "price": 5000, "sku": "SKU-001"}]
 };
 </script>
 </html>
