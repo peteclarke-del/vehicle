@@ -181,19 +181,6 @@ class MigrateAttachmentsCommand extends Command
         // But we need to pluralize some: part -> parts, consumable -> consumables
         $newPath = 'vehicles/' . substr($path, strlen('attachments/'));
         
-        // Fix category names to match the new standard
-        $categoryMappings = [
-            '/part/' => '/parts/',
-            '/consumable/' => '/consumables/',
-        ];
-        
-        foreach ($categoryMappings as $old => $new) {
-            if (str_contains($newPath, $old)) {
-                $newPath = str_replace($old, $new, $newPath);
-                break;
-            }
-        }
-
         return $newPath;
     }
 

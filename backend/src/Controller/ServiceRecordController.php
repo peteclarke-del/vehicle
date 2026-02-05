@@ -74,6 +74,8 @@ class ServiceRecordController extends AbstractController
         }
 
         $vehicleId = $request->query->get('vehicleId');
+        $unassociated = $request->query->get('unassociated') === 'true';
+
         if ($vehicleId && !is_numeric($vehicleId)) {
             return new JsonResponse(['error' => 'Invalid vehicle ID'], 400);
         }
@@ -86,7 +88,7 @@ class ServiceRecordController extends AbstractController
             }
 
             // Eager load service records with all relationships
-            $serviceRecords = $this->entityManager->createQueryBuilder()
+            $qb = $this->entityManager->createQueryBuilder()
                 ->select('s', 'v', 'mot', 'att', 'items')
                 ->from(ServiceRecord::class, 's')
                 ->leftJoin('s.vehicle', 'v')
@@ -94,8 +96,13 @@ class ServiceRecordController extends AbstractController
                 ->leftJoin('s.receiptAttachment', 'att')
                 ->leftJoin('s.items', 'items')
                 ->where('s.vehicle = :vehicle')
-                ->setParameter('vehicle', $vehicle)
-                ->orderBy('s.serviceDate', 'DESC')
+                ->setParameter('vehicle', $vehicle);
+            
+            if ($unassociated) {
+                $qb->andWhere('s.motRecord IS NULL');
+            }
+            
+            $serviceRecords = $qb->orderBy('s.serviceDate', 'DESC')
                 ->getQuery()
                 ->getResult();
         } else {
@@ -115,8 +122,13 @@ class ServiceRecordController extends AbstractController
                 ->leftJoin('s.receiptAttachment', 'att')
                 ->leftJoin('s.items', 'items')
                 ->where('s.vehicle IN (:vehicles)')
-                ->setParameter('vehicles', $vehicles)
-                ->orderBy('s.serviceDate', 'DESC');
+                ->setParameter('vehicles', $vehicles);
+            
+            if ($unassociated) {
+                $qb->andWhere('s.motRecord IS NULL');
+            }
+            
+            $qb->orderBy('s.serviceDate', 'DESC');
 
             $serviceRecords = $qb->getQuery()->getResult();
         }
@@ -409,6 +421,37 @@ class ServiceRecordController extends AbstractController
 
         $serializedParts = array_map(fn($p) => $this->serializer->serializePart($p, false), $parts);
 
+        // Build a set of partIds already linked to items
+        $linkedPartIds = [];
+        foreach ($serviceData['items'] as $it) {
+            if (isset($it['partId'])) {
+                $linkedPartIds[(int)$it['partId']] = true;
+            }
+        }
+
+        // Append any serializedParts that weren't associated with an item
+        foreach ($serializedParts as $p) {
+            $pid = (int)$p['id'];
+            if (isset($linkedPartIds[$pid])) {
+                continue;
+            }
+
+            $quantity = $p['quantity'] ?? 1;
+            $cost = (string)($p['cost'] ?? '0.00');
+            $total = $this->calculateTotal($cost, (string)$quantity);
+
+            $serviceData['items'][] = [
+                'id' => null,
+                'type' => 'part',
+                'description' => $p['description'] ?? '',
+                'cost' => $cost,
+                'quantity' => $quantity,
+                'total' => $total,
+                'partId' => $pid,
+                'includedInServiceCost' => $p['includedInServiceCost'] ?? true,
+            ];
+        }
+
         return new JsonResponse([
             'serviceRecord' => $serviceData,
             'parts' => $serializedParts,
@@ -463,8 +506,66 @@ class ServiceRecordController extends AbstractController
             }
         }
 
+        // Also include parts directly linked via parts.service_record_id that aren't in service_items
+        $linkedPartIds = [];
+        foreach ($items as $it) {
+            if ($it->getPart()) {
+                $linkedPartIds[$it->getPart()->getId()] = true;
+            }
+        }
+        $directParts = $this->entityManager->getRepository(Part::class)
+            ->findBy(['serviceRecord' => $service]);
+        $additionalPartsCost = '0.00';
+        foreach ($directParts as $part) {
+            if (!isset($linkedPartIds[$part->getId()]) && $part->isIncludedInServiceCost()) {
+                $cost = $part->getCost() ?? '0.00';
+                $qty = $part->getQuantity() ?? 1;
+                $total = bcmul((string)$cost, (string)$qty, 2);
+                $additionalPartsCost = bcadd($additionalPartsCost, $total, 2);
+            }
+        }
+        if ($additionalPartsCost !== '0.00') {
+            $partsCost = bcadd($partsCost, $additionalPartsCost, 2);
+        }
+
+        // Also include consumables directly linked that aren't in service_items
+        $linkedConsumableIds = [];
+        foreach ($items as $it) {
+            if ($it->getConsumable()) {
+                $linkedConsumableIds[$it->getConsumable()->getId()] = true;
+            }
+        }
+        $directConsumables = $this->entityManager->getRepository(Consumable::class)
+            ->findBy(['serviceRecord' => $service]);
+        $additionalConsumablesCost = '0.00';
+        foreach ($directConsumables as $consumable) {
+            if (!isset($linkedConsumableIds[$consumable->getId()]) && $consumable->isIncludedInServiceCost()) {
+                $cost = $consumable->getCost() ?? '0.00';
+                $qty = $consumable->getQuantity() ?? 1;
+                $total = bcmul((string)$cost, (string)$qty, 2);
+                $additionalConsumablesCost = bcadd($additionalConsumablesCost, $total, 2);
+            }
+        }
+        if ($consumablesCost === null) {
+            $consumablesCost = $additionalConsumablesCost;
+        } else {
+            $consumablesCost = bcadd($consumablesCost, $additionalConsumablesCost, 2);
+        }
+
         // Ensure consumablesCost is always a string for serialization
         $consumablesCost = $consumablesCost ?? '0.00';
+
+        // Calculate total cost including direct parts/consumables
+        $additionalCosts = $service->getAdditionalCosts() ?? '0.00';
+        $totalCost = bcadd(bcadd($laborCost, $partsCost, 2), $consumablesCost, 2);
+        $totalCost = bcadd($totalCost, $additionalCosts, 2);
+
+        // Include linked MOT test cost if this service bundles it
+        $motTestCost = '0.00';
+        if ($service->getMotRecord() && $service->includesMotTestCost()) {
+            $motTestCost = $service->getMotRecord()->getTestCost() ?? '0.00';
+            $totalCost = bcadd($totalCost, $motTestCost, 2);
+        }
 
         $data = [
             'id' => $service->getId(),
@@ -474,14 +575,17 @@ class ServiceRecordController extends AbstractController
             'motRecordId' => $service->getMotRecord()?->getId(),
             'motTestNumber' => $service->getMotRecord()?->getMotTestNumber(),
             'motTestDate' => $service->getMotRecord()?->getTestDate()?->format('Y-m-d'),
+            'motTestCost' => $motTestCost,
+            'includedInMotCost' => $service->isIncludedInMotCost(),
+            'includesMotTestCost' => $service->includesMotTestCost(),
             'laborCost' => $laborCost,
             'partsCost' => $partsCost,
             'consumablesCost' => $consumablesCost,
-            'totalCost' => $service->getTotalCost() ?? '0.00',
+            'totalCost' => $totalCost,
             'mileage' => $service->getMileage(),
             'serviceProvider' => $service->getServiceProvider(),
             'workPerformed' => $service->getWorkPerformed(),
-            'additionalCosts' => $service->getAdditionalCosts(),
+            'additionalCosts' => $additionalCosts,
             'nextServiceDate' => $service->getNextServiceDate()?->format('Y-m-d'),
             'nextServiceMileage' => $service->getNextServiceMileage(),
             'notes' => $service->getNotes(),
@@ -495,6 +599,42 @@ class ServiceRecordController extends AbstractController
             foreach ($items as $it) {
                 $itemData = $this->serializeItem($it);
                 $data['items'][] = $itemData;
+            }
+
+            // Add directly-linked parts that aren't in service_items
+            foreach ($directParts as $part) {
+                if (!isset($linkedPartIds[$part->getId()])) {
+                    $cost = $part->getCost() ?? '0.00';
+                    $qty = $part->getQuantity() ?? 1;
+                    $data['items'][] = [
+                        'id' => null,
+                        'type' => 'part',
+                        'description' => $part->getDescription() ?? $part->getName() ?? '',
+                        'cost' => $cost,
+                        'quantity' => $qty,
+                        'total' => bcmul((string)$cost, (string)$qty, 2),
+                        'partId' => $part->getId(),
+                        'includedInServiceCost' => $part->isIncludedInServiceCost(),
+                    ];
+                }
+            }
+
+            // Add directly-linked consumables that aren't in service_items
+            foreach ($directConsumables as $consumable) {
+                if (!isset($linkedConsumableIds[$consumable->getId()])) {
+                    $cost = $consumable->getCost() ?? '0.00';
+                    $qty = $consumable->getQuantity() ?? 1;
+                    $data['items'][] = [
+                        'id' => null,
+                        'type' => 'consumable',
+                        'description' => $consumable->getDescription() ?? '',
+                        'cost' => $cost,
+                        'quantity' => $qty,
+                        'total' => bcmul((string)$cost, (string)$qty, 2),
+                        'consumableId' => $consumable->getId(),
+                        'includedInServiceCost' => $consumable->isIncludedInServiceCost(),
+                    ];
+                }
             }
         }
 
@@ -650,9 +790,9 @@ class ServiceRecordController extends AbstractController
                 'motRecordId' => $data['motRecordId']
             ]);
 
-            if ($data['motRecordId'] === null || $data['motRecordId'] === '') {
+            if ($data['motRecordId'] === null || $data['motRecordId'] === '' || $data['motRecordId'] === 0 || $data['motRecordId'] === '0') {
                 $service->setMotRecord(null);
-                $this->logger->info('ServiceRecord disassociated from MOT (explicit null)', [
+                $this->logger->info('ServiceRecord disassociated from MOT (explicit null/0)', [
                     'serviceId' => $service->getId()
                 ]);
             } else {
@@ -672,6 +812,16 @@ class ServiceRecordController extends AbstractController
                     ]);
                 }
             }
+        }
+
+        // Handle includedInMotCost flag
+        if (array_key_exists('includedInMotCost', $data)) {
+            $service->setIncludedInMotCost((bool)$data['includedInMotCost']);
+        }
+
+        // Handle includesMotTestCost flag
+        if (array_key_exists('includesMotTestCost', $data)) {
+            $service->setIncludesMotTestCost((bool)$data['includesMotTestCost']);
         }
 
         // Handle itemised entries (parts / labour / consumables)

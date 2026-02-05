@@ -31,9 +31,7 @@ class AttachmentLinkingService
     private const ENTITY_TYPE_MAP = [
         'motrecord' => 'mot',
         'servicerecord' => 'service',
-        'fuelrecord' => 'fuel',
-        'part' => 'parts',
-        'consumable' => 'consumables',
+        'fuelrecord' => 'fuel'
     ];
 
     /**

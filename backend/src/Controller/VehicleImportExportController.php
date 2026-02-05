@@ -492,6 +492,7 @@ class VehicleImportExportController extends AbstractController
             $response = new BinaryFileResponse($zipPath);
             $response->headers->set('Content-Type', 'application/zip');
             $response->setContentDisposition(ResponseHeaderBag::DISPOSITION_ATTACHMENT, 'vehicles-export.zip');
+            $response->deleteFileAfterSend(true);
 
             $logger->info('Export ZIP completed', ['zipPath' => $zipPath]);
             return $response;

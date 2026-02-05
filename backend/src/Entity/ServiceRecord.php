@@ -70,6 +70,23 @@ class ServiceRecord
     private ?\App\Entity\MotRecord $motRecord = null;
 
     /**
+     * Whether this service's cost should be included in the linked MOT's repair cost.
+     * true = include in MOT repair cost
+     * false = linked but cost stays separate (not counted in MOT total)
+     */
+    #[ORM\Column(type: 'boolean', options: ['default' => true])]
+    private bool $includedInMotCost = true;
+
+    /**
+     * Whether this service's total includes the linked MOT's test cost.
+     * true = MOT test cost is bundled into this service's total
+     * false = MOT test cost is separate
+     * When true, the MOT test cost should not be double-counted in dashboard totals.
+     */
+    #[ORM\Column(type: 'boolean', options: ['default' => false])]
+    private bool $includesMotTestCost = false;
+
+    /**
      * @var Collection<int, ServiceItem>
      */
     #[ORM\OneToMany(mappedBy: 'serviceRecord', targetEntity: ServiceItem::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
@@ -268,7 +285,27 @@ class ServiceRecord
         return $this;
     }
 
+    public function isIncludedInMotCost(): bool
+    {
+        return $this->includedInMotCost;
+    }
 
+    public function setIncludedInMotCost(bool $includedInMotCost): self
+    {
+        $this->includedInMotCost = $includedInMotCost;
+        return $this;
+    }
+
+    public function includesMotTestCost(): bool
+    {
+        return $this->includesMotTestCost;
+    }
+
+    public function setIncludesMotTestCost(bool $includesMotTestCost): self
+    {
+        $this->includesMotTestCost = $includesMotTestCost;
+        return $this;
+    }
 
     public function getReceiptAttachment(): ?Attachment
     {

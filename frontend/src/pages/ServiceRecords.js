@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { Link as RouterLink } from 'react-router-dom';
 import {
   Typography,
   Button,
@@ -17,6 +18,7 @@ import {
   InputLabel,
   Tooltip,
   TableSortLabel,
+  Link,
 } from '@mui/material';
 import logger from '../utils/logger';
 import SafeStorage from '../utils/SafeStorage';
@@ -236,6 +238,7 @@ const ServiceRecords = () => {
   const totalPartsCost = _svc.reduce((sum, svc) => sum + parseFloat(svc.partsCost || 0), 0);
   const totalConsumablesCost = _svc.reduce((sum, svc) => sum + parseFloat(svc.consumablesCost || 0), 0);
   const totalAdditionalCost = _svc.reduce((sum, svc) => sum + parseFloat(svc.additionalCosts || 0), 0);
+  const totalCost = _svc.reduce((sum, svc) => sum + parseFloat(svc.totalCost || 0), 0);
 
   return (
     <Box>
@@ -381,7 +384,18 @@ const ServiceRecords = () => {
                   <TableCell align="right">{formatCurrency(service.additionalCosts || 0, 'GBP', i18n.language)}</TableCell>
                   <TableCell align="right">{formatCurrency(service.totalCost, 'GBP', i18n.language)}</TableCell>
                   <TableCell>{service.mileage ? format(convert(service.mileage)) : '-'}</TableCell>
-                    <TableCell>{service.motTestNumber ? `${service.motTestNumber}${service.motTestDate ? ' (' + service.motTestDate + ')' : ''}` : '-'}</TableCell>
+                    <TableCell>
+                      {service.motRecordId ? (
+                        <Link
+                          component={RouterLink}
+                          to={`/mot-records?vehicleId=${service.vehicleId}&motId=${service.motRecordId}`}
+                          sx={{ textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
+                        >
+                          {service.motTestNumber || service.motTestDate || t('mot.viewMot')}
+                          {service.motTestDate && service.motTestNumber ? ` (${service.motTestDate})` : ''}
+                        </Link>
+                      ) : '-'}
+                    </TableCell>
                   <TableCell>{service.serviceProvider || '-'}</TableCell>
                   <TableCell align="center">
                     <ViewAttachmentIconButton record={service} />
@@ -421,7 +435,7 @@ const ServiceRecords = () => {
           {t('service.consumablesCost')} {t('common.total')}: {formatCurrency(totalConsumablesCost, 'GBP', i18n.language)}
         </Typography>
         <Typography variant="h6" color="primary">
-          {t('service.totalCost')}: {formatCurrency(totalLaborCost + totalPartsCost + totalConsumablesCost + totalAdditionalCost, 'GBP', i18n.language)}
+          {t('service.totalCost')}: {formatCurrency(totalCost, 'GBP', i18n.language)}
         </Typography>
       </Box>
 
