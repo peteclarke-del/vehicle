@@ -13,6 +13,14 @@ services:
       - ./uploads:/var/www/html/uploads:rw
     user: "0:0"
     entrypoint: ["/usr/local/bin/docker-entrypoint.sh"]
+    # Override resource limits for development (allow memory-intensive operations like report generation)
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 256M
 
   frontend:
     environment:

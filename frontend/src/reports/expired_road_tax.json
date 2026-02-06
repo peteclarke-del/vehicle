@@ -2,10 +2,26 @@
   "key": "expired_road_tax",
   "name": "Expired Road Tax",
   "description": "Vehicles with expired road tax",
+  "filename": "Expired_Road_Tax",
   "periods": [ {"label":"All time","months":null} ],
   "defaultPeriodIndex": 0,
-  "outputs": [{"mode":"screen"},{"mode":"file","fileType":"csv"}],
-  "elements": [
-    {"type":"table","source":"vehicles","filter":"taxExpired","columns":[{"key":"registration","label":"Registration"},{"key":"taxExpiry","label":"Tax Expiry"}]}
+  "outputs": [{"mode":"screen"},{"mode":"file","fileType":"xlsx"}],
+  "dataSources": {
+    "vehicles": {
+      "entity": "Vehicle",
+      "filter": { "taxExpired": true }
+    }
+  },
+  "sheets": [
+    {
+      "name": "Expired Road Tax",
+      "source": "vehicles",
+      "columns": [
+        {"key":"registration","label":"Registration","width":15},
+        {"key":"make","label":"Make","width":15},
+        {"key":"model","label":"Model","width":15},
+        {"key":"roadTaxDue","label":"Tax Expiry","width":15}
+      ]
+    }
   ]
 }

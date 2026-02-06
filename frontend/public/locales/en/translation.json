@@ -117,7 +117,16 @@
     "type": "Type",
     "generatedAt": "Generated",
     "selectTemplate": "Report",
-    "previewUnavailable": "Preview not available for this file type."
+    "previewUnavailable": "Preview not available for this file type.",
+    "periods": {
+      "allTime": "All time",
+      "last12Months": "Last 12 months",
+      "last6Months": "Last 6 months",
+      "last3Months": "Last 3 months",
+      "lastMonth": "Last month",
+      "thisYear": "This year",
+      "lastYear": "Last year"
+    }
   },
   "auth": {
     "login": "Login",

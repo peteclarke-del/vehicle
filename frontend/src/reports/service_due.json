@@ -2,10 +2,27 @@
   "key": "service_due",
   "name": "Service Due",
   "description": "Vehicles nearing or due for service",
+  "filename": "Service_Due",
   "periods": [ {"label":"Next 30 days","months":0,"days":30},{"label":"Next 90 days","months":0,"days":90} ],
   "defaultPeriodIndex": 0,
-  "outputs": [{"mode":"screen"},{"mode":"file","fileType":"csv"}],
-  "elements": [
-    {"type":"table","source":"vehicles","filter":"serviceDue","columns":[{"key":"registration","label":"Registration"},{"key":"nextService","label":"Next Service"},{"key":"mileage","label":"Mileage"}]}
+  "outputs": [{"mode":"screen"},{"mode":"file","fileType":"xlsx"}],
+  "dataSources": {
+    "vehicles": {
+      "entity": "Vehicle",
+      "filter": { "serviceDue": true }
+    }
+  },
+  "sheets": [
+    {
+      "name": "Service Due",
+      "source": "vehicles",
+      "columns": [
+        {"key":"registration","label":"Registration","width":15},
+        {"key":"make","label":"Make","width":15},
+        {"key":"model","label":"Model","width":15},
+        {"key":"lastService","label":"Last Service","width":15,"format":"date"},
+        {"key":"mileage","label":"Current Mileage","width":15,"format":"number"}
+      ]
+    }
   ]
 }

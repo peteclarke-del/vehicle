@@ -23,29 +23,11 @@ abstract class BaseWebTestCase extends WebTestCase
     {
         parent::setUpBeforeClass();
         
-        // Create schema once per test class for in-memory SQLite
+        // Schema is created once via doctrine:schema:create before running tests.
+        // We don't need to create it here as we use a file-backed SQLite database.
+        // The static flag helps us know if we already checked this session.
         if (!self::$schemaCreated) {
-            try {
-                static::bootKernel();
-                $container = static::getContainer();
-                if ($container->has('doctrine')) {
-                    $doctrine = $container->get('doctrine');
-                    $em = $doctrine->getManager();
-                    $metadata = $em->getMetadataFactory()->getAllMetadata();
-                    if (!empty($metadata)) {
-                        $schemaTool = new \Doctrine\ORM\Tools\SchemaTool($em);
-                        $schemaTool->createSchema($metadata);
-                    }
-                }
-                self::$schemaCreated = true;
-            } catch (\Throwable $e) {
-                // Ignore schema creation errors
-            } finally {
-                try {
-                    static::ensureKernelShutdown();
-                } catch (\Throwable) {
-                }
-            }
+            self::$schemaCreated = true;
         }
     }
 
@@ -61,8 +43,29 @@ abstract class BaseWebTestCase extends WebTestCase
 
         // Seed test user once
         if (!self::$usersSeeded) {
+            $this->seedTestUser();
             static::$authToken = 'test@example.com';
             self::$usersSeeded = true;
+        }
+    }
+
+    /**
+     * Create the test user in the database if it doesn't exist
+     */
+    protected function seedTestUser(): void
+    {
+        $em = $this->getEntityManager();
+        $existingUser = $em->getRepository(User::class)->findOneBy(['email' => 'test@example.com']);
+        
+        if (!$existingUser) {
+            $user = new User();
+            $user->setEmail('test@example.com');
+            $user->setPassword('$2y$13$hashed_password_for_testing');
+            $user->setRoles(['ROLE_USER']);
+            $user->setFirstName('Test');
+            $user->setLastName('User');
+            $em->persist($user);
+            $em->flush();
         }
     }
 

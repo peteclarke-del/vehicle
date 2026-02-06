@@ -2,14 +2,29 @@
   "key": "service_costs",
   "name": "Service Costs",
   "description": "Costs associated with servicing vehicles",
+  "filename": "Service_Costs",
   "periods": [
     {"label": "Last 3 months", "months": 3},
     {"label": "Last 12 months", "months": 12},
     {"label": "All time", "months": null}
   ],
   "defaultPeriodIndex": 1,
-  "outputs": [{"mode":"screen"},{"mode":"file","fileType":"csv"}],
-  "elements": [
-    {"type":"table","source":"serviceRecords","columns":[{"key":"date","label":"Date"},{"key":"vehicle","label":"Vehicle"},{"key":"cost","label":"Cost"}]}
+  "outputs": [{"mode":"screen"},{"mode":"file","fileType":"xlsx"}],
+  "dataSources": {
+    "serviceRecords": {
+      "entity": "ServiceRecord"
+    }
+  },
+  "sheets": [
+    {
+      "name": "Service Costs",
+      "source": "serviceRecords",
+      "columns": [
+        {"key":"date","label":"Date","width":12},
+        {"key":"vehicle","label":"Vehicle","width":20},
+        {"key":"serviceType","label":"Service Type","width":25},
+        {"key":"cost","label":"Cost","width":12,"format":"currency","aggregate":"sum"}
+      ]
+    }
   ]
 }

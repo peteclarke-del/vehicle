@@ -2,10 +2,26 @@
   "key": "road_tax_due",
   "name": "Road Tax Due",
   "description": "Road tax policies due soon",
+  "filename": "Road_Tax_Due",
   "periods": [ {"label":"Next 30 days","months":0,"days":30},{"label":"Next 90 days","months":0,"days":90} ],
   "defaultPeriodIndex": 0,
-  "outputs": [{"mode":"screen"},{"mode":"file","fileType":"csv"}],
-  "elements": [
-    {"type":"table","source":"vehicles","filter":"taxDue","columns":[{"key":"registration","label":"Registration"},{"key":"taxExpiry","label":"Tax Expiry"}]}
+  "outputs": [{"mode":"screen"},{"mode":"file","fileType":"xlsx"}],
+  "dataSources": {
+    "vehicles": {
+      "entity": "Vehicle",
+      "filter": { "taxDue": true }
+    }
+  },
+  "sheets": [
+    {
+      "name": "Road Tax Due",
+      "source": "vehicles",
+      "columns": [
+        {"key":"registration","label":"Registration","width":15},
+        {"key":"make","label":"Make","width":15},
+        {"key":"model","label":"Model","width":15},
+        {"key":"roadTaxDue","label":"Tax Expiry","width":15}
+      ]
+    }
   ]
 }

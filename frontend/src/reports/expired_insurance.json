@@ -2,10 +2,26 @@
   "key": "expired_insurance",
   "name": "Expired Insurance",
   "description": "Vehicles with expired insurance",
+  "filename": "Expired_Insurance",
   "periods": [ {"label":"All time","months":null} ],
   "defaultPeriodIndex": 0,
-  "outputs": [{"mode":"screen"},{"mode":"file","fileType":"csv"}],
-  "elements": [
-    {"type":"table","source":"vehicles","filter":"insuranceExpired","columns":[{"key":"registration","label":"Registration"},{"key":"insuranceExpiry","label":"Insurance Expiry"}]}
+  "outputs": [{"mode":"screen"},{"mode":"file","fileType":"xlsx"}],
+  "dataSources": {
+    "vehicles": {
+      "entity": "Vehicle",
+      "filter": { "insuranceExpired": true }
+    }
+  },
+  "sheets": [
+    {
+      "name": "Expired Insurance",
+      "source": "vehicles",
+      "columns": [
+        {"key":"registration","label":"Registration","width":15},
+        {"key":"make","label":"Make","width":15},
+        {"key":"model","label":"Model","width":15},
+        {"key":"insuranceDue","label":"Insurance Expiry","width":15}
+      ]
+    }
   ]
 }

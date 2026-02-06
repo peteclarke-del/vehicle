@@ -2,14 +2,30 @@
   "key": "fuel_costs",
   "name": "Fuel Costs",
   "description": "Fuel expenditure over a period",
+  "filename": "Fuel_Costs",
   "periods": [
     {"label": "Last month", "months": 1},
     {"label": "Last 6 months", "months": 6},
-    {"label": "Last 12 months", "months": 12}
+    {"label": "Last 12 months", "months": 12},
+    {"label": "All time", "months": null}
   ],
   "defaultPeriodIndex": 2,
-  "outputs": [{"mode":"screen"},{"mode":"file","fileType":"csv"}],
-  "elements": [
-    {"type":"table","source":"fuelRecords","columns":[{"key":"date","label":"Date"},{"key":"vehicle","label":"Vehicle"},{"key":"litres","label":"Litres"},{"key":"cost","label":"Cost"}]}
+  "outputs": [{"mode":"screen"},{"mode":"file","fileType":"xlsx"}],
+  "dataSources": {
+    "fuelRecords": {
+      "entity": "FuelRecord"
+    }
+  },
+  "sheets": [
+    {
+      "name": "Fuel Costs",
+      "source": "fuelRecords",
+      "columns": [
+        {"key":"date","label":"Date","width":12},
+        {"key":"vehicle","label":"Vehicle","width":20},
+        {"key":"litres","label":"Litres","width":10},
+        {"key":"cost","label":"Cost","width":12,"format":"currency","aggregate":"sum"}
+      ]
+    }
   ]
 }

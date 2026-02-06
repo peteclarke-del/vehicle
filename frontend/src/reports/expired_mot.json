@@ -2,10 +2,26 @@
   "key": "expired_mot",
   "name": "Expired M.O.T",
   "description": "List vehicles with expired M.O.T",
+  "filename": "Expired_MOT",
   "periods": [ {"label":"All time","months":null} ],
   "defaultPeriodIndex": 0,
-  "outputs": [{"mode":"screen"},{"mode":"file","fileType":"csv"}],
-  "elements": [
-    {"type":"table","source":"vehicles","filter":"motExpired","columns":[{"key":"registration","label":"Registration"},{"key":"makeModel","label":"Make/Model"},{"key":"motExpiry","label":"M.O.T Expiry"}]}
+  "outputs": [{"mode":"screen"},{"mode":"file","fileType":"xlsx"}],
+  "dataSources": {
+    "vehicles": {
+      "entity": "Vehicle",
+      "filter": { "motExpired": true }
+    }
+  },
+  "sheets": [
+    {
+      "name": "Expired M.O.T",
+      "source": "vehicles",
+      "columns": [
+        {"key":"registration","label":"Registration","width":15},
+        {"key":"make","label":"Make","width":15},
+        {"key":"model","label":"Model","width":15},
+        {"key":"motDue","label":"M.O.T Expiry","width":15}
+      ]
+    }
   ]
 }

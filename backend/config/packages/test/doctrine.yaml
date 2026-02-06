@@ -1,5 +1,6 @@
 doctrine:
     dbal:
-        # Use in-memory SQLite for faster tests
-        url: 'sqlite:///:memory:'
+        # Use file-backed SQLite for tests to ensure schema
+        # created by console commands is visible to the PHPUnit process.
+        url: 'sqlite:///%kernel.project_dir%/var/test.sqlite'
         driver: 'pdo_sqlite'
