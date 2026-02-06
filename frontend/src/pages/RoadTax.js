@@ -58,9 +58,10 @@ const RoadTax = () => {
     try {
       const url = !selectedVehicle || selectedVehicle === '__all__' ? '/road-tax' : `/road-tax?vehicleId=${selectedVehicle}`;
       const response = await api.get(url);
-      setRecords(response.data);
+      setRecords(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       logger.error('Error loading road tax records:', error);
+      setRecords([]);
     } finally {
       setLoading(false);
     }
@@ -287,8 +288,21 @@ const RoadTax = () => {
                 <TableCell colSpan={7} align="center">{t('common.noRecords')}</TableCell>
               </TableRow>
             ) : (
-              paginatedRecords.map(r => (
-                <TableRow key={r.id} sx={{ '&:nth-of-type(odd)': { backgroundColor: 'action.hover' } }}>
+              paginatedRecords.map(r => {
+                const isExpired = r.expiryDate && new Date(r.expiryDate) < new Date();
+                // SORN records are superseded if there's a later record for the same vehicle
+                const isSornSuperseded = r.sorn && records.some(other => 
+                  other.id !== r.id && 
+                  String(other.vehicleId) === String(r.vehicleId) && 
+                  other.startDate && r.startDate && 
+                  new Date(other.startDate) > new Date(r.startDate)
+                );
+                const showRed = isExpired || isSornSuperseded;
+                return (
+                <TableRow key={r.id} sx={{ 
+                  ...(!showRed && { '&:nth-of-type(odd)': { backgroundColor: 'action.hover' } }),
+                  ...(showRed && { backgroundColor: 'rgba(255, 0, 0, 0.08)' })
+                }}>
                   <TableCell>{vehicles.find(v => String(v.id) === String(r.vehicleId))?.registrationNumber || '-'}</TableCell>
                   <TableCell>{r.startDate || '-'}</TableCell>
                   <TableCell>{r.expiryDate || '-'}</TableCell>
@@ -300,7 +314,7 @@ const RoadTax = () => {
                     <Tooltip title={t('common.delete')}><IconButton size="small" onClick={() => handleDelete(r.id)}><DeleteIcon /></IconButton></Tooltip>
                   </TableCell>
                 </TableRow>
-              ))
+              );})
             )}
           </TableBody>
         </Table>

@@ -242,9 +242,13 @@ const Insurance = () => {
                 // Display all vehicles on the policy
                 const displayVehicles = p.vehicles || [];
                 const vehicleDisplay = displayVehicles.map(v => v.registrationNumber || v.registration).join(', ') || '-';
+                const isExpired = p.expiryDate && new Date(p.expiryDate) < new Date();
 
                 return (
-                  <TableRow key={p.id} sx={{ '&:nth-of-type(odd)': { backgroundColor: 'action.hover' } }}>
+                  <TableRow key={p.id} sx={{ 
+                    ...(!isExpired && { '&:nth-of-type(odd)': { backgroundColor: 'action.hover' } }),
+                    ...(isExpired && { backgroundColor: 'rgba(255, 0, 0, 0.08)' })
+                  }}>
                     <TableCell>{p.provider}</TableCell>
                     <TableCell>{p.policyNumber || '-'}</TableCell>
                     <TableCell>{p.startDate ? formatDateISO(p.startDate) : '-'}</TableCell>
