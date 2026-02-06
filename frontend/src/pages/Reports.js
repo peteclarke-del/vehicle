@@ -64,10 +64,13 @@ const Reports = () => {
   const fetchVehicles = useCallback(async () => {
     try {
       const resp = await api.get('/vehicles');
-      setVehicles(resp.data || []);
-      if ((resp.data || []).length > 0) setSelectedVehicle('__all__');
+      // Ensure we get an array - handle both array responses and wrapped responses
+      const data = Array.isArray(resp.data) ? resp.data : (resp.data?.vehicles || resp.data?.data || []);
+      setVehicles(data);
+      if (data.length > 0) setSelectedVehicle('__all__');
     } catch (err) {
       logger.error('Failed to load vehicles', err);
+      setVehicles([]);
     }
   }, [api]);
 
@@ -250,20 +253,47 @@ const Reports = () => {
     setViewerOpen(false);
   };
 
+  // Helper function to resolve {{t:key}} translation placeholders in template
+  const resolveTranslations = useCallback((obj) => {
+    if (typeof obj === 'string') {
+      return obj.replace(/\{\{t:([^}]+)\}\}/g, (match, key) => t(key) || match);
+    }
+    if (Array.isArray(obj)) {
+      return obj.map(item => resolveTranslations(item));
+    }
+    if (obj && typeof obj === 'object') {
+      const result = {};
+      for (const [key, value] of Object.entries(obj)) {
+        result[key] = resolveTranslations(value);
+      }
+      return result;
+    }
+    return obj;
+  }, [t]);
+
   const handleGenerate = async () => {
     setGenerating(true);
     try {
       const tpl = templates.find((t) => (t.key || t.filename) === selectedTemplateKey);
       const period = tpl && tpl.periods && tpl.periods[selectedPeriodIndex] ? tpl.periods[selectedPeriodIndex] : null;
+      const selectedVehicleObj = vehicles.find((v) => String(v.id) === String(selectedVehicle));
+      const regNo = selectedVehicleObj?.registrationNumber || selectedVehicleObj?.registration_number || '';
+      
+      // Resolve all translation placeholders in the template
+      const resolvedTpl = resolveTranslations(tpl);
+      
+      // Resolve reportName placeholder with actual registration number
+      let reportName = resolvedTpl?.reportName ?? resolvedTpl?.name ?? resolvedTpl?.key ?? 'Report';
+      reportName = reportName.replace(/\{\{vehicle\.registrationNumber\}\}/g, regNo);
       const payload = {
-        template: tpl?.key ?? tpl?.filename,
-        name: tpl?.name ?? tpl?.key ?? 'Report',
-        type: tpl?.name ?? tpl?.key ?? 'Report',
+        template: resolvedTpl?.key ?? resolvedTpl?.filename,
+        name: reportName,
+        type: resolvedTpl?.name ?? resolvedTpl?.key ?? 'Report',
         vehicleId: selectedVehicle === '__all__' ? null : selectedVehicle,
         period: period,
         periodLabel: period?.label ?? null,
         periodMonths: period?.months ?? null,
-        templateContent: tpl,
+        templateContent: resolvedTpl,
       };
       await api.post('/reports', payload);
       loadReports();
@@ -324,9 +354,12 @@ const Reports = () => {
                 setSelectedPeriodIndex(tpl?.defaultPeriodIndex ?? 0);
               }}
             >
-              {templates.map((t) => (
-                <MenuItem key={t.key ?? t.filename} value={t.key ?? t.filename}>{t.name || t.filename}</MenuItem>
-              ))}
+              {templates.map((tpl) => {
+                const displayName = (tpl.name || tpl.filename || '').replace(/\{\{t:([^}]+)\}\}/g, (match, key) => t(key) || match);
+                return (
+                  <MenuItem key={tpl.key ?? tpl.filename} value={tpl.key ?? tpl.filename}>{displayName}</MenuItem>
+                );
+              })}
             </Select>
           </FormControl>
 
@@ -339,9 +372,12 @@ const Reports = () => {
               label={t('reports.period') || 'Period'}
               onChange={(e) => setSelectedPeriodIndex(Number(e.target.value))}
             >
-              {(templates.find((t) => (t.key || t.filename) === selectedTemplateKey)?.periods || []).map((p, idx) => (
-                <MenuItem key={idx} value={idx}>{p.label}</MenuItem>
-              ))}
+              {(templates.find((tpl) => (tpl.key || tpl.filename) === selectedTemplateKey)?.periods || []).map((p, idx) => {
+                const periodLabel = (p.label || '').replace(/\{\{t:([^}]+)\}\}/g, (match, key) => t(key) || match);
+                return (
+                  <MenuItem key={idx} value={idx}>{periodLabel}</MenuItem>
+                );
+              })}
             </Select>
           </FormControl>
 

@@ -415,8 +415,18 @@ class PartController extends AbstractController
                 $svcId = is_numeric($svcId) ? (int)$svcId : $svcId;
                 $svc = $this->entityManager->getRepository(\App\Entity\ServiceRecord::class)->find($svcId);
                 if ($svc) {
+                    // Only apply pre-bought logic when UPDATING an existing part (has ID)
+                    // For new parts, create() method already sets includedInServiceCost correctly
+                    $isExistingPart = $part->getId() !== null;
+                    $wasUnassociated = $part->getServiceRecord() === null && $part->getMotRecord() === null;
                     $part->setServiceRecord($svc);
-                    $this->logger->info('Part associated with Service', ['partId' => $part->getId(), 'serviceId' => $svc->getId()]);
+                    if ($isExistingPart && $wasUnassociated) {
+                        // Existing part being linked for the first time = pre-bought
+                        $part->setIncludedInServiceCost(false);
+                        $this->logger->info('Existing part linked to Service (pre-bought)', ['partId' => $part->getId(), 'serviceId' => $svc->getId()]);
+                    } else {
+                        $this->logger->info('Part associated with Service', ['partId' => $part->getId(), 'serviceId' => $svc->getId()]);
+                    }
                 } else {
                     $part->setServiceRecord(null);
                     $part->setIncludedInServiceCost(false);

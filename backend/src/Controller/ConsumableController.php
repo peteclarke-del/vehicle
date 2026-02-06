@@ -455,11 +455,24 @@ class ConsumableController extends AbstractController
                 $svcId = is_numeric($svcId) ? (int) $svcId : $svcId;
                 $svc = $this->entityManager->getRepository(\App\Entity\ServiceRecord::class)->find($svcId);
                 if ($svc) {
+                    // Only apply pre-bought logic when UPDATING an existing consumable (has ID)
+                    // For new consumables, create() method already sets includedInServiceCost correctly
+                    $isExistingConsumable = $consumable->getId() !== null;
+                    $wasUnassociated = $consumable->getServiceRecord() === null && $consumable->getMotRecord() === null;
                     $consumable->setServiceRecord($svc);
-                    $this->logger->info('Consumable associated with Service', [
-                        'consumableId' => $consumable->getId(),
-                        'serviceId' => $svc->getId(),
-                    ]);
+                    if ($isExistingConsumable && $wasUnassociated) {
+                        // Existing consumable being linked for the first time = pre-bought
+                        $consumable->setIncludedInServiceCost(false);
+                        $this->logger->info('Existing consumable linked to Service (pre-bought)', [
+                            'consumableId' => $consumable->getId(),
+                            'serviceId' => $svc->getId(),
+                        ]);
+                    } else {
+                        $this->logger->info('Consumable associated with Service', [
+                            'consumableId' => $consumable->getId(),
+                            'serviceId' => $svc->getId(),
+                        ]);
+                    }
                 } else {
                     $consumable->setServiceRecord(null);
                     $consumable->setIncludedInServiceCost(false);

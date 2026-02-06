@@ -328,6 +328,22 @@ class Consumable
     }
 
     /**
+     * function getTotalCost
+     * 
+     * Get total cost (cost * quantity)
+     *
+     * @return float|null
+     */
+    public function getTotalCost(): ?float
+    {
+        if (!$this->cost) {
+            return null;
+        }
+        $qty = $this->quantity ? (float)$this->quantity : 1;
+        return (float)$this->cost * $qty;
+    }
+
+    /**
      * function setCost
      *
      * @param mixed $cost
