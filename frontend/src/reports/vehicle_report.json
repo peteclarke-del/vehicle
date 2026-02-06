@@ -108,20 +108,20 @@
           { "col": "C", "value": "{{t:reports.vehicleReport.costs}}", "merge": "C1:D1", "style": "headerStyle" },
           { "col": "G", "value": "{{t:reports.vehicleReport.fuelCosts}}", "merge": "G1:I1", "style": "headerStyle" },
           { "col": "J", "value": "{{t:reports.vehicleReport.fuelEconomy}}", "merge": "J1:M1", "style": "headerStyle" },
-          { "col": "O", "value": "{{t:reports.vehicleReport.vehicleDetails}}", "merge": "O1:P1", "style": "headerStyle" }
+          { "col": "O", "value": "{{t:common.vehicleDetails}}", "merge": "O1:P1", "style": "headerStyle" }
         ]
       },
       {
         "type": "columnHeaders",
         "row": 2,
         "cells": [
-          { "col": "B", "value": "{{t:reports.vehicleReport.date}}", "style": "subHeaderStyle" },
+          { "col": "B", "value": "{{t:common.date}}", "style": "subHeaderStyle" },
           { "col": "C", "value": "{{t:reports.vehicleReport.item}}", "style": "subHeaderStyle" },
-          { "col": "D", "value": "{{t:reports.vehicleReport.cost}}", "style": "subHeaderStyle" },
-          { "col": "F", "value": "{{t:reports.vehicleReport.date}}", "style": "subHeaderStyle" },
+          { "col": "D", "value": "{{t:common.cost}}", "style": "subHeaderStyle" },
+          { "col": "F", "value": "{{t:common.date}}", "style": "subHeaderStyle" },
           { "col": "G", "value": "{{distanceLabel}}", "style": "subHeaderStyle" },
           { "col": "H", "value": "{{t:reports.vehicleReport.noLitres}}", "style": "subHeaderStyle" },
-          { "col": "I", "value": "{{t:reports.vehicleReport.cost}}", "style": "subHeaderStyle" },
+          { "col": "I", "value": "{{t:common.cost}}", "style": "subHeaderStyle" },
           { "col": "J", "value": "No. {{distanceLabel}}", "style": "subHeaderStyle" },
           { "col": "K", "value": "{{economyLabel}}", "style": "subHeaderStyle" },
           { "col": "L", "value": "{{t:reports.vehicleReport.noLitres}}", "style": "subHeaderStyle" },
@@ -167,7 +167,7 @@
           { "label": "{{t:reports.vehicleReport.insuranceDue}}", "field": "insuranceDue" },
           { "label": "{{t:reports.vehicleReport.motDue}}", "field": "motDue" },
           { "label": "{{t:reports.vehicleReport.roadTaxDue}}", "field": "roadTaxDue" },
-          { "label": "{{t:reports.vehicleReport.lastService}}", "field": "lastService" },
+          { "label": "{{t:common.lastService}}", "field": "lastService" },
           { "label": "{{t:reports.vehicleReport.engineNo}}", "field": "engineNumber" },
           { "label": "{{t:reports.vehicleReport.frameNo}}", "field": "vin" },
           { "label": "{{t:reports.vehicleReport.frontTyreSize}}", "field": "frontTyreSize" },
@@ -176,7 +176,7 @@
           { "label": "{{t:reports.vehicleReport.rearPressure}}", "field": "rearTyrePressure" },
           { "label": "{{t:reports.vehicleReport.oilCapacity}}", "field": "oilCapacity" },
           { "label": "{{t:reports.vehicleReport.oilType}}", "field": "oilType" },
-          { "label": "{{t:reports.vehicleReport.fuelCapacity}}", "field": "fuelCapacity" }
+          { "label": "{{t:common.fuelCapacity}}", "field": "fuelCapacity" }
         ]
       }
     ]
@@ -192,11 +192,11 @@
       "source": "vehicle",
       "columns": [
         { "field": "registrationNumber", "label": "{{t:reports.vehicleReport.registration}}", "width": 28 },
-        { "field": "make", "label": "{{t:reports.vehicleReport.make}}", "width": 28 },
-        { "field": "model", "label": "{{t:reports.vehicleReport.model}}", "width": 40 },
-        { "field": "vin", "label": "{{t:reports.vehicleReport.vin}}", "width": 50 },
+        { "field": "make", "label": "{{t:common.make}}", "width": 28 },
+        { "field": "model", "label": "{{t:common.model}}", "width": 40 },
+        { "field": "vin", "label": "{{t:common.vin}}", "width": 50 },
         { "field": "purchaseDate", "label": "{{t:reports.vehicleReport.purchased}}", "width": 22 },
-        { "field": "purchaseCost", "label": "{{t:reports.vehicleReport.cost}}", "width": 22, "format": "currency" }
+        { "field": "purchaseCost", "label": "{{t:common.cost}}", "width": 22, "format": "currency" }
       ],
       "maxRows": 1
     },
@@ -206,44 +206,44 @@
       "title": "{{t:reports.vehicleReport.costsTitle}}",
       "source": "costs",
       "columns": [
-        { "field": "date", "label": "{{t:reports.vehicleReport.date}}", "width": 25 },
-        { "field": "item", "label": "{{t:reports.vehicleReport.description}}", "width": 115 },
-        { "field": "_source", "label": "{{t:reports.vehicleReport.type}}", "width": 25 },
-        { "field": "cost", "label": "{{t:reports.vehicleReport.cost}}", "width": 25, "format": "currency" }
+        { "field": "date", "label": "{{t:common.date}}", "width": 25 },
+        { "field": "item", "label": "{{t:common.description}}", "width": 115 },
+        { "field": "_source", "label": "{{t:common.type}}", "width": 25 },
+        { "field": "cost", "label": "{{t:common.cost}}", "width": 25, "format": "currency" }
       ],
       "showTotal": true,
-      "totalLabel": "{{t:reports.vehicleReport.total}}"
+      "totalLabel": "{{t:common.total}}:"
     },
     { "type": "spacer", "height": 5 },
     {
       "type": "table",
-      "title": "{{t:reports.vehicleReport.fuelRecords}}",
+      "title": "{{t:common.fuelRecords}}",
       "source": "fuelRecords",
       "columns": [
-        { "field": "date", "label": "{{t:reports.vehicleReport.date}}", "width": 28 },
-        { "field": "mileage", "label": "{{t:reports.vehicleReport.mileage}}", "width": 35 },
-        { "field": "litres", "label": "{{t:reports.vehicleReport.litres}}", "width": 28 },
-        { "field": "cost", "label": "{{t:reports.vehicleReport.cost}}", "width": 35, "format": "currency" },
+        { "field": "date", "label": "{{t:common.date}}", "width": 28 },
+        { "field": "mileage", "label": "{{t:common.mileage}}", "width": 35 },
+        { "field": "litres", "label": "{{t:common.litres}}", "width": 28 },
+        { "field": "cost", "label": "{{t:common.cost}}", "width": 35, "format": "currency" },
         { "field": "miles", "label": "{{t:reports.vehicleReport.miles}}", "width": 32 },
         { "field": "mpg", "label": "{{t:reports.vehicleReport.mpg}}", "width": 32 }
       ],
       "showTotal": true,
-      "totalLabel": "{{t:reports.vehicleReport.total}}"
+      "totalLabel": "{{t:common.total}}:"
     },
     { "type": "spacer", "height": 5 },
     {
       "type": "summary",
       "title": "{{t:reports.vehicleReport.summary}}",
       "items": [
-        { "label": "{{t:reports.vehicleReport.totalPartsCost}}", "value": "{{totalPartsCost}}", "format": "currency" },
-        { "label": "{{t:reports.vehicleReport.totalConsumables}}", "value": "{{totalConsumablesCost}}", "format": "currency" },
-        { "label": "{{t:reports.vehicleReport.totalService}}", "value": "{{totalServiceCost}}", "format": "currency" },
-        { "label": "{{t:reports.vehicleReport.totalMot}}", "value": "{{totalMotCost}}", "format": "currency" },
-        { "label": "{{t:reports.vehicleReport.totalCosts}}", "value": "{{totalCosts}}", "format": "currency", "bold": true },
+        { "label": "{{t:common.totalPartsCost}}:", "value": "{{totalPartsCost}}", "format": "currency" },
+        { "label": "{{t:reports.vehicleReport.totalConsumables}}:", "value": "{{totalConsumablesCost}}", "format": "currency" },
+        { "label": "{{t:reports.vehicleReport.totalService}}:", "value": "{{totalServiceCost}}", "format": "currency" },
+        { "label": "{{t:reports.vehicleReport.totalMot}}:", "value": "{{totalMotCost}}", "format": "currency" },
+        { "label": "{{t:reports.vehicleReport.totalCosts}}:", "value": "{{totalCosts}}", "format": "currency", "bold": true },
         { "label": "", "value": "" },
-        { "label": "{{t:reports.vehicleReport.totalFuelCost}}", "value": "{{totalFuelCost}}", "format": "currency" },
-        { "label": "{{t:reports.vehicleReport.totalLitres}}", "value": "{{totalLitres}}", "format": "number" },
-        { "label": "{{t:reports.vehicleReport.averageMpg}}", "value": "{{avgMpg}}", "format": "number" }
+        { "label": "{{t:reports.vehicleReport.totalFuelCost}}:", "value": "{{totalFuelCost}}", "format": "currency" },
+        { "label": "{{t:reports.vehicleReport.totalLitres}}:", "value": "{{totalLitres}}", "format": "number" },
+        { "label": "{{t:reports.vehicleReport.averageMpg}}:", "value": "{{avgMpg}}", "format": "number" }
       ]
     }
   ]

@@ -63,9 +63,10 @@ const MotRecords = () => {
     try {
       const url = !selectedVehicle || selectedVehicle === '__all__' ? '/mot-records' : `/mot-records?vehicleId=${selectedVehicle}`;
       const response = await api.get(url);
-      setMotRecords(response.data);
+      setMotRecords(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       logger.error('Error loading MOT records:', error);
+      setMotRecords([]);
     } finally {
       setLoading(false);
     }
@@ -397,8 +398,15 @@ const MotRecords = () => {
                 </TableCell>
               </TableRow>
             ) : (
-              paginatedMotRecords.map((mot) => (
-                <TableRow key={mot.id} sx={{ '&:nth-of-type(odd)': { backgroundColor: 'action.hover' } }}>
+              paginatedMotRecords.map((mot) => {
+                const isExpired = mot.expiryDate && new Date(mot.expiryDate) < new Date();
+                const isFail = mot.result === 'Fail';
+                const showRed = isExpired || isFail;
+                return (
+                <TableRow key={mot.id} sx={{ 
+                  ...(!showRed && { '&:nth-of-type(odd)': { backgroundColor: 'action.hover' } }),
+                  ...(showRed && { backgroundColor: 'rgba(255, 0, 0, 0.08)' })
+                }}>
                   <TableCell>{vehicles.find(v => String(v.id) === String(mot.vehicleId))?.registrationNumber || '-'}</TableCell>
                   <TableCell>{formatDateISO(mot.testDate)}</TableCell>
                   <TableCell>{getResultChip(mot.result)}</TableCell>
@@ -434,7 +442,7 @@ const MotRecords = () => {
                     })()}
                   </TableCell>
                 </TableRow>
-              ))
+              );})
             )}
           </TableBody>
         </Table>
