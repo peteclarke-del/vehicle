@@ -15,16 +15,19 @@ import {
   Alert,
 } from '@mui/material';
 import { useAuth } from '../contexts/AuthContext';
+import { useUserPreferences } from '../contexts/UserPreferencesContext';
 import { useTranslation } from 'react-i18next';
 import { getAvailableLanguages } from '../i18n';
 import logger from '../utils/logger';
 
 const PreferencesDialog = ({ open, onClose }) => {
   const { user, api, fetchUser, updateProfile } = useAuth();
+  const { defaultRowsPerPage, setDefaultRowsPerPage } = useUserPreferences();
   const { t, i18n } = useTranslation();
   const [sessionTimeout, setSessionTimeout] = useState(3600);
   const [distanceUnit, setDistanceUnit] = useState('km');
   const [language, setLanguage] = useState('en');
+  const [rowsPerPage, setRowsPerPage] = useState(10);
   const [languages, setLanguages] = useState([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
@@ -60,22 +63,28 @@ const PreferencesDialog = ({ open, onClose }) => {
         const raw = resp?.data?.value;
         if (mounted && raw) {
           setDistanceUnit(raw);
-          return;
         }
       } catch (e) {
-        // ignore
+        // ignore - fallback handled below
       }
 
-      // fallback to locale-based default
-      try {
-        const mod = await import('../utils/countryUtils');
-        if (mounted) setDistanceUnit(mod.getUserDefaultDistanceUnit());
-      } catch (e) {
-        // ignore
+      // Set rows per page from context
+      if (mounted && defaultRowsPerPage) {
+        setRowsPerPage(defaultRowsPerPage);
+      }
+
+      // fallback to locale-based default for distance unit
+      if (!distanceUnit || distanceUnit === 'km') {
+        try {
+          const mod = await import('../utils/countryUtils');
+          if (mounted) setDistanceUnit(mod.getUserDefaultDistanceUnit());
+        } catch (e) {
+          // ignore
+        }
       }
     })();
     return () => { mounted = false; };
-  }, [user, api, i18n.language]);
+  }, [user, api, i18n.language, defaultRowsPerPage]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -104,6 +113,11 @@ const PreferencesDialog = ({ open, onClose }) => {
         } catch (err) {
           logger.warn('Failed to update language', err);
         }
+      }
+      
+      // Update rows per page preference
+      if (rowsPerPage !== defaultRowsPerPage) {
+        setDefaultRowsPerPage(rowsPerPage);
       }
       
       await api.put('/profile', {
@@ -141,6 +155,15 @@ const PreferencesDialog = ({ open, onClose }) => {
   const distanceUnitOptions = [
     { value: 'km', label: t('preferences.kilometers') },
     { value: 'mi', label: t('preferences.miles') },
+  ];
+
+  const rowsPerPageOptions = [
+    { value: 5, label: '5' },
+    { value: 10, label: '10' },
+    { value: 15, label: '15' },
+    { value: 25, label: '25' },
+    { value: 50, label: '50' },
+    { value: 100, label: '100' },
   ];
 
   return (
@@ -221,6 +244,21 @@ const PreferencesDialog = ({ open, onClose }) => {
               label={t('preferences.distanceUnit')}
             >
               {distanceUnitOptions.map((option) => (
+                <MenuItem key={option.value} value={option.value}>
+                  {option.label}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          <FormControl fullWidth sx={{ mb: 2 }}>
+            <InputLabel>{t('preferences.rowsPerPage')}</InputLabel>
+            <Select
+              value={rowsPerPage}
+              onChange={(e) => setRowsPerPage(e.target.value)}
+              label={t('preferences.rowsPerPage')}
+            >
+              {rowsPerPageOptions.map((option) => (
                 <MenuItem key={option.value} value={option.value}>
                   {option.label}
                 </MenuItem>
