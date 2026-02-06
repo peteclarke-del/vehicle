@@ -63,6 +63,7 @@ import { useNotifications } from '../hooks/useNotifications';
 import logger from '../utils/logger';
 
 const drawerWidth = 240;
+const miniRailWidth = 48;
 
 const Layout = () => {
   const [tempOpen, setTempOpen] = React.useState(false);
@@ -295,12 +296,22 @@ const Layout = () => {
       <AppBar
         position="fixed"
         sx={{
-          width: { sm: drawerLocked ? `calc(100% - ${drawerWidth}px)` : '100%' },
-          ml: { sm: drawerLocked ? `${drawerWidth}px` : 0 },
+          width: { 
+            xs: '100%',
+            sm: drawerLocked 
+              ? `calc(100% - ${drawerWidth}px)` 
+              : `calc(100% - ${miniRailWidth}px)` 
+          },
+          ml: { 
+            xs: 0,
+            sm: drawerLocked 
+              ? `${drawerWidth}px` 
+              : `${miniRailWidth}px` 
+          },
         }}
       >
         <Toolbar>
-          {!drawerLocked && (
+          {(!drawerLocked && isMobile) && (
             <IconButton
               color="inherit"
               edge="start"
@@ -445,12 +456,72 @@ const Layout = () => {
           }}
         />
       )}
+      {/* Mini navigation rail when drawer is collapsed (desktop only) */}
+      {!drawerLocked && !isMobile && (
+        <Box
+          sx={{
+            position: 'fixed',
+            left: 0,
+            top: 64, // AppBar height
+            bottom: 0,
+            width: miniRailWidth,
+            backgroundColor: mode === 'dark' ? 'rgba(30,30,30,0.95)' : 'rgba(250,250,250,0.95)',
+            borderRight: 1,
+            borderColor: 'divider',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            py: 1,
+            zIndex: (muiTheme && muiTheme.zIndex && muiTheme.zIndex.drawer) ? muiTheme.zIndex.drawer - 2 : 1100,
+            overflowY: 'auto',
+            overflowX: 'hidden',
+            '&::-webkit-scrollbar': { width: 4 },
+            '&::-webkit-scrollbar-thumb': { backgroundColor: 'rgba(128,128,128,0.3)', borderRadius: 2 },
+          }}
+        >
+          {menuItems.slice(0, 9).map((item) => (
+            <Tooltip key={item.key} title={item.text} placement="right" arrow>
+              <IconButton
+                onClick={() => navigate(item.path)}
+                sx={{
+                  my: 0.5,
+                  color: isActive(item.path) ? 'primary.main' : 'text.secondary',
+                  backgroundColor: isActive(item.path) ? 'action.selected' : 'transparent',
+                  '&:hover': {
+                    backgroundColor: 'action.hover',
+                  },
+                }}
+              >
+                {item.icon}
+              </IconButton>
+            </Tooltip>
+          ))}
+          {/* Spacer */}
+          <Box sx={{ flexGrow: 1 }} />
+          {/* More menu button to open full drawer */}
+          <Tooltip title={t('nav.navigation')} placement="right" arrow>
+            <IconButton
+              onClick={handleDrawerToggle}
+              sx={{
+                my: 0.5,
+                color: 'text.secondary',
+                '&:hover': {
+                  backgroundColor: 'action.hover',
+                },
+              }}
+            >
+              <MenuIcon />
+            </IconButton>
+          </Tooltip>
+        </Box>
+      )}
       <Box
         component="main"
         sx={{
           flexGrow: 1,
           p: 3,
           width: { sm: drawerLocked ? `calc(100% - ${drawerWidth}px)` : '100%' },
+          ml: { sm: !drawerLocked && !isMobile ? `${miniRailWidth}px` : 0 },
         }}
       >
         <Toolbar />
