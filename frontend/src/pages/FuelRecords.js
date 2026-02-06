@@ -79,7 +79,7 @@ const FuelRecords = () => {
 
       const url = (!selectedVehicle || selectedVehicle === '__all__') ? '/fuel-records' : `/fuel-records?vehicleId=${selectedVehicle}`;
       const response = await api.get(url, { signal: controller.signal });
-      setRecords(response.data);
+      setRecords(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       if (error.name !== 'CanceledError' && error.name !== 'AbortError') {
         logger.error('Error loading fuel records:', error);

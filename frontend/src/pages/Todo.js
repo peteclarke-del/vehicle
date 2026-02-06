@@ -99,9 +99,10 @@ const Todo = () => {
     try {
       const url = !selectedVehicle || selectedVehicle === '__all__' ? '/todos' : `/todos?vehicleId=${selectedVehicle}`;
       const response = await api.get(url);
-      setTodos(response.data);
+      setTodos(Array.isArray(response.data) ? response.data : []);
     } catch (err) {
       logger.error('Error loading todos', err);
+      setTodos([]);
     }
   }, [api, selectedVehicle]);
 

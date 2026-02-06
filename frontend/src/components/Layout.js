@@ -462,7 +462,7 @@ const Layout = () => {
           sx={{
             position: 'fixed',
             left: 0,
-            top: 64, // AppBar height
+            top: 0,
             bottom: 0,
             width: miniRailWidth,
             backgroundColor: mode === 'dark' ? 'rgba(30,30,30,0.95)' : 'rgba(250,250,250,0.95)',
@@ -471,48 +471,60 @@ const Layout = () => {
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            py: 1,
-            zIndex: (muiTheme && muiTheme.zIndex && muiTheme.zIndex.drawer) ? muiTheme.zIndex.drawer - 2 : 1100,
+            zIndex: (muiTheme && muiTheme.zIndex && muiTheme.zIndex.appBar) ? muiTheme.zIndex.appBar + 1 : 1201,
             overflowY: 'auto',
             overflowX: 'hidden',
             '&::-webkit-scrollbar': { width: 4 },
             '&::-webkit-scrollbar-thumb': { backgroundColor: 'rgba(128,128,128,0.3)', borderRadius: 2 },
           }}
         >
-          {menuItems.slice(0, 9).map((item) => (
-            <Tooltip key={item.key} title={item.text} placement="right" arrow>
+          {/* Menu button aligned with AppBar header */}
+          <Box
+            sx={{
+              height: 64, // AppBar height
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '100%',
+              borderBottom: 1,
+              borderColor: 'divider',
+            }}
+          >
+            <Tooltip title={t('nav.navigation')} placement="right" arrow>
               <IconButton
-                onClick={() => navigate(item.path)}
+                onClick={handleDrawerToggle}
                 sx={{
-                  my: 0.5,
-                  color: isActive(item.path) ? 'primary.main' : 'text.secondary',
-                  backgroundColor: isActive(item.path) ? 'action.selected' : 'transparent',
+                  color: 'text.secondary',
                   '&:hover': {
                     backgroundColor: 'action.hover',
                   },
                 }}
               >
-                {item.icon}
+                <MenuIcon />
               </IconButton>
             </Tooltip>
-          ))}
-          {/* Spacer */}
-          <Box sx={{ flexGrow: 1 }} />
-          {/* More menu button to open full drawer */}
-          <Tooltip title={t('nav.navigation')} placement="right" arrow>
-            <IconButton
-              onClick={handleDrawerToggle}
-              sx={{
-                my: 0.5,
-                color: 'text.secondary',
-                '&:hover': {
-                  backgroundColor: 'action.hover',
-                },
-              }}
-            >
-              <MenuIcon />
-            </IconButton>
-          </Tooltip>
+          </Box>
+          {/* Nav items below the header */}
+          <Box sx={{ py: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            {/* Show main nav items in default order (not user-reordered), excluding profile and import/export */}
+            {defaultMenu.filter(item => !['profile', 'importExport'].includes(item.key)).map((item) => (
+              <Tooltip key={item.key} title={item.text} placement="right" arrow>
+                <IconButton
+                  onClick={() => navigate(item.path)}
+                  sx={{
+                    my: 0.5,
+                    color: isActive(item.path) ? 'primary.main' : 'text.secondary',
+                    backgroundColor: isActive(item.path) ? 'action.selected' : 'transparent',
+                    '&:hover': {
+                      backgroundColor: 'action.hover',
+                    },
+                  }}
+                >
+                  {item.icon}
+                </IconButton>
+              </Tooltip>
+            ))}
+          </Box>
         </Box>
       )}
       <Box
