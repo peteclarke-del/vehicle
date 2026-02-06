@@ -290,6 +290,7 @@ class NotificationController extends AbstractController
                         'messageKey' => 'notifications.motExpiredMessage',
                         'params' => ['date' => 'Unknown'],
                         'date' => null,
+                        'route' => '/vehicles/' . $vehicleId . '/mot',
                     ];
                 } else {
                     $motDate = \DateTimeImmutable::createFromInterface($motDate)
@@ -305,6 +306,7 @@ class NotificationController extends AbstractController
                             'messageKey' => 'notifications.motExpiredMessage',
                             'params' => ['date' => $this->formatDate($motDate)],
                             'date' => $this->formatDate($motDate),
+                            'route' => '/vehicles/' . $vehicleId . '/mot',
                         ];
                     } elseif ($motDate <= $dueSoonDate) {
                         $diffSeconds = $motDate->getTimestamp() - $today->getTimestamp();
@@ -322,6 +324,7 @@ class NotificationController extends AbstractController
                                 'plural' => $daysUntil !== 1 ? 's' : '',
                             ],
                             'date' => $this->formatDate($motDate),
+                            'route' => '/vehicles/' . $vehicleId . '/mot',
                         ];
                     }
                 }
@@ -333,14 +336,41 @@ class NotificationController extends AbstractController
                 $startDate = $latestTax?->getStartDate();
                 $expiryDate = $latestTax?->getExpiryDate();
 
-                if ($startDate && $expiryDate) {
+                if (!$expiryDate) {
+                    // No road tax record
+                    $notifications[] = [
+                        'id' => $notificationId,
+                        'vehicleId' => $vehicleId,
+                        'vehicleName' => $vehicleName,
+                        'type' => 'tax',
+                        'severity' => 'error',
+                        'titleKey' => 'notifications.roadTaxExpired',
+                        'messageKey' => 'notifications.roadTaxExpiredMessage',
+                        'params' => ['date' => 'Unknown'],
+                        'date' => null,
+                        'route' => '/vehicles/' . $vehicleId . '/tax',
+                    ];
+                } elseif ($startDate && $expiryDate) {
                     $startDate = \DateTimeImmutable::createFromInterface($startDate)
                         ->setTime(0, 0, 0);
                     $expiryDate = \DateTimeImmutable::createFromInterface($expiryDate)
                         ->setTime(0, 0, 0);
 
-                    $isCurrent = $startDate <= $today && $expiryDate >= $today;
-                    if ($isCurrent && $expiryDate <= $dueSoonDate) {
+                    if ($expiryDate < $today) {
+                        // Expired
+                        $notifications[] = [
+                            'id' => $notificationId,
+                            'vehicleId' => $vehicleId,
+                            'vehicleName' => $vehicleName,
+                            'type' => 'tax',
+                            'severity' => 'error',
+                            'titleKey' => 'notifications.roadTaxExpired',
+                            'messageKey' => 'notifications.roadTaxExpiredMessage',
+                            'params' => ['date' => $this->formatDate($expiryDate)],
+                            'date' => $this->formatDate($expiryDate),
+                            'route' => '/vehicles/' . $vehicleId . '/tax',
+                        ];
+                    } elseif ($expiryDate <= $dueSoonDate) {
                         $diffSeconds = $expiryDate->getTimestamp() - $today->getTimestamp();
                         $daysUntil = (int) ceil($diffSeconds / 86400);
                         $notifications[] = [
@@ -356,6 +386,7 @@ class NotificationController extends AbstractController
                                 'plural' => $daysUntil !== 1 ? 's' : '',
                             ],
                             'date' => $this->formatDate($expiryDate),
+                            'route' => '/vehicles/' . $vehicleId . '/tax',
                         ];
                     }
                 }
@@ -374,6 +405,7 @@ class NotificationController extends AbstractController
                     'messageKey' => 'notifications.insuranceExpiredMessage',
                     'params' => ['date' => 'Unknown'],
                     'date' => null,
+                    'route' => '/vehicles/' . $vehicleId . '/insurance',
                 ];
             } else {
                 $insuranceDate = \DateTimeImmutable::createFromInterface(
@@ -390,6 +422,7 @@ class NotificationController extends AbstractController
                         'messageKey' => 'notifications.insuranceExpiredMessage',
                         'params' => ['date' => $this->formatDate($insuranceDate)],
                         'date' => $this->formatDate($insuranceDate),
+                        'route' => '/vehicles/' . $vehicleId . '/insurance',
                     ];
                 } elseif ($insuranceDate <= $dueSoonDate) {
                     $diffSeconds = $insuranceDate->getTimestamp() - $today->getTimestamp();
@@ -407,6 +440,7 @@ class NotificationController extends AbstractController
                             'plural' => $daysUntil !== 1 ? 's' : '',
                         ],
                         'date' => $this->formatDate($insuranceDate),
+                        'route' => '/vehicles/' . $vehicleId . '/insurance',
                     ];
                 }
             }
@@ -426,6 +460,7 @@ class NotificationController extends AbstractController
                         'messageKey' => 'notifications.serviceNoHistoryMessage',
                         'params' => [],
                         'date' => null,
+                        'route' => '/vehicles/' . $vehicleId . '/services',
                     ];
                 } else {
                     $intervalMonths = (int) $vehicle->getServiceIntervalMonths();
@@ -441,11 +476,12 @@ class NotificationController extends AbstractController
                             'vehicleId' => $vehicleId,
                             'vehicleName' => $vehicleName,
                             'type' => 'service',
-                            'severity' => 'warning',
+                            'severity' => 'error',
                             'titleKey' => 'notifications.serviceOverdue',
                             'messageKey' => 'notifications.serviceOverdueMessage',
                             'params' => ['months' => $monthsOverdue],
                             'date' => $this->formatDate($lastService),
+                            'route' => '/vehicles/' . $vehicleId . '/services',
                         ];
                     } elseif ($dueDate <= $serviceDueSoonDate) {
                         $diffSeconds = $dueDate->getTimestamp() - $today->getTimestamp();
@@ -463,6 +499,7 @@ class NotificationController extends AbstractController
                                 'plural' => $daysUntil !== 1 ? 's' : '',
                             ],
                             'date' => $this->formatDate($lastService),
+                            'route' => '/vehicles/' . $vehicleId . '/services',
                         ];
                     }
                 }
@@ -592,6 +629,19 @@ class NotificationController extends AbstractController
                 ];
             }
         }
+
+        // Sort notifications: errors first, then warnings, then by vehicle name
+        usort($notifications, function ($a, $b) {
+            $severityOrder = ['error' => 0, 'warning' => 1, 'info' => 2];
+            $aSeverity = $severityOrder[$a['severity']] ?? 2;
+            $bSeverity = $severityOrder[$b['severity']] ?? 2;
+            
+            if ($aSeverity !== $bSeverity) {
+                return $aSeverity - $bSeverity;
+            }
+            
+            return strcmp($a['vehicleName'] ?? '', $b['vehicleName'] ?? '');
+        });
 
         return $notifications;
     }

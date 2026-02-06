@@ -1,12 +1,54 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import SafeStorage from '../utils/SafeStorage';
+
+// Clean up old dismissed/snoozed notifications (older than 90 days)
+const cleanupOldNotifications = () => {
+  const now = Date.now();
+  const maxAge = 90 * 24 * 60 * 60 * 1000; // 90 days in ms
+
+  // Clean dismissed notifications (keep only recent ones)
+  const dismissed = SafeStorage.get('dismissedNotifications', {});
+  const dismissedTimestamps = SafeStorage.get('dismissedNotificationsTimestamps', {});
+  const newDismissed = {};
+  const newDismissedTimestamps = {};
+  
+  Object.keys(dismissed).forEach((key) => {
+    const timestamp = dismissedTimestamps[key] || now;
+    if (now - timestamp < maxAge) {
+      newDismissed[key] = dismissed[key];
+      newDismissedTimestamps[key] = timestamp;
+    }
+  });
+  
+  SafeStorage.set('dismissedNotifications', newDismissed);
+  SafeStorage.set('dismissedNotificationsTimestamps', newDismissedTimestamps);
+
+  // Clean expired snoozed notifications
+  const snoozed = SafeStorage.get('snoozedNotifications', {});
+  const newSnoozed = {};
+  
+  Object.keys(snoozed).forEach((key) => {
+    const snoozedUntil = new Date(snoozed[key]).getTime();
+    if (snoozedUntil > now) {
+      newSnoozed[key] = snoozed[key];
+    }
+  });
+  
+  SafeStorage.set('snoozedNotifications', newSnoozed);
+
+  return { dismissed: newDismissed, snoozed: newSnoozed, dismissedTimestamps: newDismissedTimestamps };
+};
 
 export const useNotifications = () => {
   const { user, api } = useAuth();
   const [rawNotifications, setRawNotifications] = useState([]);
   const [dismissedNotifications, setDismissedNotifications] = useState(() => {
-    return SafeStorage.get('dismissedNotifications', {});
+    const cleaned = cleanupOldNotifications();
+    return cleaned.dismissed;
+  });
+  const [dismissedTimestamps, setDismissedTimestamps] = useState(() => {
+    return SafeStorage.get('dismissedNotificationsTimestamps', {});
   });
   const [snoozedNotifications, setSnoozedNotifications] = useState(() => {
     return SafeStorage.get('snoozedNotifications', {});
@@ -19,6 +61,8 @@ export const useNotifications = () => {
     const streamUrl = `${baseUrl}/notifications/stream?token=${encodeURIComponent(token || '')}`;
     let eventSource;
     let stopped = false;
+    let retryCount = 0;
+    const maxRetryDelay = 60000; // Max 60 seconds
 
     const openStream = () => {
       if (stopped) return;
@@ -28,10 +72,15 @@ export const useNotifications = () => {
         try {
           const payload = JSON.parse(event.data);
           setRawNotifications(Array.isArray(payload) ? payload : []);
+          retryCount = 0; // Reset on successful message
         } catch (e) {
           // ignore malformed payload
         }
       });
+
+      eventSource.onopen = () => {
+        retryCount = 0; // Reset on successful connection
+      };
 
       eventSource.onerror = () => {
         eventSource?.close();
@@ -45,10 +94,12 @@ export const useNotifications = () => {
             // ignore
           }
         })();
-        // retry in 5s
+        // Exponential backoff: 1s, 2s, 4s, 8s... up to maxRetryDelay
+        const delay = Math.min(1000 * Math.pow(2, retryCount), maxRetryDelay);
+        retryCount++;
         setTimeout(() => {
           if (!stopped) openStream();
-        }, 5000);
+        }, delay);
       };
     };
 
@@ -60,38 +111,34 @@ export const useNotifications = () => {
     };
   }, [api, user?.id]);
 
-  const isSnoozed = (notificationKey) => {
+  const isSnoozed = useCallback((notificationKey) => {
     const snoozedUntil = snoozedNotifications[notificationKey];
     if (!snoozedUntil) return false;
     
     const now = new Date();
     const snoozedDate = new Date(snoozedUntil);
     return now < snoozedDate;
-  };
+  }, [snoozedNotifications]);
 
-  const dismissNotification = (notificationId) => {
-    const updated = { ...dismissedNotifications, [notificationId]: true };
-    setDismissedNotifications(updated);
-    SafeStorage.set('dismissedNotifications', updated);
-  };
+  const dismissNotification = useCallback((notificationId) => {
+    const now = Date.now();
+    const updatedDismissed = { ...dismissedNotifications, [notificationId]: true };
+    const updatedTimestamps = { ...dismissedTimestamps, [notificationId]: now };
+    
+    setDismissedNotifications(updatedDismissed);
+    setDismissedTimestamps(updatedTimestamps);
+    SafeStorage.set('dismissedNotifications', updatedDismissed);
+    SafeStorage.set('dismissedNotificationsTimestamps', updatedTimestamps);
+  }, [dismissedNotifications, dismissedTimestamps]);
 
-  const snoozeNotification = (notificationId, days = 7) => {
+  const snoozeNotification = useCallback((notificationId, days = 7) => {
     const snoozedUntil = new Date();
     snoozedUntil.setDate(snoozedUntil.getDate() + days);
     
     const updated = { ...snoozedNotifications, [notificationId]: snoozedUntil.toISOString() };
     setSnoozedNotifications(updated);
     SafeStorage.set('snoozedNotifications', updated);
-  };
-
-  const clearAllNotifications = () => {
-    const updated = {};
-    notifications.forEach((notif) => {
-      updated[notif.id] = true;
-    });
-    setDismissedNotifications({ ...dismissedNotifications, ...updated });
-    SafeStorage.set('dismissedNotifications', { ...dismissedNotifications, ...updated });
-  };
+  }, [snoozedNotifications]);
 
   const notifications = useMemo(() => {
     const filtered = (Array.isArray(rawNotifications) ? rawNotifications : []).filter((n) => {
@@ -101,7 +148,23 @@ export const useNotifications = () => {
       return true;
     });
     return filtered;
-  }, [rawNotifications, dismissedNotifications, snoozedNotifications]);
+  }, [rawNotifications, dismissedNotifications, isSnoozed]);
+
+  const clearAllNotifications = useCallback(() => {
+    const now = Date.now();
+    const updatedDismissed = { ...dismissedNotifications };
+    const updatedTimestamps = { ...dismissedTimestamps };
+    
+    notifications.forEach((notif) => {
+      updatedDismissed[notif.id] = true;
+      updatedTimestamps[notif.id] = now;
+    });
+    
+    setDismissedNotifications(updatedDismissed);
+    setDismissedTimestamps(updatedTimestamps);
+    SafeStorage.set('dismissedNotifications', updatedDismissed);
+    SafeStorage.set('dismissedNotificationsTimestamps', updatedTimestamps);
+  }, [notifications, dismissedNotifications, dismissedTimestamps]);
 
   return {
     notifications,

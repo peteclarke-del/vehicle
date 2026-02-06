@@ -41,6 +41,7 @@ class ReportEngine
     private array $params;
     private array $dataCache = [];
     private array $calculatedValues = [];
+    private string $pdfFontName = 'dejavusans';
 
     public function __construct(EntityManagerInterface $em)
     {
@@ -217,23 +218,47 @@ class ReportEngine
                 $qb = $this->em->createQueryBuilder()
                     ->select('fr', 'v')
                     ->from(FuelRecord::class, 'fr')
-                    ->leftJoin('fr.vehicle', 'v');
+                    ->leftJoin('fr.vehicle', 'v')
+                    ->orderBy('fr.date', 'ASC')
+                    ->addOrderBy('fr.mileage', 'ASC');
                 if ($vehicleId) {
                     $qb->where('fr.vehicle = :vid')->setParameter('vid', $vehicleId);
                 }
                 $results = $qb->getQuery()->getResult();
+                
+                // Calculate MPG for each record using previous record
+                $previousRecord = null;
+                $cumulativeLitres = 0;
+                $cumulativeMiles = 0;
+                
                 foreach ($results as $fr) {
                     $vehicle = $fr->getVehicle();
+                    $mpg = $fr->calculateMpg($previousRecord);
+                    $miles = null;
+                    
+                    if ($previousRecord && $fr->getMileage() && $previousRecord->getMileage()) {
+                        $miles = $fr->getMileage() - $previousRecord->getMileage();
+                        $cumulativeMiles += $miles;
+                    }
+                    
+                    $cumulativeLitres += (float)$fr->getLitres();
+                    
                     $rows[] = [
                         'id' => $fr->getId(),
                         'date' => $fr->getDate() instanceof \DateTimeInterface ? $fr->getDate()->format('Y-m-d') : '',
                         'mileage' => $fr->getMileage(),
                         'litres' => $fr->getLitres(),
                         'cost' => $fr->getCost(),
+                        'miles' => $miles,
+                        'mpg' => $mpg,
+                        'cumulativeLitres' => $cumulativeLitres,
+                        'cumulativeMiles' => $cumulativeMiles,
                         'vehicle_id' => $vehicle?->getId(),
                         'vehicle' => $vehicle ? ($vehicle->getRegistrationNumber() ?? '') : '',
                         'registration' => $vehicle ? ($vehicle->getRegistrationNumber() ?? '') : '',
                     ];
+                    
+                    $previousRecord = $fr;
                 }
                 break;
 
@@ -253,7 +278,9 @@ class ReportEngine
                         'id' => $part->getId(),
                         'date' => $part->getPurchaseDate() instanceof \DateTimeInterface ? $part->getPurchaseDate()->format('Y-m-d') : '',
                         'item' => $part->getDescription() ?? '',
-                        'cost' => $part->getCost(),
+                        'cost' => $part->getTotalCost() ?? $part->getCost(),
+                        'price' => $part->getPrice(),
+                        'quantity' => $part->getQuantity(),
                         'vehicle_id' => $vehicle?->getId(),
                         'vehicle' => $vehicle ? ($vehicle->getRegistrationNumber() ?? '') : '',
                         'registration' => $vehicle ? ($vehicle->getRegistrationNumber() ?? '') : '',
@@ -297,7 +324,9 @@ class ReportEngine
                         'id' => $c->getId(),
                         'date' => $c->getLastChanged() instanceof \DateTimeInterface ? $c->getLastChanged()->format('Y-m-d') : '',
                         'item' => $c->getDescription() ?? '',
-                        'cost' => $c->getCost(),
+                        'cost' => $c->getTotalCost() ?? $c->getCost(),
+                        'unitCost' => $c->getCost(),
+                        'quantity' => $c->getQuantity(),
                         'vehicle_id' => $c->getVehicle()?->getId(),
                         'registration' => $c->getVehicle()?->getRegistration(),
                         'make' => $c->getVehicle()?->getMake(),
@@ -355,7 +384,7 @@ class ReportEngine
                     $rows[] = [
                         'id' => $row['id'],
                         'date' => $row['testDate'] instanceof \DateTimeInterface ? $row['testDate']->format('Y-m-d') : ($row['testDate'] ?? ''),
-                        'item' => 'MOT ' . ($row['result'] ?? ''),
+                        'item' => 'M.O.T. (' . ($row['result'] ?? '') . ')',
                         'cost' => $totalCost,
                         'vehicle_id' => $row['vehicle_id'],
                     ];
@@ -652,7 +681,12 @@ class ReportEngine
 
             case 'avg':
             case 'average':
-                $values = array_map(fn($r) => (float)($r[$field] ?? 0), $data);
+                // Filter out null/zero values for average calculation (important for MPG where first record has no value)
+                $values = array_filter(
+                    array_map(fn($r) => $r[$field] ?? null, $data),
+                    fn($v) => $v !== null && $v > 0
+                );
+                $values = array_map(fn($v) => (float)$v, $values);
                 return count($values) > 0 ? array_sum($values) / count($values) : 0;
 
             case 'count':
@@ -796,7 +830,7 @@ class ReportEngine
     private function generateXlsx(): array
     {
         $spreadsheet = new Spreadsheet();
-        $spreadsheet->getDefaultStyle()->getFont()->setName('Arial')->setSize(9);
+        $spreadsheet->getDefaultStyle()->getFont()->setName('Liberation Serif')->setSize(9);
 
         // Get layout configuration
         $layout = $this->template['layout'] ?? null;
@@ -997,8 +1031,8 @@ class ReportEngine
             $sheet->setCellValue($coord, $num);
             $sheet->getStyle($coord)->getNumberFormat()->setFormatCode('£#,##0.00');
         } elseif ($format === 'number') {
-            $sheet->setCellValue($coord, is_numeric($value) ? (float)$value : 0);
-            $sheet->getStyle($coord)->getNumberFormat()->setFormatCode('#,##0.00');
+            $sheet->setCellValue($coord, is_numeric($value) ? round((float)$value) : 0);
+            $sheet->getStyle($coord)->getNumberFormat()->setFormatCode('#,##0');
         } else {
             $sheet->setCellValue($coord, (string)$value);
         }
@@ -1058,6 +1092,7 @@ class ReportEngine
         $labelCol = $section['labelCol'] ?? 'U';
         $valueCol = $section['valueCol'] ?? 'V';
         $style = $section['style'] ?? null;
+        $valueStyle = $section['valueStyle'] ?? $style;
 
         $row = $startRow;
         foreach ($fields as $fieldDef) {
@@ -1078,7 +1113,9 @@ class ReportEngine
 
             if ($style && isset($styles[$style])) {
                 $this->applyStyle($sheet, $labelCol . $row, $styles[$style]);
-                $this->applyStyle($sheet, $valueCol . $row, $styles[$style]);
+            }
+            if ($valueStyle && isset($styles[$valueStyle])) {
+                $this->applyStyle($sheet, $valueCol . $row, $styles[$valueStyle]);
             }
 
             $row++;
@@ -1133,7 +1170,7 @@ class ReportEngine
             $aggregates = [];
             foreach ($columns as $ci => $col) {
                 if (isset($col['aggregate'])) {
-                    $aggregates[$ci] = ['type' => $col['aggregate'], 'values' => []];
+                    $aggregates[$ci] = ['type' => $col['aggregate'], 'values' => [], 'format' => $col['format'] ?? null];
                 }
             }
 
@@ -1192,7 +1229,11 @@ class ReportEngine
                     };
                     if (is_numeric($result)) {
                         $xlsSheet->setCellValue($colLetter . $rowNum, $result);
-                        $xlsSheet->getStyle($colLetter . $rowNum)->getNumberFormat()->setFormatCode('£#,##0.00');
+                        if (($agg['format'] ?? null) === 'currency') {
+                            $xlsSheet->getStyle($colLetter . $rowNum)->getNumberFormat()->setFormatCode('£#,##0.00');
+                        } else {
+                            $xlsSheet->getStyle($colLetter . $rowNum)->getNumberFormat()->setFormatCode('#,##0');
+                        }
                     }
                 }
                 $xlsSheet->getStyle('A' . $rowNum . ':' . Coordinate::stringFromColumnIndex(count($columns)) . $rowNum)->applyFromArray([
@@ -1248,13 +1289,20 @@ class ReportEngine
             ];
         }
 
+        if (isset($style['wrapText']) && $style['wrapText']) {
+            if (!isset($styleArray['alignment'])) {
+                $styleArray['alignment'] = [];
+            }
+            $styleArray['alignment']['wrapText'] = true;
+        }
+
         if (!empty($styleArray)) {
             $sheet->getStyle($coord)->applyFromArray($styleArray);
         }
     }
 
     /**
-     * Generate PDF output using TCPDF with Liberation Sans font.
+     * Generate PDF output using TCPDF with Liberation Serif font.
      */
     private function generatePdf(): array
     {
@@ -1278,9 +1326,10 @@ class ReportEngine
         $pdf->SetMargins(10, 10, 10);
         $pdf->SetAutoPageBreak(true, 10);
         
-        // Add Liberation Sans font (available on most Linux systems)
-        // TCPDF will use the system font if available, otherwise fall back to DejaVu Sans
-        $pdf->SetFont('dejavusans', 'B', 14);
+        // Use DejaVu Sans - built into TCPDF with full UTF-8 support
+        $this->pdfFontName = 'dejavusans';
+        
+        $pdf->SetFont($this->pdfFontName, 'B', 14);
         
         $pdf->AddPage();
 
@@ -1322,14 +1371,14 @@ class ReportEngine
 
             switch ($type) {
                 case 'title':
-                    $pdf->SetFont('dejavusans', 'B', $section['fontSize'] ?? 12);
+                    $pdf->SetFont($this->pdfFontName, 'B', $section['fontSize'] ?? 12);
                     $text = $this->resolveString($section['text'] ?? '');
                     $pdf->Cell(0, 8, $text, 0, 1);
                     $pdf->Ln($section['spacing'] ?? 3);
                     break;
 
                 case 'text':
-                    $pdf->SetFont('dejavusans', '', $section['fontSize'] ?? 9);
+                    $pdf->SetFont($this->pdfFontName, '', $section['fontSize'] ?? 9);
                     $text = $this->resolveString($section['text'] ?? '');
                     $pdf->MultiCell(0, 6, $text);
                     $pdf->Ln($section['spacing'] ?? 3);
@@ -1359,17 +1408,17 @@ class ReportEngine
         $source = $section['source'] ?? '';
         $data = $this->getData($source);
         $columns = $section['columns'] ?? [];
-        $maxRows = $section['maxRows'] ?? 50;
+        $maxRows = $section['maxRows'] ?? null; // null means no limit
         $title = $section['title'] ?? null;
 
         if ($title) {
-            $pdf->SetFont('dejavusans', 'B', 11);
+            $pdf->SetFont($this->pdfFontName, 'B', 11);
             $titleText = $this->resolveString($title);
             $pdf->Cell(0, 8, $titleText, 0, 1);
         }
 
         // Header
-        $pdf->SetFont('dejavusans', 'B', 8);
+        $pdf->SetFont($this->pdfFontName, 'B', 8);
         $pdf->SetFillColor(178, 178, 178);
 
         foreach ($columns as $col) {
@@ -1380,42 +1429,99 @@ class ReportEngine
         $pdf->Ln();
 
         // Data rows
-        $pdf->SetFont('dejavusans', '', 8);
+        $pdf->SetFont($this->pdfFontName, '', 8);
         $count = 0;
+        $rowHeight = 5;
+        
         foreach ($data as $row) {
-            if ($count >= $maxRows) {
+            if ($maxRows !== null && $count >= $maxRows) {
                 break;
             }
 
-            foreach ($columns as $col) {
+            // First pass: calculate the maximum row height needed for wrapping text
+            $maxRowHeight = $rowHeight;
+            $cellValues = [];
+            foreach ($columns as $i => $col) {
                 $width = $col['width'] ?? 30;
                 $field = $col['field'] ?? $col['key'] ?? '';
-                $value = $row[$field] ?? '';
+                $rawValue = $row[$field] ?? '';
+                $value = (string)$rawValue;
                 $format = $col['format'] ?? null;
-                $align = $col['alignment'] ?? 'L';
-
-                if ($format === 'currency' && is_numeric($value)) {
-                    // TCPDF handles UTF-8 including £ symbol natively
-                    $value = '£' . number_format((float)$value, 2);
+                $align = $col['alignment'] ?? null;
+                
+                if ($format === 'currency' && is_numeric($rawValue)) {
+                    $value = '£' . number_format((float)$rawValue, 2);
                     $align = 'R';
+                } elseif ($format === 'number' && is_numeric($rawValue)) {
+                    $value = number_format(round((float)$rawValue), 0);
+                    $align = 'R';
+                } elseif ($align === null) {
+                    // Auto-detect alignment: right for numeric values, left for text
+                    $align = is_numeric($rawValue) ? 'R' : 'L';
                 }
-
-                $cellValue = substr((string)$value, 0, 40);
-                $pdf->Cell($width, 5, $cellValue, 1, 0, strtoupper(substr($align, 0, 1)));
+                
+                $cellValues[$i] = ['value' => $value, 'width' => $width, 'align' => $align];
+                
+                // Calculate number of lines needed for this cell
+                $numLines = $pdf->getNumLines($value, $width);
+                $cellHeight = $numLines * $rowHeight;
+                if ($cellHeight > $maxRowHeight) {
+                    $maxRowHeight = $cellHeight;
+                }
             }
-            $pdf->Ln();
+
+            // Check if we need a page break
+            if ($pdf->GetY() + $maxRowHeight > $pdf->getPageHeight() - $pdf->getBreakMargin()) {
+                $pdf->AddPage();
+                $pdf->SetFont($this->pdfFontName, '', 8);
+            }
+
+            // Second pass: render all cells with uniform height
+            $startX = $pdf->GetX();
+            $startY = $pdf->GetY();
+            $currentX = $startX;
+            
+            foreach ($cellValues as $cell) {
+                // Draw cell border/background with full row height
+                $pdf->Rect($currentX, $startY, $cell['width'], $maxRowHeight);
+                
+                // Write text inside the cell with padding
+                $pdf->SetXY($currentX + 0.5, $startY + 0.5);
+                $pdf->MultiCell(
+                    $cell['width'] - 1,  // width with padding
+                    $rowHeight,           // line height
+                    $cell['value'],       // text
+                    0,                    // no border (we drew it with Rect)
+                    strtoupper(substr($cell['align'], 0, 1)),  // alignment
+                    false,                // no fill
+                    1,                    // move to next line after
+                    $currentX + 0.5,      // x position
+                    $startY + 0.5,        // y position
+                    true,                 // reset height
+                    0,                    // stretch mode
+                    false,                // is html
+                    true,                 // auto padding
+                    $maxRowHeight - 1,    // max height
+                    'T'                   // vertical alignment top
+                );
+                
+                $currentX += $cell['width'];
+            }
+            
+            // Move to next row
+            $pdf->SetXY($startX, $startY + $maxRowHeight);
             $count++;
         }
 
         // Show "more items" message if truncated
-        if (count($data) > $maxRows) {
-            $pdf->SetFont('dejavusans', 'I', 7);
+        if ($maxRows !== null && count($data) > $maxRows) {
+            $pdf->SetFont($this->pdfFontName, 'I', 7);
             $pdf->Cell(0, 5, '... and ' . (count($data) - $maxRows) . ' more items', 0, 1);
         }
 
         // Aggregate row if defined
         if (isset($section['showTotal']) && $section['showTotal']) {
-            $pdf->SetFont('dejavusans', 'B', 9);
+            $pdf->SetFont($this->pdfFontName, 'B', 9);
             $totalWidth = 0;
             foreach ($columns as $i => $col) {
                 $width = $col['width'] ?? 30;
@@ -1438,11 +1544,11 @@ class ReportEngine
      */
     private function renderPdfSummary(\TCPDF $pdf, array $section): void
     {
-        $pdf->SetFont('dejavusans', 'B', 11);
+        $pdf->SetFont($this->pdfFontName, 'B', 11);
         $titleText = $section['title'] ?? 'Summary';
         $pdf->Cell(0, 8, $titleText, 0, 1);
 
-        $pdf->SetFont('dejavusans', '', 9);
+        $pdf->SetFont($this->pdfFontName, '', 9);
         $items = $section['items'] ?? [];
 
         foreach ($items as $item) {
@@ -1458,12 +1564,14 @@ class ReportEngine
             if ($format === 'currency' && is_numeric($value)) {
                 // TCPDF handles UTF-8 including £ symbol natively
                 $value = '£' . number_format((float)$value, 2);
+            } elseif ($format === 'number' && is_numeric($value)) {
+                $value = number_format(round((float)$value), 0);
             } else {
                 $value = (string)$value;
             }
 
             $bold = $item['bold'] ?? false;
-            $pdf->SetFont('dejavusans', $bold ? 'B' : '', 9);
+            $pdf->SetFont($this->pdfFontName, $bold ? 'B' : '', 9);
             $pdf->Cell(60, 6, $label, 0);
             $pdf->Cell(40, 6, $value, 0, 1, 'R');
         }

@@ -561,7 +561,7 @@ const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose, unlinkedServic
                 <MenuItem value="Oil Change">{t('service.oilChange')}</MenuItem>
                 <MenuItem value="Brake Service">{t('service.brakeService')}</MenuItem>
                 <MenuItem value="Tyres">{t('service.tyres') || 'Tyres'}</MenuItem>
-                <MenuItem value="Other">{t('service.other')}</MenuItem>
+                <MenuItem value="Other Service">{t('service.other')}</MenuItem>
               </TextField>
             </Grid>
             <Grid item xs={12} sm={3}>
