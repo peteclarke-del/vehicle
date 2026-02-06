@@ -4,19 +4,19 @@ import logger from '../utils/logger';
 
 const UserPreferencesContext = createContext(null);
 
-function prefsStorageKey(userId) {
-  return `vehicle.default.${userId}`;
-}
+const DEFAULT_ROWS_PER_PAGE = 10;
 
 export const UserPreferencesProvider = ({ children }) => {
   const { user, api, loading: authLoading } = useAuth();
   const [defaultVehicleId, setDefaultVehicleId] = useState(null);
+  const [defaultRowsPerPage, setDefaultRowsPerPageState] = useState(DEFAULT_ROWS_PER_PAGE);
   const [pendingSave, setPendingSave] = useState(null);
 
   // load from server when user available
   useEffect(() => {
     if (!user || !user.id) {
       setDefaultVehicleId(null);
+      setDefaultRowsPerPageState(DEFAULT_ROWS_PER_PAGE);
       return;
     }
 
@@ -26,6 +26,15 @@ export const UserPreferencesProvider = ({ children }) => {
         const res = await api.get('/user/preferences?key=vehicle.default');
         if (res && res.data) {
           setDefaultVehicleId(res.data.value ?? null);
+        }
+      } catch (e) {
+        // ignore server errors for now
+      }
+      
+      try {
+        const res = await api.get('/user/preferences?key=defaultRowsPerPage');
+        if (res && res.data && res.data.value) {
+          setDefaultRowsPerPageState(parseInt(res.data.value, 10) || DEFAULT_ROWS_PER_PAGE);
         }
       } catch (e) {
         // ignore server errors for now
@@ -97,8 +106,25 @@ export const UserPreferencesProvider = ({ children }) => {
     persistToServer('vehicle.default', null);
   }, [user, persistToServer]);
 
+  const setDefaultRowsPerPage = useCallback((rowsPerPage) => {
+    const value = parseInt(rowsPerPage, 10) || DEFAULT_ROWS_PER_PAGE;
+    setDefaultRowsPerPageState(value);
+    
+    if (!user || !user.id) {
+      return;
+    }
+    
+    persistToServer('defaultRowsPerPage', value);
+  }, [user, persistToServer]);
+
   return (
-    <UserPreferencesContext.Provider value={{ defaultVehicleId, setDefaultVehicle, clearDefaultVehicle }}>
+    <UserPreferencesContext.Provider value={{ 
+      defaultVehicleId, 
+      setDefaultVehicle, 
+      clearDefaultVehicle,
+      defaultRowsPerPage,
+      setDefaultRowsPerPage,
+    }}>
       {children}
     </UserPreferencesContext.Provider>
   );

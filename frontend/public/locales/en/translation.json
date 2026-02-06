@@ -225,6 +225,7 @@
     "displaySettings": "Display Settings",
     "language": "Language",
     "distanceUnit": "Distance Unit",
+    "rowsPerPage": "Default Rows Per Page",
     "kilometers": "Kilometers (km)",
     "miles": "Miles (mi)",
     "minutes_5": "5 Minutes",
