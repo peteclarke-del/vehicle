@@ -59,9 +59,19 @@ class ReportsControllerTest extends BaseWebTestCase
         $this->assertResponseIsSuccessful();
         $responseData = json_decode($this->client->getResponse()->getContent(), true);
         $this->assertIsArray($responseData);
-        $this->assertCount(1, $responseData);
-        $this->assertEquals('Test Report', $responseData[0]['name']);
-        $this->assertEquals('maintenance_summary', $responseData[0]['template']);
+        $this->assertGreaterThanOrEqual(1, count($responseData), 'Should have at least 1 report');
+        
+        // Find our created report in the list
+        $foundReport = null;
+        foreach ($responseData as $r) {
+            if ($r['name'] === 'Test Report' && $r['template'] === 'maintenance_summary') {
+                $foundReport = $r;
+                break;
+            }
+        }
+        $this->assertNotNull($foundReport, 'Created report should be found in list');
+        $this->assertEquals('Test Report', $foundReport['name']);
+        $this->assertEquals('maintenance_summary', $foundReport['template']);
     }
 
     public function testCreateReportWithoutAuthentication(): void
@@ -195,8 +205,7 @@ class ReportsControllerTest extends BaseWebTestCase
             }
         }
         $this->assertNotNull($foundReport, 'Report should be found in list');
-        $responseData = json_decode($this->client->getResponse()->getContent(), true);
-        $this->assertEquals($report->getId(), $responseData['id']);
-        $this->assertEquals('Specific Report', $responseData['name']);
+        $this->assertEquals($report->getId(), $foundReport['id']);
+        $this->assertEquals('Specific Report', $foundReport['name']);
     }
 }

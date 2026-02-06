@@ -2,15 +2,75 @@
   "key": "total_expenditure",
   "name": "Total Expenditure",
   "description": "Total expenditure across services, parts, fuel and consumables",
+  "filename": "Total_Expenditure",
   "periods": [
     {"label": "Last 6 months", "months": 6},
     {"label": "Last 12 months", "months": 12},
     {"label": "All time", "months": null}
   ],
   "defaultPeriodIndex": 1,
-  "outputs": [{"mode":"screen"},{"mode":"file","fileType":"pdf"}],
-  "elements": [
-    {"type":"summary","field":"totalExpenditure","label":"Total Expenditure"},
-    {"type":"breakdown","fields":["serviceTotal","partsTotal","fuelTotal","consumablesTotal"]}
+  "outputs": [{"mode":"screen"},{"mode":"file","fileType":"xlsx"},{"mode":"file","fileType":"pdf"}],
+  "dataSources": {
+    "serviceRecords": { "entity": "ServiceRecord" },
+    "parts": { "entity": "Part" },
+    "fuelRecords": { "entity": "FuelRecord" },
+    "consumables": { "entity": "Consumable" }
+  },
+  "calculations": {
+    "serviceTotal": { "source": "serviceRecords", "field": "cost", "operation": "sum" },
+    "partsTotal": { "source": "parts", "field": "cost", "operation": "sum" },
+    "fuelTotal": { "source": "fuelRecords", "field": "cost", "operation": "sum" },
+    "consumablesTotal": { "source": "consumables", "field": "cost", "operation": "sum" },
+    "totalExpenditure": { "operation": "sum", "fields": ["serviceTotal", "partsTotal", "fuelTotal", "consumablesTotal"] }
+  },
+  "sheets": [
+    {
+      "name": "Summary",
+      "source": "summary",
+      "columns": [
+        {"key":"category","label":"Category","width":25},
+        {"key":"total","label":"Total","width":15,"format":"currency"}
+      ]
+    },
+    {
+      "name": "Services",
+      "source": "serviceRecords",
+      "columns": [
+        {"key":"date","label":"Date","width":12},
+        {"key":"vehicle","label":"Vehicle","width":20},
+        {"key":"serviceType","label":"Type","width":20},
+        {"key":"cost","label":"Cost","width":12,"format":"currency","aggregate":"sum"}
+      ]
+    },
+    {
+      "name": "Parts",
+      "source": "parts",
+      "columns": [
+        {"key":"date","label":"Date","width":12},
+        {"key":"vehicle","label":"Vehicle","width":20},
+        {"key":"item","label":"Part","width":25},
+        {"key":"cost","label":"Cost","width":12,"format":"currency","aggregate":"sum"}
+      ]
+    },
+    {
+      "name": "Fuel",
+      "source": "fuelRecords",
+      "columns": [
+        {"key":"date","label":"Date","width":12},
+        {"key":"vehicle","label":"Vehicle","width":20},
+        {"key":"litres","label":"Litres","width":10},
+        {"key":"cost","label":"Cost","width":12,"format":"currency","aggregate":"sum"}
+      ]
+    },
+    {
+      "name": "Consumables",
+      "source": "consumables",
+      "columns": [
+        {"key":"date","label":"Date","width":12},
+        {"key":"vehicle","label":"Vehicle","width":20},
+        {"key":"item","label":"Item","width":25},
+        {"key":"cost","label":"Cost","width":12,"format":"currency","aggregate":"sum"}
+      ]
+    }
   ]
 }

@@ -18,12 +18,14 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Xdebug with build dependencies, configure, then clean up in single layer
+# Note: xdebug.mode can be overridden by XDEBUG_MODE environment variable
 RUN apt-get update \
     && apt-get install -y --no-install-recommends autoconf pkg-config gcc make libc-dev \
     && pecl install xdebug \
     && docker-php-ext-enable xdebug \
     && echo "; Xdebug configuration" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
-    && echo "xdebug.mode=debug,develop,coverage" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
+    && echo "; Default mode: off. Override with XDEBUG_MODE env var for debugging." >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
+    && echo "xdebug.mode=\${XDEBUG_MODE}" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
     && echo "xdebug.start_with_request=yes" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
     && echo "xdebug.client_host=host.docker.internal" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
     && echo "xdebug.client_port=9003" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
@@ -34,6 +36,9 @@ RUN apt-get update \
     && apt-get remove -y gcc make autoconf pkg-config libc-dev \
     && apt-get autoremove -y \
     && rm -rf /var/lib/apt/lists/* /tmp/pear
+
+# Default XDEBUG_MODE to off (can be overridden by docker-compose environment)
+ENV XDEBUG_MODE=off
 
 # Configure PHP upload limits
 RUN echo "upload_max_filesize = 200M" > /usr/local/etc/php/conf.d/uploads.ini \

@@ -2,6 +2,7 @@
   "key": "consumables_total",
   "name": "Total Consumables Cost",
   "description": "Totals consumables cost over a configurable period",
+  "filename": "Consumables_Total",
   "periods": [
     {"label": "Last 7 days", "months": 0, "days": 7},
     {"label": "Last month", "months": 1},
@@ -12,15 +13,27 @@
   "defaultPeriodIndex": 3,
   "outputs": [
     {"mode": "screen"},
+    {"mode": "file", "fileType": "xlsx"},
     {"mode": "file", "fileType": "pdf"}
   ],
-  "elements": [
-    {"type": "summary", "field": "consumablesTotal", "label": "Total Consumables"},
-    {"type": "table", "source": "consumables", "columns": [
-      {"key": "date", "label": "Date"},
-      {"key": "vehicle", "label": "Vehicle"},
-      {"key": "item", "label": "Item"},
-      {"key": "cost", "label": "Cost"}
-    ]}
+  "dataSources": {
+    "consumables": {
+      "entity": "Consumable"
+    }
+  },
+  "calculations": {
+    "consumablesTotal": { "source": "consumables", "field": "cost", "operation": "sum" }
+  },
+  "sheets": [
+    {
+      "name": "Consumables",
+      "source": "consumables",
+      "columns": [
+        {"key": "date", "label": "Date", "width": 12},
+        {"key": "vehicle", "label": "Vehicle", "width": 20},
+        {"key": "item", "label": "Item", "width": 30},
+        {"key": "cost", "label": "Cost", "width": 12, "format": "currency", "aggregate": "sum"}
+      ]
+    }
   ]
 }

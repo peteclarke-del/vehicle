@@ -2,14 +2,29 @@
   "key": "part_costs",
   "name": "Part Costs",
   "description": "Parts purchased and their costs",
+  "filename": "Part_Costs",
   "periods": [
     {"label": "Last 6 months", "months": 6},
     {"label": "Last 12 months", "months": 12},
     {"label": "All time", "months": null}
   ],
   "defaultPeriodIndex": 1,
-  "outputs": [{"mode":"screen"},{"mode":"file","fileType":"csv"}],
-  "elements": [
-    {"type":"table","source":"parts","columns":[{"key":"date","label":"Date"},{"key":"vehicle","label":"Vehicle"},{"key":"description","label":"Part"},{"key":"cost","label":"Cost"}]}
+  "outputs": [{"mode":"screen"},{"mode":"file","fileType":"xlsx"}],
+  "dataSources": {
+    "parts": {
+      "entity": "Part"
+    }
+  },
+  "sheets": [
+    {
+      "name": "Parts",
+      "source": "parts",
+      "columns": [
+        {"key":"date","label":"Date","width":12},
+        {"key":"vehicle","label":"Vehicle","width":20},
+        {"key":"item","label":"Part","width":30},
+        {"key":"cost","label":"Cost","width":12,"format":"currency","aggregate":"sum"}
+      ]
+    }
   ]
 }

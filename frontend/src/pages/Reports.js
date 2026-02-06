@@ -23,8 +23,11 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Menu,
+  ListItemIcon,
+  ListItemText,
 } from '@mui/material';
-import { Download as DownloadIcon, Delete as DeleteIcon } from '@mui/icons-material';
+import { Download as DownloadIcon, Delete as DeleteIcon, PictureAsPdf as PdfIcon, TableChart as XlsxIcon } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import VehicleSelector from '../components/VehicleSelector';
@@ -54,6 +57,9 @@ const Reports = () => {
   const [viewerFileName, setViewerFileName] = useState(null);
   const [viewerBlob, setViewerBlob] = useState(null);
   const [viewerPreview, setViewerPreview] = useState(null);
+  const [viewerReport, setViewerReport] = useState(null);
+  const [downloadMenuAnchor, setDownloadMenuAnchor] = useState(null);
+  const [downloadingReport, setDownloadingReport] = useState(null);
 
   const fetchVehicles = useCallback(async () => {
     try {
@@ -70,7 +76,9 @@ const Reports = () => {
     try {
       const url = selectedVehicle && selectedVehicle !== '__all__' ? `/reports?vehicleId=${selectedVehicle}` : '/reports';
       const resp = await api.get(url);
-      setReports(resp.data || []);
+      // Ensure we have an actual array, not a string or other response
+      const data = Array.isArray(resp.data) ? resp.data : [];
+      setReports(data);
     } catch (err) {
       logger.error('Failed to load reports', err);
       setReports([]);
@@ -169,7 +177,7 @@ const Reports = () => {
   // viewer: fetch blob and show
   const handleView = async (report) => {
     try {
-      const resp = await api.get(`/reports/${report.id}/download`, { responseType: 'blob' });
+      const resp = await api.get(`/reports/${report.id}/download?format=xlsx`, { responseType: 'blob' });
       const blob = resp.data;
       const url = window.URL.createObjectURL(blob);
       setViewerBlob(blob);
@@ -177,6 +185,7 @@ const Reports = () => {
       setViewerMime(blob.type || 'application/octet-stream');
       setViewerFileName(`${report.name || report.type || 'report'}_${new Date(report.generatedAt || Date.now()).toISOString().split('T')[0]}`);
       setViewerPreview(null);
+      setViewerReport(report);
 
       // Attempt quick previews for CSV and XLSX
       try {
@@ -203,10 +212,15 @@ const Reports = () => {
             const sheetName = wb.SheetNames && wb.SheetNames[0];
             if (sheetName) {
               const sheet = wb.Sheets[sheetName];
-              const json = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-              const columns = json[0] || [];
-              const rows = json.slice(1);
-              setViewerPreview({ type: 'xlsx', columns, rows });
+              // Get range to determine actual data bounds
+              const range = XLSX.utils.decode_range(sheet['!ref'] || 'A1');
+              const json = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+              // Filter out completely empty rows and find actual column count
+              const maxCols = Math.min(range.e.c + 1, 22); // Limit to 22 cols (A-V)
+              const filteredRows = json.filter(row => row.some(cell => cell !== '' && cell != null));
+              const columns = filteredRows[0] || [];
+              const rows = filteredRows.slice(1);
+              setViewerPreview({ type: 'xlsx', columns: columns.slice(0, maxCols), rows: rows.map(r => r.slice(0, maxCols)), sheetName });
             }
           } catch (e) {
             logger.warn('XLSX preview not available (xlsx lib missing)', e);
@@ -232,6 +246,7 @@ const Reports = () => {
     setViewerFileName(null);
     setViewerBlob(null);
     setViewerPreview(null);
+    setViewerReport(null);
     setViewerOpen(false);
   };
 
@@ -242,8 +257,12 @@ const Reports = () => {
       const period = tpl && tpl.periods && tpl.periods[selectedPeriodIndex] ? tpl.periods[selectedPeriodIndex] : null;
       const payload = {
         template: tpl?.key ?? tpl?.filename,
+        name: tpl?.name ?? tpl?.key ?? 'Report',
+        type: tpl?.name ?? tpl?.key ?? 'Report',
         vehicleId: selectedVehicle === '__all__' ? null : selectedVehicle,
         period: period,
+        periodLabel: period?.label ?? null,
+        periodMonths: period?.months ?? null,
         templateContent: tpl,
       };
       await api.post('/reports', payload);
@@ -255,14 +274,27 @@ const Reports = () => {
     }
   };
 
-  const handleDownload = async (report) => {
+  const handleDownload = async (report, format = 'xlsx') => {
     try {
-      const resp = await api.get(`/reports/${report.id}/download`, { responseType: 'blob' });
-      saveBlob(resp.data, `${report.name || 'report'}_${new Date(report.generatedAt || Date.now()).toISOString().split('T')[0]}.pdf`);
+      const resp = await api.get(`/reports/${report.id}/download?format=${format}`, { responseType: 'blob' });
+      const ext = format === 'pdf' ? '.pdf' : '.xlsx';
+      saveBlob(resp.data, `${report.name || 'report'}_${new Date(report.generatedAt || Date.now()).toISOString().split('T')[0]}${ext}`);
     } catch (err) {
       logger.error('Failed to download report', err);
       alert(t('common.downloadFailed') || 'Failed to download file');
     }
+    setDownloadMenuAnchor(null);
+    setDownloadingReport(null);
+  };
+
+  const handleDownloadClick = (event, report) => {
+    setDownloadMenuAnchor(event.currentTarget);
+    setDownloadingReport(report);
+  };
+
+  const handleDownloadMenuClose = () => {
+    setDownloadMenuAnchor(null);
+    setDownloadingReport(null);
   };
 
   const handleDelete = async (report) => {
@@ -378,11 +410,11 @@ const Reports = () => {
                     <Button variant="text" onClick={() => handleView(r)}>{r.name || r.type}</Button>
                   </TableCell>
                   <TableCell>{r.type || '-'}</TableCell>
-                  <TableCell>{r.periodMonths ? `${r.periodMonths} months` : '-'}</TableCell>
+                  <TableCell>{r.periodLabel || (r.periodMonths != null ? `${r.periodMonths} months` : '-')}</TableCell>
                   <TableCell>{r.generatedAt ? new Date(r.generatedAt).toLocaleString() : '-'}</TableCell>
                   <TableCell align="center">
                     <Tooltip title={t('common.download') || 'Download'}>
-                      <IconButton size="small" onClick={() => handleDownload(r)}><DownloadIcon /></IconButton>
+                      <IconButton size="small" onClick={(e) => handleDownloadClick(e, r)}><DownloadIcon /></IconButton>
                     </Tooltip>
                     <Tooltip title={t('common.delete') || 'Delete'}>
                       <IconButton size="small" onClick={() => handleDelete(r)}><DeleteIcon /></IconButton>
@@ -402,8 +434,11 @@ const Reports = () => {
         onRowsPerPageChange={handleReportsRowsPerPageChange}
       />
 
-      <Dialog open={viewerOpen} onClose={closeViewer} maxWidth="lg" fullWidth>
-        <DialogTitle>{viewerFileName || t('reports.name')}</DialogTitle>
+      <Dialog open={viewerOpen} onClose={closeViewer} maxWidth="xl" fullWidth>
+        <DialogTitle>
+          {viewerFileName || t('reports.name')}
+          {viewerPreview?.sheetName && <Typography variant="caption" sx={{ ml: 2, color: 'text.secondary' }}>Sheet: {viewerPreview.sheetName}</Typography>}
+        </DialogTitle>
         <DialogContent sx={{ minHeight: 400 }}>
           {viewerUrl && viewerMime && viewerMime.indexOf('pdf') !== -1 ? (
             <iframe title="report-preview" src={viewerUrl} style={{ width: '100%', height: '80vh', border: 'none' }} />
@@ -416,19 +451,23 @@ const Reports = () => {
                 onPageChange={handlePreviewPageChange}
                 onRowsPerPageChange={handlePreviewRowsPerPageChange}
               />
-              <TableContainer component={Paper} sx={{ maxHeight: '60vh' }}>
-                <Table size="small">
+              <TableContainer component={Paper} sx={{ maxHeight: '60vh', overflowX: 'auto' }}>
+                <Table size="small" sx={{ minWidth: 1200 }}>
                   <TableHead>
                     <TableRow>
                       {(viewerPreview.columns || []).map((c, i) => (
-                        <TableCell key={i}>{c}</TableCell>
+                        <TableCell key={i} sx={{ whiteSpace: 'nowrap', fontWeight: 'bold', backgroundColor: 'grey.200', minWidth: c ? 80 : 40 }}>{c}</TableCell>
                       ))}
                     </TableRow>
                   </TableHead>
                   <TableBody>
                     {paginatedPreviewRows.map((r, ri) => (
                       <TableRow key={ri} sx={{ '&:nth-of-type(odd)': { backgroundColor: 'action.hover' } }}>
-                        {(r || []).map((cell, ci) => <TableCell key={ci}>{String(cell ?? '')}</TableCell>)}
+                        {(r || []).map((cell, ci) => (
+                          <TableCell key={ci} sx={{ whiteSpace: 'nowrap', fontSize: '0.8rem' }}>
+                            {String(cell ?? '')}
+                          </TableCell>
+                        ))}
                       </TableRow>
                     ))}
                   </TableBody>
@@ -445,36 +484,53 @@ const Reports = () => {
           ) : viewerUrl ? (
             <Box>
               <Typography>{t('reports.previewUnavailable') || 'Preview not available for this file type.'}</Typography>
-              <Button
-                variant="contained"
-                sx={{ mt: 2 }}
-                onClick={() => {
-                  const ext = (() => {
-                    const m = viewerMime || '';
-                    if (m.includes('pdf')) return '.pdf';
-                    if (m.includes('csv') || m === 'text/plain') return '.csv';
-                    if (m.includes('openxmlformats') || m.includes('sheet') || m.includes('excel')) return '.xlsx';
-                    return '';
-                  })();
-                  if (viewerBlob) {
-                    saveBlob(viewerBlob, `${viewerFileName || 'report'}${ext}`);
-                  } else if (viewerUrl) {
-                    // fallback
-                    saveBlob(new Blob([viewerUrl]), `${viewerFileName || 'report'}${ext}`);
-                  }
-                }}
-              >
-                {t('common.download') || 'Download'}
-              </Button>
             </Box>
           ) : (
             <Typography>{t('common.loading') || 'Loading...'}</Typography>
           )}
         </DialogContent>
-        <DialogActions>
+        <DialogActions sx={{ justifyContent: 'space-between', px: 3, pb: 2 }}>
+          <Box display="flex" gap={1}>
+            {viewerReport && (
+              <>
+                <Button
+                  variant="contained"
+                  color="success"
+                  startIcon={<XlsxIcon />}
+                  onClick={() => handleDownload(viewerReport, 'xlsx')}
+                >
+                  {t('reports.downloadXlsx') || 'Download XLSX'}
+                </Button>
+                <Button
+                  variant="contained"
+                  color="error"
+                  startIcon={<PdfIcon />}
+                  onClick={() => handleDownload(viewerReport, 'pdf')}
+                >
+                  {t('reports.downloadPdf') || 'Download PDF'}
+                </Button>
+              </>
+            )}
+          </Box>
           <Button onClick={closeViewer}>{t('common.close') || 'Close'}</Button>
         </DialogActions>
       </Dialog>
+
+      {/* Download format menu */}
+      <Menu
+        anchorEl={downloadMenuAnchor}
+        open={Boolean(downloadMenuAnchor)}
+        onClose={handleDownloadMenuClose}
+      >
+        <MenuItem onClick={() => downloadingReport && handleDownload(downloadingReport, 'xlsx')}>
+          <ListItemIcon><XlsxIcon color="success" /></ListItemIcon>
+          <ListItemText>XLSX (Excel)</ListItemText>
+        </MenuItem>
+        <MenuItem onClick={() => downloadingReport && handleDownload(downloadingReport, 'pdf')}>
+          <ListItemIcon><PdfIcon color="error" /></ListItemIcon>
+          <ListItemText>PDF</ListItemText>
+        </MenuItem>
+      </Menu>
     </Box>
   );
 };
