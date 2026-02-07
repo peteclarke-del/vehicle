@@ -42,6 +42,7 @@ const Parts = () => {
   const loadParts = useCallback(async (signal) => {
     const url = (!selectedVehicle || selectedVehicle === '__all__') ? '/parts' : `/parts?vehicleId=${selectedVehicle}`;
     const data = await fetchArrayData(api, url, signal ? { signal } : {});
+    setParts(data);
     return data;
   }, [api, selectedVehicle]);
 
@@ -56,16 +57,10 @@ const Parts = () => {
     }
     
     const abortController = new AbortController();
-    let mounted = true;
     
-    loadParts(abortController.signal).then((data) => {
-      if (mounted) {
-        setParts(data);
-      }
-    });
+    loadParts(abortController.signal);
     
     return () => {
-      mounted = false;
       abortController.abort();
     };
   }, [selectedVehicle, loadParts]);

@@ -49,6 +49,8 @@ const RoadTax = () => {
     setLoading(true);
     const url = !selectedVehicle || selectedVehicle === '__all__' ? '/road-tax' : `/road-tax?vehicleId=${selectedVehicle}`;
     const data = await fetchArrayData(api, url, signal ? { signal } : {});
+    setRecords(data);
+    setLoading(false);
     return data;
   }, [api, selectedVehicle]);
 
@@ -56,17 +58,9 @@ const RoadTax = () => {
     if (!selectedVehicle) return;
     
     const abortController = new AbortController();
-    let mounted = true;
-    
-    loadRecords(abortController.signal).then((data) => {
-      if (mounted) {
-        setRecords(data);
-        setLoading(false);
-      }
-    });
+    loadRecords(abortController.signal);
     
     return () => {
-      mounted = false;
       abortController.abort();
     };
   }, [selectedVehicle, loadRecords]);

@@ -46,6 +46,8 @@ const Insurance = () => {
     setLoading(true);
     const url = !selectedVehicle || selectedVehicle === '__all__' ? '/insurance/policies' : `/insurance?vehicleId=${selectedVehicle}`;
     const data = await fetchArrayData(api, url, signal ? { signal } : {});
+    setPolicies(data);
+    setLoading(false);
     return data;
   }, [api, selectedVehicle]);
 
@@ -57,17 +59,9 @@ const Insurance = () => {
     if (!selectedVehicle) return;
     
     const abortController = new AbortController();
-    let mounted = true;
-    
-    loadPolicies(abortController.signal).then((data) => {
-      if (mounted) {
-        setPolicies(data);
-        setLoading(false);
-      }
-    });
+    loadPolicies(abortController.signal);
     
     return () => {
-      mounted = false;
       abortController.abort();
     };
   }, [selectedVehicle, loadPolicies]);

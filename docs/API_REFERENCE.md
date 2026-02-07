@@ -2,6 +2,8 @@
 
 This document provides comprehensive documentation for all REST API endpoints in the Vehicle Management System.
 
+> **Note:** This API is consumed by both the web frontend (`frontend/`) and the mobile app (`mobile/`). The mobile app uses the same endpoints with JWT authentication.
+
 ---
 
 ## Table of Contents
@@ -35,6 +37,8 @@ This document provides comprehensive documentation for all REST API endpoints in
 ## Overview
 
 **Base URL:** `http://localhost:8081/api`
+
+**Mobile App URL:** For Android emulator, use `http://10.0.2.2:8081/api` (maps to localhost)
 
 All API endpoints return JSON responses and accept JSON request bodies (unless otherwise noted).
 

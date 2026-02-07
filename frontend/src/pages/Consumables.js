@@ -44,6 +44,7 @@ const Consumables = () => {
   const loadConsumables = useCallback(async (signal) => {
     const url = (!selectedVehicle || selectedVehicle === '__all__') ? '/consumables' : `/consumables?vehicleId=${selectedVehicle}`;
     const data = await fetchArrayData(api, url, signal ? { signal } : {});
+    setConsumables(data);
     return data;
   }, [api, selectedVehicle]);
 
@@ -58,16 +59,10 @@ const Consumables = () => {
     }
     
     const abortController = new AbortController();
-    let mounted = true;
     
-    loadConsumables(abortController.signal).then((data) => {
-      if (mounted) {
-        setConsumables(data);
-      }
-    });
+    loadConsumables(abortController.signal);
     
     return () => {
-      mounted = false;
       abortController.abort();
     };
   }, [selectedVehicle, loadConsumables]);

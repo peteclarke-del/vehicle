@@ -37,6 +37,14 @@ A comprehensive web application for managing personal or fleet vehicles, built w
 - **Mobile Responsive**: Works on desktop, tablet, and mobile devices
 - **Real-time Notifications**: SSE-based notifications for MOT, insurance, and tax expiries
 
+### Mobile Application (Android)
+- **Native Mobile Experience**: React Native app for Android devices
+- **Offline Support**: Work without internet, sync when connected
+- **Camera Integration**: Take photos of receipts directly from the app
+- **Gallery Upload**: Select existing photos from your device
+- **Data Sync**: Keeps mobile and web data in sync via the API
+- **Material Design 3**: Modern UI matching the web app's look and feel
+
 ### Technical Features
 - **Secure Authentication**: JWT-based authentication with role management
 - **API-First Design**: RESTful API with comprehensive documentation
@@ -64,6 +72,14 @@ A comprehensive web application for managing personal or fleet vehicles, built w
 - **Internationalisation**: i18next
 - **Charts**: MUI X Charts
 - **Testing**: Jest, React Testing Library
+
+### Mobile
+- **Framework**: React Native 0.73
+- **Language**: TypeScript
+- **UI Library**: React Native Paper (Material Design 3)
+- **Navigation**: React Navigation 6
+- **Storage**: AsyncStorage for offline persistence
+- **Camera**: react-native-image-picker
 
 ### Infrastructure
 - **Containerisation**: Docker and Docker Compose
@@ -403,6 +419,15 @@ vehicle-management-system/
 │   │   └── utils/           # Utility functions
 │   └── public/
 │       └── locales/         # Translation files
+├── mobile/                  # React Native mobile app
+│   ├── src/
+│   │   ├── components/      # Reusable components
+│   │   ├── contexts/        # Auth, Sync, Preferences
+│   │   ├── navigation/      # React Navigation setup
+│   │   ├── screens/         # Screen components
+│   │   ├── theme/           # Material Design 3 themes
+│   │   └── utils/           # Utility functions
+│   └── README.md            # Mobile app documentation
 ├── docker/                  # Docker configurations
 │   ├── nginx/               # Web server config
 │   ├── php/                 # PHP-FPM config
@@ -676,6 +701,7 @@ Comprehensive documentation is available in the `docs/` folder:
 | [BACKEND_LIBRARIES.md](docs/BACKEND_LIBRARIES.md) | PHP traits, services, and patterns |
 | [API_REFERENCE.md](docs/API_REFERENCE.md) | Complete REST API documentation |
 | [AI_CONTEXT.md](docs/AI_CONTEXT.md) | Application overview for AI assistants |
+| [Mobile README](mobile/README.md) | React Native mobile app documentation |
 
 ## 🔒 Security
 
