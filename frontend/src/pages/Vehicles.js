@@ -51,6 +51,7 @@ import { useTranslation } from 'react-i18next';
 import { fetchArrayData } from '../hooks/useApiData';
 import { useDistance } from '../hooks/useDistance';
 import useTablePagination from '../hooks/useTablePagination';
+import usePersistedSort from '../hooks/usePersistedSort';
 import VehicleDialog from '../components/VehicleDialog';
 import VehicleSpecifications from '../components/VehicleSpecifications';
 import KnightRiderLoader from '../components/KnightRiderLoader';
@@ -66,8 +67,7 @@ const Vehicles = () => {
   const [viewMode, setViewMode] = useState(() => {
     return SafeStorage.get('vehiclesViewMode', 'card');
   });
-  const [orderBy, setOrderBy] = useState(() => SafeStorage.get('vehiclesSortBy', 'name'));
-  const [order, setOrder] = useState(() => SafeStorage.get('vehiclesSortOrder', 'asc'));
+  const { orderBy, order, handleRequestSort } = usePersistedSort('vehicles', 'name', 'asc');
   const [purgeDialogOpen, setPurgeDialogOpen] = useState(false);
   const [purgeMode, setPurgeMode] = useState('vehicles-only');
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
@@ -116,15 +116,6 @@ const Vehicles = () => {
       logger.error('Purge failed:', error);
       alert(t('common.deleteFailed'));
     }
-  };
-
-  const handleRequestSort = (property) => {
-    const isAsc = orderBy === property && order === 'asc';
-    const newOrder = isAsc ? 'desc' : 'asc';
-    setOrder(newOrder);
-    setOrderBy(property);
-    SafeStorage.set('vehiclesSortBy', property);
-    SafeStorage.set('vehiclesSortOrder', newOrder);
   };
 
   const sortedVehicles = React.useMemo(() => {

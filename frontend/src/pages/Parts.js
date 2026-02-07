@@ -1,16 +1,17 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import logger from '../utils/logger';
-import SafeStorage from '../utils/SafeStorage';
 import { Box, Button, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, IconButton, Chip, Tooltip, TableSortLabel } from '@mui/material';
 import { Add, Edit, Delete } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import VehicleSelector from '../components/VehicleSelector';
 import { useTranslation } from 'react-i18next';
-import { useUserPreferences } from '../contexts/UserPreferencesContext';
 import formatCurrency from '../utils/formatCurrency';
 import { fetchArrayData } from '../hooks/useApiData';
 import { useDistance } from '../hooks/useDistance';
 import useTablePagination from '../hooks/useTablePagination';
+import usePersistedSort from '../hooks/usePersistedSort';
+import useVehicleSelection from '../hooks/useVehicleSelection';
+import { useRegistrationLabel } from '../utils/splitLabel';
 import PartDialog from '../components/PartDialog';
 import ServiceDialog from '../components/ServiceDialog';
 import KnightRiderLoader from '../components/KnightRiderLoader';
@@ -20,50 +21,28 @@ import TablePaginationBar from '../components/TablePaginationBar';
 const Parts = () => {
   const [parts, setParts] = useState([]);
   const [vehicles, setVehicles] = useState([]);
-  const [selectedVehicle, setSelectedVehicle] = useState('');
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedPart, setSelectedPart] = useState(null);
   const [openServiceDialog, setOpenServiceDialog] = useState(false);
   const [selectedServiceRecord, setSelectedServiceRecord] = useState(null);
-  const [orderBy, setOrderBy] = useState(() => SafeStorage.get('partsSortBy', 'description'));
-  const [order, setOrder] = useState(() => SafeStorage.get('partsSortOrder', 'asc'));
   const { api } = useAuth();
   const { t, i18n } = useTranslation();
-  const registrationLabelText = t('common.registrationNumber');
-  const regWords = (registrationLabelText || '').split(/\s+/).filter(Boolean);
-  const regLast = regWords.length > 0 ? regWords[regWords.length - 1] : '';
-  const regFirst = regWords.length > 1 ? regWords.slice(0, regWords.length - 1).join(' ') : (regWords[0] || 'Registration');
-  const { defaultVehicleId, setDefaultVehicle } = useUserPreferences();
-  const [hasManualSelection, setHasManualSelection] = useState(false);
+  const { regFirst, regLast } = useRegistrationLabel();
+  const { orderBy, order, handleRequestSort } = usePersistedSort('parts', 'description', 'asc');
+  const { selectedVehicle, handleVehicleChange } = useVehicleSelection(vehicles, { includeViewAll: true });
   const { convert, format, getLabel } = useDistance();
 
   const loadVehicles = useCallback(async () => {
     const data = await fetchArrayData(api, '/vehicles');
     setVehicles(data);
-    if (data.length > 0 && !selectedVehicle) {
-      if (defaultVehicleId && data.find((v) => String(v.id) === String(defaultVehicleId))) {
-        setSelectedVehicle(defaultVehicleId);
-      } else {
-        setSelectedVehicle(data[0].id);
-      }
-    }
     setLoading(false);
-  }, [api, selectedVehicle, defaultVehicleId]);
+  }, [api]);
 
-  const loadParts = useCallback(async () => {
-    try {
-      let response;
-      if (!selectedVehicle || selectedVehicle === '__all__') {
-        response = await api.get('/parts');
-      } else {
-        response = await api.get(`/parts?vehicleId=${selectedVehicle}`);
-      }
-      setParts(Array.isArray(response.data) ? response.data : []);
-    } catch (error) {
-      logger.error('Error loading parts:', error);
-      setParts([]);
-    }
+  const loadParts = useCallback(async (signal) => {
+    const url = (!selectedVehicle || selectedVehicle === '__all__') ? '/parts' : `/parts?vehicleId=${selectedVehicle}`;
+    const data = await fetchArrayData(api, url, signal ? { signal } : {});
+    return data;
   }, [api, selectedVehicle]);
 
   useEffect(() => {
@@ -71,22 +50,25 @@ const Parts = () => {
   }, [loadVehicles]);
 
   useEffect(() => {
-    if (selectedVehicle) {
-      loadParts();
-    } else {
+    if (!selectedVehicle) {
       setParts([]);
+      return;
     }
+    
+    const abortController = new AbortController();
+    let mounted = true;
+    
+    loadParts(abortController.signal).then((data) => {
+      if (mounted) {
+        setParts(data);
+      }
+    });
+    
+    return () => {
+      mounted = false;
+      abortController.abort();
+    };
   }, [selectedVehicle, loadParts]);
-
-  useEffect(() => {
-    if (!defaultVehicleId) return;
-    if (hasManualSelection) return;
-    if (!vehicles || vehicles.length === 0) return;
-    const found = vehicles.find((v) => String(v.id) === String(defaultVehicleId));
-    if (found && String(selectedVehicle) !== String(defaultVehicleId)) {
-      setSelectedVehicle(defaultVehicleId);
-    }
-  }, [defaultVehicleId, vehicles, hasManualSelection]);
 
   const handleAdd = () => {
     setSelectedPart(null);
@@ -115,15 +97,6 @@ const Parts = () => {
     if (reload) {
       loadParts();
     }
-  };
-
-  const handleRequestSort = (property) => {
-    const isAsc = orderBy === property && order === 'asc';
-    const newOrder = isAsc ? 'desc' : 'asc';
-    setOrder(newOrder);
-    setOrderBy(property);
-    SafeStorage.set('partsSortBy', property);
-    SafeStorage.set('partsSortOrder', newOrder);
   };
 
   const sortedParts = React.useMemo(() => {
@@ -189,7 +162,7 @@ const Parts = () => {
           <VehicleSelector
             vehicles={vehicles}
             value={selectedVehicle}
-            onChange={(v) => { setHasManualSelection(true); setSelectedVehicle(v); setDefaultVehicle(v); }}
+            onChange={handleVehicleChange}
             includeViewAll={true}
             minWidth={360}
           />

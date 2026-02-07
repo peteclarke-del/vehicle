@@ -16,13 +16,14 @@ import {
 } from '@mui/material';
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
-import { useUserPreferences } from '../contexts/UserPreferencesContext';
 import { useTranslation } from 'react-i18next';
 import logger from '../utils/logger';
-import SafeStorage from '../utils/SafeStorage';
 import { formatDateISO } from '../utils/formatDate';
 import { useVehicles } from '../contexts/VehiclesContext';
+import { fetchArrayData } from '../hooks/useApiData';
 import useTablePagination from '../hooks/useTablePagination';
+import usePersistedSort from '../hooks/usePersistedSort';
+import useVehicleSelection from '../hooks/useVehicleSelection';
 import PolicyDialog from '../components/PolicyDialog';
 import TablePaginationBar from '../components/TablePaginationBar';
 import VehicleSelector from '../components/VehicleSelector';
@@ -34,26 +35,18 @@ const Insurance = () => {
 
   // Policies state
   const [policies, setPolicies] = useState([]);
-  const [selectedVehicle, setSelectedVehicle] = useState('');
   const [loading, setLoading] = useState(true);
   const [policyDialogOpen, setPolicyDialogOpen] = useState(false);
   const [editingPolicy, setEditingPolicy] = useState(null);
-  const { vehicles, fetchVehicles } = useVehicles();
-  const [orderBy, setOrderBy] = useState(() => SafeStorage.get('insuranceSortBy', 'expiryDate'));
-  const [order, setOrder] = useState(() => SafeStorage.get('insuranceSortOrder', 'desc'));
+  const { vehicles, loading: vehiclesLoading, fetchVehicles } = useVehicles();
+  const { orderBy, order, handleRequestSort } = usePersistedSort('insurance', 'expiryDate', 'desc');
+  const { selectedVehicle, handleVehicleChange } = useVehicleSelection(vehicles);
 
-  const loadPolicies = useCallback(async () => {
+  const loadPolicies = useCallback(async (signal) => {
     setLoading(true);
     const url = !selectedVehicle || selectedVehicle === '__all__' ? '/insurance/policies' : `/insurance?vehicleId=${selectedVehicle}`;
-    try {
-      const response = await api.get(url);
-      setPolicies(Array.isArray(response.data) ? response.data : []);
-    } catch (error) {
-      logger.error('Error loading policies:', error);
-      setPolicies([]);
-    } finally {
-      setLoading(false);
-    }
+    const data = await fetchArrayData(api, url, signal ? { signal } : {});
+    return data;
   }, [api, selectedVehicle]);
 
   useEffect(() => {
@@ -61,40 +54,23 @@ const Insurance = () => {
   }, [fetchVehicles]);
 
   useEffect(() => {
-    if (selectedVehicle) {
-      loadPolicies();
-    }
-  }, [selectedVehicle, loadPolicies]);
-
-  const { defaultVehicleId, setDefaultVehicle } = useUserPreferences();
-
-  useEffect(() => {
-    if (vehicles.length > 0 && !selectedVehicle) {
-      if (defaultVehicleId && vehicles.find((v) => String(v.id) === String(defaultVehicleId))) {
-        setSelectedVehicle(defaultVehicleId);
-      } else {
-        setSelectedVehicle(vehicles[0].id);
+    if (!selectedVehicle) return;
+    
+    const abortController = new AbortController();
+    let mounted = true;
+    
+    loadPolicies(abortController.signal).then((data) => {
+      if (mounted) {
+        setPolicies(data);
+        setLoading(false);
       }
-    }
-  }, [vehicles, selectedVehicle, defaultVehicleId]);
-
-  useEffect(() => {
-    if (!defaultVehicleId) return;
-    if (!vehicles || vehicles.length === 0) return;
-    const found = vehicles.find((v) => String(v.id) === String(defaultVehicleId));
-    if (found && String(selectedVehicle) !== String(defaultVehicleId)) {
-      setSelectedVehicle(defaultVehicleId);
-    }
-  }, [defaultVehicleId, vehicles]);
-
-  const handleRequestSort = (property) => {
-    const isAsc = orderBy === property && order === 'asc';
-    const newOrder = isAsc ? 'desc' : 'asc';
-    setOrder(newOrder);
-    setOrderBy(property);
-    SafeStorage.set('insuranceSortBy', property);
-    SafeStorage.set('insuranceSortOrder', newOrder);
-  };
+    });
+    
+    return () => {
+      mounted = false;
+      abortController.abort();
+    };
+  }, [selectedVehicle, loadPolicies]);
 
   const sortedPolicies = React.useMemo(() => {
     const comparator = (a, b) => {
@@ -163,7 +139,7 @@ const Insurance = () => {
           <VehicleSelector
             vehicles={vehicles}
             value={selectedVehicle}
-            onChange={(v) => setSelectedVehicle(v)}
+            onChange={handleVehicleChange}
             minWidth={300}
           />
           <Button variant="contained" startIcon={<AddIcon />} onClick={handleAddPolicy}>

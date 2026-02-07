@@ -2,66 +2,81 @@
 
 A comprehensive web application for managing personal or fleet vehicles, built with modern technologies and designed for ease of use.
 
-## 🚗 Features
+## Features
 
 ### Vehicle Management
 - **Complete Vehicle Profiles**: Track make, model, year, specifications, and images
-- **Fuel Records**: Log fuel purchases, calculate efficiency, and track costs
-- **Service History**: Maintain detailed service records with parts and labor
-- **MOT Records**: Track MOT test results and expiry dates
+- **Fuel Records**: Log fuel purchases, calculate efficiency (MPG/km/l), and track costs
+- **Service History**: Maintain detailed service records with parts, consumables, and labour
+- **MOT Records**: Track MOT test results, advisories, failures, and expiry dates
 - **Insurance Management**: Manage multiple insurance policies per vehicle
 - **Road Tax**: Monitor road tax status and renewal dates
-- **Parts Inventory**: Track vehicle parts with suppliers and pricing
-- **Consumables**: Manage fluids, filters, and other consumable items
+- **Parts Inventory**: Track vehicle parts with suppliers, pricing, and warranty information
+- **Consumables**: Manage fluids, filters, and other consumable items with replacement intervals
+- **Todo Lists**: Create vehicle-specific maintenance tasks linked to parts and consumables
+- **Depreciation Tracking**: Multiple depreciation methods (straight-line, declining balance, automotive standard)
+- **Cost Analysis**: Per-vehicle and total fleet cost breakdowns
+
+### External Integrations
+- **DVLA Lookup**: Auto-populate vehicle details from UK registration numbers
+- **DVSA MOT History**: Import complete MOT history from government records
+- **VIN Decoding**: Decode Vehicle Identification Numbers for specifications
+- **Receipt OCR**: Extract data from fuel receipt images
+- **URL Scraping**: Scrape part information from supplier websites
+
+### Reporting
+- **Custom Reports**: Generate XLSX and PDF reports from JSON templates
+- **Cost Reports**: Fuel, service, and total cost analysis
+- **Vehicle Overview**: Comprehensive single-vehicle summaries
 
 ### User Experience
 - **Modern UI**: Clean, responsive interface built with Material-UI
-- **Multi-language Support**: English and other languages via i18next
-- **Dark/Light Themes**: Customizable user interface themes
-- **Mobile Responsive**: Works seamlessly on desktop and mobile devices
-- **Real-time Updates**: Live data synchronization
+- **Multi-language Support**: Full internationalisation via i18next
+- **Dark/Light Themes**: User-selectable interface themes
+- **Distance Units**: Support for both miles and kilometres
+- **Mobile Responsive**: Works on desktop, tablet, and mobile devices
+- **Real-time Notifications**: SSE-based notifications for MOT, insurance, and tax expiries
 
 ### Technical Features
 - **Secure Authentication**: JWT-based authentication with role management
 - **API-First Design**: RESTful API with comprehensive documentation
-- **Docker Development**: Containerized development environment
-- **Automated Testing**: Unit and integration tests
-- **Database Migrations**: Version-controlled database schema
-- **File Uploads**: Support for vehicle images and documents
+- **Docker Development**: Fully containerised development environment
+- **Import/Export**: Full data export/import including attachments
+- **Automated Testing**: PHPUnit and Jest test suites
+- **Database Migrations**: Version-controlled schema management
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 ### Backend
 - **Framework**: Symfony 6.4
 - **Language**: PHP 8.3+
 - **Database**: MySQL 8.0
 - **ORM**: Doctrine ORM
+- **Caching**: Redis 7
 - **Authentication**: JWT (LexikJWTAuthenticationBundle)
-- **API**: RESTful with Symfony Serializer
-- **Testing**: PHPUnit
+- **Testing**: PHPUnit 10
 
 ### Frontend
 - **Framework**: React 18
-- **UI Library**: Material-UI (MUI)
-- **Routing**: React Router
+- **UI Library**: Material-UI (MUI) 5
+- **Routing**: React Router 6
 - **HTTP Client**: Axios
-- **Internationalization**: i18next
-- **Build Tool**: Create React App
+- **Internationalisation**: i18next
 - **Charts**: MUI X Charts
+- **Testing**: Jest, React Testing Library
 
 ### Infrastructure
-- **Containerization**: Docker & Docker Compose
+- **Containerisation**: Docker and Docker Compose
 - **Web Server**: Nginx
-- **Reverse Proxy**: Nginx for API routing
-- **Development Tools**: Makefile for common tasks
+- **Development Tools**: Makefile with comprehensive commands
 
-## 📋 Prerequisites
+## Prerequisites
 
-- **Docker & Docker Compose**: For containerized development
+- **Docker and Docker Compose**: For containerised development
 - **Git**: For version control
-- **Make**: For running development commands (optional but recommended)
+- **Make**: For running development commands (recommended)
 
-## 🚀 Quick Start
+## Quick Start
 
 ### 1. Clone the Repository
 ```bash
@@ -71,27 +86,19 @@ cd vehicle-management-system
 
 ### 2. Environment Setup
 ```bash
-# Copy and configure environment files
-cp .env.dev .env.dev.local  # For development with real values
-# Edit .env.dev.local with your actual database credentials and API keys
+# Copy environment file
+cp .env.example .env
+# Edit .env with your database credentials and API keys
 ```
 
 ### 3. Start the Application
 
-**Option A: Using Make (Recommended)**
+**Using Make (Recommended)**
 ```bash
 make setup              # Complete setup (build, install, migrate, load fixtures)
 ```
 
-**Option B: Using Docker Compose Directly**
-```bash
-docker-compose up -d
-docker-compose exec php composer install
-docker-compose exec php bin/console doctrine:migrations:migrate --no-interaction
-docker-compose exec php bin/console doctrine:fixtures:load --no-interaction
-```
-
-**Option C: Manual Step-by-Step**
+**Manual Steps**
 ```bash
 make build              # Build containers
 make start              # Start services
@@ -103,27 +110,23 @@ make fixtures           # Load sample data
 
 ### 4. Access the Application
 
-**Development Environment**
-- **Frontend**: http://localhost:3000 (React dev server with hot reload)
-- **Backend API**: http://localhost:8081/api
-- **MySQL**: localhost:3306
+| Service | Development URL | Production URL |
+|---------|----------------|----------------|
+| Frontend | http://localhost:3000 | http://localhost:80 |
+| Backend API | http://localhost:8081/api | http://localhost:8081/api |
+| MySQL | localhost:3306 | localhost:3306 |
 
-**Production Environment** (if using `make start-prod`)
-- **Frontend**: http://localhost:80 (nginx-served static build)
-- **Backend API**: http://localhost:8081/api
-- **MySQL**: localhost:3306
-
-### 5. Default Admin Credentials
+### 5. Default Credentials
 - **Email**: admin@vehicle.local
-- **Password**: changeme *(Change this immediately after first login)*
+- **Password**: changeme
 
-## 📖 Usage
+Change these immediately after first login.
 
-### Using the Makefile
+## Usage
 
-The project includes a comprehensive Makefile with commands for all common development and deployment tasks. Run `make help` to see all available commands organized by category.
+### Makefile Commands
 
-#### Quick Reference
+Run `make help` to see all available commands. Key commands:
 
 **Initial Setup**
 ```bash
@@ -376,128 +379,88 @@ EBAY_CLIENT_ID=your_client_id
 API_NINJAS_KEY=your_api_key
 ```
 
-## 🏗️ Project Structure
+## Project Structure
 
 ```
 vehicle-management-system/
 ├── backend/                 # Symfony API application
 │   ├── src/
 │   │   ├── Controller/      # API controllers
+│   │   │   └── Trait/       # Reusable controller traits
 │   │   ├── Entity/          # Doctrine entities
-│   │   ├── Repository/      # Data access layer
-│   │   └── Service/         # Business logic
+│   │   └── Service/         # Business logic services
+│   │       └── Trait/       # Reusable service traits
 │   ├── config/              # Symfony configuration
 │   ├── migrations/          # Database migrations
-│   └── tests/               # Backend tests
+│   └── tests/               # PHPUnit tests
 ├── frontend/                # React application
 │   ├── src/
 │   │   ├── components/      # Reusable UI components
+│   │   ├── contexts/        # React context providers
+│   │   ├── hooks/           # Custom React hooks
 │   │   ├── pages/           # Page components
-│   │   ├── contexts/        # React contexts
-│   │   └── services/        # API services
-│   ├── public/
-│   │   ├── locales/         # Translation files
-│   │   └── images/          # Static assets
-│   └── .env                 # Frontend configuration
+│   │   ├── reports/         # Report templates (JSON)
+│   │   └── utils/           # Utility functions
+│   └── public/
+│       └── locales/         # Translation files
 ├── docker/                  # Docker configurations
 │   ├── nginx/               # Web server config
 │   ├── php/                 # PHP-FPM config
 │   └── node/                # Node.js config
 ├── docs/                    # Documentation
-├── .env*                    # Environment files
+│   ├── FRONTEND_LIBRARIES.md
+│   ├── BACKEND_LIBRARIES.md
+│   ├── API_REFERENCE.md
+│   └── AI_CONTEXT.md
+├── uploads/                 # User file uploads
 ├── docker-compose.yml       # Docker services
 ├── Makefile                 # Development commands
-└── setup.sh                 # Initial setup script
+└── README.md
 ```
 
-## 🧪 Testing
+## Testing
 
 ### Running Tests
 
-**Backend Tests**
 ```bash
-make test                # Run all backend tests
-make test-coverage       # Generate coverage report (backend/var/coverage/)
-```
-
-**Frontend Tests**
-```bash
+make test                # Run backend tests
 make test-frontend       # Run frontend tests
+make test-all            # Run all tests
+make test-coverage       # Generate coverage report
 ```
 
-**All Tests**
-```bash
-make test-all            # Run both backend and frontend tests
-```
-
-### Manual Test Execution
-
-**Backend Tests (PHPUnit)**
-```bash
-# Using Make
-make test
-
-# Using Docker Compose
-docker-compose exec php bin/phpunit
-
-# Specific test
-docker-compose exec php bin/phpunit tests/Controller/VehicleControllerTest.php
-
-# With coverage
-make test-coverage
-```
-
-**Frontend Tests (Jest)**
-```bash
-# Using Make
-make test-frontend
-
-# Using Docker Compose
-docker-compose exec frontend npm test -- --watchAll=false
-
-# Interactive watch mode
-cd frontend
-npm test
-```
-
-### Code Quality Checks
-
-**Linting**
-```bash
-make lint              # Lint all code
-make lint-backend      # PHP CS Fixer (dry-run)
-make lint-frontend     # ESLint
-```
-
-**Auto-Formatting**
-```bash
-# PHP code style
-make lint-backend
-
-# JavaScript linting
-make lint-frontend
-
-# Auto-fix issues
-make format-backend
-make format-frontend
-```
-
-## 🚢 Deployment
-
-### Production Deployment with Make
-
-The Makefile provides a streamlined production deployment workflow:
+### Code Quality
 
 ```bash
-# Complete production deployment
-make deploy-prod
-
-# Or step-by-step:
-make build-prod         # Build production images (multi-stage)
-make start-prod         # Start production services
-make migrate-prod       # Run database migrations
-make cache-warmup-prod  # Warm up application cache
+make lint                # Lint all code
+make format              # Auto-fix style issues
 ```
+
+## Deployment
+
+### Production Deployment
+
+```bash
+make deploy-prod         # Full deployment (build, start, migrate, warmup)
+```
+
+### Step-by-Step
+
+```bash
+make build-prod          # Build production images
+make start-prod          # Start services
+make migrate-prod        # Run migrations
+make cache-warmup-prod   # Warm up cache
+```
+
+### Production Features
+
+- Multi-stage Docker builds for optimised images
+- Nginx-served static frontend build
+- Resource limits and security hardening
+- Horizontal scaling support
+
+See the deployment section below for detailed configuration.
 
 ### Production Configuration
 
@@ -666,34 +629,53 @@ Development and production have different resource allocations. See [docker/READ
 
 This reduces build time by excluding node_modules, vendor, tests, docs, and IDE configurations.
 
-## � Contributing
+## Contributing
 
 1. Fork the repository
 2. Create a feature branch: `git checkout -b feature/your-feature`
-3. Make your changes and add tests
-4. Run the test suite: `make test`
-5. Commit your changes: `git commit -am 'Add your feature'`
-6. Push to the branch: `git push origin feature/your-feature`
-7. Submit a pull request
+3. Make changes and add tests
+4. Run tests: `make test-all`
+5. Run linting: `make lint`
+6. Commit: `git commit -am 'Add your feature'`
+7. Push: `git push origin feature/your-feature`
+8. Submit a pull request
 
-### Development Guidelines
+### Guidelines
+
 - Follow PSR-12 for PHP code
 - Use ESLint configuration for JavaScript
 - Write tests for new features
 - Update documentation for API changes
-- Use conventional commit messages
+- Use the common hooks and traits documented in `docs/`
 
 ## 📄 API Documentation
 
-The API follows RESTful conventions with JSON responses. Key endpoints:
+The API follows RESTful conventions with JSON responses. Full documentation is available in [docs/API_REFERENCE.md](docs/API_REFERENCE.md).
 
-- `GET /api/vehicles` - List vehicles
-- `POST /api/vehicles` - Create vehicle
-- `GET /api/vehicles/{id}` - Get vehicle details
-- `PUT /api/vehicles/{id}` - Update vehicle
-- `DELETE /api/vehicles/{id}` - Delete vehicle
+Key endpoint groups:
+- `/api/vehicles` - Vehicle CRUD and statistics
+- `/api/fuel-records` - Fuel purchase tracking
+- `/api/service-records` - Service history
+- `/api/mot-records` - MOT test records
+- `/api/parts` - Parts inventory
+- `/api/consumables` - Consumable items
+- `/api/insurance/policies` - Insurance management
+- `/api/road-tax` - Road tax records
+- `/api/attachments` - File uploads
+- `/api/reports` - Report generation
 
 Authentication required for all endpoints using JWT tokens.
+
+## Documentation
+
+Comprehensive documentation is available in the `docs/` folder:
+
+| Document | Description |
+|----------|-------------|
+| [FRONTEND_LIBRARIES.md](docs/FRONTEND_LIBRARIES.md) | React hooks, utilities, and contexts |
+| [BACKEND_LIBRARIES.md](docs/BACKEND_LIBRARIES.md) | PHP traits, services, and patterns |
+| [API_REFERENCE.md](docs/API_REFERENCE.md) | Complete REST API documentation |
+| [AI_CONTEXT.md](docs/AI_CONTEXT.md) | Application overview for AI assistants |
 
 ## 🔒 Security
 
@@ -704,76 +686,54 @@ Authentication required for all endpoints using JWT tokens.
 - SQL injection prevention via Doctrine ORM
 - XSS protection in React components
 
-## 📊 Database Schema
+## Database Schema
 
 The application uses the following main entities:
-- **User**: System users with authentication
-- **Vehicle**: Vehicle information and specifications
-- **FuelRecord**: Fuel purchase tracking
-- **ServiceRecord**: Maintenance history
-- **InsurancePolicy**: Insurance coverage details
-- **MotRecord**: MOT test results
-- **RoadTax**: Road tax information
-- **Part**: Spare parts inventory
-- **Consumable**: Fluids and consumables
 
-## 🐛 Troubleshooting
+| Entity | Description |
+|--------|-------------|
+| User | User accounts with authentication |
+| UserPreference | User preferences (key-value) |
+| Vehicle | Vehicle records and specifications |
+| VehicleType | Vehicle categories (Car, Motorcycle, etc.) |
+| VehicleImage | Vehicle photos |
+| FuelRecord | Fuel purchase tracking |
+| ServiceRecord | Service history with items |
+| MotRecord | MOT test results |
+| Part | Spare parts inventory |
+| PartCategory | Part categorisation |
+| Consumable | Fluids and consumables |
+| ConsumableType | Consumable types |
+| InsurancePolicy | Insurance policies (many-to-many with vehicles) |
+| RoadTax | Road tax records |
+| Attachment | File attachments |
+| Specification | Vehicle specifications |
+| Todo | Maintenance task lists |
+| Report | Generated reports |
+
+See [docs/AI_CONTEXT.md](docs/AI_CONTEXT.md) for detailed entity relationships.
+
+## Troubleshooting
 
 ### Common Issues
 
-**Database Connection Failed**
-```bash
-# Check MySQL container
-make logs-db
+| Issue | Solution |
+|-------|----------|
+| Database connection failed | `make logs-db` then `docker-compose restart mysql` |
+| Frontend not loading | `make logs-frontend` then `make clean && make setup` |
+| Permission issues | `sudo chown -R $USER:$USER .` |
+| Port conflicts | Check `lsof -i :3000` and modify docker-compose.yml |
+| 401 Unauthorized errors | JWT token expired; re-login |
+| Attachment not appearing | Ensure `finalizeAttachmentLink()` is called after flush |
 
-# Restart database
-docker-compose restart mysql
-```
+For detailed troubleshooting, see [docs/AI_CONTEXT.md](docs/AI_CONTEXT.md#common-issues-and-solutions).
 
-**Frontend Not Loading**
-```bash
-# Check Node.js container
-make logs-frontend
-
-# Rebuild frontend
-make clean
-make setup
-```
-
-**Permission Issues**
-```bash
-# Fix file permissions
-sudo chown -R $USER:$USER .
-```
-
-**Port Conflicts**
-```bash
-# Check what's using ports
-lsof -i :3000
-lsof -i :8080
-lsof -i :3306
-
-# Change ports in docker-compose.yml if needed
-```
-
-## 📝 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
+## Support
 
-- Symfony framework and community
-- React and Material-UI teams
-- Docker and the containerization community
-- All contributors and users
-
-## 📞 Support
-
-For support and questions:
 - Create an issue on GitHub
-- Check the documentation in the `docs/` directory
-- Review the Makefile for available commands
-
----
-
-**Happy vehicle managing!** 🚗✨
+- Check documentation in `docs/`
+- Review the Makefile: `make help`

@@ -12,25 +12,23 @@ import {
   Paper,
   IconButton,
   Box,
-  MenuItem,
-  Select,
-  FormControl,
-  InputLabel,
   Tooltip,
   TableSortLabel,
   Link,
 } from '@mui/material';
 import logger from '../utils/logger';
-import SafeStorage from '../utils/SafeStorage';
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
-import { useUserPreferences } from '../contexts/UserPreferencesContext';
 import formatCurrency from '../utils/formatCurrency';
 import { useVehicles } from '../contexts/VehiclesContext';
+import { fetchArrayData } from '../hooks/useApiData';
 import { useDistance } from '../hooks/useDistance';
 import { formatDateISO } from '../utils/formatDate';
 import useTablePagination from '../hooks/useTablePagination';
+import usePersistedSort from '../hooks/usePersistedSort';
+import useVehicleSelection from '../hooks/useVehicleSelection';
+import { useRegistrationLabel } from '../utils/splitLabel';
 import ServiceDialog from '../components/ServiceDialog';
 import TablePaginationBar from '../components/TablePaginationBar';
 import VehicleSelector from '../components/VehicleSelector';
@@ -39,38 +37,22 @@ import KnightRiderLoader from '../components/KnightRiderLoader';
 
 const ServiceRecords = () => {
   const [serviceRecords, setServiceRecords] = useState([]);
-  const [selectedVehicle, setSelectedVehicle] = useState('');
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingService, setEditingService] = useState(null);
-  const { vehicles, fetchVehicles } = useVehicles();
-  const [orderBy, setOrderBy] = useState(() => SafeStorage.get('serviceRecordsSortBy', 'serviceDate'));
-  const [order, setOrder] = useState(() => SafeStorage.get('serviceRecordsSortOrder', 'desc'));
+  const { vehicles, loading: vehiclesLoading, fetchVehicles } = useVehicles();
   const { api } = useAuth();
   const { t, i18n } = useTranslation();
-  const registrationLabelText = t('common.registrationNumber');
-  const regWords = (registrationLabelText || '').split(/\s+/).filter(Boolean);
-  const regLast = regWords.length > 0 ? regWords[regWords.length - 1] : '';
-  const regFirst = regWords.length > 1 ? regWords.slice(0, regWords.length - 1).join(' ') : (regWords[0] || 'Registration');
-  const { defaultVehicleId, setDefaultVehicle } = useUserPreferences();
-  const [hasManualSelection, setHasManualSelection] = useState(false);
+  const { regFirst, regLast } = useRegistrationLabel();
+  const { orderBy, order, handleRequestSort } = usePersistedSort('serviceRecords', 'serviceDate', 'desc');
+  const { selectedVehicle, handleVehicleChange } = useVehicleSelection(vehicles);
   const { convert, format, getLabel } = useDistance();
 
-  const loadServiceRecords = useCallback(async () => {
+  const loadServiceRecords = useCallback(async (signal) => {
     setLoading(true);
-    try {
-      const url = !selectedVehicle || selectedVehicle === '__all__' ? '/service-records' : `/service-records?vehicleId=${selectedVehicle}`;
-      const response = await api.get(url);
-      // Ensure we always store an array: some API responses may wrap the list in an object
-      const data = response.data;
-      if (Array.isArray(data)) setServiceRecords(data);
-      else if (data && Array.isArray(data.serviceRecords)) setServiceRecords(data.serviceRecords);
-      else setServiceRecords([]);
-    } catch (error) {
-      logger.error('Error loading service records:', error);
-    } finally {
-      setLoading(false);
-    }
+    const url = !selectedVehicle || selectedVehicle === '__all__' ? '/service-records' : `/service-records?vehicleId=${selectedVehicle}`;
+    const data = await fetchArrayData(api, url, signal ? { signal } : {});
+    return data;
   }, [api, selectedVehicle]);
 
   useEffect(() => {
@@ -78,30 +60,23 @@ const ServiceRecords = () => {
   }, [fetchVehicles]);
 
   useEffect(() => {
-    if (!defaultVehicleId) return;
-    if (hasManualSelection) return;
-    if (!vehicles || vehicles.length === 0) return;
-    const found = vehicles.find((v) => String(v.id) === String(defaultVehicleId));
-    if (found && String(selectedVehicle) !== String(defaultVehicleId)) {
-      setSelectedVehicle(defaultVehicleId);
-    }
-  }, [defaultVehicleId, vehicles, hasManualSelection]);
-
-  useEffect(() => {
-    if (selectedVehicle) {
-      loadServiceRecords();
-    }
-  }, [selectedVehicle, loadServiceRecords]);
-
-  useEffect(() => {
-    if (vehicles.length > 0 && !selectedVehicle) {
-      if (defaultVehicleId && vehicles.find((v) => String(v.id) === String(defaultVehicleId))) {
-        setSelectedVehicle(defaultVehicleId);
-      } else {
-        setSelectedVehicle(vehicles[0].id);
+    if (!selectedVehicle) return;
+    
+    const abortController = new AbortController();
+    let mounted = true;
+    
+    loadServiceRecords(abortController.signal).then((data) => {
+      if (mounted) {
+        setServiceRecords(data);
+        setLoading(false);
       }
-    }
-  }, [vehicles, selectedVehicle, defaultVehicleId]);
+    });
+    
+    return () => {
+      mounted = false;
+      abortController.abort();
+    };
+  }, [selectedVehicle, loadServiceRecords]);
 
   const handleAdd = () => {
     setEditingService(null);
@@ -167,15 +142,6 @@ const ServiceRecords = () => {
     }
   };
 
-  const handleRequestSort = (property) => {
-    const isAsc = orderBy === property && order === 'asc';
-    const newOrder = isAsc ? 'desc' : 'asc';
-    setOrder(newOrder);
-    setOrderBy(property);
-    SafeStorage.set('serviceRecordsSortBy', property);
-    SafeStorage.set('serviceRecordsSortOrder', newOrder);
-  };
-
   const sortedServiceRecords = React.useMemo(() => {
     const comparator = (a, b) => {
       if (orderBy === 'registration') {
@@ -214,7 +180,7 @@ const ServiceRecords = () => {
     return new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP' }).format(amount);
   };
 
-  if (loading) {
+  if (loading || vehiclesLoading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
         <KnightRiderLoader size={32} />
@@ -248,7 +214,7 @@ const ServiceRecords = () => {
             <VehicleSelector
               vehicles={vehicles}
               value={selectedVehicle}
-              onChange={(v) => { setHasManualSelection(true); setSelectedVehicle(v); setDefaultVehicle(v); }}
+              onChange={handleVehicleChange}
               minWidth={360}
             />
           <Button variant="contained" color="primary" startIcon={<AddIcon />} onClick={handleAdd} disabled={!selectedVehicle || selectedVehicle === '__all__'}>

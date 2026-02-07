@@ -1,15 +1,16 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import logger from '../utils/logger';
-import SafeStorage from '../utils/SafeStorage';
 import { Box, Button, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, IconButton, Tooltip, TableSortLabel } from '@mui/material';
 import { Add, Edit, Delete } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
-import { useUserPreferences } from '../contexts/UserPreferencesContext';
 import { useTranslation } from 'react-i18next';
 import formatCurrency from '../utils/formatCurrency';
 import { fetchArrayData } from '../hooks/useApiData';
 import { useDistance } from '../hooks/useDistance';
 import useTablePagination from '../hooks/useTablePagination';
+import usePersistedSort from '../hooks/usePersistedSort';
+import useVehicleSelection from '../hooks/useVehicleSelection';
+import { useRegistrationLabel } from '../utils/splitLabel';
 import FuelRecordDialog from '../components/FuelRecordDialog';
 import TablePaginationBar from '../components/TablePaginationBar';
 import VehicleSelector from '../components/VehicleSelector';
@@ -19,23 +20,17 @@ import KnightRiderLoader from '../components/KnightRiderLoader';
 const FuelRecords = () => {
   const [records, setRecords] = useState([]);
   const [vehicles, setVehicles] = useState([]);
-  const [selectedVehicle, setSelectedVehicle] = useState('');
   const [loading, setLoading] = useState(true);
   const [loadingRecords, setLoadingRecords] = useState(false);
   const recordsAbortRef = React.useRef(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState(null);
-  const [orderBy, setOrderBy] = useState(() => SafeStorage.get('fuelRecordsSortBy', 'date'));
-  const [order, setOrder] = useState(() => SafeStorage.get('fuelRecordsSortOrder', 'desc'));
   const { api } = useAuth();
   const { t, i18n } = useTranslation();
-  const registrationLabelText = t('common.registrationNumber');
-  const regWords = (registrationLabelText || '').split(/\s+/).filter(Boolean);
-  const regLast = regWords.length > 0 ? regWords[regWords.length - 1] : '';
-  const regFirst = regWords.length > 1 ? regWords.slice(0, regWords.length - 1).join(' ') : (regWords[0] || 'Registration');
+  const { regFirst, regLast } = useRegistrationLabel();
   const { convert, format, getLabel } = useDistance();
-  const { defaultVehicleId, setDefaultVehicle } = useUserPreferences();
-  const [hasManualSelection, setHasManualSelection] = useState(false);
+  const { orderBy, order, handleRequestSort } = usePersistedSort('fuelRecords', 'date', 'desc');
+  const { selectedVehicle, handleVehicleChange } = useVehicleSelection(vehicles, { includeViewAll: true });
 
   // Send client-side logs to backend if endpoint exists, otherwise logger.warn/error
   const sendClientLog = useCallback(async (level, message, context = {}) => {
@@ -52,15 +47,8 @@ const FuelRecords = () => {
   const loadVehicles = useCallback(async () => {
     const data = await fetchArrayData(api, '/vehicles');
     setVehicles(data);
-    if (data.length > 0 && !selectedVehicle) {
-      if (defaultVehicleId && data.find((v) => String(v.id) === String(defaultVehicleId))) {
-        setSelectedVehicle(defaultVehicleId);
-      } else {
-        setSelectedVehicle(data[0].id);
-      }
-    }
     setLoading(false);
-  }, [api, defaultVehicleId, selectedVehicle]);
+  }, [api]);
 
   const loadRecords = useCallback(async () => {
     if (recordsAbortRef.current) {
@@ -78,8 +66,8 @@ const FuelRecords = () => {
       }, 15000);
 
       const url = (!selectedVehicle || selectedVehicle === '__all__') ? '/fuel-records' : `/fuel-records?vehicleId=${selectedVehicle}`;
-      const response = await api.get(url, { signal: controller.signal });
-      setRecords(Array.isArray(response.data) ? response.data : []);
+      const data = await fetchArrayData(api, url, { signal: controller.signal });
+      setRecords(data);
     } catch (error) {
       if (error.name !== 'CanceledError' && error.name !== 'AbortError') {
         logger.error('Error loading fuel records:', error);
@@ -102,17 +90,6 @@ const FuelRecords = () => {
       loadRecords();
     }
   }, [selectedVehicle, loadRecords]);
-
-  // react to changes in defaultVehicleId while on the page
-  useEffect(() => {
-    if (!defaultVehicleId) return;
-    if (hasManualSelection) return;
-    if (!vehicles || vehicles.length === 0) return;
-    const found = vehicles.find((v) => String(v.id) === String(defaultVehicleId));
-    if (found && String(selectedVehicle) !== String(defaultVehicleId)) {
-      setSelectedVehicle(defaultVehicleId);
-    }
-  }, [defaultVehicleId, vehicles, hasManualSelection, selectedVehicle]);
   
   const handleAdd = () => {
     setSelectedRecord(null);
@@ -141,15 +118,6 @@ const FuelRecords = () => {
     if (reload) {
       loadRecords();
     }
-  };
-
-  const handleRequestSort = (property) => {
-    const isAsc = orderBy === property && order === 'asc';
-    const newOrder = isAsc ? 'desc' : 'asc';
-    setOrder(newOrder);
-    setOrderBy(property);
-    SafeStorage.set('fuelRecordsSortBy', property);
-    SafeStorage.set('fuelRecordsSortOrder', newOrder);
   };
 
   const sortedRecords = React.useMemo(() => {
@@ -220,7 +188,7 @@ const FuelRecords = () => {
           <VehicleSelector
             vehicles={vehicles}
             value={selectedVehicle}
-            onChange={(v) => { setHasManualSelection(true); setSelectedVehicle(v); setDefaultVehicle(v); }}
+            onChange={handleVehicleChange}
             includeViewAll={true}
             minWidth={360}
           />
