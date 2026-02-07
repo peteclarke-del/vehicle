@@ -506,8 +506,8 @@ const Layout = () => {
           </Box>
           {/* Nav items below the header */}
           <Box sx={{ py: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            {/* Show main nav items in default order (not user-reordered), excluding profile and import/export */}
-            {defaultMenu.filter(item => !['profile', 'importExport'].includes(item.key)).map((item) => (
+            {/* Show nav items in user's custom order, excluding profile and import/export */}
+            {menuItems.filter(item => !['profile', 'importExport'].includes(item.key)).map((item) => (
               <Tooltip key={item.key} title={item.text} placement="right" arrow>
                 <IconButton
                   onClick={() => navigate(item.path)}

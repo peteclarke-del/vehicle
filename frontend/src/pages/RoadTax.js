@@ -11,87 +11,65 @@ import {
   Paper,
   IconButton,
   Box,
-  MenuItem,
-  Select,
-  FormControl,
-  InputLabel,
   Tooltip,
   TableSortLabel,
 } from '@mui/material';
-import logger from '../utils/logger';
-import SafeStorage from '../utils/SafeStorage';
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
-import { useUserPreferences } from '../contexts/UserPreferencesContext';
+import logger from '../utils/logger';
 import { useVehicles } from '../contexts/VehiclesContext';
+import { fetchArrayData } from '../hooks/useApiData';
 import useTablePagination from '../hooks/useTablePagination';
+import usePersistedSort from '../hooks/usePersistedSort';
+import useVehicleSelection from '../hooks/useVehicleSelection';
+import { useRegistrationLabel } from '../utils/splitLabel';
 import RoadTaxDialog from '../components/RoadTaxDialog';
 import TablePaginationBar from '../components/TablePaginationBar';
 import VehicleSelector from '../components/VehicleSelector';
-import KnightRiderLoader from '../components/KnightRiderLoader';
+import CenteredLoader from '../components/CenteredLoader';
 
 const RoadTax = () => {
   const [records, setRecords] = useState([]);
-  const [selectedVehicle, setSelectedVehicle] = useState('');
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState(null);
   const { api } = useAuth();
-  const { vehicles, fetchVehicles } = useVehicles();
+  const { vehicles, loading: vehiclesLoading, fetchVehicles } = useVehicles();
   const { t } = useTranslation();
-  const registrationLabelText = t('common.registrationNumber');
-  const regWords = (registrationLabelText || '').split(/\s+/).filter(Boolean);
-  const regLast = regWords.length > 0 ? regWords[regWords.length - 1] : '';
-  const regFirst = regWords.length > 1 ? regWords.slice(0, regWords.length - 1).join(' ') : (regWords[0] || 'Registration');
-  const { defaultVehicleId, setDefaultVehicle } = useUserPreferences();
-  const [hasManualSelection, setHasManualSelection] = useState(false);
-  const [orderBy, setOrderBy] = useState(() => SafeStorage.get('roadTaxSortBy', 'expiryDate'));
-  const [order, setOrder] = useState(() => SafeStorage.get('roadTaxSortOrder', 'desc'));
+  const { regFirst, regLast } = useRegistrationLabel();
+  const { selectedVehicle, handleVehicleChange } = useVehicleSelection(vehicles);
+  const { orderBy, order, handleRequestSort } = usePersistedSort('roadTax', 'expiryDate', 'desc');
 
   useEffect(() => {
     fetchVehicles();
   }, [fetchVehicles]);
 
-  const loadRecords = useCallback(async () => {
+  const loadRecords = useCallback(async (signal) => {
     setLoading(true);
-    try {
-      const url = !selectedVehicle || selectedVehicle === '__all__' ? '/road-tax' : `/road-tax?vehicleId=${selectedVehicle}`;
-      const response = await api.get(url);
-      setRecords(Array.isArray(response.data) ? response.data : []);
-    } catch (error) {
-      logger.error('Error loading road tax records:', error);
-      setRecords([]);
-    } finally {
-      setLoading(false);
-    }
+    const url = !selectedVehicle || selectedVehicle === '__all__' ? '/road-tax' : `/road-tax?vehicleId=${selectedVehicle}`;
+    const data = await fetchArrayData(api, url, signal ? { signal } : {});
+    return data;
   }, [api, selectedVehicle]);
 
   useEffect(() => {
-    if (!defaultVehicleId) return;
-    if (hasManualSelection) return;
-    if (!vehicles || vehicles.length === 0) return;
-    const found = vehicles.find((v) => String(v.id) === String(defaultVehicleId));
-    if (found && String(selectedVehicle) !== String(defaultVehicleId)) {
-      setSelectedVehicle(defaultVehicleId);
-    }
-  }, [defaultVehicleId, vehicles, hasManualSelection, selectedVehicle]);
-
-  useEffect(() => {
-    if (selectedVehicle) {
-      loadRecords();
-    }
-  }, [selectedVehicle, loadRecords]);
-
-  useEffect(() => {
-    if (vehicles.length > 0 && !selectedVehicle) {
-      if (defaultVehicleId && vehicles.find((v) => String(v.id) === String(defaultVehicleId))) {
-        setSelectedVehicle(defaultVehicleId);
-      } else {
-        setSelectedVehicle(vehicles[0].id);
+    if (!selectedVehicle) return;
+    
+    const abortController = new AbortController();
+    let mounted = true;
+    
+    loadRecords(abortController.signal).then((data) => {
+      if (mounted) {
+        setRecords(data);
+        setLoading(false);
       }
-    }
-  }, [vehicles, selectedVehicle, defaultVehicleId]);
+    });
+    
+    return () => {
+      mounted = false;
+      abortController.abort();
+    };
+  }, [selectedVehicle, loadRecords]);
   
   
   const handleAdd = () => {
@@ -119,15 +97,6 @@ const RoadTax = () => {
     setDialogOpen(false);
     setEditingRecord(null);
     if (reload) loadRecords();
-  };
-
-  const handleRequestSort = (property) => {
-    const isAsc = orderBy === property && order === 'asc';
-    const newOrder = isAsc ? 'desc' : 'asc';
-    setOrder(newOrder);
-    setOrderBy(property);
-    SafeStorage.set('roadTaxSortBy', property);
-    SafeStorage.set('roadTaxSortOrder', newOrder);
   };
 
   const sortedRecords = React.useMemo(() => {
@@ -177,12 +146,8 @@ const RoadTax = () => {
 
   const { page, rowsPerPage, paginatedRows: paginatedRecords, handleChangePage, handleChangeRowsPerPage } = useTablePagination(sortedRecords);
 
-  if (loading) {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
-        <KnightRiderLoader size={32} />
-      </Box>
-    );
+  if (loading || vehiclesLoading) {
+    return <CenteredLoader />;
   }
 
   if (vehicles.length === 0) {
@@ -202,7 +167,7 @@ const RoadTax = () => {
           <VehicleSelector
             vehicles={vehicles}
             value={selectedVehicle}
-            onChange={(v) => { setHasManualSelection(true); setSelectedVehicle(v); setDefaultVehicle(v); }}
+            onChange={handleVehicleChange}
             minWidth={360}
           />
           <Button variant="contained" color="primary" startIcon={<AddIcon />} onClick={handleAdd}>

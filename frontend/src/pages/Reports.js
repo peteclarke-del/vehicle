@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import logger from '../utils/logger';
-import SafeStorage from '../utils/SafeStorage';
 import {
   Box,
   Typography,
@@ -33,7 +32,10 @@ import { useTranslation } from 'react-i18next';
 import VehicleSelector from '../components/VehicleSelector';
 import { saveBlob } from '../components/DownloadHelpers';
 import KnightRiderLoader from '../components/KnightRiderLoader';
+import { fetchArrayData } from '../hooks/useApiData';
 import useTablePagination from '../hooks/useTablePagination';
+import usePersistedSort from '../hooks/usePersistedSort';
+import useVehicleSelection from '../hooks/useVehicleSelection';
 import TablePaginationBar from '../components/TablePaginationBar';
 
 const Reports = () => {
@@ -41,15 +43,14 @@ const Reports = () => {
   const { t } = useTranslation();
 
   const [vehicles, setVehicles] = useState([]);
-  const [selectedVehicle, setSelectedVehicle] = useState('__all__');
   const [reports, setReports] = useState([]);
   const [templates, setTemplates] = useState([]);
   const [selectedTemplateKey, setSelectedTemplateKey] = useState(null);
   const [selectedPeriodIndex, setSelectedPeriodIndex] = useState(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
-  const [orderBy, setOrderBy] = useState(() => SafeStorage.get('reportsSortBy', 'generatedAt'));
-  const [order, setOrder] = useState(() => SafeStorage.get('reportsSortOrder', 'desc'));
+  const { orderBy, order, handleRequestSort } = usePersistedSort('reports', 'generatedAt', 'desc');
+  const { selectedVehicle, handleVehicleChange } = useVehicleSelection(vehicles, { includeViewAll: true });
 
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerUrl, setViewerUrl] = useState(null);
@@ -62,32 +63,16 @@ const Reports = () => {
   const [downloadingReport, setDownloadingReport] = useState(null);
 
   const fetchVehicles = useCallback(async () => {
-    try {
-      const resp = await api.get('/vehicles');
-      // Ensure we get an array - handle both array responses and wrapped responses
-      const data = Array.isArray(resp.data) ? resp.data : (resp.data?.vehicles || resp.data?.data || []);
-      setVehicles(data);
-      if (data.length > 0) setSelectedVehicle('__all__');
-    } catch (err) {
-      logger.error('Failed to load vehicles', err);
-      setVehicles([]);
-    }
+    const data = await fetchArrayData(api, '/vehicles');
+    setVehicles(data);
   }, [api]);
 
   const loadReports = useCallback(async () => {
     setLoading(true);
-    try {
-      const url = selectedVehicle && selectedVehicle !== '__all__' ? `/reports?vehicleId=${selectedVehicle}` : '/reports';
-      const resp = await api.get(url);
-      // Ensure we have an actual array, not a string or other response
-      const data = Array.isArray(resp.data) ? resp.data : [];
-      setReports(data);
-    } catch (err) {
-      logger.error('Failed to load reports', err);
-      setReports([]);
-    } finally {
-      setLoading(false);
-    }
+    const url = selectedVehicle && selectedVehicle !== '__all__' ? `/reports?vehicleId=${selectedVehicle}` : '/reports';
+    const data = await fetchArrayData(api, url);
+    setReports(data);
+    setLoading(false);
   }, [api, selectedVehicle]);
 
   useEffect(() => {
@@ -145,15 +130,6 @@ const Reports = () => {
   useEffect(() => {
     loadReports();
   }, [selectedVehicle, loadReports]);
-
-  const handleRequestSort = (property) => {
-    const isAsc = orderBy === property && order === 'asc';
-    const newOrder = isAsc ? 'desc' : 'asc';
-    setOrder(newOrder);
-    setOrderBy(property);
-    SafeStorage.set('reportsSortBy', property);
-    SafeStorage.set('reportsSortOrder', newOrder);
-  };
 
   const sortedReports = useMemo(() => {
     const comparator = (a, b) => {
@@ -381,7 +357,7 @@ const Reports = () => {
             </Select>
           </FormControl>
 
-          <VehicleSelector vehicles={vehicles} value={selectedVehicle} onChange={setSelectedVehicle} includeViewAll={true} />
+          <VehicleSelector vehicles={vehicles} value={selectedVehicle} onChange={handleVehicleChange} includeViewAll={true} />
           <Button variant="contained" onClick={handleGenerate} disabled={generating || !selectedTemplateKey} startIcon={generating ? <KnightRiderLoader size={12} /> : null}>
             {t('reports.generate') || 'Generate Report'}
           </Button>

@@ -42,14 +42,18 @@ export const useApiData = (endpoint, initialData = []) => {
  * Helper function for one-off API calls with array validation
  * @param {Object} api - Axios instance from useAuth
  * @param {string} endpoint - API endpoint
+ * @param {Object} options - Optional axios config (e.g., { signal: abortController.signal })
  * @returns {Promise<Array>} - Always returns an array
  */
-export const fetchArrayData = async (api, endpoint) => {
+export const fetchArrayData = async (api, endpoint, options = {}) => {
   try {
-    const response = await api.get(endpoint);
+    const response = await api.get(endpoint, options);
     return Array.isArray(response.data) ? response.data : [];
   } catch (error) {
-    logger.error(`Error fetching ${endpoint}:`, error);
+    // Don't log abort errors as they're intentional
+    if (error.name !== 'CanceledError' && error.name !== 'AbortError') {
+      logger.error(`Error fetching ${endpoint}:`, error);
+    }
     return [];
   }
 };

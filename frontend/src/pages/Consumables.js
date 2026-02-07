@@ -1,15 +1,16 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import logger from '../utils/logger';
-import SafeStorage from '../utils/SafeStorage';
 import { Box, Button, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, IconButton, Tooltip, TableSortLabel } from '@mui/material';
 import { Add, Edit, Delete } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
-import { useUserPreferences } from '../contexts/UserPreferencesContext';
 import formatCurrency from '../utils/formatCurrency';
 import { fetchArrayData } from '../hooks/useApiData';
 import { useDistance } from '../hooks/useDistance';
 import useTablePagination from '../hooks/useTablePagination';
+import usePersistedSort from '../hooks/usePersistedSort';
+import useVehicleSelection from '../hooks/useVehicleSelection';
+import { useRegistrationLabel, useSplitLabel } from '../utils/splitLabel';
 import ConsumableDialog from '../components/ConsumableDialog';
 import ServiceDialog from '../components/ServiceDialog';
 import KnightRiderLoader from '../components/KnightRiderLoader';
@@ -20,52 +21,30 @@ import VehicleSelector from '../components/VehicleSelector';
 const Consumables = () => {
   const [consumables, setConsumables] = useState([]);
   const [vehicles, setVehicles] = useState([]);
-  const [selectedVehicle, setSelectedVehicle] = useState('');
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedConsumable, setSelectedConsumable] = useState(null);
   const [openServiceDialog, setOpenServiceDialog] = useState(false);
   const [selectedServiceRecord, setSelectedServiceRecord] = useState(null);
-  const [orderBy, setOrderBy] = useState(() => SafeStorage.get('consumablesSortBy', 'description'));
-  const [order, setOrder] = useState(() => SafeStorage.get('consumablesSortOrder', 'asc'));
   const { api } = useAuth();
   const { t, i18n } = useTranslation();
-  const registrationLabelText = t('common.registrationNumber');
-  const regWords = (registrationLabelText || '').split(/\s+/).filter(Boolean);
-  const regLast = regWords.length > 0 ? regWords[regWords.length - 1] : '';
-  const regFirst = regWords.length > 1 ? regWords.slice(0, regWords.length - 1).join(' ') : (regWords[0] || 'Registration');
+  const { regFirst, regLast } = useRegistrationLabel();
+  const { first: mileageFirst, last: mileageLast } = useSplitLabel('consumables.mileageAtChange', 'Mileage at', 'Change');
+  const mileageRest = mileageLast;
   const { convert, format, getLabel } = useDistance();
-  const mileageLabelText = t('consumables.mileageAtChange');
-  const mileageWords = (mileageLabelText || '').split(/\s+/).filter(Boolean);
-  // Put the last word on the second line and everything else on the first line
-  const mileageLast = mileageWords.length > 0 ? mileageWords[mileageWords.length - 1] : '';
-  const mileageFirst = mileageWords.length > 1 ? mileageWords.slice(0, mileageWords.length - 1).join(' ') : (mileageWords[0] || 'Mileage at');
-  let mileageRest = mileageLast || 'Change';
-    const { defaultVehicleId, setDefaultVehicle } = useUserPreferences();
-    const [hasManualSelection, setHasManualSelection] = useState(false);
+  const { orderBy, order, handleRequestSort } = usePersistedSort('consumables', 'description', 'asc');
+  const { selectedVehicle, handleVehicleChange } = useVehicleSelection(vehicles, { includeViewAll: true });
 
   const loadVehicles = useCallback(async () => {
     const data = await fetchArrayData(api, '/vehicles');
     setVehicles(data);
-    if (data.length > 0 && !selectedVehicle) {
-      if (defaultVehicleId && data.find((v) => String(v.id) === String(defaultVehicleId))) {
-        setSelectedVehicle(defaultVehicleId);
-      } else {
-        setSelectedVehicle(data[0].id);
-      }
-    }
     setLoading(false);
-  }, [api, selectedVehicle, defaultVehicleId]);
+  }, [api]);
 
-  const loadConsumables = useCallback(async () => {
-    try {
-      const url = (!selectedVehicle || selectedVehicle === '__all__') ? '/consumables' : `/consumables?vehicleId=${selectedVehicle}`;
-      const response = await api.get(url);
-      setConsumables(Array.isArray(response.data) ? response.data : []);
-    } catch (error) {
-      logger.error('Error loading consumables:', error);
-      setConsumables([]);
-    }
+  const loadConsumables = useCallback(async (signal) => {
+    const url = (!selectedVehicle || selectedVehicle === '__all__') ? '/consumables' : `/consumables?vehicleId=${selectedVehicle}`;
+    const data = await fetchArrayData(api, url, signal ? { signal } : {});
+    return data;
   }, [api, selectedVehicle]);
 
   useEffect(() => {
@@ -73,21 +52,24 @@ const Consumables = () => {
   }, [loadVehicles]);
 
   useEffect(() => {
-    if (!defaultVehicleId) return;
-    if (hasManualSelection) return;
-    if (!vehicles || vehicles.length === 0) return;
-    const found = vehicles.find((v) => String(v.id) === String(defaultVehicleId));
-    if (found && String(selectedVehicle) !== String(defaultVehicleId)) {
-      setSelectedVehicle(defaultVehicleId);
-    }
-  }, [defaultVehicleId, vehicles, hasManualSelection]);
-
-  useEffect(() => {
-    if (selectedVehicle) {
-      loadConsumables();
-    } else {
+    if (!selectedVehicle) {
       setConsumables([]);
+      return;
     }
+    
+    const abortController = new AbortController();
+    let mounted = true;
+    
+    loadConsumables(abortController.signal).then((data) => {
+      if (mounted) {
+        setConsumables(data);
+      }
+    });
+    
+    return () => {
+      mounted = false;
+      abortController.abort();
+    };
   }, [selectedVehicle, loadConsumables]);
 
   const handleAdd = () => {
@@ -119,15 +101,6 @@ const Consumables = () => {
     if (reload) {
       loadConsumables();
     }
-  };
-
-  const handleRequestSort = (property) => {
-    const isAsc = orderBy === property && order === 'asc';
-    const newOrder = isAsc ? 'desc' : 'asc';
-    setOrder(newOrder);
-    setOrderBy(property);
-    SafeStorage.set('consumablesSortBy', property);
-    SafeStorage.set('consumablesSortOrder', newOrder);
   };
 
   const sortedConsumables = React.useMemo(() => {
@@ -197,7 +170,7 @@ const Consumables = () => {
           <VehicleSelector
             vehicles={vehicles}
             value={selectedVehicle}
-            onChange={(v) => { setHasManualSelection(true); setSelectedVehicle(v); setDefaultVehicle(v); }}
+            onChange={handleVehicleChange}
             includeViewAll={true}
             minWidth={360}
           />

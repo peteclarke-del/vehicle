@@ -23,37 +23,26 @@ import { Add, Edit, Delete } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import logger from '../utils/logger';
-import SafeStorage from '../utils/SafeStorage';
 import TodoDialog from '../components/TodoDialog';
 import { fetchArrayData } from '../hooks/useApiData';
 import useTablePagination from '../hooks/useTablePagination';
+import usePersistedSort from '../hooks/usePersistedSort';
+import useVehicleSelection from '../hooks/useVehicleSelection';
+import { useRegistrationLabel } from '../utils/splitLabel';
 import TablePaginationBar from '../components/TablePaginationBar';
 import VehicleSelector from '../components/VehicleSelector';
 
 const Todo = () => {
   const { api } = useAuth();
   const { t } = useTranslation();
-  const registrationLabelText = t('common.registrationNumber');
-  const regWords = (registrationLabelText || '').split(/\s+/).filter(Boolean);
-  const regLast = regWords.length > 0 ? regWords[regWords.length - 1] : '';
-  const regFirst = regWords.length > 1 ? regWords.slice(0, regWords.length - 1).join(' ') : (regWords[0] || 'Registration');
+  const { regFirst, regLast } = useRegistrationLabel();
   const [vehicles, setVehicles] = useState([]);
-  const [selectedVehicle, setSelectedVehicle] = useState('');
   const [todos, setTodos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState(null);
-  const [orderBy, setOrderBy] = useState(() => SafeStorage.get('todoSortBy', 'dueDate'));
-  const [order, setOrder] = useState(() => SafeStorage.get('todoSortOrder', 'desc'));
-
-  const handleRequestSort = (property) => {
-    const isAsc = orderBy === property && order === 'asc';
-    const newOrder = isAsc ? 'desc' : 'asc';
-    setOrder(newOrder);
-    setOrderBy(property);
-    SafeStorage.set('todoSortBy', property);
-    SafeStorage.set('todoSortOrder', newOrder);
-  };
+  const { orderBy, order, handleRequestSort } = usePersistedSort('todo', 'dueDate', 'desc');
+  const { selectedVehicle, handleVehicleChange } = useVehicleSelection(vehicles, { includeViewAll: true });
 
   const sortedTodos = useMemo(() => {
     const comparator = (a, b) => {
@@ -91,19 +80,13 @@ const Todo = () => {
   const fetchVehicles = useCallback(async () => {
     const data = await fetchArrayData(api, '/vehicles');
     setVehicles(data);
-    if (data.length > 0) setSelectedVehicle((prev) => prev || data[0].id);
     setLoading(false);
   }, [api]);
 
-  const loadTodos = useCallback(async () => {
-    try {
-      const url = !selectedVehicle || selectedVehicle === '__all__' ? '/todos' : `/todos?vehicleId=${selectedVehicle}`;
-      const response = await api.get(url);
-      setTodos(Array.isArray(response.data) ? response.data : []);
-    } catch (err) {
-      logger.error('Error loading todos', err);
-      setTodos([]);
-    }
+  const loadTodos = useCallback(async (signal) => {
+    const url = !selectedVehicle || selectedVehicle === '__all__' ? '/todos' : `/todos?vehicleId=${selectedVehicle}`;
+    const data = await fetchArrayData(api, url, signal ? { signal } : {});
+    return data;
   }, [api, selectedVehicle]);
 
   useEffect(() => {
@@ -111,7 +94,19 @@ const Todo = () => {
   }, [fetchVehicles]);
 
   useEffect(() => {
-    loadTodos();
+    const abortController = new AbortController();
+    let mounted = true;
+    
+    loadTodos(abortController.signal).then((data) => {
+      if (mounted) {
+        setTodos(data);
+      }
+    });
+    
+    return () => {
+      mounted = false;
+      abortController.abort();
+    };
   }, [selectedVehicle, loadTodos]);
 
   const handleAdd = () => {
@@ -152,7 +147,7 @@ const Todo = () => {
             <VehicleSelector
               vehicles={vehicles}
               value={selectedVehicle}
-              onChange={(v) => setSelectedVehicle(v)}
+              onChange={handleVehicleChange}
               minWidth={300}
               includeViewAll={true}
             />

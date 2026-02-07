@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import logger from '../utils/logger';
-import SafeStorage from '../utils/SafeStorage';
 import {
   Typography,
   Button,
@@ -14,10 +13,6 @@ import {
   Paper,
   IconButton,
   Box,
-  MenuItem,
-  Select,
-  FormControl,
-  InputLabel,
   Chip,
   Tooltip,
   TableSortLabel,
@@ -25,12 +20,15 @@ import {
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, Visibility as VisibilityIcon } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
-import { useUserPreferences } from '../contexts/UserPreferencesContext';
 import formatCurrency from '../utils/formatCurrency';
 import { useVehicles } from '../contexts/VehiclesContext';
+import { fetchArrayData } from '../hooks/useApiData';
 import { useDistance } from '../hooks/useDistance';
 import { formatDateISO } from '../utils/formatDate';
 import useTablePagination from '../hooks/useTablePagination';
+import usePersistedSort from '../hooks/usePersistedSort';
+import useVehicleSelection from '../hooks/useVehicleSelection';
+import { useRegistrationLabel } from '../utils/splitLabel';
 import MotDialog from '../components/MotDialog';
 import TablePaginationBar from '../components/TablePaginationBar';
 import VehicleSelector from '../components/VehicleSelector';
@@ -40,36 +38,23 @@ import KnightRiderLoader from '../components/KnightRiderLoader';
 const MotRecords = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [motRecords, setMotRecords] = useState([]);
-  const [selectedVehicle, setSelectedVehicle] = useState('');
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingMot, setEditingMot] = useState(null);
-  const { vehicles, fetchVehicles } = useVehicles();
-  const [orderBy, setOrderBy] = useState(() => SafeStorage.get('motRecordsSortBy', 'testDate'));
-  const [order, setOrder] = useState(() => SafeStorage.get('motRecordsSortOrder', 'desc'));
+  const { vehicles, loading: vehiclesLoading, fetchVehicles } = useVehicles();
   const { api } = useAuth();
   const { t, i18n } = useTranslation();
-  const registrationLabelText = t('common.registrationNumber');
-  const regWords = (registrationLabelText || '').split(/\s+/).filter(Boolean);
-  const regLast = regWords.length > 0 ? regWords[regWords.length - 1] : '';
-  const regFirst = regWords.length > 1 ? regWords.slice(0, regWords.length - 1).join(' ') : (regWords[0] || 'Registration');
+  const { regFirst, regLast } = useRegistrationLabel();
   const { convert, format, getLabel } = useDistance();
-  const { defaultVehicleId, setDefaultVehicle } = useUserPreferences();
-  const [hasManualSelection, setHasManualSelection] = useState(false);
+  const { orderBy, order, handleRequestSort } = usePersistedSort('motRecords', 'testDate', 'desc');
+  const { selectedVehicle, setSelectedVehicle, hasManualSelection, handleVehicleChange } = useVehicleSelection(vehicles);
   const urlMotIdHandledRef = useRef(false);
 
-  const loadMotRecords = useCallback(async () => {
+  const loadMotRecords = useCallback(async (signal) => {
     setLoading(true);
-    try {
-      const url = !selectedVehicle || selectedVehicle === '__all__' ? '/mot-records' : `/mot-records?vehicleId=${selectedVehicle}`;
-      const response = await api.get(url);
-      setMotRecords(Array.isArray(response.data) ? response.data : []);
-    } catch (error) {
-      logger.error('Error loading MOT records:', error);
-      setMotRecords([]);
-    } finally {
-      setLoading(false);
-    }
+    const url = !selectedVehicle || selectedVehicle === '__all__' ? '/mot-records' : `/mot-records?vehicleId=${selectedVehicle}`;
+    const data = await fetchArrayData(api, url, signal ? { signal } : {});
+    return data;
   }, [api, selectedVehicle]);
 
   useEffect(() => {
@@ -77,30 +62,23 @@ const MotRecords = () => {
   }, [fetchVehicles]);
 
   useEffect(() => {
-    if (!defaultVehicleId) return;
-    if (hasManualSelection) return;
-    if (!vehicles || vehicles.length === 0) return;
-    const found = vehicles.find((v) => String(v.id) === String(defaultVehicleId));
-    if (found && String(selectedVehicle) !== String(defaultVehicleId)) {
-      setSelectedVehicle(defaultVehicleId);
-    }
-  }, [defaultVehicleId, vehicles, hasManualSelection]);
-
-  useEffect(() => {
-    if (selectedVehicle) {
-      loadMotRecords();
-    }
-  }, [selectedVehicle, loadMotRecords]);
-
-  useEffect(() => {
-    if (vehicles.length > 0 && !selectedVehicle) {
-      if (defaultVehicleId && vehicles.find((v) => String(v.id) === String(defaultVehicleId))) {
-        setSelectedVehicle(defaultVehicleId);
-      } else {
-        setSelectedVehicle(vehicles[0].id);
+    if (!selectedVehicle) return;
+    
+    const abortController = new AbortController();
+    let mounted = true;
+    
+    loadMotRecords(abortController.signal).then((data) => {
+      if (mounted) {
+        setMotRecords(data);
+        setLoading(false);
       }
-    }
-  }, [vehicles, selectedVehicle, defaultVehicleId]);
+    });
+    
+    return () => {
+      mounted = false;
+      abortController.abort();
+    };
+  }, [selectedVehicle, loadMotRecords]);
 
   // Handle URL params to auto-open a specific MOT record
   useEffect(() => {
@@ -157,15 +135,6 @@ const MotRecords = () => {
     }
   };
 
-  const handleRequestSort = (property) => {
-    const isAsc = orderBy === property && order === 'asc';
-    const newOrder = isAsc ? 'desc' : 'asc';
-    setOrder(newOrder);
-    setOrderBy(property);
-    SafeStorage.set('motRecordsSortBy', property);
-    SafeStorage.set('motRecordsSortOrder', newOrder);
-  };
-
   const sortedMotRecords = React.useMemo(() => {
     const comparator = (a, b) => {
       if (orderBy === 'registration') {
@@ -207,7 +176,7 @@ const MotRecords = () => {
 
   
 
-  if (loading) {
+  if (loading || vehiclesLoading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
         <KnightRiderLoader size={32} />
@@ -237,7 +206,7 @@ const MotRecords = () => {
           <VehicleSelector
             vehicles={vehicles}
             value={selectedVehicle}
-            onChange={(v) => { setHasManualSelection(true); setSelectedVehicle(v); setDefaultVehicle(v); }}
+            onChange={handleVehicleChange}
             minWidth={360}
           />
           {(() => {
