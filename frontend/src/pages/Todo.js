@@ -86,6 +86,7 @@ const Todo = () => {
   const loadTodos = useCallback(async (signal) => {
     const url = !selectedVehicle || selectedVehicle === '__all__' ? '/todos' : `/todos?vehicleId=${selectedVehicle}`;
     const data = await fetchArrayData(api, url, signal ? { signal } : {});
+    setTodos(data);
     return data;
   }, [api, selectedVehicle]);
 
@@ -95,16 +96,9 @@ const Todo = () => {
 
   useEffect(() => {
     const abortController = new AbortController();
-    let mounted = true;
-    
-    loadTodos(abortController.signal).then((data) => {
-      if (mounted) {
-        setTodos(data);
-      }
-    });
+    loadTodos(abortController.signal);
     
     return () => {
-      mounted = false;
       abortController.abort();
     };
   }, [selectedVehicle, loadTodos]);

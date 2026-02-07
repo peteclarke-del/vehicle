@@ -11,6 +11,7 @@ The Vehicle Management System is a full-stack web application for tracking perso
 **Technology Stack:**
 - Backend: Symfony 6.4 (PHP 8.3+), Doctrine ORM, MySQL 8.0
 - Frontend: React 18, Material-UI 5, React Router 6, Axios
+- Mobile: React Native 0.73, React Native Paper (MD3), TypeScript
 - Authentication: JWT via LexikJWTAuthenticationBundle
 - Infrastructure: Docker, Nginx, Redis (caching)
 
@@ -49,6 +50,14 @@ The Vehicle Management System is a full-stack web application for tracking perso
 │       ├── pages/              # Page components
 │       ├── reports/            # Report templates (JSON)
 │       └── utils/              # Utility functions
+├── mobile/                     # React Native mobile app (Android)
+│   └── src/
+│       ├── components/         # Reusable components
+│       ├── contexts/           # Auth, Sync, UserPreferences
+│       ├── navigation/         # React Navigation setup
+│       ├── screens/            # Screen components
+│       ├── theme/              # MD3 themes
+│       └── utils/              # Formatters
 ├── docker/                     # Docker build contexts
 │   ├── nginx/                  # Nginx configuration
 │   ├── node/                   # Node.js for frontend build
@@ -202,6 +211,121 @@ function RecordsPage() {
 | `formatDate` | Date formatting |
 | `logger` | Production-safe logging |
 | `sortUtils` | Generic sort comparators |
+
+---
+
+## Mobile App Architecture
+
+The mobile app is a React Native application for Android that mirrors the web app functionality while providing native mobile features.
+
+### Technology Stack
+
+- **React Native 0.73** with TypeScript
+- **React Native Paper** - Material Design 3 component library
+- **React Navigation** - Native stack and bottom tab navigation
+- **AsyncStorage** - Local data persistence
+- **NetInfo** - Network connectivity monitoring
+- **react-native-image-picker** - Camera and gallery integration
+
+### Project Structure
+
+```
+mobile/
+├── App.tsx                    # Main app entry with providers
+├── src/
+│   ├── components/            # Reusable UI components
+│   │   └── VehicleSelector.tsx
+│   ├── contexts/              # React contexts (same pattern as web)
+│   │   ├── AuthContext.tsx    # JWT auth with AsyncStorage
+│   │   ├── SyncContext.tsx    # Offline-first sync queue
+│   │   └── UserPreferencesContext.tsx
+│   ├── navigation/            # Navigation configuration
+│   │   ├── RootNavigator.tsx  # Auth state check
+│   │   ├── AuthNavigator.tsx  # Login/Register screens
+│   │   └── MainNavigator.tsx  # Tab + stack navigation
+│   ├── screens/               # Screen components
+│   │   ├── auth/              # Login, Register
+│   │   ├── DashboardScreen.tsx
+│   │   ├── VehiclesScreen.tsx
+│   │   ├── FuelRecordsScreen.tsx
+│   │   ├── ServiceRecordsScreen.tsx
+│   │   ├── PartsScreen.tsx
+│   │   ├── SettingsScreen.tsx
+│   │   ├── CameraScreen.tsx   # Photo capture
+│   │   └── AttachmentViewerScreen.tsx
+│   ├── theme/                 # MD3 light/dark themes
+│   └── utils/                 # Formatters
+```
+
+### Offline-First Architecture
+
+The mobile app implements offline-first with sync queue:
+
+```typescript
+// SyncContext pattern
+interface PendingChange {
+  id: string;
+  type: 'create' | 'update' | 'delete';
+  entityType: string;
+  entityId?: number;
+  data: any;
+  timestamp: number;
+}
+
+// Changes are queued when offline
+await addPendingChange({
+  type: 'create',
+  entityType: 'fuelRecord',
+  data: payload,
+});
+
+// Auto-syncs when back online via NetInfo listener
+```
+
+### API Communication
+
+The mobile app uses the same backend API with special considerations:
+
+- **Android Emulator**: Uses `10.0.2.2` to access localhost
+- **Physical Device**: Requires actual IP address
+- **JWT Storage**: Token stored in AsyncStorage, auto-attached to requests
+
+```typescript
+// API instance creation in AuthContext
+const instance = axios.create({
+  baseURL: Config.API_URL, // http://10.0.2.2:8081/api for emulator
+  headers: { Authorization: `Bearer ${token}` }
+});
+```
+
+### Camera Integration
+
+Receipt photos use react-native-image-picker:
+
+```typescript
+// Take photo
+const result = await launchCamera({ mediaType: 'photo', quality: 0.8 });
+
+// Or choose from gallery
+const result = await launchImageLibrary({ mediaType: 'photo' });
+
+// Upload as multipart form data
+const formData = new FormData();
+formData.append('file', { uri, type, name });
+await api.post('/attachments', formData, {
+  headers: { 'Content-Type': 'multipart/form-data' }
+});
+```
+
+### Theme Matching
+
+The mobile app uses React Native Paper with MD3 themes that match web app colors:
+
+```typescript
+// Primary: #1976d2 (blue)
+// Secondary: #9c27b0 (purple)
+// Surface colors match MUI defaults
+```
 
 ---
 

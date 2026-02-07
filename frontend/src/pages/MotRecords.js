@@ -54,6 +54,8 @@ const MotRecords = () => {
     setLoading(true);
     const url = !selectedVehicle || selectedVehicle === '__all__' ? '/mot-records' : `/mot-records?vehicleId=${selectedVehicle}`;
     const data = await fetchArrayData(api, url, signal ? { signal } : {});
+    setMotRecords(data);
+    setLoading(false);
     return data;
   }, [api, selectedVehicle]);
 
@@ -65,17 +67,9 @@ const MotRecords = () => {
     if (!selectedVehicle) return;
     
     const abortController = new AbortController();
-    let mounted = true;
-    
-    loadMotRecords(abortController.signal).then((data) => {
-      if (mounted) {
-        setMotRecords(data);
-        setLoading(false);
-      }
-    });
+    loadMotRecords(abortController.signal);
     
     return () => {
-      mounted = false;
       abortController.abort();
     };
   }, [selectedVehicle, loadMotRecords]);

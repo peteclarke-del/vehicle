@@ -2,6 +2,8 @@
 
 This document provides comprehensive documentation for the shared libraries, hooks, utilities, and contexts used throughout the frontend application. These modules are designed to be reusable and should be used whenever their functionality is needed rather than implementing similar logic inline.
 
+> **Note:** The mobile app (`mobile/`) uses similar patterns with React Native equivalents. See [mobile/README.md](../mobile/README.md) for mobile-specific documentation.
+
 ---
 
 ## Table of Contents

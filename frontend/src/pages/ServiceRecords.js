@@ -52,6 +52,8 @@ const ServiceRecords = () => {
     setLoading(true);
     const url = !selectedVehicle || selectedVehicle === '__all__' ? '/service-records' : `/service-records?vehicleId=${selectedVehicle}`;
     const data = await fetchArrayData(api, url, signal ? { signal } : {});
+    setServiceRecords(data);
+    setLoading(false);
     return data;
   }, [api, selectedVehicle]);
 
@@ -63,17 +65,10 @@ const ServiceRecords = () => {
     if (!selectedVehicle) return;
     
     const abortController = new AbortController();
-    let mounted = true;
     
-    loadServiceRecords(abortController.signal).then((data) => {
-      if (mounted) {
-        setServiceRecords(data);
-        setLoading(false);
-      }
-    });
+    loadServiceRecords(abortController.signal);
     
     return () => {
-      mounted = false;
       abortController.abort();
     };
   }, [selectedVehicle, loadServiceRecords]);
