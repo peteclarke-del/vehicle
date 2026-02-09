@@ -12,14 +12,12 @@ import {
   TextInput,
   Button,
   useTheme,
-  ActivityIndicator,
   Text,
   Switch,
   Card,
   IconButton,
 } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import {launchCamera, launchImageLibrary} from 'react-native-image-picker';
 import {useNavigation} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {useAuth} from '../contexts/AuthContext';
@@ -27,6 +25,9 @@ import {useSync} from '../contexts/SyncContext';
 import {useVehicleSelection} from '../contexts/VehicleSelectionContext';
 import {MainStackParamList} from '../navigation/MainNavigator';
 import VehicleSelector from '../components/VehicleSelector';
+import LoadingScreen from '../components/LoadingScreen';
+import {useReceiptPhoto} from '../hooks/useReceiptPhoto';
+import {formStyles, receiptStyles} from '../theme/sharedStyles';
 
 type NavigationProp = NativeStackNavigationProp<MainStackParamList>;
 
@@ -49,8 +50,14 @@ const QuickFuelScreen: React.FC = () => {
   const [mileage, setMileage] = useState('');
   const [station, setStation] = useState('');
   const [fullTank, setFullTank] = useState(true);
-  const [receiptUri, setReceiptUri] = useState<string | null>(null);
-  const [receiptAttachmentId, setReceiptAttachmentId] = useState<number | null>(null);
+
+  const {
+    receiptUri,
+    receiptAttachmentId,
+    handleTakePhoto,
+    handleChooseFromGallery,
+    clearReceipt,
+  } = useReceiptPhoto({api, isOnline, vehicleId});
 
   useEffect(() => {
     loadVehicles();
@@ -88,64 +95,6 @@ const QuickFuelScreen: React.FC = () => {
     }
   };
 
-  const handleTakePhoto = async () => {
-    try {
-      const result = await launchCamera({
-        mediaType: 'photo',
-        quality: 0.8,
-        saveToPhotos: false,
-      });
-      if (result.assets && result.assets[0]?.uri) {
-        setReceiptUri(result.assets[0].uri);
-        await uploadReceipt(result.assets[0]);
-      }
-    } catch (error) {
-      console.error('Camera error:', error);
-      Alert.alert('Error', 'Failed to take photo');
-    }
-  };
-
-  const handleChooseFromGallery = async () => {
-    try {
-      const result = await launchImageLibrary({
-        mediaType: 'photo',
-        quality: 0.8,
-      });
-      if (result.assets && result.assets[0]?.uri) {
-        setReceiptUri(result.assets[0].uri);
-        await uploadReceipt(result.assets[0]);
-      }
-    } catch (error) {
-      console.error('Gallery error:', error);
-      Alert.alert('Error', 'Failed to select image');
-    }
-  };
-
-  const uploadReceipt = async (asset: any) => {
-    if (!isOnline) {
-      Alert.alert('Offline', 'Receipt will be uploaded when back online');
-      return;
-    }
-    try {
-      const formDataUpload = new FormData();
-      formDataUpload.append('file', {
-        uri: asset.uri,
-        type: asset.type || 'image/jpeg',
-        name: asset.fileName || 'receipt.jpg',
-      } as any);
-      if (vehicleId) {
-        formDataUpload.append('vehicleId', vehicleId.toString());
-      }
-      const response = await api.post('/attachments', formDataUpload, {
-        headers: {'Content-Type': 'multipart/form-data'},
-      });
-      setReceiptAttachmentId(response.data.id);
-    } catch (error) {
-      console.error('Upload error:', error);
-      Alert.alert('Error', 'Failed to upload receipt');
-    }
-  };
-
   const handleSave = async () => {
     if (!vehicleId) {
       Alert.alert('Error', 'Please select a vehicle');
@@ -174,10 +123,9 @@ const QuickFuelScreen: React.FC = () => {
       if (isOnline) {
         await api.post('/fuel-records', payload);
       } else {
-        addPendingChange({
+        await addPendingChange({
           type: 'create',
-          endpoint: '/fuel-records',
-          method: 'POST',
+          entityType: 'fuelRecord',
           data: payload,
         });
         Alert.alert('Saved Offline', 'Fuel record will sync when back online.');
@@ -192,11 +140,7 @@ const QuickFuelScreen: React.FC = () => {
   };
 
   if (loading) {
-    return (
-      <View style={[styles.loadingContainer, {backgroundColor: theme.colors.background}]}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-      </View>
-    );
+    return <LoadingScreen />;
   }
 
   return (
@@ -230,7 +174,7 @@ const QuickFuelScreen: React.FC = () => {
             keyboardType="decimal-pad"
             mode="outlined"
             left={<TextInput.Affix text="£" />}
-            style={styles.input}
+            style={formStyles.input}
             autoFocus
           />
 
@@ -241,7 +185,7 @@ const QuickFuelScreen: React.FC = () => {
             keyboardType="decimal-pad"
             mode="outlined"
             left={<TextInput.Icon icon="water" />}
-            style={styles.input}
+            style={formStyles.input}
           />
 
           <TextInput
@@ -251,7 +195,7 @@ const QuickFuelScreen: React.FC = () => {
             keyboardType="numeric"
             mode="outlined"
             left={<TextInput.Icon icon="speedometer" />}
-            style={styles.input}
+            style={formStyles.input}
           />
 
           <TextInput
@@ -260,7 +204,7 @@ const QuickFuelScreen: React.FC = () => {
             onChangeText={setStation}
             mode="outlined"
             left={<TextInput.Icon icon="map-marker" />}
-            style={styles.input}
+            style={formStyles.input}
           />
 
           <View style={styles.switchRow}>
@@ -272,12 +216,12 @@ const QuickFuelScreen: React.FC = () => {
           <Text variant="titleSmall" style={{marginBottom: 8, color: theme.colors.onSurfaceVariant}}>
             Attach Receipt
           </Text>
-          <View style={styles.receiptButtons}>
+          <View style={receiptStyles.receiptButtons}>
             <Button
               mode="outlined"
               icon="camera"
               onPress={handleTakePhoto}
-              style={styles.receiptButton}
+              style={receiptStyles.receiptButton}
               compact>
               Camera
             </Button>
@@ -285,28 +229,25 @@ const QuickFuelScreen: React.FC = () => {
               mode="outlined"
               icon="image"
               onPress={handleChooseFromGallery}
-              style={styles.receiptButton}
+              style={receiptStyles.receiptButton}
               compact>
               Gallery
             </Button>
           </View>
 
           {receiptUri && (
-            <Card style={styles.receiptPreview}>
+            <Card style={receiptStyles.receiptPreview}>
               <Card.Content>
-                <View style={styles.receiptImageContainer}>
+                <View style={receiptStyles.receiptImageContainer}>
                   <Image
                     source={{uri: receiptUri}}
-                    style={styles.receiptImage}
+                    style={receiptStyles.receiptImage}
                     resizeMode="contain"
                   />
                   <IconButton
                     icon="close"
-                    style={styles.removeReceiptButton}
-                    onPress={() => {
-                      setReceiptUri(null);
-                      setReceiptAttachmentId(null);
-                    }}
+                    style={receiptStyles.removeReceiptButton}
+                    onPress={clearReceipt}
                   />
                 </View>
               </Card.Content>
@@ -338,11 +279,9 @@ const QuickFuelScreen: React.FC = () => {
 
 const styles = StyleSheet.create({
   container: {flex: 1},
-  loadingContainer: {flex: 1, justifyContent: 'center', alignItems: 'center'},
   headerCard: {margin: 16, marginBottom: 0},
   headerContent: {alignItems: 'center', paddingVertical: 16},
   form: {padding: 16},
-  input: {marginBottom: 12},
   switchRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -351,31 +290,6 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   saveButton: {marginTop: 8},
-  receiptButtons: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 12,
-  },
-  receiptButton: {
-    flex: 1,
-  },
-  receiptPreview: {
-    marginBottom: 12,
-  },
-  receiptImageContainer: {
-    position: 'relative',
-  },
-  receiptImage: {
-    width: '100%',
-    height: 180,
-    borderRadius: 8,
-  },
-  removeReceiptButton: {
-    position: 'absolute',
-    top: -8,
-    right: -8,
-    backgroundColor: 'white',
-  },
 });
 
 export default QuickFuelScreen;

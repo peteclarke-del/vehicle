@@ -1,7 +1,6 @@
 import React, {useState, useEffect} from 'react';
 import {
   View,
-  StyleSheet,
   ScrollView,
   Alert,
   KeyboardAvoidingView,
@@ -11,7 +10,6 @@ import {
   TextInput,
   Button,
   useTheme,
-  ActivityIndicator,
   Text,
   Switch,
 } from 'react-native-paper';
@@ -21,6 +19,9 @@ import {useAuth} from '../contexts/AuthContext';
 import {useSync} from '../contexts/SyncContext';
 import {MainStackParamList} from '../navigation/MainNavigator';
 import VehicleSelector from '../components/VehicleSelector';
+import LoadingScreen from '../components/LoadingScreen';
+import OfflineBanner from '../components/OfflineBanner';
+import {formStyles} from '../theme/sharedStyles';
 
 type NavigationProp = NativeStackNavigationProp<MainStackParamList>;
 type RouteProps = RouteProp<MainStackParamList, 'ConsumableForm'>;
@@ -211,65 +212,55 @@ const ConsumableFormScreen: React.FC = () => {
   };
 
   if (loading) {
-    return (
-      <View style={[styles.loadingContainer, {backgroundColor: theme.colors.background}]}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-      </View>
-    );
+    return <LoadingScreen />;
   }
 
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}>
+      style={formStyles.container}>
       <ScrollView
-        style={[styles.scrollView, {backgroundColor: theme.colors.background}]}
-        contentContainerStyle={styles.content}
+        style={[formStyles.scrollView, {backgroundColor: theme.colors.background}]}
+        contentContainerStyle={formStyles.content}
         keyboardShouldPersistTaps="handled">
 
-        {!isOnline && (
-          <View style={[styles.offlineBanner, {backgroundColor: theme.colors.errorContainer}]}>
-            <Text style={{color: theme.colors.onErrorContainer}}>
-              Offline — changes will be synced later
-            </Text>
-          </View>
-        )}
+        {!isOnline && <OfflineBanner message="Offline — changes will be synced later" />}
 
-        <Text variant="titleMedium" style={styles.sectionTitle}>Consumable Details</Text>
+        <Text variant="titleMedium" style={formStyles.sectionTitle}>Consumable Details</Text>
 
         <TextInput
           label="Description *"
           value={formData.description}
           onChangeText={v => updateField('description', v)}
           mode="outlined"
-          style={styles.input}
+          style={formStyles.input}
         />
 
-        <View style={styles.row}>
+        <View style={formStyles.row}>
           <TextInput
             label="Brand"
             value={formData.brand}
             onChangeText={v => updateField('brand', v)}
             mode="outlined"
-            style={[styles.input, styles.halfInput]}
+            style={[formStyles.input, formStyles.halfInput]}
           />
           <TextInput
             label="Part Number"
             value={formData.partNumber}
             onChangeText={v => updateField('partNumber', v)}
             mode="outlined"
-            style={[styles.input, styles.halfInput]}
+            style={[formStyles.input, formStyles.halfInput]}
           />
         </View>
 
-        <View style={styles.row}>
+        <View style={formStyles.row}>
           <TextInput
             label="Cost (£)"
             value={formData.cost}
             onChangeText={v => updateField('cost', v)}
             mode="outlined"
             keyboardType="decimal-pad"
-            style={[styles.input, styles.halfInput]}
+            style={[formStyles.input, formStyles.halfInput]}
           />
           <TextInput
             label="Quantity"
@@ -277,7 +268,7 @@ const ConsumableFormScreen: React.FC = () => {
             onChangeText={v => updateField('quantity', v)}
             mode="outlined"
             keyboardType="decimal-pad"
-            style={[styles.input, styles.halfInput]}
+            style={[formStyles.input, formStyles.halfInput]}
           />
         </View>
 
@@ -286,10 +277,10 @@ const ConsumableFormScreen: React.FC = () => {
           value={formData.supplier}
           onChangeText={v => updateField('supplier', v)}
           mode="outlined"
-          style={styles.input}
+          style={formStyles.input}
         />
 
-        <Text variant="titleMedium" style={styles.sectionTitle}>Replacement Tracking</Text>
+        <Text variant="titleMedium" style={formStyles.sectionTitle}>Replacement Tracking</Text>
 
         <TextInput
           label="Last Changed"
@@ -297,17 +288,17 @@ const ConsumableFormScreen: React.FC = () => {
           onChangeText={v => updateField('lastChanged', v)}
           mode="outlined"
           placeholder="YYYY-MM-DD"
-          style={styles.input}
+          style={formStyles.input}
         />
 
-        <View style={styles.row}>
+        <View style={formStyles.row}>
           <TextInput
             label="Mileage at Change"
             value={formData.mileageAtChange}
             onChangeText={v => updateField('mileageAtChange', v)}
             mode="outlined"
             keyboardType="numeric"
-            style={[styles.input, styles.halfInput]}
+            style={[formStyles.input, formStyles.halfInput]}
           />
           <TextInput
             label="Replacement Interval (mi)"
@@ -315,11 +306,11 @@ const ConsumableFormScreen: React.FC = () => {
             onChangeText={v => updateField('replacementIntervalMiles', v)}
             mode="outlined"
             keyboardType="numeric"
-            style={[styles.input, styles.halfInput]}
+            style={[formStyles.input, formStyles.halfInput]}
           />
         </View>
 
-        <Text variant="titleMedium" style={styles.sectionTitle}>Vehicle Assignment</Text>
+        <Text variant="titleMedium" style={formStyles.sectionTitle}>Vehicle Assignment</Text>
 
         <VehicleSelector
           vehicles={vehicles}
@@ -329,7 +320,7 @@ const ConsumableFormScreen: React.FC = () => {
           allLabel="General (No specific vehicle)"
         />
 
-        <Text variant="titleMedium" style={styles.sectionTitle}>Additional Info</Text>
+        <Text variant="titleMedium" style={formStyles.sectionTitle}>Additional Info</Text>
 
         <TextInput
           label="Product URL"
@@ -337,7 +328,7 @@ const ConsumableFormScreen: React.FC = () => {
           onChangeText={v => updateField('productUrl', v)}
           mode="outlined"
           keyboardType="url"
-          style={styles.input}
+          style={formStyles.input}
         />
 
         <TextInput
@@ -347,10 +338,10 @@ const ConsumableFormScreen: React.FC = () => {
           mode="outlined"
           multiline
           numberOfLines={3}
-          style={styles.input}
+          style={formStyles.input}
         />
 
-        <View style={styles.switchRow}>
+        <View style={formStyles.switchRow}>
           <Text variant="bodyLarge">Included in Service Cost</Text>
           <Switch
             value={formData.includedInServiceCost}
@@ -363,7 +354,7 @@ const ConsumableFormScreen: React.FC = () => {
           onPress={handleSave}
           loading={saving}
           disabled={saving}
-          style={styles.saveButton}>
+          style={formStyles.saveButton}>
           {isEditing ? 'Update Consumable' : 'Add Consumable'}
         </Button>
 
@@ -372,69 +363,15 @@ const ConsumableFormScreen: React.FC = () => {
             mode="outlined"
             onPress={handleDelete}
             textColor={theme.colors.error}
-            style={styles.deleteButton}>
+            style={formStyles.deleteButton}>
             Delete Consumable
           </Button>
         )}
 
-        <View style={styles.bottomPadding} />
+        <View style={formStyles.bottomPadding} />
       </ScrollView>
     </KeyboardAvoidingView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  scrollView: {
-    flex: 1,
-  },
-  content: {
-    padding: 16,
-  },
-  offlineBanner: {
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 12,
-    alignItems: 'center',
-  },
-  input: {
-    marginBottom: 12,
-  },
-  row: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  halfInput: {
-    flex: 1,
-  },
-  sectionTitle: {
-    marginTop: 16,
-    marginBottom: 12,
-  },
-  switchRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 4,
-  },
-  saveButton: {
-    marginTop: 24,
-    paddingVertical: 6,
-  },
-  deleteButton: {
-    marginTop: 12,
-  },
-  bottomPadding: {
-    height: 24,
-  },
-});
 
 export default ConsumableFormScreen;

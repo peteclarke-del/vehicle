@@ -11,7 +11,6 @@ import {
   TextInput,
   Button,
   useTheme,
-  ActivityIndicator,
   Switch,
   Text,
   Chip,
@@ -22,6 +21,8 @@ import {useAuth} from '../contexts/AuthContext';
 import {useSync} from '../contexts/SyncContext';
 import {MainStackParamList} from '../navigation/MainNavigator';
 import VehicleSelector from '../components/VehicleSelector';
+import LoadingScreen from '../components/LoadingScreen';
+import {formStyles} from '../theme/sharedStyles';
 
 type NavigationProp = NativeStackNavigationProp<MainStackParamList>;
 type RouteProps = RouteProp<MainStackParamList, 'MotRecordForm'>;
@@ -163,10 +164,10 @@ const MotRecordFormScreen: React.FC = () => {
           await api.post('/mot-records', payload);
         }
       } else {
-        addPendingChange({
+        await addPendingChange({
           type: isEditing ? 'update' : 'create',
-          endpoint: isEditing ? `/mot-records/${recordId}` : '/mot-records',
-          method: isEditing ? 'PUT' : 'POST',
+          entityType: 'motRecord',
+          entityId: isEditing ? recordId : undefined,
           data: payload,
         });
         Alert.alert('Saved Offline', 'MOT record will sync when back online.');
@@ -192,11 +193,11 @@ const MotRecordFormScreen: React.FC = () => {
             if (isOnline) {
               await api.delete(`/mot-records/${recordId}`);
             } else {
-              addPendingChange({
+              await addPendingChange({
                 type: 'delete',
-                endpoint: `/mot-records/${recordId}`,
-                method: 'DELETE',
-                data: {},
+                entityType: 'motRecord',
+                entityId: recordId,
+                data: null,
               });
             }
             navigation.goBack();
@@ -209,11 +210,7 @@ const MotRecordFormScreen: React.FC = () => {
   };
 
   if (loading) {
-    return (
-      <View style={[styles.loadingContainer, {backgroundColor: theme.colors.background}]}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-      </View>
-    );
+    return <LoadingScreen />;
   }
 
   const resultOptions = ['Pass', 'Fail', 'Advisory'];
@@ -249,7 +246,7 @@ const MotRecordFormScreen: React.FC = () => {
             value={formData.testDate}
             onChangeText={v => updateField('testDate', v)}
             mode="outlined"
-            style={styles.input}
+            style={formStyles.input}
           />
 
           <TextInput
@@ -257,7 +254,7 @@ const MotRecordFormScreen: React.FC = () => {
             value={formData.expiryDate}
             onChangeText={v => updateField('expiryDate', v)}
             mode="outlined"
-            style={styles.input}
+            style={formStyles.input}
           />
 
           <TextInput
@@ -266,7 +263,7 @@ const MotRecordFormScreen: React.FC = () => {
             onChangeText={v => updateField('mileage', v)}
             keyboardType="numeric"
             mode="outlined"
-            style={styles.input}
+            style={formStyles.input}
           />
 
           <TextInput
@@ -276,7 +273,7 @@ const MotRecordFormScreen: React.FC = () => {
             keyboardType="decimal-pad"
             mode="outlined"
             left={<TextInput.Affix text="£" />}
-            style={styles.input}
+            style={formStyles.input}
           />
 
           <TextInput
@@ -286,7 +283,7 @@ const MotRecordFormScreen: React.FC = () => {
             keyboardType="decimal-pad"
             mode="outlined"
             left={<TextInput.Affix text="£" />}
-            style={styles.input}
+            style={formStyles.input}
           />
 
           <TextInput
@@ -294,7 +291,7 @@ const MotRecordFormScreen: React.FC = () => {
             value={formData.testCenter}
             onChangeText={v => updateField('testCenter', v)}
             mode="outlined"
-            style={styles.input}
+            style={formStyles.input}
           />
 
           <TextInput
@@ -302,7 +299,7 @@ const MotRecordFormScreen: React.FC = () => {
             value={formData.motTestNumber}
             onChangeText={v => updateField('motTestNumber', v)}
             mode="outlined"
-            style={styles.input}
+            style={formStyles.input}
           />
 
           <TextInput
@@ -310,15 +307,15 @@ const MotRecordFormScreen: React.FC = () => {
             value={formData.testerName}
             onChangeText={v => updateField('testerName', v)}
             mode="outlined"
-            style={styles.input}
+            style={formStyles.input}
           />
 
-          <View style={styles.switchRow}>
+          <View style={formStyles.switchRow}>
             <Text variant="bodyLarge">Retest</Text>
             <Switch value={formData.isRetest} onValueChange={v => updateField('isRetest', v)} />
           </View>
 
-          <View style={styles.switchRow}>
+          <View style={formStyles.switchRow}>
             <Text variant="bodyLarge">Cost included in service</Text>
             <Switch value={formData.testCostBundledInService} onValueChange={v => updateField('testCostBundledInService', v)} />
           </View>
@@ -330,7 +327,7 @@ const MotRecordFormScreen: React.FC = () => {
             multiline
             numberOfLines={3}
             mode="outlined"
-            style={styles.input}
+            style={formStyles.input}
           />
 
           <TextInput
@@ -340,7 +337,7 @@ const MotRecordFormScreen: React.FC = () => {
             multiline
             numberOfLines={3}
             mode="outlined"
-            style={styles.input}
+            style={formStyles.input}
           />
 
           <TextInput
@@ -350,7 +347,7 @@ const MotRecordFormScreen: React.FC = () => {
             multiline
             numberOfLines={3}
             mode="outlined"
-            style={styles.input}
+            style={formStyles.input}
           />
 
           <TextInput
@@ -360,7 +357,7 @@ const MotRecordFormScreen: React.FC = () => {
             multiline
             numberOfLines={3}
             mode="outlined"
-            style={styles.input}
+            style={formStyles.input}
           />
 
           <Button
@@ -368,7 +365,7 @@ const MotRecordFormScreen: React.FC = () => {
             onPress={handleSave}
             loading={saving}
             disabled={saving}
-            style={styles.saveButton}>
+            style={formStyles.saveButton}>
             {isEditing ? 'Update MOT Record' : 'Save MOT Record'}
           </Button>
 
@@ -377,7 +374,7 @@ const MotRecordFormScreen: React.FC = () => {
               mode="outlined"
               onPress={handleDelete}
               textColor={theme.colors.error}
-              style={styles.deleteButton}>
+              style={formStyles.deleteButton}>
               Delete
             </Button>
           )}
@@ -389,21 +386,10 @@ const MotRecordFormScreen: React.FC = () => {
 
 const styles = StyleSheet.create({
   container: {flex: 1},
-  loadingContainer: {flex: 1, justifyContent: 'center', alignItems: 'center'},
   form: {padding: 16},
   label: {marginTop: 12, marginBottom: 4},
   chipRow: {flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12},
   chip: {marginRight: 4},
-  input: {marginBottom: 12},
-  switchRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 8,
-    marginBottom: 8,
-  },
-  saveButton: {marginTop: 16, paddingVertical: 4},
-  deleteButton: {marginTop: 12, marginBottom: 32, paddingVertical: 4},
 });
 
 export default MotRecordFormScreen;

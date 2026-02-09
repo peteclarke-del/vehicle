@@ -191,3 +191,16 @@ export const truncateText = (text: string, maxLength: number = 50): string => {
   if (!text || text.length <= maxLength) return text;
   return `${text.substring(0, maxLength - 3)}...`;
 };
+
+/**
+ * Look up a vehicle display label from a vehicles array.
+ * Returns name (preferred), registration, or 'Unknown'/'General'.
+ */
+export const getVehicleLabel = (
+  vehicleId: number | null | undefined,
+  vehicles: Array<{id: number; registration: string; name: string | null}>,
+): string => {
+  if (!vehicleId) return 'General';
+  const vehicle = vehicles.find(v => v.id === vehicleId);
+  return vehicle?.name || vehicle?.registration || 'Unknown';
+};

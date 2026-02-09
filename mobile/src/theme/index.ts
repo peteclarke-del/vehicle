@@ -186,7 +186,4 @@ export const darkTheme = {
   roundness: 8,
 };
 
-// Default to light theme
-export const theme = lightTheme;
 
-export default theme;

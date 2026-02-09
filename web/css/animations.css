@@ -1,0 +1,146 @@
+/* ============================================
+   Scroll-triggered animations
+   ============================================ */
+
+/* Base hidden state for scroll-in elements */
+[data-animate] {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+[data-animate].visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Stagger children */
+[data-animate]:nth-child(1) { transition-delay: 0s; }
+[data-animate]:nth-child(2) { transition-delay: 0.08s; }
+[data-animate]:nth-child(3) { transition-delay: 0.16s; }
+[data-animate]:nth-child(4) { transition-delay: 0.24s; }
+[data-animate]:nth-child(5) { transition-delay: 0.32s; }
+[data-animate]:nth-child(6) { transition-delay: 0.40s; }
+[data-animate]:nth-child(7) { transition-delay: 0.48s; }
+[data-animate]:nth-child(8) { transition-delay: 0.56s; }
+
+/* Hero-specific animations */
+.animate-fade-in {
+  animation: fadeIn 0.8s ease-out forwards;
+  opacity: 0;
+}
+.animate-fade-in-up {
+  animation: fadeInUp 0.8s ease-out forwards;
+  opacity: 0;
+}
+.delay-1 { animation-delay: 0.15s; }
+.delay-2 { animation-delay: 0.3s; }
+.delay-3 { animation-delay: 0.45s; }
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Floating animation for hero visual */
+.device-showcase {
+  animation: gentleFloat 6s ease-in-out infinite;
+}
+@keyframes gentleFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+/* Shimmer effect on feature card icons */
+.feature-card:hover .feature-icon {
+  animation: iconPop 0.4s ease-out;
+}
+@keyframes iconPop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+
+/* Glow pulse on stat numbers */
+.stat-number {
+  animation: glowPulse 3s ease-in-out infinite;
+}
+@keyframes glowPulse {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.2); }
+}
+
+/* Timeline line draw */
+.timeline::before {
+  animation: lineGrow 2s ease-out forwards;
+  transform-origin: top;
+}
+@keyframes lineGrow {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+
+/* Integration card hover micro-animation */
+.integration-card:hover .int-icon {
+  animation: wiggle 0.5s ease-in-out;
+}
+@keyframes wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-8deg); }
+  75% { transform: rotate(8deg); }
+}
+
+/* Tech pill hover */
+.tech-pill {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.tech-pill:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15);
+}
+
+/* CTA code block typing cursor */
+.cta-code code::after {
+  content: '█';
+  animation: blink 1s step-end infinite;
+  color: var(--primary);
+}
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+/* Bar chart animation stagger */
+.chart-bars .bar:nth-child(1) { animation-delay: 0.05s; }
+.chart-bars .bar:nth-child(2) { animation-delay: 0.1s; }
+.chart-bars .bar:nth-child(3) { animation-delay: 0.15s; }
+.chart-bars .bar:nth-child(4) { animation-delay: 0.2s; }
+.chart-bars .bar:nth-child(5) { animation-delay: 0.25s; }
+.chart-bars .bar:nth-child(6) { animation-delay: 0.3s; }
+.chart-bars .bar:nth-child(7) { animation-delay: 0.35s; }
+.chart-bars .bar:nth-child(8) { animation-delay: 0.4s; }
+.chart-bars .bar:nth-child(9) { animation-delay: 0.45s; }
+.chart-bars .bar:nth-child(10) { animation-delay: 0.5s; }
+.chart-bars .bar:nth-child(11) { animation-delay: 0.55s; }
+.chart-bars .bar:nth-child(12) { animation-delay: 0.6s; }
+
+/* Particle animation */
+.particle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--primary);
+  opacity: 0;
+  animation: particleFloat 8s linear infinite;
+}
+@keyframes particleFloat {
+  0% { opacity: 0; transform: translateY(100vh) scale(0); }
+  10% { opacity: 0.6; }
+  90% { opacity: 0.2; }
+  100% { opacity: 0; transform: translateY(-20vh) scale(1); }
+}

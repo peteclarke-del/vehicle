@@ -54,6 +54,10 @@ RUN npm install
 # Copy the rest of the application
 COPY . .
 
+# Copy react-native-vector-icons fonts into Android assets
+RUN mkdir -p android/app/src/main/assets/fonts && \
+    cp node_modules/react-native-vector-icons/Fonts/*.ttf android/app/src/main/assets/fonts/
+
 # Generate gradle wrapper files manually (to avoid evaluating build.gradle)
 # First, generate wrapper in a temp directory, then copy to android
 RUN mkdir -p /tmp/gradle-init && \

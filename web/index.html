@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vehicle Manager — Track, Manage, Own It</title>
+  <meta name="description" content="The ultimate vehicle management platform. Track fuel, services, MOT, insurance, parts — web & mobile. Free, open source, offline-capable." />
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/animations.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <!-- ===================== NAVBAR ===================== -->
+  <nav class="navbar" id="navbar">
+    <div class="nav-container">
+      <a href="#" class="nav-logo">
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+          <rect width="32" height="32" rx="8" fill="url(#logoGrad)"/>
+          <path d="M8 20h16l-2-6H10L8 20z" fill="#fff" opacity="0.9"/>
+          <circle cx="11" cy="21" r="2" fill="#fff"/>
+          <circle cx="21" cy="21" r="2" fill="#fff"/>
+          <path d="M12 14l1-3h6l1 3" stroke="#fff" stroke-width="1.5" fill="none"/>
+          <defs><linearGradient id="logoGrad" x1="0" y1="0" x2="32" y2="32"><stop stop-color="#6366f1"/><stop offset="1" stop-color="#8b5cf6"/></linearGradient></defs>
+        </svg>
+        <span>Vehicle Manager</span>
+      </a>
+      <div class="nav-links" id="navLinks">
+        <a href="#features">Features</a>
+        <a href="#platforms">Platforms</a>
+        <a href="#integrations">Integrations</a>
+        <a href="#stats">Stats</a>
+        <a href="#tech">Tech Stack</a>
+      </div>
+      <div class="nav-actions">
+        <a href="#get-started" class="btn btn-primary btn-sm">Get Started</a>
+        <button class="nav-toggle" id="navToggle" aria-label="Menu">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ===================== HERO ===================== -->
+  <section class="hero" id="hero">
+    <div class="hero-bg">
+      <div class="hero-gradient"></div>
+      <div class="hero-grid"></div>
+      <div class="hero-particles" id="particles"></div>
+    </div>
+    <div class="hero-container">
+      <div class="hero-content">
+        <div class="hero-badge animate-fade-in">
+          <span class="badge-dot"></span>
+          Open Source &amp; Free Forever
+        </div>
+        <h1 class="hero-title animate-fade-in-up">
+          Your Vehicles.<br/>
+          <span class="gradient-text">Completely Managed.</span>
+        </h1>
+        <p class="hero-subtitle animate-fade-in-up delay-1">
+          Track fuel costs, service history, MOT records, insurance, parts, and more — 
+          across all your vehicles. On the web and on your phone.
+        </p>
+        <div class="hero-cta animate-fade-in-up delay-2">
+          <a href="#get-started" class="btn btn-primary btn-lg">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor"><path d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"/></svg>
+            Start Managing
+          </a>
+          <a href="#features" class="btn btn-ghost btn-lg">
+            See Features
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 2a1 1 0 011 1v8.586l3.293-3.293a1 1 0 111.414 1.414l-5 5a1 1 0 01-1.414 0l-5-5a1 1 0 111.414-1.414L7 11.586V3a1 1 0 011-1z"/></svg>
+          </a>
+        </div>
+        <div class="hero-trust animate-fade-in-up delay-3">
+          <div class="trust-item">
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="#22c55e"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg>
+            No credit card
+          </div>
+          <div class="trust-item">
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="#22c55e"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg>
+            Self-hosted
+          </div>
+          <div class="trust-item">
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="#22c55e"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg>
+            Your data, your control
+          </div>
+        </div>
+      </div>
+      <div class="hero-visual animate-fade-in-up delay-2">
+        <div class="device-showcase">
+          <!-- Laptop mockup -->
+          <div class="laptop-mockup">
+            <div class="laptop-screen">
+              <div class="screen-content" id="laptopScreen">
+                <div class="mock-topbar">
+                  <div class="mock-dots"><span></span><span></span><span></span></div>
+                  <div class="mock-url">vehiclemanager.app/dashboard</div>
+                </div>
+                <div class="mock-dashboard">
+                  <div class="mock-sidebar">
+                    <div class="sb-item active"><div class="sb-icon"></div><div class="sb-label"></div></div>
+                    <div class="sb-item"><div class="sb-icon"></div><div class="sb-label"></div></div>
+                    <div class="sb-item"><div class="sb-icon"></div><div class="sb-label"></div></div>
+                    <div class="sb-item"><div class="sb-icon"></div><div class="sb-label"></div></div>
+                    <div class="sb-item"><div class="sb-icon"></div><div class="sb-label"></div></div>
+                  </div>
+                  <div class="mock-main">
+                    <div class="mock-cards">
+                      <div class="mock-stat-card c1">
+                        <div class="msc-icon">⛽</div>
+                        <div class="msc-value">£2,847</div>
+                        <div class="msc-label">Fuel Costs</div>
+                      </div>
+                      <div class="mock-stat-card c2">
+                        <div class="msc-icon">🔧</div>
+                        <div class="msc-value">£1,290</div>
+                        <div class="msc-label">Services</div>
+                      </div>
+                      <div class="mock-stat-card c3">
+                        <div class="msc-icon">🚗</div>
+                        <div class="msc-value">4</div>
+                        <div class="msc-label">Vehicles</div>
+                      </div>
+                      <div class="mock-stat-card c4">
+                        <div class="msc-icon">✅</div>
+                        <div class="msc-value">PASS</div>
+                        <div class="msc-label">MOT Status</div>
+                      </div>
+                    </div>
+                    <div class="mock-chart">
+                      <div class="chart-title">Monthly Fuel Spend</div>
+                      <div class="chart-bars">
+                        <div class="bar" style="--h:40%"><span>J</span></div>
+                        <div class="bar" style="--h:65%"><span>F</span></div>
+                        <div class="bar" style="--h:55%"><span>M</span></div>
+                        <div class="bar" style="--h:80%"><span>A</span></div>
+                        <div class="bar" style="--h:45%"><span>M</span></div>
+                        <div class="bar" style="--h:70%"><span>J</span></div>
+                        <div class="bar" style="--h:90%"><span>J</span></div>
+                        <div class="bar" style="--h:60%"><span>A</span></div>
+                        <div class="bar" style="--h:50%"><span>S</span></div>
+                        <div class="bar" style="--h:75%"><span>O</span></div>
+                        <div class="bar" style="--h:85%"><span>N</span></div>
+                        <div class="bar" style="--h:55%"><span>D</span></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="laptop-base"></div>
+          </div>
+          <!-- Phone mockup (overlapping) -->
+          <div class="phone-mockup">
+            <div class="phone-notch"></div>
+            <div class="phone-screen">
+              <div class="phone-statusbar">
+                <span>9:41</span>
+                <span>📶 🔋</span>
+              </div>
+              <div class="phone-header">
+                <div class="ph-title">Dashboard</div>
+              </div>
+              <div class="phone-body">
+                <div class="phone-card">
+                  <div class="pc-emoji">⛽</div>
+                  <div class="pc-info">
+                    <div class="pc-name">Shell Unleaded</div>
+                    <div class="pc-detail">42.5L · £67.80</div>
+                  </div>
+                  <div class="pc-date">Today</div>
+                </div>
+                <div class="phone-card">
+                  <div class="pc-emoji">🔧</div>
+                  <div class="pc-info">
+                    <div class="pc-name">Oil Change</div>
+                    <div class="pc-detail">Castrol Edge 5W-30</div>
+                  </div>
+                  <div class="pc-date">3d ago</div>
+                </div>
+                <div class="phone-card">
+                  <div class="pc-emoji">✅</div>
+                  <div class="pc-info">
+                    <div class="pc-name">MOT Pass</div>
+                    <div class="pc-detail">0 advisories</div>
+                  </div>
+                  <div class="pc-date">1w ago</div>
+                </div>
+              </div>
+              <div class="phone-nav">
+                <div class="pn-item active">🏠</div>
+                <div class="pn-item">🚗</div>
+                <div class="pn-item">⛽</div>
+                <div class="pn-item">⚙️</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="hero-scroll-indicator">
+      <div class="scroll-mouse">
+        <div class="scroll-wheel"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== FEATURES ===================== -->
+  <section class="features" id="features">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">Features</span>
+        <h2>Everything You Need.<br/><span class="gradient-text">Nothing You Don't.</span></h2>
+        <p>A complete vehicle management toolkit that grows with your garage.</p>
+      </div>
+      <div class="features-grid">
+        <div class="feature-card" data-animate>
+          <div class="feature-icon" style="--accent:#6366f1">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9L18 10l-2.7-3.6A2 2 0 0013.6 5H6.4a2 2 0 00-1.7 1.4L2 10l-1.5 1.1A2 2 0 000 13v3c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>
+          </div>
+          <h3>Vehicle Profiles</h3>
+          <p>Complete profiles with make, model, year, specs, images, depreciation tracking, and registration lookup. Every detail at a glance.</p>
+        </div>
+        <div class="feature-card" data-animate>
+          <div class="feature-icon" style="--accent:#f59e0b">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+          </div>
+          <h3>Fuel Tracking</h3>
+          <p>Log every fill-up. See MPG, cost per mile, monthly trends, and spending breakdowns. Snap receipt photos instantly.</p>
+        </div>
+        <div class="feature-card" data-animate>
+          <div class="feature-icon" style="--accent:#22c55e">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
+          </div>
+          <h3>Service History</h3>
+          <p>Detailed service records with line items, labour costs, parts used, and provider info. Link services to MOT work.</p>
+        </div>
+        <div class="feature-card" data-animate>
+          <div class="feature-icon" style="--accent:#ef4444">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+          </div>
+          <h3>MOT Records</h3>
+          <p>Track test results, advisories, failures, and expiry dates. Import full DVSA history with one click. Never miss a renewal.</p>
+        </div>
+        <div class="feature-card" data-animate>
+          <div class="feature-icon" style="--accent:#8b5cf6">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><path d="M9 7a4 4 0 005.292 3.778A4 4 0 0015.5 7.5"/><rect x="2" y="3" width="20" height="5" rx="2"/></svg>
+          </div>
+          <h3>Insurance &amp; Tax</h3>
+          <p>Manage policies, premiums, cover levels, and renewal dates. Track road tax status with automatic expiry notifications.</p>
+        </div>
+        <div class="feature-card" data-animate>
+          <div class="feature-icon" style="--accent:#ec4899">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+          </div>
+          <h3>Parts &amp; Consumables</h3>
+          <p>Inventory management for parts, fluids, filters. Track suppliers, warranties, replacement intervals, and costs.</p>
+        </div>
+        <div class="feature-card" data-animate>
+          <div class="feature-icon" style="--accent:#14b8a6">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 17H7A5 5 0 017 7h2"/><path d="M15 7h2a5 5 0 010 10h-2"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+          </div>
+          <h3>Smart Notifications</h3>
+          <p>Real-time alerts for upcoming MOTs, expiring insurance, tax renewals, and overdue services. Stay ahead, never behind.</p>
+        </div>
+        <div class="feature-card" data-animate>
+          <div class="feature-icon" style="--accent:#f97316">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </div>
+          <h3>Custom Reports</h3>
+          <p>Generate PDF and Excel reports. Fuel analysis, cost breakdowns, vehicle overviews — from built-in templates or your own.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== PLATFORMS ===================== -->
+  <section class="platforms" id="platforms">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">Platforms</span>
+        <h2>Web. Mobile.<br/><span class="gradient-text">Works Everywhere.</span></h2>
+        <p>One account, all your data, on any device. Or go fully standalone — your choice.</p>
+      </div>
+      <div class="platform-cards">
+        <div class="platform-card" data-animate>
+          <div class="platform-visual web-visual">
+            <div class="mini-browser">
+              <div class="mb-bar"><span></span><span></span><span></span></div>
+              <div class="mb-content">
+                <div class="mb-nav"></div>
+                <div class="mb-grid">
+                  <div class="mb-cell"></div>
+                  <div class="mb-cell"></div>
+                  <div class="mb-cell"></div>
+                  <div class="mb-cell"></div>
+                </div>
+                <div class="mb-chart-area">
+                  <svg viewBox="0 0 200 60" class="mb-chart-svg">
+                    <polyline points="0,50 20,45 40,30 60,35 80,20 100,25 120,10 140,15 160,8 180,12 200,5" stroke="#6366f1" fill="none" stroke-width="2"/>
+                    <polyline points="0,50 20,45 40,30 60,35 80,20 100,25 120,10 140,15 160,8 180,12 200,5" stroke="none" fill="url(#chartFill)" opacity="0.2"/>
+                    <defs><linearGradient id="chartFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#6366f1"/><stop offset="100%" stop-color="transparent"/></linearGradient></defs>
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="platform-info">
+            <div class="platform-badge">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+              Web Application
+            </div>
+            <h3>Full-Featured Desktop Experience</h3>
+            <ul class="platform-features">
+              <li>React 18 with Material-UI 5</li>
+              <li>Interactive charts &amp; cost analysis</li>
+              <li>Custom PDF &amp; Excel reports</li>
+              <li>Drag-and-drop file uploads</li>
+              <li>Dark &amp; light themes</li>
+              <li>20 languages supported</li>
+              <li>Real-time SSE notifications</li>
+            </ul>
+          </div>
+        </div>
+        <div class="platform-card" data-animate>
+          <div class="platform-visual mobile-visual">
+            <div class="mini-phone">
+              <div class="mp-notch"></div>
+              <div class="mp-screen">
+                <div class="mp-header-bar"></div>
+                <div class="mp-card-stack">
+                  <div class="mp-card"><div class="mp-dot" style="background:#22c55e"></div><div class="mp-lines"><div></div><div></div></div></div>
+                  <div class="mp-card"><div class="mp-dot" style="background:#f59e0b"></div><div class="mp-lines"><div></div><div></div></div></div>
+                  <div class="mp-card"><div class="mp-dot" style="background:#6366f1"></div><div class="mp-lines"><div></div><div></div></div></div>
+                </div>
+                <div class="mp-tab-bar">
+                  <div class="mp-tab active"></div>
+                  <div class="mp-tab"></div>
+                  <div class="mp-tab"></div>
+                  <div class="mp-tab"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="platform-info">
+            <div class="platform-badge">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+              Mobile App (Android)
+            </div>
+            <h3>Native Android Experience</h3>
+            <ul class="platform-features">
+              <li>React Native with Material Design 3</li>
+              <li>Offline-first with sync queue</li>
+              <li>Camera for receipt scanning</li>
+              <li>Standalone or server-connected mode</li>
+              <li>Quick fuel logging</li>
+              <li>Pull-to-refresh everywhere</li>
+              <li>Background data sync</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <!-- Standalone callout -->
+      <div class="standalone-callout" data-animate>
+        <div class="callout-icon">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="1.5"><path d="M18.36 6.64a9 9 0 11-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg>
+        </div>
+        <div class="callout-content">
+          <h3>🔌 No Server? No Problem.</h3>
+          <p>The mobile app has a full <strong>Standalone Mode</strong>. All your data is stored locally on your device — no account, no server, no internet required. Want to sync later? Just add your server URL anytime.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== INTEGRATIONS ===================== -->
+  <section class="integrations" id="integrations">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">Integrations</span>
+        <h2>Connects to<br/><span class="gradient-text">The Real World.</span></h2>
+        <p>Pull in real data from government APIs and external services.</p>
+      </div>
+      <div class="integration-grid">
+        <div class="integration-card" data-animate>
+          <div class="int-icon">🏛️</div>
+          <h4>DVLA Vehicle Lookup</h4>
+          <p>Enter a UK registration and auto-populate make, model, year, fuel type, engine size, and colour.</p>
+        </div>
+        <div class="integration-card" data-animate>
+          <div class="int-icon">📋</div>
+          <h4>DVSA MOT History</h4>
+          <p>Import your complete MOT history from government records — test results, advisories, failures, mileage readings.</p>
+        </div>
+        <div class="integration-card" data-animate>
+          <div class="int-icon">🔍</div>
+          <h4>VIN Decoder</h4>
+          <p>Decode Vehicle Identification Numbers to auto-fill detailed specifications and manufacturing data.</p>
+        </div>
+        <div class="integration-card" data-animate>
+          <div class="int-icon">🧾</div>
+          <h4>Receipt OCR</h4>
+          <p>Photograph fuel receipts and automatically extract the amount, litres, price per litre, and station.</p>
+        </div>
+        <div class="integration-card" data-animate>
+          <div class="int-icon">🌐</div>
+          <h4>URL Scraping</h4>
+          <p>Paste a parts URL and automatically pull in product name, price, and supplier information.</p>
+        </div>
+        <div class="integration-card" data-animate>
+          <div class="int-icon">📦</div>
+          <h4>Import / Export</h4>
+          <p>Full data portability. Export everything including attachments. Import into any instance.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== STATS COUNTER ===================== -->
+  <section class="stats" id="stats">
+    <div class="container">
+      <div class="stats-grid">
+        <div class="stat-item" data-animate>
+          <div class="stat-number" data-count="20">0</div>
+          <div class="stat-label">Languages Supported</div>
+          <div class="stat-flags">🇬🇧 🇩🇪 🇫🇷 🇪🇸 🇮🇹 🇵🇹 🇯🇵 🇨🇳 🇰🇷 🇷🇺 🇸🇦 🇵🇱 🇳🇱 🇩🇰 🇸🇪 🇳🇴 🇫🇮 🇹🇷 🇨🇿 🇮🇳</div>
+        </div>
+        <div class="stat-item" data-animate>
+          <div class="stat-number" data-count="15">0</div>
+          <div class="stat-label">Entity Types Managed</div>
+          <div class="stat-detail">Vehicles, fuel, services, MOT, parts, consumables, insurance, tax, todos, attachments…</div>
+        </div>
+        <div class="stat-item" data-animate>
+          <div class="stat-number" data-count="50" data-suffix="+">0</div>
+          <div class="stat-label">API Endpoints</div>
+          <div class="stat-detail">Full REST API with JWT auth, consumed by both web &amp; mobile</div>
+        </div>
+        <div class="stat-item" data-animate>
+          <div class="stat-number" data-count="17">0</div>
+          <div class="stat-label">Currencies Supported</div>
+          <div class="stat-detail">£ $ € ¥ ₩ ₹ ₽ zł Kč kr ₺ ﷼ and more</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== TIMELINE ===================== -->
+  <section class="workflow" id="workflow">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">How It Works</span>
+        <h2>Up and Running<br/><span class="gradient-text">In Minutes.</span></h2>
+      </div>
+      <div class="timeline">
+        <div class="timeline-item" data-animate>
+          <div class="timeline-number">1</div>
+          <div class="timeline-content">
+            <h4>Deploy</h4>
+            <p><code>docker compose up -d</code> — that's it. Nginx, PHP, MySQL, Redis — all configured and ready.</p>
+          </div>
+        </div>
+        <div class="timeline-item" data-animate>
+          <div class="timeline-number">2</div>
+          <div class="timeline-content">
+            <h4>Register</h4>
+            <p>Create your account. Multi-user, multi-tenant — each user sees only their own vehicles.</p>
+          </div>
+        </div>
+        <div class="timeline-item" data-animate>
+          <div class="timeline-number">3</div>
+          <div class="timeline-content">
+            <h4>Add Vehicles</h4>
+            <p>Enter a reg number for automatic lookup, or add details manually. Upload photos.</p>
+          </div>
+        </div>
+        <div class="timeline-item" data-animate>
+          <div class="timeline-number">4</div>
+          <div class="timeline-content">
+            <h4>Track Everything</h4>
+            <p>Log fuel, record services, track MOTs, manage parts — on web or mobile. Your data syncs seamlessly.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== TECH STACK ===================== -->
+  <section class="tech" id="tech">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">Tech Stack</span>
+        <h2>Built With<br/><span class="gradient-text">Modern Tools.</span></h2>
+        <p>Production-grade technologies. Battle-tested. Well-documented.</p>
+      </div>
+      <div class="tech-grid">
+        <div class="tech-card" data-animate>
+          <div class="tech-layer">Backend</div>
+          <div class="tech-items">
+            <div class="tech-pill">Symfony 6.4</div>
+            <div class="tech-pill">PHP 8.3</div>
+            <div class="tech-pill">MySQL 8</div>
+            <div class="tech-pill">Doctrine ORM</div>
+            <div class="tech-pill">Redis 7</div>
+            <div class="tech-pill">JWT Auth</div>
+          </div>
+        </div>
+        <div class="tech-card" data-animate>
+          <div class="tech-layer">Frontend</div>
+          <div class="tech-items">
+            <div class="tech-pill">React 18</div>
+            <div class="tech-pill">Material-UI 5</div>
+            <div class="tech-pill">React Router 6</div>
+            <div class="tech-pill">Axios</div>
+            <div class="tech-pill">i18next</div>
+            <div class="tech-pill">MUI X Charts</div>
+          </div>
+        </div>
+        <div class="tech-card" data-animate>
+          <div class="tech-layer">Mobile</div>
+          <div class="tech-items">
+            <div class="tech-pill">React Native 0.73</div>
+            <div class="tech-pill">TypeScript</div>
+            <div class="tech-pill">React Native Paper</div>
+            <div class="tech-pill">React Navigation</div>
+            <div class="tech-pill">AsyncStorage</div>
+          </div>
+        </div>
+        <div class="tech-card" data-animate>
+          <div class="tech-layer">Infrastructure</div>
+          <div class="tech-items">
+            <div class="tech-pill">Docker</div>
+            <div class="tech-pill">Docker Compose</div>
+            <div class="tech-pill">Nginx</div>
+            <div class="tech-pill">PHPUnit</div>
+            <div class="tech-pill">Jest</div>
+            <div class="tech-pill">Makefile</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== CTA / GET STARTED ===================== -->
+  <section class="cta" id="get-started">
+    <div class="cta-bg">
+      <div class="cta-gradient"></div>
+    </div>
+    <div class="container">
+      <div class="cta-content" data-animate>
+        <h2>Ready to Take Control<br/>of Your Vehicles?</h2>
+        <p>Self-host for free. Keep your data private. Manage everything in one place.</p>
+        <div class="cta-code">
+          <div class="code-header">
+            <span class="code-dot red"></span>
+            <span class="code-dot yellow"></span>
+            <span class="code-dot green"></span>
+            <span class="code-title">terminal</span>
+          </div>
+          <pre><code><span class="code-comment"># Clone and start</span>
+<span class="code-prompt">$</span> git clone https://github.com/your-org/vehicle-manager.git
+<span class="code-prompt">$</span> cd vehicle-manager
+<span class="code-prompt">$</span> docker compose up -d
+<span class="code-comment"># 🚀 Open http://localhost:8081</span></code></pre>
+        </div>
+        <div class="cta-buttons">
+          <a href="#" class="btn btn-white btn-lg">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+            View on GitHub
+          </a>
+          <a href="#" class="btn btn-primary btn-lg">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Download APK
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== FOOTER ===================== -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-content">
+        <div class="footer-brand">
+          <svg width="24" height="24" viewBox="0 0 32 32" fill="none">
+            <rect width="32" height="32" rx="8" fill="url(#logoGrad2)"/>
+            <path d="M8 20h16l-2-6H10L8 20z" fill="#fff" opacity="0.9"/>
+            <circle cx="11" cy="21" r="2" fill="#fff"/>
+            <circle cx="21" cy="21" r="2" fill="#fff"/>
+            <defs><linearGradient id="logoGrad2" x1="0" y1="0" x2="32" y2="32"><stop stop-color="#6366f1"/><stop offset="1" stop-color="#8b5cf6"/></linearGradient></defs>
+          </svg>
+          <span>Vehicle Manager</span>
+        </div>
+        <div class="footer-links">
+          <a href="#features">Features</a>
+          <a href="#platforms">Platforms</a>
+          <a href="#tech">Tech Stack</a>
+          <a href="#get-started">Get Started</a>
+        </div>
+        <div class="footer-copy">
+          &copy; 2026 Vehicle Manager. Open source under MIT License.
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/main.js"></script>
+</body>
+</html>

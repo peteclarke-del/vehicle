@@ -11,7 +11,6 @@ import {
   TextInput,
   Button,
   useTheme,
-  ActivityIndicator,
   SegmentedButtons,
   Text,
 } from 'react-native-paper';
@@ -20,6 +19,8 @@ import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {useAuth} from '../contexts/AuthContext';
 import {useSync} from '../contexts/SyncContext';
 import {MainStackParamList} from '../navigation/MainNavigator';
+import LoadingScreen from '../components/LoadingScreen';
+import {formStyles} from '../theme/sharedStyles';
 
 type NavigationProp = NativeStackNavigationProp<MainStackParamList>;
 type RouteProps = RouteProp<MainStackParamList, 'VehicleForm'>;
@@ -173,23 +174,19 @@ const VehicleFormScreen: React.FC = () => {
   };
 
   if (loading) {
-    return (
-      <View style={[styles.loadingContainer, {backgroundColor: theme.colors.background}]}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-      </View>
-    );
+    return <LoadingScreen />;
   }
 
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}>
+      style={formStyles.container}>
       <ScrollView
-        style={[styles.scrollView, {backgroundColor: theme.colors.background}]}
-        contentContainerStyle={styles.content}
+        style={[formStyles.scrollView, {backgroundColor: theme.colors.background}]}
+        contentContainerStyle={formStyles.content}
         keyboardShouldPersistTaps="handled">
         
-        <Text variant="titleMedium" style={styles.sectionTitle}>Basic Information</Text>
+        <Text variant="titleMedium" style={formStyles.sectionTitle}>Basic Information</Text>
         
         <TextInput
           label="Registration *"
@@ -197,7 +194,7 @@ const VehicleFormScreen: React.FC = () => {
           onChangeText={v => updateField('registration', v.toUpperCase())}
           mode="outlined"
           autoCapitalize="characters"
-          style={styles.input}
+          style={formStyles.input}
         />
 
         <TextInput
@@ -205,33 +202,33 @@ const VehicleFormScreen: React.FC = () => {
           value={formData.name}
           onChangeText={v => updateField('name', v)}
           mode="outlined"
-          style={styles.input}
+          style={formStyles.input}
         />
 
-        <View style={styles.row}>
+        <View style={formStyles.row}>
           <TextInput
             label="Make"
             value={formData.make}
             onChangeText={v => updateField('make', v)}
             mode="outlined"
-            style={[styles.input, styles.halfInput]}
+            style={[formStyles.input, formStyles.halfInput]}
           />
           <TextInput
             label="Model"
             value={formData.model}
             onChangeText={v => updateField('model', v)}
             mode="outlined"
-            style={[styles.input, styles.halfInput]}
+            style={[formStyles.input, formStyles.halfInput]}
           />
         </View>
 
-        <View style={styles.row}>
+        <View style={formStyles.row}>
           <TextInput
             label="Variant"
             value={formData.variant}
             onChangeText={v => updateField('variant', v)}
             mode="outlined"
-            style={[styles.input, styles.halfInput]}
+            style={[formStyles.input, formStyles.halfInput]}
           />
           <TextInput
             label="Year"
@@ -239,11 +236,11 @@ const VehicleFormScreen: React.FC = () => {
             onChangeText={v => updateField('year', v)}
             mode="outlined"
             keyboardType="numeric"
-            style={[styles.input, styles.halfInput]}
+            style={[formStyles.input, formStyles.halfInput]}
           />
         </View>
 
-        <Text variant="titleMedium" style={styles.sectionTitle}>Status</Text>
+        <Text variant="titleMedium" style={formStyles.sectionTitle}>Status</Text>
         
         <SegmentedButtons
           value={formData.status}
@@ -256,39 +253,39 @@ const VehicleFormScreen: React.FC = () => {
           style={styles.segmented}
         />
 
-        <Text variant="titleMedium" style={styles.sectionTitle}>Specifications</Text>
+        <Text variant="titleMedium" style={formStyles.sectionTitle}>Specifications</Text>
 
-        <View style={styles.row}>
+        <View style={formStyles.row}>
           <TextInput
             label="Colour"
             value={formData.colour}
             onChangeText={v => updateField('colour', v)}
             mode="outlined"
-            style={[styles.input, styles.halfInput]}
+            style={[formStyles.input, formStyles.halfInput]}
           />
           <TextInput
             label="Fuel Type"
             value={formData.fuelType}
             onChangeText={v => updateField('fuelType', v)}
             mode="outlined"
-            style={[styles.input, styles.halfInput]}
+            style={[formStyles.input, formStyles.halfInput]}
           />
         </View>
 
-        <View style={styles.row}>
+        <View style={formStyles.row}>
           <TextInput
             label="Engine Size"
             value={formData.engineSize}
             onChangeText={v => updateField('engineSize', v)}
             mode="outlined"
-            style={[styles.input, styles.halfInput]}
+            style={[formStyles.input, formStyles.halfInput]}
           />
           <TextInput
             label="Transmission"
             value={formData.transmission}
             onChangeText={v => updateField('transmission', v)}
             mode="outlined"
-            style={[styles.input, styles.halfInput]}
+            style={[formStyles.input, formStyles.halfInput]}
           />
         </View>
 
@@ -298,19 +295,19 @@ const VehicleFormScreen: React.FC = () => {
           onChangeText={v => updateField('vin', v.toUpperCase())}
           mode="outlined"
           autoCapitalize="characters"
-          style={styles.input}
+          style={formStyles.input}
         />
 
-        <Text variant="titleMedium" style={styles.sectionTitle}>Mileage</Text>
+        <Text variant="titleMedium" style={formStyles.sectionTitle}>Mileage</Text>
 
-        <View style={styles.row}>
+        <View style={formStyles.row}>
           <TextInput
             label="Current Mileage"
             value={formData.currentMileage}
             onChangeText={v => updateField('currentMileage', v)}
             mode="outlined"
             keyboardType="numeric"
-            style={[styles.input, styles.halfInput]}
+            style={[formStyles.input, formStyles.halfInput]}
           />
           <TextInput
             label="Purchase Mileage"
@@ -318,20 +315,20 @@ const VehicleFormScreen: React.FC = () => {
             onChangeText={v => updateField('purchaseMileage', v)}
             mode="outlined"
             keyboardType="numeric"
-            style={[styles.input, styles.halfInput]}
+            style={[formStyles.input, formStyles.halfInput]}
           />
         </View>
 
-        <Text variant="titleMedium" style={styles.sectionTitle}>Purchase Details</Text>
+        <Text variant="titleMedium" style={formStyles.sectionTitle}>Purchase Details</Text>
 
-        <View style={styles.row}>
+        <View style={formStyles.row}>
           <TextInput
             label="Purchase Date"
             value={formData.purchaseDate}
             onChangeText={v => updateField('purchaseDate', v)}
             mode="outlined"
             placeholder="YYYY-MM-DD"
-            style={[styles.input, styles.halfInput]}
+            style={[formStyles.input, formStyles.halfInput]}
           />
           <TextInput
             label="Purchase Price"
@@ -339,11 +336,11 @@ const VehicleFormScreen: React.FC = () => {
             onChangeText={v => updateField('purchaseCost', v)}
             mode="outlined"
             keyboardType="decimal-pad"
-            style={[styles.input, styles.halfInput]}
+            style={[formStyles.input, formStyles.halfInput]}
           />
         </View>
 
-        <Text variant="titleMedium" style={styles.sectionTitle}>Notes</Text>
+        <Text variant="titleMedium" style={formStyles.sectionTitle}>Notes</Text>
 
         <TextInput
           label="Notes"
@@ -352,7 +349,7 @@ const VehicleFormScreen: React.FC = () => {
           mode="outlined"
           multiline
           numberOfLines={4}
-          style={styles.input}
+          style={formStyles.input}
         />
 
         <Button
@@ -360,54 +357,19 @@ const VehicleFormScreen: React.FC = () => {
           onPress={handleSave}
           loading={saving}
           disabled={saving}
-          style={styles.saveButton}>
+          style={formStyles.saveButton}>
           {isEditing ? 'Update Vehicle' : 'Add Vehicle'}
         </Button>
 
-        <View style={styles.bottomPadding} />
+        <View style={formStyles.bottomPadding} />
       </ScrollView>
     </KeyboardAvoidingView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  scrollView: {
-    flex: 1,
-  },
-  content: {
-    padding: 16,
-  },
-  sectionTitle: {
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  input: {
-    marginBottom: 12,
-  },
-  row: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  halfInput: {
-    flex: 1,
-  },
   segmented: {
     marginBottom: 12,
-  },
-  saveButton: {
-    marginTop: 24,
-    paddingVertical: 6,
-  },
-  bottomPadding: {
-    height: 24,
   },
 });
 

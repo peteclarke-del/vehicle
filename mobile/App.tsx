@@ -3,8 +3,12 @@ import {NavigationContainer, DefaultTheme, DarkTheme} from '@react-navigation/na
 import {Provider as PaperProvider} from 'react-native-paper';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
 import {GestureHandlerRootView} from 'react-native-gesture-handler';
-import {StyleSheet, useColorScheme} from 'react-native';
+import {StyleSheet, useColorScheme, View, ActivityIndicator} from 'react-native';
+import {useTranslation} from 'react-i18next';
 
+import './src/i18n';
+import {ServerConfigProvider, useServerConfig} from './src/contexts/ServerConfigContext';
+import ServerConfigScreen from './src/screens/ServerConfigScreen';
 import {AuthProvider} from './src/contexts/AuthContext';
 import {UserPreferencesProvider, useUserPreferences} from './src/contexts/UserPreferencesContext';
 import {SyncProvider} from './src/contexts/SyncContext';
@@ -17,7 +21,15 @@ import {initializeNotifications, requestNotificationPermission} from './src/serv
 const AppContent = () => {
   const {preferences} = useUserPreferences();
   const systemColorScheme = useColorScheme();
+  const {i18n} = useTranslation();
   
+  // Sync i18n language with user preferences
+  useEffect(() => {
+    if (preferences.preferredLanguage && i18n.language !== preferences.preferredLanguage) {
+      i18n.changeLanguage(preferences.preferredLanguage);
+    }
+  }, [preferences.preferredLanguage, i18n]);
+
   // Determine which theme to use
   const isDark = 
     preferences.theme === 'dark' || 
@@ -39,6 +51,35 @@ const AppContent = () => {
   );
 };
 
+// Decides whether to show server config screen or the main app
+const AppWithConfig = () => {
+  const {isConfigured, loading: configLoading} = useServerConfig();
+
+  if (configLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
+
+  if (!isConfigured) {
+    return (
+      <PaperProvider theme={lightTheme}>
+        <ServerConfigScreen />
+      </PaperProvider>
+    );
+  }
+
+  return (
+    <AuthProvider>
+      <UserPreferencesProvider>
+        <AppContent />
+      </UserPreferencesProvider>
+    </AuthProvider>
+  );
+};
+
 const App = () => {
   useEffect(() => {
     const setupNotifications = async () => {
@@ -51,11 +92,9 @@ const App = () => {
   return (
     <GestureHandlerRootView style={styles.container}>
       <SafeAreaProvider>
-        <AuthProvider>
-          <UserPreferencesProvider>
-            <AppContent />
-          </UserPreferencesProvider>
-        </AuthProvider>
+        <ServerConfigProvider>
+          <AppWithConfig />
+        </ServerConfigProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
@@ -64,6 +103,11 @@ const App = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
 

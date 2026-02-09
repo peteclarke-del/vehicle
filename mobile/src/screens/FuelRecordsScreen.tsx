@@ -10,20 +10,22 @@ import {
   Card,
   FAB,
   useTheme,
-  ActivityIndicator,
   Chip,
 } from 'react-native-paper';
 import {useNavigation} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useAuth} from '../contexts/AuthContext';
 import {useSync} from '../contexts/SyncContext';
 import {useUserPreferences} from '../contexts/UserPreferencesContext';
 import {useVehicleSelection} from '../contexts/VehicleSelectionContext';
-import {formatCurrency, formatDate, formatMileage} from '../utils/formatters';
+import {formatCurrency, formatDate, formatMileage, getVehicleLabel} from '../utils/formatters';
 import {MainStackParamList} from '../navigation/MainNavigator';
 import VehicleSelector from '../components/VehicleSelector';
+import OfflineBanner from '../components/OfflineBanner';
+import LoadingScreen from '../components/LoadingScreen';
+import EmptyState from '../components/EmptyState';
+import {listStyles} from '../theme/sharedStyles';
 
 type NavigationProp = NativeStackNavigationProp<MainStackParamList>;
 
@@ -57,15 +59,13 @@ const FuelRecordsScreen: React.FC = () => {
   
   const [records, setRecords] = useState<FuelRecord[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const selectedVehicleId = globalVehicleId;
-  const setSelectedVehicleId = setGlobalVehicleId;
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const loadData = useCallback(async () => {
     try {
       // Try to load from cache first for instant display
-      const cacheKey = `cache_fuel_${selectedVehicleId}`;
+      const cacheKey = `cache_fuel_${globalVehicleId}`;
       try {
         const cached = await AsyncStorage.getItem(cacheKey);
         if (cached) {
@@ -79,7 +79,7 @@ const FuelRecordsScreen: React.FC = () => {
       const [vehiclesRes, recordsRes] = await Promise.all([
         api.get('/vehicles'),
         api.get('/fuel-records', {
-          params: selectedVehicleId !== 'all' ? {vehicleId: selectedVehicleId} : {},
+          params: globalVehicleId !== 'all' ? {vehicleId: globalVehicleId} : {},
         }),
       ]);
       
@@ -95,7 +95,7 @@ const FuelRecordsScreen: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [api, selectedVehicleId]);
+  }, [api, globalVehicleId]);
 
   useEffect(() => {
     loadData();
@@ -106,11 +106,6 @@ const FuelRecordsScreen: React.FC = () => {
     await loadData();
     setRefreshing(false);
   }, [loadData]);
-
-  const getVehicleLabel = (vehicleId: number) => {
-    const vehicle = vehicles.find(v => v.id === vehicleId);
-    return vehicle?.name || vehicle?.registration || 'Unknown';
-  };
 
   const userUnit = preferences.distanceUnit === 'km' ? 'km' : 'mi' as const;
 
@@ -123,7 +118,7 @@ const FuelRecordsScreen: React.FC = () => {
           <View>
             <Text variant="titleMedium">{formatDate(item.date)}</Text>
             <Text variant="bodySmall" style={{color: theme.colors.onSurfaceVariant}}>
-              {getVehicleLabel(item.vehicleId)}
+              {getVehicleLabel(item.vehicleId, vehicles)}
             </Text>
           </View>
           <Text variant="titleLarge" style={{color: theme.colors.primary}}>
@@ -158,25 +153,16 @@ const FuelRecordsScreen: React.FC = () => {
   );
 
   if (loading) {
-    return (
-      <View style={[styles.loadingContainer, {backgroundColor: theme.colors.background}]}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-      </View>
-    );
+    return <LoadingScreen />;
   }
 
   return (
-    <View style={[styles.container, {backgroundColor: theme.colors.background}]}>
-      {!isOnline && (
-        <View style={{backgroundColor: theme.colors.errorContainer, padding: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'center'}}>
-          <Icon name="cloud-off-outline" size={16} color={theme.colors.onErrorContainer} />
-          <Text style={{color: theme.colors.onErrorContainer, marginLeft: 6, fontSize: 13}}>Offline — showing cached data</Text>
-        </View>
-      )}
+    <View style={[listStyles.container, {backgroundColor: theme.colors.background}]}>
+      {!isOnline && <OfflineBanner />}
       <VehicleSelector
         vehicles={vehicles}
-        selectedVehicleId={selectedVehicleId}
-        onSelect={setSelectedVehicleId}
+        selectedVehicleId={globalVehicleId}
+        onSelect={setGlobalVehicleId}
         includeAll
       />
 
@@ -184,25 +170,20 @@ const FuelRecordsScreen: React.FC = () => {
         data={records}
         renderItem={renderRecord}
         keyExtractor={item => item.id.toString()}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={listStyles.listContent}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
         ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Icon name="gas-station-off" size={64} color={theme.colors.onSurfaceVariant} />
-            <Text variant="bodyLarge" style={[styles.emptyText, {color: theme.colors.onSurfaceVariant}]}>
-              No fuel records found
-            </Text>
-          </View>
+          <EmptyState icon="gas-station-off" message="No fuel records found" />
         }
       />
 
       <FAB
         icon="plus"
-        style={[styles.fab, {backgroundColor: theme.colors.primary}]}
+        style={[listStyles.fab, {backgroundColor: theme.colors.primary}]}
         onPress={() => navigation.navigate('FuelRecordForm', {
-          vehicleId: selectedVehicleId !== 'all' ? selectedVehicleId : vehicles[0]?.id,
+          vehicleId: globalVehicleId !== 'all' ? globalVehicleId : vehicles[0]?.id,
         })}
         color={theme.colors.onPrimary}
       />
@@ -211,17 +192,6 @@ const FuelRecordsScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  listContent: {
-    padding: 16,
-  },
   recordCard: {
     marginBottom: 12,
   },
@@ -238,19 +208,6 @@ const styles = StyleSheet.create({
   },
   chip: {
     marginRight: 4,
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 64,
-  },
-  emptyText: {
-    marginTop: 16,
-  },
-  fab: {
-    position: 'absolute',
-    right: 16,
-    bottom: 16,
   },
 });
 

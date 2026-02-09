@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  promo-site:
+    build:
+      context: .
+      dockerfile: docker/web/Dockerfile
+    container_name: vehicle-promo-site
+    ports:
+      - "8083:80"
+    restart: unless-stopped

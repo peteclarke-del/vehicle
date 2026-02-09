@@ -11,7 +11,6 @@ import {
   TextInput,
   Button,
   useTheme,
-  ActivityIndicator,
   Text,
 } from 'react-native-paper';
 import {useNavigation, useRoute, RouteProp} from '@react-navigation/native';
@@ -20,6 +19,8 @@ import {useAuth} from '../contexts/AuthContext';
 import {useSync} from '../contexts/SyncContext';
 import {MainStackParamList} from '../navigation/MainNavigator';
 import VehicleSelector from '../components/VehicleSelector';
+import LoadingScreen from '../components/LoadingScreen';
+import {formStyles} from '../theme/sharedStyles';
 
 type NavigationProp = NativeStackNavigationProp<MainStackParamList>;
 type RouteProps = RouteProp<MainStackParamList, 'PartForm'>;
@@ -195,46 +196,42 @@ const PartFormScreen: React.FC = () => {
   };
 
   if (loading) {
-    return (
-      <View style={[styles.loadingContainer, {backgroundColor: theme.colors.background}]}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-      </View>
-    );
+    return <LoadingScreen />;
   }
 
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}>
+      style={formStyles.container}>
       <ScrollView
-        style={[styles.scrollView, {backgroundColor: theme.colors.background}]}
-        contentContainerStyle={styles.content}
+        style={[formStyles.scrollView, {backgroundColor: theme.colors.background}]}
+        contentContainerStyle={formStyles.content}
         keyboardShouldPersistTaps="handled">
         
-        <Text variant="titleMedium" style={styles.sectionTitle}>Part Details</Text>
+        <Text variant="titleMedium" style={formStyles.sectionTitle}>Part Details</Text>
 
         <TextInput
           label="Part Name *"
           value={formData.name}
           onChangeText={v => updateField('name', v)}
           mode="outlined"
-          style={styles.input}
+          style={formStyles.input}
         />
 
-        <View style={styles.row}>
+        <View style={formStyles.row}>
           <TextInput
             label="Part Number"
             value={formData.partNumber}
             onChangeText={v => updateField('partNumber', v)}
             mode="outlined"
-            style={[styles.input, styles.halfInput]}
+            style={[formStyles.input, formStyles.halfInput]}
           />
           <TextInput
             label="Manufacturer"
             value={formData.manufacturer}
             onChangeText={v => updateField('manufacturer', v)}
             mode="outlined"
-            style={[styles.input, styles.halfInput]}
+            style={[formStyles.input, formStyles.halfInput]}
           />
         </View>
 
@@ -243,7 +240,7 @@ const PartFormScreen: React.FC = () => {
           value={formData.category}
           onChangeText={v => updateField('category', v)}
           mode="outlined"
-          style={styles.input}
+          style={formStyles.input}
         />
 
         <View style={styles.categoryChips}>
@@ -261,16 +258,16 @@ const PartFormScreen: React.FC = () => {
           </ScrollView>
         </View>
 
-        <Text variant="titleMedium" style={styles.sectionTitle}>Inventory</Text>
+        <Text variant="titleMedium" style={formStyles.sectionTitle}>Inventory</Text>
 
-        <View style={styles.row}>
+        <View style={formStyles.row}>
           <TextInput
             label="Quantity"
             value={formData.quantity}
             onChangeText={v => updateField('quantity', v)}
             mode="outlined"
             keyboardType="numeric"
-            style={[styles.input, styles.halfInput]}
+            style={[formStyles.input, formStyles.halfInput]}
           />
           <TextInput
             label="Cost (£)"
@@ -278,7 +275,7 @@ const PartFormScreen: React.FC = () => {
             onChangeText={v => updateField('cost', v)}
             mode="outlined"
             keyboardType="decimal-pad"
-            style={[styles.input, styles.halfInput]}
+            style={[formStyles.input, formStyles.halfInput]}
           />
         </View>
 
@@ -287,17 +284,17 @@ const PartFormScreen: React.FC = () => {
           value={formData.location}
           onChangeText={v => updateField('location', v)}
           mode="outlined"
-          style={styles.input}
+          style={formStyles.input}
         />
 
-        <Text variant="titleMedium" style={styles.sectionTitle}>Purchase Info</Text>
+        <Text variant="titleMedium" style={formStyles.sectionTitle}>Purchase Info</Text>
 
         <TextInput
           label="Supplier"
           value={formData.supplier}
           onChangeText={v => updateField('supplier', v)}
           mode="outlined"
-          style={styles.input}
+          style={formStyles.input}
         />
 
         <TextInput
@@ -306,10 +303,10 @@ const PartFormScreen: React.FC = () => {
           onChangeText={v => updateField('purchaseDate', v)}
           mode="outlined"
           placeholder="YYYY-MM-DD"
-          style={styles.input}
+          style={formStyles.input}
         />
 
-        <Text variant="titleMedium" style={styles.sectionTitle}>Vehicle Assignment</Text>
+        <Text variant="titleMedium" style={formStyles.sectionTitle}>Vehicle Assignment</Text>
 
         <VehicleSelector
           vehicles={vehicles}
@@ -319,7 +316,7 @@ const PartFormScreen: React.FC = () => {
           allLabel="General (No specific vehicle)"
         />
 
-        <Text variant="titleMedium" style={styles.sectionTitle}>Notes</Text>
+        <Text variant="titleMedium" style={formStyles.sectionTitle}>Notes</Text>
 
         <TextInput
           label="Notes"
@@ -328,7 +325,7 @@ const PartFormScreen: React.FC = () => {
           mode="outlined"
           multiline
           numberOfLines={3}
-          style={styles.input}
+          style={formStyles.input}
         />
 
         <Button
@@ -336,7 +333,7 @@ const PartFormScreen: React.FC = () => {
           onPress={handleSave}
           loading={saving}
           disabled={saving}
-          style={styles.saveButton}>
+          style={formStyles.saveButton}>
           {isEditing ? 'Update Part' : 'Add Part'}
         </Button>
 
@@ -345,62 +342,24 @@ const PartFormScreen: React.FC = () => {
             mode="outlined"
             onPress={handleDelete}
             textColor={theme.colors.error}
-            style={styles.deleteButton}>
+            style={formStyles.deleteButton}>
             Delete Part
           </Button>
         )}
 
-        <View style={styles.bottomPadding} />
+        <View style={formStyles.bottomPadding} />
       </ScrollView>
     </KeyboardAvoidingView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  scrollView: {
-    flex: 1,
-  },
-  content: {
-    padding: 16,
-  },
-  input: {
-    marginBottom: 12,
-  },
-  row: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  halfInput: {
-    flex: 1,
-  },
-  sectionTitle: {
-    marginTop: 16,
-    marginBottom: 12,
-  },
   categoryChips: {
     marginBottom: 8,
     marginTop: -4,
   },
   categoryButton: {
     marginRight: 8,
-  },
-  saveButton: {
-    marginTop: 24,
-    paddingVertical: 6,
-  },
-  deleteButton: {
-    marginTop: 12,
-  },
-  bottomPadding: {
-    height: 24,
   },
 });
 

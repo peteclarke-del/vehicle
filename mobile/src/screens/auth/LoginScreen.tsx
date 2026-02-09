@@ -16,6 +16,7 @@ import {
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {useAuth} from '../../contexts/AuthContext';
+import {useServerConfig} from '../../contexts/ServerConfigContext';
 import {AuthStackParamList} from '../../navigation/AuthNavigator';
 
 type LoginScreenNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'Login'>;
@@ -27,6 +28,7 @@ interface Props {
 const LoginScreen: React.FC<Props> = ({navigation}) => {
   const theme = useTheme();
   const {login} = useAuth();
+  const {resetConfig} = useServerConfig();
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -119,6 +121,14 @@ const LoginScreen: React.FC<Props> = ({navigation}) => {
               onPress={() => navigation.navigate('Register')}
               style={styles.linkButton}>
               Don't have an account? Sign up
+            </Button>
+
+            <Button
+              mode="text"
+              onPress={resetConfig}
+              icon="server"
+              style={styles.linkButton}>
+              Server Settings
             </Button>
           </View>
         </ScrollView>

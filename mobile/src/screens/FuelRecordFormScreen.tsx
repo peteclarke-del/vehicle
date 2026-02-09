@@ -1,7 +1,6 @@
 import React, {useState, useEffect} from 'react';
 import {
   View,
-  StyleSheet,
   ScrollView,
   Alert,
   KeyboardAvoidingView,
@@ -12,7 +11,6 @@ import {
   TextInput,
   Button,
   useTheme,
-  ActivityIndicator,
   Switch,
   Text,
   IconButton,
@@ -20,11 +18,13 @@ import {
 } from 'react-native-paper';
 import {useNavigation, useRoute, RouteProp} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
-import {launchCamera, launchImageLibrary} from 'react-native-image-picker';
 import {useAuth} from '../contexts/AuthContext';
 import {useSync} from '../contexts/SyncContext';
 import {MainStackParamList} from '../navigation/MainNavigator';
 import VehicleSelector from '../components/VehicleSelector';
+import LoadingScreen from '../components/LoadingScreen';
+import {useReceiptPhoto} from '../hooks/useReceiptPhoto';
+import {formStyles, receiptStyles} from '../theme/sharedStyles';
 
 type NavigationProp = NativeStackNavigationProp<MainStackParamList>;
 type RouteProps = RouteProp<MainStackParamList, 'FuelRecordForm'>;
@@ -71,8 +71,15 @@ const FuelRecordFormScreen: React.FC = () => {
   const [vehicles, setVehicles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [receiptUri, setReceiptUri] = useState<string | null>(null);
-  const [receiptAttachmentId, setReceiptAttachmentId] = useState<number | null>(null);
+
+  const {
+    receiptUri,
+    receiptAttachmentId,
+    handleTakePhoto,
+    handleChooseFromGallery,
+    clearReceipt,
+    setReceiptAttachmentId,
+  } = useReceiptPhoto({api, isOnline, vehicleId: formData.vehicleId});
 
   useEffect(() => {
     loadData();
@@ -108,72 +115,6 @@ const FuelRecordFormScreen: React.FC = () => {
       Alert.alert('Error', 'Failed to load data');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleTakePhoto = async () => {
-    try {
-      const result = await launchCamera({
-        mediaType: 'photo',
-        quality: 0.8,
-        saveToPhotos: false,
-      });
-
-      if (result.assets && result.assets[0]?.uri) {
-        setReceiptUri(result.assets[0].uri);
-        await uploadReceipt(result.assets[0]);
-      }
-    } catch (error) {
-      console.error('Camera error:', error);
-      Alert.alert('Error', 'Failed to take photo');
-    }
-  };
-
-  const handleChooseFromGallery = async () => {
-    try {
-      const result = await launchImageLibrary({
-        mediaType: 'photo',
-        quality: 0.8,
-      });
-
-      if (result.assets && result.assets[0]?.uri) {
-        setReceiptUri(result.assets[0].uri);
-        await uploadReceipt(result.assets[0]);
-      }
-    } catch (error) {
-      console.error('Gallery error:', error);
-      Alert.alert('Error', 'Failed to select image');
-    }
-  };
-
-  const uploadReceipt = async (asset: any) => {
-    if (!isOnline) {
-      Alert.alert('Offline', 'Receipt will be uploaded when online');
-      return;
-    }
-
-    try {
-      const formDataUpload = new FormData();
-      formDataUpload.append('file', {
-        uri: asset.uri,
-        type: asset.type || 'image/jpeg',
-        name: asset.fileName || 'receipt.jpg',
-      } as any);
-
-      if (formData.vehicleId) {
-        formDataUpload.append('vehicleId', formData.vehicleId.toString());
-      }
-
-      const response = await api.post('/attachments', formDataUpload, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-
-      setReceiptAttachmentId(response.data.id);
-    } catch (error) {
-      console.error('Upload error:', error);
-      Alert.alert('Error', 'Failed to upload receipt');
     }
   };
 
@@ -254,20 +195,16 @@ const FuelRecordFormScreen: React.FC = () => {
   };
 
   if (loading) {
-    return (
-      <View style={[styles.loadingContainer, {backgroundColor: theme.colors.background}]}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-      </View>
-    );
+    return <LoadingScreen />;
   }
 
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}>
+      style={formStyles.container}>
       <ScrollView
-        style={[styles.scrollView, {backgroundColor: theme.colors.background}]}
-        contentContainerStyle={styles.content}
+        style={[formStyles.scrollView, {backgroundColor: theme.colors.background}]}
+        contentContainerStyle={formStyles.content}
         keyboardShouldPersistTaps="handled">
         
         <VehicleSelector
@@ -282,17 +219,17 @@ const FuelRecordFormScreen: React.FC = () => {
           onChangeText={v => updateField('date', v)}
           mode="outlined"
           placeholder="YYYY-MM-DD"
-          style={styles.input}
+          style={formStyles.input}
         />
 
-        <View style={styles.row}>
+        <View style={formStyles.row}>
           <TextInput
             label="Cost (£)"
             value={formData.cost}
             onChangeText={v => updateField('cost', v)}
             mode="outlined"
             keyboardType="decimal-pad"
-            style={[styles.input, styles.halfInput]}
+            style={[formStyles.input, formStyles.halfInput]}
           />
           <TextInput
             label="Litres"
@@ -300,7 +237,7 @@ const FuelRecordFormScreen: React.FC = () => {
             onChangeText={v => updateField('litres', v)}
             mode="outlined"
             keyboardType="decimal-pad"
-            style={[styles.input, styles.halfInput]}
+            style={[formStyles.input, formStyles.halfInput]}
           />
         </View>
 
@@ -310,27 +247,27 @@ const FuelRecordFormScreen: React.FC = () => {
           onChangeText={v => updateField('mileage', v)}
           mode="outlined"
           keyboardType="numeric"
-          style={styles.input}
+          style={formStyles.input}
         />
 
-        <View style={styles.row}>
+        <View style={formStyles.row}>
           <TextInput
             label="Station"
             value={formData.station}
             onChangeText={v => updateField('station', v)}
             mode="outlined"
-            style={[styles.input, styles.halfInput]}
+            style={[formStyles.input, formStyles.halfInput]}
           />
           <TextInput
             label="Fuel Type"
             value={formData.fuelType}
             onChangeText={v => updateField('fuelType', v)}
             mode="outlined"
-            style={[styles.input, styles.halfInput]}
+            style={[formStyles.input, formStyles.halfInput]}
           />
         </View>
 
-        <View style={styles.switchRow}>
+        <View style={formStyles.switchRow}>
           <Text>Full Tank</Text>
           <Switch
             value={formData.fullTank}
@@ -345,45 +282,42 @@ const FuelRecordFormScreen: React.FC = () => {
           mode="outlined"
           multiline
           numberOfLines={3}
-          style={styles.input}
+          style={formStyles.input}
         />
 
         {/* Receipt Section */}
-        <Text variant="titleMedium" style={styles.sectionTitle}>Receipt</Text>
+        <Text variant="titleMedium" style={formStyles.sectionTitle}>Receipt</Text>
         
-        <View style={styles.receiptButtons}>
+        <View style={receiptStyles.receiptButtons}>
           <Button
             mode="outlined"
             icon="camera"
             onPress={handleTakePhoto}
-            style={styles.receiptButton}>
+            style={receiptStyles.receiptButton}>
             Take Photo
           </Button>
           <Button
             mode="outlined"
             icon="image"
             onPress={handleChooseFromGallery}
-            style={styles.receiptButton}>
+            style={receiptStyles.receiptButton}>
             Gallery
           </Button>
         </View>
 
         {receiptUri && (
-          <Card style={styles.receiptPreview}>
+          <Card style={receiptStyles.receiptPreview}>
             <Card.Content>
-              <View style={styles.receiptImageContainer}>
+              <View style={receiptStyles.receiptImageContainer}>
                 <Image
                   source={{uri: receiptUri}}
-                  style={styles.receiptImage}
+                  style={receiptStyles.receiptImage}
                   resizeMode="contain"
                 />
                 <IconButton
                   icon="close"
-                  style={styles.removeReceiptButton}
-                  onPress={() => {
-                    setReceiptUri(null);
-                    setReceiptAttachmentId(null);
-                  }}
+                  style={receiptStyles.removeReceiptButton}
+                  onPress={clearReceipt}
                 />
               </View>
             </Card.Content>
@@ -395,7 +329,7 @@ const FuelRecordFormScreen: React.FC = () => {
           onPress={handleSave}
           loading={saving}
           disabled={saving}
-          style={styles.saveButton}>
+          style={formStyles.saveButton}>
           {isEditing ? 'Update Record' : 'Add Record'}
         </Button>
 
@@ -404,88 +338,15 @@ const FuelRecordFormScreen: React.FC = () => {
             mode="outlined"
             onPress={handleDelete}
             textColor={theme.colors.error}
-            style={styles.deleteButton}>
+            style={formStyles.deleteButton}>
             Delete Record
           </Button>
         )}
 
-        <View style={styles.bottomPadding} />
+        <View style={formStyles.bottomPadding} />
       </ScrollView>
     </KeyboardAvoidingView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  scrollView: {
-    flex: 1,
-  },
-  content: {
-    padding: 16,
-  },
-  input: {
-    marginBottom: 12,
-  },
-  row: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  halfInput: {
-    flex: 1,
-  },
-  switchRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-    paddingHorizontal: 4,
-  },
-  sectionTitle: {
-    marginTop: 16,
-    marginBottom: 12,
-  },
-  receiptButtons: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 16,
-  },
-  receiptButton: {
-    flex: 1,
-  },
-  receiptPreview: {
-    marginBottom: 16,
-  },
-  receiptImageContainer: {
-    position: 'relative',
-  },
-  receiptImage: {
-    width: '100%',
-    height: 200,
-    borderRadius: 8,
-  },
-  removeReceiptButton: {
-    position: 'absolute',
-    top: -8,
-    right: -8,
-    backgroundColor: 'white',
-  },
-  saveButton: {
-    marginTop: 24,
-    paddingVertical: 6,
-  },
-  deleteButton: {
-    marginTop: 12,
-  },
-  bottomPadding: {
-    height: 24,
-  },
-});
 
 export default FuelRecordFormScreen;

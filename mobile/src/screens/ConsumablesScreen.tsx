@@ -10,10 +10,8 @@ import {
   Card,
   FAB,
   useTheme,
-  ActivityIndicator,
   Chip,
   Searchbar,
-  Banner,
 } from 'react-native-paper';
 import {useNavigation} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
@@ -23,10 +21,13 @@ import {useAuth} from '../contexts/AuthContext';
 import {useSync} from '../contexts/SyncContext';
 import {useUserPreferences} from '../contexts/UserPreferencesContext';
 import {useVehicleSelection} from '../contexts/VehicleSelectionContext';
-import {formatCurrency, formatDate, formatMileage} from '../utils/formatters';
+import {formatCurrency, formatDate, formatMileage, getVehicleLabel} from '../utils/formatters';
 import {MainStackParamList} from '../navigation/MainNavigator';
 import VehicleSelector from '../components/VehicleSelector';
-import {useOfflineData} from '../hooks/useOfflineData';
+import OfflineBanner from '../components/OfflineBanner';
+import LoadingScreen from '../components/LoadingScreen';
+import EmptyState from '../components/EmptyState';
+import {listStyles} from '../theme/sharedStyles';
 
 type NavigationProp = NativeStackNavigationProp<MainStackParamList>;
 
@@ -70,8 +71,6 @@ const ConsumablesScreen: React.FC = () => {
   const [consumables, setConsumables] = useState<Consumable[]>([]);
   const [filteredConsumables, setFilteredConsumables] = useState<Consumable[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const selectedVehicleId = globalVehicleId;
-  const setSelectedVehicleId = setGlobalVehicleId;
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -79,7 +78,7 @@ const ConsumablesScreen: React.FC = () => {
   const loadData = useCallback(async () => {
     try {
       // Load from cache first
-      const cacheKey = `cache_consumables_${selectedVehicleId}`;
+      const cacheKey = `cache_consumables_${globalVehicleId}`;
       try {
         const cached = await AsyncStorage.getItem(cacheKey);
         if (cached) {
@@ -92,7 +91,7 @@ const ConsumablesScreen: React.FC = () => {
       const [vehiclesRes, consumablesRes] = await Promise.all([
         api.get('/vehicles'),
         api.get('/consumables', {
-          params: selectedVehicleId !== 'all' ? {vehicleId: selectedVehicleId} : {},
+          params: globalVehicleId !== 'all' ? {vehicleId: globalVehicleId} : {},
         }),
       ]);
 
@@ -110,7 +109,7 @@ const ConsumablesScreen: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [api, selectedVehicleId]);
+  }, [api, globalVehicleId]);
 
   useEffect(() => {
     loadData();
@@ -139,12 +138,6 @@ const ConsumablesScreen: React.FC = () => {
     setRefreshing(false);
   }, [loadData]);
 
-  const getVehicleLabel = (vehicleId: number | null) => {
-    if (!vehicleId) return 'General';
-    const vehicle = vehicles.find(v => v.id === vehicleId);
-    return vehicle?.name || vehicle?.registration || 'Unknown';
-  };
-
   const getTypeIcon = (typeName: string | null | undefined) => {
     const name = (typeName || '').toLowerCase();
     if (name.includes('oil')) return 'oil';
@@ -164,9 +157,6 @@ const ConsumablesScreen: React.FC = () => {
   const userUnit = preferences.distanceUnit === 'km' ? 'km' : 'mi' as const;
 
   const renderConsumable = ({item}: {item: Consumable}) => {
-    const needsReplacement = item.nextReplacementMileage && item.mileageAtChange;
-    const isOverdue = false; // Would need current vehicle mileage to determine
-
     return (
       <Card
         style={styles.card}
@@ -210,7 +200,7 @@ const ConsumablesScreen: React.FC = () => {
             )}
             {item.vehicleId && (
               <Chip icon="motorbike" compact style={styles.chip}>
-                {getVehicleLabel(item.vehicleId)}
+                {getVehicleLabel(item.vehicleId, vehicles)}
               </Chip>
             )}
             {item.supplier && (
@@ -240,34 +230,24 @@ const ConsumablesScreen: React.FC = () => {
   };
 
   if (loading) {
-    return (
-      <View style={[styles.loadingContainer, {backgroundColor: theme.colors.background}]}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-      </View>
-    );
+    return <LoadingScreen />;
   }
 
   return (
-    <View style={[styles.container, {backgroundColor: theme.colors.background}]}>
-      {!isOnline && (
-        <Banner visible icon="cloud-off-outline" style={{backgroundColor: theme.colors.errorContainer}}>
-          <Text style={{color: theme.colors.onErrorContainer}}>
-            You're offline. Showing cached data. Changes will sync when reconnected.
-          </Text>
-        </Banner>
-      )}
+    <View style={[listStyles.container, {backgroundColor: theme.colors.background}]}>
+      {!isOnline && <OfflineBanner />}
 
       <Searchbar
         placeholder="Search consumables..."
         onChangeText={setSearchQuery}
         value={searchQuery}
-        style={styles.searchbar}
+        style={listStyles.searchbar}
       />
 
       <VehicleSelector
         vehicles={vehicles}
-        selectedVehicleId={selectedVehicleId}
-        onSelect={setSelectedVehicleId}
+        selectedVehicleId={globalVehicleId}
+        onSelect={setGlobalVehicleId}
         includeAll
         allLabel="All Vehicles"
       />
@@ -281,23 +261,19 @@ const ConsumablesScreen: React.FC = () => {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
         ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Icon name="package-variant" size={64} color={theme.colors.onSurfaceVariant} />
-            <Text variant="bodyLarge" style={[styles.emptyText, {color: theme.colors.onSurfaceVariant}]}>
-              No consumables found
-            </Text>
-            <Text variant="bodySmall" style={{color: theme.colors.onSurfaceVariant, marginTop: 4}}>
-              Track oils, filters, brake pads, spark plugs and more
-            </Text>
-          </View>
+          <EmptyState
+            icon="package-variant"
+            message="No consumables found"
+            subtitle="Track oils, filters, brake pads, spark plugs and more"
+          />
         }
       />
 
       <FAB
         icon="plus"
-        style={[styles.fab, {backgroundColor: theme.colors.primary}]}
+        style={[listStyles.fab, {backgroundColor: theme.colors.primary}]}
         onPress={() => navigation.navigate('ConsumableForm', {
-          vehicleId: selectedVehicleId !== 'all' ? selectedVehicleId : undefined,
+          vehicleId: globalVehicleId !== 'all' ? globalVehicleId : undefined,
         })}
         color={theme.colors.onPrimary}
       />
@@ -306,18 +282,6 @@ const ConsumablesScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  searchbar: {
-    margin: 16,
-    marginBottom: 8,
-  },
   listContent: {
     padding: 16,
     paddingTop: 8,
@@ -357,19 +321,6 @@ const styles = StyleSheet.create({
   },
   chip: {
     marginRight: 4,
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 64,
-  },
-  emptyText: {
-    marginTop: 16,
-  },
-  fab: {
-    position: 'absolute',
-    right: 16,
-    bottom: 16,
   },
 });
 

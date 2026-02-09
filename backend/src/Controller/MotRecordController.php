@@ -68,6 +68,18 @@ class MotRecordController extends AbstractController
         return new JsonResponse($this->addTestCostBundledFlag($this->serializer->serializeMotRecord($motRecord), $motRecord), 201);
     }
 
+    #[Route('/mot-records/{id}', methods: ['GET'])]
+    public function show(int $id): JsonResponse
+    {
+        $motRecord = $this->entityManager->getRepository(MotRecord::class)->find($id);
+        $user = $this->getUserEntity();
+        if (!$motRecord || !$user || (!$this->isAdminForUser($user) && $motRecord->getVehicle()->getOwner()->getId() !== $user->getId())) {
+            return new JsonResponse(['error' => 'MOT record not found'], 404);
+        }
+
+        return new JsonResponse($this->addTestCostBundledFlag($this->serializer->serializeMotRecord($motRecord), $motRecord));
+    }
+
     #[Route('/mot-records/{id}', methods: ['PUT'])]
     public function update(int $id, Request $request): JsonResponse
     {

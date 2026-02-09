@@ -10,7 +10,6 @@ import {
   Card,
   FAB,
   useTheme,
-  ActivityIndicator,
   Searchbar,
   Chip,
   IconButton,
@@ -25,6 +24,10 @@ import {useUserPreferences} from '../contexts/UserPreferencesContext';
 import {useVehicleSelection} from '../contexts/VehicleSelectionContext';
 import {formatMileage} from '../utils/formatters';
 import {MainStackParamList} from '../navigation/MainNavigator';
+import OfflineBanner from '../components/OfflineBanner';
+import LoadingScreen from '../components/LoadingScreen';
+import EmptyState from '../components/EmptyState';
+import {listStyles} from '../theme/sharedStyles';
 
 type NavigationProp = NativeStackNavigationProp<MainStackParamList>;
 
@@ -180,26 +183,17 @@ const VehiclesScreen: React.FC = () => {
   );
 
   if (loading) {
-    return (
-      <View style={[styles.loadingContainer, {backgroundColor: theme.colors.background}]}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-      </View>
-    );
+    return <LoadingScreen />;
   }
 
   return (
-    <View style={[styles.container, {backgroundColor: theme.colors.background}]}>
-      {!isOnline && (
-        <View style={{backgroundColor: theme.colors.errorContainer, padding: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'center'}}>
-          <Icon name="cloud-off-outline" size={16} color={theme.colors.onErrorContainer} />
-          <Text style={{color: theme.colors.onErrorContainer, marginLeft: 6, fontSize: 13}}>Offline — showing cached data</Text>
-        </View>
-      )}
+    <View style={[listStyles.container, {backgroundColor: theme.colors.background}]}>
+      {!isOnline && <OfflineBanner />}
       <Searchbar
         placeholder="Search vehicles..."
         onChangeText={setSearchQuery}
         value={searchQuery}
-        style={styles.searchbar}
+        style={listStyles.searchbar}
       />
       
       <View style={styles.filterRow}>
@@ -218,23 +212,21 @@ const VehiclesScreen: React.FC = () => {
         data={filteredVehicles}
         renderItem={renderVehicle}
         keyExtractor={item => item.id.toString()}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={listStyles.listContent}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
         ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Icon name="car-off" size={64} color={theme.colors.onSurfaceVariant} />
-            <Text variant="bodyLarge" style={[styles.emptyText, {color: theme.colors.onSurfaceVariant}]}>
-              {searchQuery ? 'No vehicles match your search' : 'No vehicles found'}
-            </Text>
-          </View>
+          <EmptyState
+            icon="car-off"
+            message={searchQuery ? 'No vehicles match your search' : 'No vehicles found'}
+          />
         }
       />
 
       <FAB
         icon="plus"
-        style={[styles.fab, {backgroundColor: theme.colors.primary}]}
+        style={[listStyles.fab, {backgroundColor: theme.colors.primary}]}
         onPress={() => navigation.navigate('VehicleForm', {})}
         color={theme.colors.onPrimary}
       />
@@ -243,18 +235,6 @@ const VehiclesScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  searchbar: {
-    margin: 16,
-    marginBottom: 8,
-  },
   filterRow: {
     flexDirection: 'row',
     paddingHorizontal: 16,
@@ -263,10 +243,6 @@ const styles = StyleSheet.create({
   },
   filterChip: {
     marginRight: 4,
-  },
-  listContent: {
-    padding: 16,
-    paddingTop: 8,
   },
   vehicleCard: {
     marginBottom: 12,
@@ -283,19 +259,6 @@ const styles = StyleSheet.create({
   },
   infoText: {
     marginLeft: 4,
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 64,
-  },
-  emptyText: {
-    marginTop: 16,
-  },
-  fab: {
-    position: 'absolute',
-    right: 16,
-    bottom: 16,
   },
 });
 

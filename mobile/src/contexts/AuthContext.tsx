@@ -1,7 +1,9 @@
 import React, {createContext, useContext, useState, useEffect, useCallback, useRef, useMemo, ReactNode} from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios, {AxiosInstance} from 'axios';
+import axios from 'axios';
 import Config from '../config';
+import {useServerConfig} from './ServerConfigContext';
+import {createLocalApiAdapter} from '../services/LocalApiAdapter';
 
 interface User {
   id: number;
@@ -11,15 +13,23 @@ interface User {
   roles: string[];
 }
 
+export interface ApiClient {
+  get(url: string, config?: any): Promise<any>;
+  post(url: string, data?: any, config?: any): Promise<any>;
+  put(url: string, data?: any, config?: any): Promise<any>;
+  delete(url: string, config?: any): Promise<any>;
+}
+
 interface AuthContextType {
   user: User | null;
   token: string | null;
   loading: boolean;
   isAuthenticated: boolean;
+  isStandalone: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
-  api: AxiosInstance;
+  api: ApiClient;
 }
 
 interface RegisterData {
@@ -31,36 +41,38 @@ interface RegisterData {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const API_URL = Config.API_URL || 'http://10.0.2.2:8081/api';
+const LOCAL_USER: User = {id: 1, email: 'local@standalone', firstName: 'Local', lastName: 'User', roles: ['ROLE_USER']};
 
 interface AuthProviderProps {
   children: ReactNode;
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
+  const {mode, serverUrl, resetConfig} = useServerConfig();
+  const isStandalone = mode === 'standalone';
+  const apiUrl = serverUrl || Config.API_URL || 'http://10.0.2.2:8081/api';
+
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Use a ref to always have the latest token available for the interceptor.
-  // This eliminates race conditions where React state hasn't propagated yet.
   const tokenRef = useRef<string | null>(null);
 
-  // Single stable axios instance — never recreated
-  const api = useMemo<AxiosInstance>(() => {
+  const api = useMemo<ApiClient>(() => {
+    if (isStandalone) {
+      return createLocalApiAdapter();
+    }
+
     const instance = axios.create({
-      baseURL: API_URL,
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      baseURL: apiUrl,
+      headers: {'Content-Type': 'application/json'},
       timeout: 30000,
     });
 
-    // Interceptor reads token from ref, so it always uses the latest value
     instance.interceptors.request.use(
       config => {
         const currentToken = tokenRef.current;
-        if (currentToken) {
+        if (currentToken && config.headers) {
           config.headers.Authorization = `Bearer ${currentToken}`;
         }
         return config;
@@ -69,9 +81,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
     );
 
     return instance;
-  }, []);
+  }, [isStandalone, apiUrl]);
 
-  // Helper: update token in both ref (immediate) and state (triggers re-render)
   const updateAuth = useCallback((newToken: string | null, userData: User | null) => {
     tokenRef.current = newToken;
     setToken(newToken);
@@ -80,23 +91,29 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 
   // Load and verify stored auth data on mount
   useEffect(() => {
+    if (isStandalone) {
+      // Standalone mode: auto-authenticate with local user
+      tokenRef.current = 'standalone-token';
+      setToken('standalone-token');
+      setUser(LOCAL_USER);
+      setLoading(false);
+      return;
+    }
+
     const loadStoredAuth = async () => {
       try {
         const storedToken = await AsyncStorage.getItem('authToken');
 
         if (storedToken) {
-          // Set token in ref immediately so the api instance can use it
           tokenRef.current = storedToken;
 
           try {
-            // Verify the stored token is still valid
             const response = await api.get('/me');
             const userData = response.data;
             setToken(storedToken);
             setUser(userData);
             await AsyncStorage.setItem('authUser', JSON.stringify(userData));
           } catch (verifyError) {
-            // Token expired or invalid — clear
             console.warn('Stored token invalid, clearing auth');
             tokenRef.current = null;
             await AsyncStorage.removeItem('authToken');
@@ -111,11 +128,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
     };
 
     loadStoredAuth();
-  }, [api, updateAuth]);
+  }, [isStandalone, api, updateAuth]);
 
   const login = useCallback(async (emailAddress: string, password: string) => {
+    if (isStandalone) {
+      tokenRef.current = 'standalone-token';
+      setToken('standalone-token');
+      setUser(LOCAL_USER);
+      return;
+    }
+
     try {
-      const response = await axios.post(`${API_URL}/login`, {
+      const response = await axios.post(`${apiUrl}/login`, {
         email: emailAddress,
         password,
       });
@@ -126,26 +150,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
         throw new Error('No token received from server');
       }
 
-      // Set token in ref FIRST so subsequent api calls are authenticated
       tokenRef.current = newToken;
 
-      // Fetch user profile using the now-authenticated api instance
       const userResponse = await api.get('/me');
       const userData = userResponse.data;
 
       await AsyncStorage.setItem('authToken', newToken);
       await AsyncStorage.setItem('authUser', JSON.stringify(userData));
 
-      // Update state to trigger re-render (isAuthenticated becomes true)
       setToken(newToken);
       setUser(userData);
     } catch (error: any) {
-      // If login failed, clear the ref
       tokenRef.current = null;
       const message = error.response?.data?.detail || error.response?.data?.message || 'Login failed';
       throw new Error(message);
     }
-  }, [api]);
+  }, [isStandalone, api, apiUrl]);
 
   const logout = useCallback(async () => {
     tokenRef.current = null;
@@ -161,13 +181,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
     } catch (e) {
       // Non-critical
     }
+
+    if (isStandalone) {
+      // Return to server config screen
+      resetConfig();
+      return;
+    }
+
     setToken(null);
     setUser(null);
-  }, []);
+  }, [isStandalone, resetConfig]);
 
   const register = useCallback(async (data: RegisterData) => {
+    if (isStandalone) {
+      tokenRef.current = 'standalone-token';
+      setToken('standalone-token');
+      setUser(LOCAL_USER);
+      return;
+    }
+
     try {
-      const response = await axios.post(`${API_URL}/register`, data);
+      const response = await axios.post(`${apiUrl}/register`, data);
       const {token: newToken, user: userData} = response.data;
 
       if (newToken) {
@@ -181,13 +215,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
       const message = error.response?.data?.error || 'Registration failed';
       throw new Error(message);
     }
-  }, []);
+  }, [isStandalone, apiUrl]);
 
   const value: AuthContextType = {
     user,
     token,
     loading,
     isAuthenticated: !!token && !!user,
+    isStandalone,
     login,
     logout,
     register,

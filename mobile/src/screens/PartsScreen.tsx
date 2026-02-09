@@ -10,7 +10,6 @@ import {
   Card,
   FAB,
   useTheme,
-  ActivityIndicator,
   Chip,
   Searchbar,
 } from 'react-native-paper';
@@ -22,9 +21,13 @@ import {useAuth} from '../contexts/AuthContext';
 import {useSync} from '../contexts/SyncContext';
 import {useUserPreferences} from '../contexts/UserPreferencesContext';
 import {useVehicleSelection} from '../contexts/VehicleSelectionContext';
-import {formatCurrency} from '../utils/formatters';
+import {formatCurrency, getVehicleLabel} from '../utils/formatters';
 import {MainStackParamList} from '../navigation/MainNavigator';
 import VehicleSelector from '../components/VehicleSelector';
+import OfflineBanner from '../components/OfflineBanner';
+import LoadingScreen from '../components/LoadingScreen';
+import EmptyState from '../components/EmptyState';
+import {listStyles} from '../theme/sharedStyles';
 
 type NavigationProp = NativeStackNavigationProp<MainStackParamList>;
 
@@ -63,8 +66,6 @@ const PartsScreen: React.FC = () => {
   const [parts, setParts] = useState<Part[]>([]);
   const [filteredParts, setFilteredParts] = useState<Part[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const selectedVehicleId = globalVehicleId;
-  const setSelectedVehicleId = setGlobalVehicleId;
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -72,7 +73,7 @@ const PartsScreen: React.FC = () => {
   const loadData = useCallback(async () => {
     try {
       // Load from cache first
-      const cacheKey = `cache_parts_${selectedVehicleId}`;
+      const cacheKey = `cache_parts_${globalVehicleId}`;
       try {
         const cached = await AsyncStorage.getItem(cacheKey);
         if (cached) {
@@ -85,7 +86,7 @@ const PartsScreen: React.FC = () => {
       const [vehiclesRes, partsRes] = await Promise.all([
         api.get('/vehicles'),
         api.get('/parts', {
-          params: selectedVehicleId !== 'all' ? {vehicleId: selectedVehicleId} : {},
+          params: globalVehicleId !== 'all' ? {vehicleId: globalVehicleId} : {},
         }),
       ]);
       
@@ -101,7 +102,7 @@ const PartsScreen: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [api, selectedVehicleId]);
+  }, [api, globalVehicleId]);
 
   useEffect(() => {
     loadData();
@@ -128,12 +129,6 @@ const PartsScreen: React.FC = () => {
     await loadData();
     setRefreshing(false);
   }, [loadData]);
-
-  const getVehicleLabel = (vehicleId: number | null) => {
-    if (!vehicleId) return 'General';
-    const vehicle = vehicles.find(v => v.id === vehicleId);
-    return vehicle?.name || vehicle?.registration || 'Unknown';
-  };
 
   const getCategoryIcon = (category: string | null | undefined) => {
     const cat = (category || '').toLowerCase();
@@ -197,7 +192,7 @@ const PartsScreen: React.FC = () => {
           )}
           {item.vehicleId && (
             <Chip icon="car" compact style={styles.chip}>
-              {getVehicleLabel(item.vehicleId)}
+              {getVehicleLabel(item.vehicleId, vehicles)}
             </Chip>
           )}
           {item.supplier && (
@@ -211,32 +206,23 @@ const PartsScreen: React.FC = () => {
   );
 
   if (loading) {
-    return (
-      <View style={[styles.loadingContainer, {backgroundColor: theme.colors.background}]}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-      </View>
-    );
+    return <LoadingScreen />;
   }
 
   return (
-    <View style={[styles.container, {backgroundColor: theme.colors.background}]}>
-      {!isOnline && (
-        <View style={{backgroundColor: theme.colors.errorContainer, padding: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'center'}}>
-          <Icon name="cloud-off-outline" size={16} color={theme.colors.onErrorContainer} />
-          <Text style={{color: theme.colors.onErrorContainer, marginLeft: 6, fontSize: 13}}>Offline — showing cached data</Text>
-        </View>
-      )}
+    <View style={[listStyles.container, {backgroundColor: theme.colors.background}]}>
+      {!isOnline && <OfflineBanner />}
       <Searchbar
         placeholder="Search parts..."
         onChangeText={setSearchQuery}
         value={searchQuery}
-        style={styles.searchbar}
+        style={listStyles.searchbar}
       />
 
       <VehicleSelector
         vehicles={vehicles}
-        selectedVehicleId={selectedVehicleId}
-        onSelect={setSelectedVehicleId}
+        selectedVehicleId={globalVehicleId}
+        onSelect={setGlobalVehicleId}
         includeAll
         allLabel="All Vehicles"
       />
@@ -245,25 +231,20 @@ const PartsScreen: React.FC = () => {
         data={filteredParts}
         renderItem={renderPart}
         keyExtractor={item => item.id.toString()}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={styles.listContentPadded}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
         ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Icon name="package-variant" size={64} color={theme.colors.onSurfaceVariant} />
-            <Text variant="bodyLarge" style={[styles.emptyText, {color: theme.colors.onSurfaceVariant}]}>
-              No parts found
-            </Text>
-          </View>
+          <EmptyState icon="package-variant" message="No parts found" />
         }
       />
 
       <FAB
         icon="plus"
-        style={[styles.fab, {backgroundColor: theme.colors.primary}]}
+        style={[listStyles.fab, {backgroundColor: theme.colors.primary}]}
         onPress={() => navigation.navigate('PartForm', {
-          vehicleId: selectedVehicleId !== 'all' ? selectedVehicleId : undefined,
+          vehicleId: globalVehicleId !== 'all' ? globalVehicleId : undefined,
         })}
         color={theme.colors.onPrimary}
       />
@@ -272,19 +253,7 @@ const PartsScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  searchbar: {
-    margin: 16,
-    marginBottom: 8,
-  },
-  listContent: {
+  listContentPadded: {
     padding: 16,
     paddingTop: 8,
   },
@@ -329,19 +298,6 @@ const styles = StyleSheet.create({
   },
   chip: {
     marginRight: 4,
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 64,
-  },
-  emptyText: {
-    marginTop: 16,
-  },
-  fab: {
-    position: 'absolute',
-    right: 16,
-    bottom: 16,
   },
 });
 
