@@ -1,0 +1,475 @@
+# =============================================================================
+# Vehicle Management System - Portainer Stack Deployment
+# =============================================================================
+#
+# Copy and paste this entire file into Portainer > Stacks > Add Stack > Web Editor
+#
+# BEFORE DEPLOYING:
+#   1. Fill in ALL environment variables below (or use Portainer's "Environment variables" section)
+#   2. Pre-build and push the Docker images to a registry (see instructions at bottom)
+#   3. Create the required external volumes and network (if using external DB)
+#
+# IMAGE BUILD COMMANDS (run on your build machine):
+#   docker build -t your-registry/vehicle-php:latest -f docker/php/Dockerfile docker/php/
+#   docker build -t your-registry/vehicle-nginx:latest -f docker/nginx/Dockerfile docker/nginx/
+#   docker build -t your-registry/vehicle-frontend:latest --target production -f docker/node/Dockerfile frontend/
+#   docker push your-registry/vehicle-php:latest
+#   docker push your-registry/vehicle-nginx:latest
+#   docker push your-registry/vehicle-frontend:latest
+#
+# EXTERNAL DATABASE:
+#   If using an external database, set USE_INTERNAL_DB=false in environment variables
+#   and ensure DATABASE_URL points to your external MySQL/MariaDB instance.
+#
+# =============================================================================
+
+version: '3.9'
+
+# ---------------------------------------------------------------------------
+# Environment variable defaults — override via Portainer environment variables
+# ---------------------------------------------------------------------------
+x-common-env: &common-env
+  # ── Symfony ──────────────────────────────────────────────────────────────
+  APP_ENV: ${APP_ENV:-prod}
+  APP_DEBUG: ${APP_DEBUG:-0}
+  APP_SECRET: ${APP_SECRET:?Set APP_SECRET in Portainer environment variables}
+
+  # ── Database ─────────────────────────────────────────────────────────────
+  # For external DB: mysql://user:password@db-host:3306/vehicle_management
+  # For internal DB: mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE}
+  DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in Portainer environment variables}
+
+  # ── JWT ──────────────────────────────────────────────────────────────────
+  JWT_SECRET_KEY: '%kernel.project_dir%/config/jwt/private.pem'
+  JWT_PUBLIC_KEY: '%kernel.project_dir%/config/jwt/public.pem'
+  JWT_PASSPHRASE: ${JWT_PASSPHRASE:-vehicle_jwt_passphrase}
+
+  # ── Redis ────────────────────────────────────────────────────────────────
+  REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+
+  # ── CORS ─────────────────────────────────────────────────────────────────
+  CORS_ALLOW_ORIGIN: ${CORS_ALLOW_ORIGIN:-'^https?://(localhost|127\.0\.0\.1)(:[0-9]+)?$$'}
+
+  # ── Uploads ──────────────────────────────────────────────────────────────
+  UPLOAD_MAX_BYTES: ${UPLOAD_MAX_BYTES:-209715200}
+
+  # ── DVSA MOT History API (optional) ─────────────────────────────────────
+  DVSA_CLIENT_ID: ${DVSA_CLIENT_ID:-}
+  DVSA_CLIENT_SECRET: ${DVSA_CLIENT_SECRET:-}
+  DVSA_API_KEY: ${DVSA_API_KEY:-}
+  DVSA_SCOPE_URL: ${DVSA_SCOPE_URL:-https://tapi.dvsa.gov.uk/.default}
+  DVSA_TOKEN_URL: ${DVSA_TOKEN_URL:-https://login.microsoftonline.com/a455b827-244f-4c97-b5b4-ce5d13b4d00c/oauth2/v2.0/token}
+  DVSA_API_URL: ${DVSA_API_URL:-https://history.mot.api.gov.uk/v1/trade/vehicles/registration}
+
+  # ── DVLA (optional) ─────────────────────────────────────────────────────
+  DVLA_AUTH_URL: ${DVLA_AUTH_URL:-}
+  DVLA_VEHICLE_URL: ${DVLA_VEHICLE_URL:-https://driver-vehicle-licensing.api.gov.uk/vehicle-enquiry/v1/vehicles}
+  DVLA_API_KEY: ${DVLA_API_KEY:-}
+
+  # ── eBay Browse API (optional) ──────────────────────────────────────────
+  EBAY_APP_ID: ${EBAY_APP_ID:-}
+  EBAY_CLIENT_ID: ${EBAY_CLIENT_ID:-}
+  EBAY_CLIENT_SECRET: ${EBAY_CLIENT_SECRET:-}
+  EBAY_MARKETPLACE: ${EBAY_MARKETPLACE:-EBAY_GB}
+  EBAY_ACCESS_TOKEN: ${EBAY_ACCESS_TOKEN:-}
+
+  # ── API Ninjas (optional) ───────────────────────────────────────────────
+  API_NINJAS_KEY: ${API_NINJAS_KEY:-}
+
+  # ── Amazon Product Advertising API (optional) ──────────────────────────
+  AMAZON_ACCESS_KEY: ${AMAZON_ACCESS_KEY:-}
+  AMAZON_SECRET_KEY: ${AMAZON_SECRET_KEY:-}
+  AMAZON_ASSOCIATE_TAG: ${AMAZON_ASSOCIATE_TAG:-}
+  AMAZON_PARTNER_REGION: ${AMAZON_PARTNER_REGION:-eu-west-1}
+
+  # ── Internal DB credentials (only used when running internal mysql) ─────
+  MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-}
+  MYSQL_DATABASE: ${MYSQL_DATABASE:-vehicle_management}
+  MYSQL_USER: ${MYSQL_USER:-vehicle_user}
+  MYSQL_PASSWORD: ${MYSQL_PASSWORD:-}
+
+  # ── Entrypoint behaviour ───────────────────────────────────────────────
+  SKIP_MIGRATIONS: ${SKIP_MIGRATIONS:-0}
+  SKIP_FIXTURES: ${SKIP_FIXTURES:-1}
+
+services:
+  # =========================================================================
+  # MySQL — Optional internal database
+  # =========================================================================
+  # To use an EXTERNAL database instead:
+  #   1. Remove or comment out this entire mysql service
+  #   2. Set DATABASE_URL to point to your external DB
+  #   3. Remove mysql from php depends_on
+  #   4. Remove mysql_data from volumes section
+  # =========================================================================
+  mysql:
+    image: mysql:8.0
+    profiles:
+      - internal-db
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD when using internal DB}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-vehicle_management}
+      MYSQL_USER: ${MYSQL_USER:-vehicle_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?Set MYSQL_PASSWORD when using internal DB}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - vehicle_network
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+
+  # =========================================================================
+  # Redis — Session & cache store
+  # =========================================================================
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy noeviction
+    volumes:
+      - redis_data:/data
+    networks:
+      - vehicle_network
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.25'
+        reservations:
+          memory: 128M
+
+  # =========================================================================
+  # PHP-FPM — Symfony API backend
+  # =========================================================================
+  php:
+    image: ${PHP_IMAGE:-vehicle-php:latest}
+    environment:
+      <<: *common-env
+      XDEBUG_MODE: 'off'
+    volumes:
+      - backend_code:/var/www/html:ro
+      - backend_var:/var/www/html/var:rw
+      - backend_vendor:/var/www/html/vendor:rw
+      - uploads:/var/www/html/uploads:rw
+      - jwt_keys:/var/www/html/config/jwt:rw
+    networks:
+      - vehicle_network
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp
+    healthcheck:
+      test: ["CMD", "php-fpm", "-t"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.0'
+        reservations:
+          memory: 256M
+
+  # =========================================================================
+  # Nginx — API reverse proxy (serves backend API on port 8081)
+  # =========================================================================
+  nginx:
+    image: ${NGINX_IMAGE:-vehicle-nginx:latest}
+    ports:
+      - "${API_PORT:-8081}:80"
+    volumes:
+      - backend_code:/var/www/html:ro
+      - uploads:/var/www/html/uploads:ro
+    networks:
+      - vehicle_network
+    depends_on:
+      php:
+        condition: service_healthy
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/run
+      - /var/cache/nginx
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 80 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+        reservations:
+          memory: 128M
+
+  # =========================================================================
+  # Frontend — React SPA served via nginx (port 80)
+  # =========================================================================
+  frontend:
+    image: ${FRONTEND_IMAGE:-vehicle-frontend:latest}
+    ports:
+      - "${FRONTEND_PORT:-80}:80"
+    networks:
+      - vehicle_network
+    depends_on:
+      - nginx
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/run
+      - /var/cache/nginx
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 80 || exit 1"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.5'
+        reservations:
+          memory: 64M
+
+  # =========================================================================
+  # Website — Promotional / landing page (port 8083)
+  # =========================================================================
+  website:
+    image: nginx:alpine
+    ports:
+      - "${WEBSITE_PORT:-8083}:80"
+    volumes:
+      - website_content:/usr/share/nginx/html:ro
+    networks:
+      - vehicle_network
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/run
+      - /var/cache/nginx
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 80 || exit 1"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+          cpus: '0.25'
+        reservations:
+          memory: 32M
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  vehicle_network:
+    driver: bridge
+
+# =============================================================================
+# Volumes
+# =============================================================================
+# For external volumes, create them first in Portainer > Volumes, then set
+# external: true below and reference the volume name.
+#
+# For external uploads volume (e.g. NFS, CIFS, or host-bind):
+#   1. Create the volume in Portainer with your desired driver
+#   2. Uncomment the 'external: true' line under uploads
+#   3. Ensure the volume name matches
+# =============================================================================
+volumes:
+  # ── Database (only needed for internal DB) ──────────────────────────────
+  mysql_data:
+    driver: local
+    # external: true  # Uncomment to use a pre-created Portainer volume
+
+  # ── Redis persistence ───────────────────────────────────────────────────
+  redis_data:
+    driver: local
+
+  # ── Backend application code ────────────────────────────────────────────
+  backend_code:
+    driver: local
+    # Populated by the PHP image; contains the Symfony application
+
+  # ── Backend var (cache, logs) ───────────────────────────────────────────
+  backend_var:
+    driver: local
+
+  # ── Backend vendor (composer dependencies) ──────────────────────────────
+  backend_vendor:
+    driver: local
+
+  # ── JWT signing keys ────────────────────────────────────────────────────
+  jwt_keys:
+    driver: local
+    # IMPORTANT: After first deploy, generate JWT keys:
+    #   docker exec <php-container> sh -c "mkdir -p config/jwt && \
+    #     openssl genrsa -out config/jwt/private.pem 4096 && \
+    #     openssl rsa -pubout -in config/jwt/private.pem -out config/jwt/public.pem && \
+    #     chmod 600 config/jwt/private.pem && chmod 644 config/jwt/public.pem"
+
+  # ── Uploads (vehicle images, attachments, receipts) ─────────────────────
+  uploads:
+    driver: local
+    # external: true  # Uncomment to use an external/shared volume (NFS, CIFS, etc.)
+    # ── Example: NFS mount ──
+    # driver_opts:
+    #   type: nfs
+    #   o: addr=nfs-server.local,nolock,soft,rw
+    #   device: ":/exports/vehicle-uploads"
+    # ── Example: Local bind mount ──
+    # driver_opts:
+    #   type: none
+    #   o: bind
+    #   device: /srv/vehicle/uploads
+
+  # ── Website static content ──────────────────────────────────────────────
+  website_content:
+    driver: local
+    # Populate with the web/ directory contents:
+    #   docker run --rm -v website_content:/data -v ./web:/src alpine cp -r /src/. /data/
+
+# =============================================================================
+# DEPLOYMENT CHECKLIST
+# =============================================================================
+#
+# 1. BUILD & PUSH IMAGES
+#    ─────────────────────────────────────────────────────────────────────────
+#    On your build machine (where the source code lives):
+#
+#    # PHP-FPM (backend)
+#    docker build -t your-registry/vehicle-php:latest \
+#      -f docker/php/Dockerfile docker/php/
+#
+#    # Nginx (API proxy) — includes the nginx config
+#    docker build -t your-registry/vehicle-nginx:latest \
+#      -f docker/nginx/Dockerfile docker/nginx/
+#
+#    # Frontend (React SPA, production multi-stage build)
+#    docker build -t your-registry/vehicle-frontend:latest \
+#      --target production \
+#      -f docker/node/Dockerfile frontend/
+#
+#    # Push all images
+#    docker push your-registry/vehicle-php:latest
+#    docker push your-registry/vehicle-nginx:latest
+#    docker push your-registry/vehicle-frontend:latest
+#
+# 2. POPULATE VOLUMES
+#    ─────────────────────────────────────────────────────────────────────────
+#    After creating the stack but before the app is fully functional:
+#
+#    # Copy backend source code into the backend_code volume
+#    docker run --rm \
+#      -v vehicle_backend_code:/dest \
+#      -v /path/to/source/backend:/src \
+#      alpine sh -c "cp -a /src/. /dest/"
+#
+#    # Copy website content into the website_content volume
+#    docker run --rm \
+#      -v vehicle_website_content:/dest \
+#      -v /path/to/source/web:/src \
+#      alpine sh -c "cp -a /src/. /dest/"
+#
+# 3. GENERATE JWT KEYS
+#    ─────────────────────────────────────────────────────────────────────────
+#    docker exec <php-container-name> sh -c \
+#      "mkdir -p config/jwt && \
+#       openssl genrsa -out config/jwt/private.pem 4096 && \
+#       openssl rsa -pubout -in config/jwt/private.pem -out config/jwt/public.pem && \
+#       chmod 600 config/jwt/private.pem && \
+#       chmod 644 config/jwt/public.pem"
+#
+# 4. REQUIRED PORTAINER ENVIRONMENT VARIABLES
+#    ─────────────────────────────────────────────────────────────────────────
+#    APP_SECRET          = <random-32-char-hex-string>
+#    DATABASE_URL        = mysql://user:pass@host:3306/vehicle_management
+#    JWT_PASSPHRASE      = <your-jwt-passphrase>
+#
+#    # If using internal DB (add --profile internal-db):
+#    MYSQL_ROOT_PASSWORD = <strong-root-password>
+#    MYSQL_PASSWORD      = <strong-user-password>
+#
+#    # Image references (if using a registry):
+#    PHP_IMAGE           = your-registry/vehicle-php:latest
+#    NGINX_IMAGE         = your-registry/vehicle-nginx:latest
+#    FRONTEND_IMAGE      = your-registry/vehicle-frontend:latest
+#
+# 5. OPTIONAL ENVIRONMENT VARIABLES
+#    ─────────────────────────────────────────────────────────────────────────
+#    CORS_ALLOW_ORIGIN   = ^https://(yourdomain\.com)$
+#    API_PORT            = 8081       (backend API port)
+#    FRONTEND_PORT       = 80         (frontend port)
+#    WEBSITE_PORT        = 8083       (promotional site port)
+#    SKIP_MIGRATIONS     = 0          (set to 1 to skip auto-migrations)
+#    SKIP_FIXTURES       = 1          (set to 0 to load sample data)
+#    REDIS_URL           = redis://redis:6379
+#
+#    # External API keys (all optional):
+#    DVSA_CLIENT_ID, DVSA_CLIENT_SECRET, DVSA_API_KEY
+#    DVLA_API_KEY
+#    EBAY_APP_ID, EBAY_CLIENT_ID, EBAY_CLIENT_SECRET, EBAY_ACCESS_TOKEN
+#    API_NINJAS_KEY
+#    AMAZON_ACCESS_KEY, AMAZON_SECRET_KEY, AMAZON_ASSOCIATE_TAG
+#
+# 6. USING AN EXTERNAL DATABASE
+#    ─────────────────────────────────────────────────────────────────────────
+#    Simply set DATABASE_URL to point to your external MySQL/MariaDB:
+#      DATABASE_URL=mysql://myuser:mypass@db.example.com:3306/vehicle_management
+#
+#    The internal mysql service uses Docker profiles and will NOT start
+#    unless you explicitly add --profile internal-db. In Portainer, leave
+#    the profile empty to skip the internal database entirely.
+#
+# 7. USING AN EXTERNAL UPLOADS VOLUME
+#    ─────────────────────────────────────────────────────────────────────────
+#    Create an external volume in Portainer (e.g. NFS share), then:
+#      a) Set the volume name to match the 'uploads' volume name in this file
+#      b) Uncomment 'external: true' under the uploads volume definition
+#      c) Or use driver_opts for NFS/CIFS (examples provided above)
+#
+# 8. DEFAULT CREDENTIALS
+#    ─────────────────────────────────────────────────────────────────────────
+#    If fixtures are loaded (SKIP_FIXTURES=0):
+#      Email:    admin@vehicle.local
+#      Password: changeme
+#    Change immediately after first login.
+#
+# =============================================================================

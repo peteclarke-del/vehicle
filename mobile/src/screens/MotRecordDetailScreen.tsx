@@ -126,6 +126,20 @@ const MotRecordDetailScreen: React.FC = () => {
   const resultColor = isPassed ? '#22C55E' : theme.colors.error;
   const resultBg = isPassed ? '#DCFCE7' : theme.colors.errorContainer;
 
+  // Parse advisory/failure items from either structured array or plain text
+  const parseItems = (items: Array<{text: string; type: string; dangerous: boolean}> | null, text: string | null): Array<{text: string; dangerous: boolean}> => {
+    if (items && items.length > 0) {
+      return items.map(i => ({text: i.text || JSON.stringify(i), dangerous: i.dangerous || false}));
+    }
+    if (text) {
+      return text.split('\n').filter(l => l.trim()).map(l => ({text: l.trim(), dangerous: false}));
+    }
+    return [];
+  };
+
+  const advisoryList = parseItems(record.advisoryItems, record.advisories);
+  const failureList = parseItems(record.failureItems, record.failures);
+
   return (
     <ScrollView style={[styles.container, {backgroundColor: theme.colors.background}]}>
       {/* Result Banner */}
@@ -210,13 +224,13 @@ const MotRecordDetailScreen: React.FC = () => {
       </Card>
 
       {/* Failures */}
-      {record.failureItems && record.failureItems.length > 0 && (
+      {failureList.length > 0 && (
         <Card style={styles.card}>
           <Card.Content>
             <Text variant="titleMedium" style={[styles.sectionTitle, {color: theme.colors.error}]}>
-              Failures ({record.failureItems.length})
+              Failures ({failureList.length})
             </Text>
-            {record.failureItems.map((item, idx) => (
+            {failureList.map((item, idx) => (
               <View key={idx} style={styles.defectItem}>
                 <Icon name="close-circle" size={18} color={theme.colors.error} />
                 <Text variant="bodyMedium" style={{flex: 1, marginLeft: 8}}>
@@ -232,13 +246,13 @@ const MotRecordDetailScreen: React.FC = () => {
       )}
 
       {/* Advisories */}
-      {record.advisoryItems && record.advisoryItems.length > 0 && (
+      {advisoryList.length > 0 && (
         <Card style={styles.card}>
           <Card.Content>
             <Text variant="titleMedium" style={[styles.sectionTitle, {color: '#92400E'}]}>
-              Advisories ({record.advisoryItems.length})
+              Advisories ({advisoryList.length})
             </Text>
-            {record.advisoryItems.map((item, idx) => (
+            {advisoryList.map((item, idx) => (
               <View key={idx} style={styles.defectItem}>
                 <Icon name="alert" size={18} color="#F59E0B" />
                 <Text variant="bodyMedium" style={{flex: 1, marginLeft: 8}}>

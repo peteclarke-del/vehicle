@@ -131,8 +131,8 @@ const MotRecordsScreen: React.FC = () => {
 
   const renderRecord = ({item}: {item: MotRecord}) => {
     const resultColors = getResultColor(item.result);
-    const advisoryCount = item.advisoryItems?.length || 0;
-    const failureCount = item.failureItems?.length || 0;
+    const advisoryCount = item.advisoryItems?.length || (item.advisories ? item.advisories.split('\n').filter(l => l.trim()).length : 0);
+    const failureCount = item.failureItems?.length || (item.failures ? item.failures.split('\n').filter(l => l.trim()).length : 0);
 
     return (
       <Card

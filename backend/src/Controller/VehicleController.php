@@ -8,9 +8,11 @@ use App\Controller\Trait\JsonValidationTrait;
 use App\Controller\Trait\UserSecurityTrait;
 use App\Entity\User;
 use App\Entity\Vehicle;
+use App\Entity\VehicleAssignment;
 use App\Entity\VehicleStatusHistory;
 use App\Service\CostCalculator;
 use App\Service\DepreciationCalculator;
+use App\Service\FeatureFlagService;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -31,7 +33,8 @@ class VehicleController extends AbstractController
         private CostCalculator $costCalculator,
         private DepreciationCalculator $depreciationCalculator,
         private LoggerInterface $logger,
-        private TagAwareCacheInterface $cache
+        private TagAwareCacheInterface $cache,
+        private FeatureFlagService $featureFlagService
     ) {
     }
 
@@ -356,8 +359,28 @@ class VehicleController extends AbstractController
             if ($isAdmin) {
                 $vehicles = $this->entityManager->getRepository(Vehicle::class)->findAll();
             } else {
-                $vehicles = $this->entityManager->getRepository(Vehicle::class)
-                ->findBy(['owner' => $user]);
+                // Get own vehicles
+                $ownVehicles = $this->entityManager->getRepository(Vehicle::class)
+                    ->findBy(['owner' => $user]);
+
+                // Get assigned vehicles (from admin assignments)
+                $assignments = $this->entityManager->getRepository(VehicleAssignment::class)
+                    ->findBy(['assignedTo' => $user]);
+
+                $assignedVehicles = [];
+                $ownVehicleIds = array_map(fn($v) => $v->getId(), $ownVehicles);
+
+                foreach ($assignments as $assignment) {
+                    if ($assignment->canView()) {
+                        $vehicle = $assignment->getVehicle();
+                        // Avoid duplicates if user owns the vehicle AND it's assigned
+                        if (!in_array($vehicle->getId(), $ownVehicleIds, true)) {
+                            $assignedVehicles[] = $vehicle;
+                        }
+                    }
+                }
+
+                $vehicles = array_merge($ownVehicles, $assignedVehicles);
             }
 
             // Batch compute all derived values upfront to avoid N queries
@@ -384,7 +407,11 @@ class VehicleController extends AbstractController
         }
 
         if (!$this->isAdminForUser($user) && $vehicle->getOwner()->getId() !== $user->getId()) {
-            return $this->json(['error' => 'Access denied'], 403);
+            // Check if user has an assignment for this vehicle
+            $assignment = $this->featureFlagService->getVehicleAssignment($user, $vehicle->getId());
+            if (!$assignment || !$assignment->canView()) {
+                return $this->json(['error' => 'Access denied'], 403);
+            }
         }
 
         return $this->json($this->serializeVehicle($vehicle));

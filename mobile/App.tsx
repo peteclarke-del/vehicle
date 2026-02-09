@@ -13,6 +13,7 @@ import {AuthProvider} from './src/contexts/AuthContext';
 import {UserPreferencesProvider, useUserPreferences} from './src/contexts/UserPreferencesContext';
 import {SyncProvider} from './src/contexts/SyncContext';
 import {VehicleSelectionProvider} from './src/contexts/VehicleSelectionContext';
+import {PermissionsProvider} from './src/contexts/PermissionsContext';
 import {lightTheme, darkTheme} from './src/theme';
 import RootNavigator from './src/navigation/RootNavigator';
 import {initializeNotifications, requestNotificationPermission} from './src/services/NotificationService';
@@ -41,11 +42,13 @@ const AppContent = () => {
   return (
     <PaperProvider theme={paperTheme}>
       <SyncProvider>
-        <VehicleSelectionProvider>
-          <NavigationContainer theme={navigationTheme}>
-            <RootNavigator />
-          </NavigationContainer>
-        </VehicleSelectionProvider>
+        <PermissionsProvider>
+          <VehicleSelectionProvider>
+            <NavigationContainer theme={navigationTheme}>
+              <RootNavigator />
+            </NavigationContainer>
+          </VehicleSelectionProvider>
+        </PermissionsProvider>
       </SyncProvider>
     </PaperProvider>
   );

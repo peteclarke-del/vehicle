@@ -11,6 +11,15 @@ interface User {
   firstName: string;
   lastName: string;
   roles: string[];
+  features?: Record<string, boolean>;
+  vehicleAssignments?: Array<{
+    vehicleId: number;
+    vehicleName: string;
+    canView: boolean;
+    canEdit: boolean;
+    canAddRecords: boolean;
+    canDelete: boolean;
+  }>;
 }
 
 export interface ApiClient {

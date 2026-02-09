@@ -7,6 +7,7 @@ namespace App\Controller;
 use App\Entity\FuelRecord;
 use App\Entity\User;
 use App\Entity\Vehicle;
+use App\Entity\VehicleAssignment;
 use App\Entity\Attachment;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
@@ -66,7 +67,8 @@ class FuelRecordController extends AbstractController
 
         if ($vehicleId) {
             $vehicle = $this->entityManager->getRepository(Vehicle::class)->find($vehicleId);
-            if (!$vehicle || (!$this->isAdminForUser($user) && $vehicle->getOwner()->getId() !== $user->getId())) {
+            if (!$vehicle || (!$this->isAdminForUser($user) && $vehicle->getOwner()->getId() !== $user->getId()
+                && !$this->entityManager->getRepository(VehicleAssignment::class)->findOneBy(['assignedTo' => $user, 'vehicle' => $vehicle]))) {
                 return $this->json(['error' => 'Vehicle not found'], 404);
             }
             $records = $this->entityManager->getRepository(FuelRecord::class)
@@ -74,7 +76,21 @@ class FuelRecordController extends AbstractController
         } else {
             // Fetch fuel records for all vehicles the user can see
             $vehicleRepo = $this->entityManager->getRepository(Vehicle::class);
-            $vehicles = $this->isAdminForUser($user) ? $vehicleRepo->findAll() : $vehicleRepo->findBy(['owner' => $user]);
+            if ($this->isAdminForUser($user)) {
+                $vehicles = $vehicleRepo->findAll();
+            } else {
+                $ownVehicles = $vehicleRepo->findBy(['owner' => $user]);
+                $assignments = $this->entityManager->getRepository(VehicleAssignment::class)
+                    ->findBy(['assignedTo' => $user]);
+                $ownIds = array_map(fn($v) => $v->getId(), $ownVehicles);
+                $assignedVehicles = [];
+                foreach ($assignments as $a) {
+                    if ($a->canView() && !in_array($a->getVehicle()->getId(), $ownIds, true)) {
+                        $assignedVehicles[] = $a->getVehicle();
+                    }
+                }
+                $vehicles = array_merge($ownVehicles, $assignedVehicles);
+            }
             if (empty($vehicles)) {
                 $records = [];
             } else {

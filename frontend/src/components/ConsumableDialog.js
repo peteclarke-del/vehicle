@@ -343,7 +343,9 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
       <form onSubmit={handleSubmit}>
         <DialogContent>
           {loadingTypes ? (
-            <KnightRiderLoader size={28} />
+            <Box display="flex" justifyContent="center" alignItems="center" py={4}>
+              <KnightRiderLoader size={28} />
+            </Box>
           ) : (
             <Grid container spacing={2}>
               <Grid item xs={12}>

@@ -580,7 +580,11 @@ const VehicleDetails = () => {
               <Grid item xs={12} md={10}>
                 {(() => {
                   if (depreciationLoading) {
-                    return <KnightRiderLoader size={28} />;
+                    return (
+                      <Box display="flex" justifyContent="center" alignItems="center" py={4}>
+                        <KnightRiderLoader size={28} />
+                      </Box>
+                    );
                   }
 
                   const schedule = depreciationSchedule || [];

@@ -5,6 +5,7 @@ import {useNavigation} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {useSync} from '../contexts/SyncContext';
+import {usePermissions} from '../contexts/PermissionsContext';
 import {MainStackParamList} from '../navigation/MainNavigator';
 
 type NavigationProp = NativeStackNavigationProp<MainStackParamList>;
@@ -13,6 +14,7 @@ const MoreScreen: React.FC = () => {
   const theme = useTheme();
   const navigation = useNavigation<NavigationProp>();
   const {isOnline, pendingChanges, isSyncing} = useSync();
+  const {can} = usePermissions();
 
   return (
     <ScrollView style={[styles.container, {backgroundColor: theme.colors.background}]}>
@@ -38,29 +40,39 @@ const MoreScreen: React.FC = () => {
       {/* Records Section */}
       <Text variant="titleSmall" style={styles.sectionHeader}>Records</Text>
       <List.Section style={styles.section}>
-        <List.Item
-          title="MOT Records"
-          description="MOT test history, results, advisories"
-          left={props => <List.Icon {...props} icon="file-document" />}
-          right={props => <List.Icon {...props} icon="chevron-right" />}
-          onPress={() => navigation.navigate('MotRecordsList')}
-        />
-        <Divider />
-        <List.Item
-          title="Parts"
-          description="Vehicle parts and accessories"
-          left={props => <List.Icon {...props} icon="package-variant" />}
-          right={props => <List.Icon {...props} icon="chevron-right" />}
-          onPress={() => navigation.navigate('PartsList')}
-        />
-        <Divider />
-        <List.Item
-          title="Consumables"
-          description="Oils, filters, brake pads, spark plugs"
-          left={props => <List.Icon {...props} icon="oil" />}
-          right={props => <List.Icon {...props} icon="chevron-right" />}
-          onPress={() => navigation.navigate('ConsumablesList')}
-        />
+        {can('mot.view') && (
+          <>
+            <List.Item
+              title="MOT Records"
+              description="MOT test history, results, advisories"
+              left={props => <List.Icon {...props} icon="file-document" />}
+              right={props => <List.Icon {...props} icon="chevron-right" />}
+              onPress={() => navigation.navigate('MotRecordsList')}
+            />
+            <Divider />
+          </>
+        )}
+        {can('parts.view') && (
+          <>
+            <List.Item
+              title="Parts"
+              description="Vehicle parts and accessories"
+              left={props => <List.Icon {...props} icon="package-variant" />}
+              right={props => <List.Icon {...props} icon="chevron-right" />}
+              onPress={() => navigation.navigate('PartsList')}
+            />
+            <Divider />
+          </>
+        )}
+        {can('consumables.view') && (
+          <List.Item
+            title="Consumables"
+            description="Oils, filters, brake pads, spark plugs"
+            left={props => <List.Icon {...props} icon="oil" />}
+            right={props => <List.Icon {...props} icon="chevron-right" />}
+            onPress={() => navigation.navigate('ConsumablesList')}
+          />
+        )}
       </List.Section>
 
       <Divider />
@@ -68,13 +80,15 @@ const MoreScreen: React.FC = () => {
       {/* Tools Section */}
       <Text variant="titleSmall" style={styles.sectionHeader}>Tools</Text>
       <List.Section style={styles.section}>
-        <List.Item
-          title="Vehicle Lookup"
-          description="Look up any UK vehicle by registration"
-          left={props => <List.Icon {...props} icon="car-search" />}
-          right={props => <List.Icon {...props} icon="chevron-right" />}
-          onPress={() => navigation.navigate('VehicleLookup')}
-        />
+        {can('vehicles.view') && (
+          <List.Item
+            title="Vehicle Lookup"
+            description="Look up any UK vehicle by registration"
+            left={props => <List.Icon {...props} icon="car-search" />}
+            right={props => <List.Icon {...props} icon="chevron-right" />}
+            onPress={() => navigation.navigate('VehicleLookup')}
+          />
+        )}
       </List.Section>
 
       <Divider />
@@ -82,13 +96,15 @@ const MoreScreen: React.FC = () => {
       {/* Settings Section */}
       <Text variant="titleSmall" style={styles.sectionHeader}>App</Text>
       <List.Section style={styles.section}>
-        <List.Item
-          title="Settings"
-          description="Theme, units, currency, notifications"
-          left={props => <List.Icon {...props} icon="cog" />}
-          right={props => <List.Icon {...props} icon="chevron-right" />}
-          onPress={() => navigation.navigate('Settings')}
-        />
+        {can('settings.edit') && (
+          <List.Item
+            title="Settings"
+            description="Theme, units, currency, notifications"
+            left={props => <List.Icon {...props} icon="cog" />}
+            right={props => <List.Icon {...props} icon="chevron-right" />}
+            onPress={() => navigation.navigate('Settings')}
+          />
+        )}
       </List.Section>
     </ScrollView>
   );

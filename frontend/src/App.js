@@ -4,6 +4,7 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { UserPreferencesProvider } from './contexts/UserPreferencesContext';
 import { VehiclesProvider } from './contexts/VehiclesContext';
+import { PermissionsProvider } from './contexts/PermissionsContext';
 import Layout from './components/Layout';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -23,6 +24,8 @@ import Reports from './pages/Reports';
 import PasswordChangeDialog from './components/PasswordChangeDialog';
 import SessionTimeoutWarning from './components/SessionTimeoutWarning';
 import ImportExport from './pages/ImportExport';
+import AdminUsers from './pages/AdminUsers';
+import AdminUserDetails from './pages/AdminUserDetails';
 import { Box } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import KnightRiderLoader from './components/KnightRiderLoader';
@@ -123,6 +126,8 @@ function AppRoutes() {
             <Route path="reports" element={<Reports />} />
             <Route path="profile" element={<Profile />} />
             <Route path="tools/import-export" element={<ImportExport />} />
+            <Route path="admin/users" element={<AdminUsers />} />
+            <Route path="admin/users/:id" element={<AdminUserDetails />} />
           </Route>
         </Routes>
       </ErrorBoundary>
@@ -148,9 +153,11 @@ function App() {
       <AuthProvider>
         <ThemeProvider>
           <UserPreferencesProvider>
-            <VehiclesProvider>
-              <AppRoutes />
-            </VehiclesProvider>
+            <PermissionsProvider>
+              <VehiclesProvider>
+                <AppRoutes />
+              </VehiclesProvider>
+            </PermissionsProvider>
           </UserPreferencesProvider>
         </ThemeProvider>
       </AuthProvider>

@@ -29,6 +29,7 @@ import {
   AssignmentTurnedIn,
   HomeRepairService,
   Assessment,
+  AdminPanelSettings,
 } from '@mui/icons-material';
 import { PushPin, PushPinOutlined } from '@mui/icons-material';
 import { DragIndicator } from '@mui/icons-material';
@@ -54,6 +55,7 @@ import {
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { usePermissions } from '../contexts/PermissionsContext';
 import { useTranslation } from 'react-i18next';
 import NotificationMenu from './NotificationMenu';
 import { Tooltip, IconButton as MuiIconButton, Snackbar, Alert } from '@mui/material';
@@ -79,6 +81,7 @@ const Layout = () => {
   const [preferencesOpen, setPreferencesOpen] = React.useState(false);
   const [snack, setSnack] = React.useState({ open: false, message: '', severity: 'error' });
   const { notifications, dismissNotification, snoozeNotification, clearAllNotifications } = useNotifications();
+  const { isAdmin, can } = usePermissions();
 
   // Listen for global notifications dispatched from other components
   React.useEffect(() => {
@@ -103,20 +106,21 @@ const Layout = () => {
   };
 
   const defaultMenu = [
-    { key: 'dashboard', text: t('nav.dashboard'), icon: <DashboardIcon />, path: '/' },
-    { key: 'vehicles', text: t('nav.vehicles'), icon: <DirectionsCar />, path: '/vehicles' },
-    { key: 'insurance', text: t('nav.insurance'), icon: <Security />, path: '/insurance' },
-    { key: 'roadTax', text: t('nav.roadTax'), icon: <AssignmentTurnedIn />, path: '/road-tax' },
-    { key: 'motRecords', text: t('nav.motRecords'), icon: <AssignmentTurnedIn />, path: '/mot-records' },
-    { key: 'serviceRecords', text: t('nav.serviceRecords'), icon: <HomeRepairService />, path: '/service-records' },
-    { key: 'parts', text: t('nav.parts'), icon: <Build />, path: '/parts' },
-    { key: 'consumables', text: t('nav.consumables'), icon: <Inventory />, path: '/consumables' },
-    { key: 'fuel', text: t('nav.fuel'), icon: <LocalGasStation />, path: '/fuel' },
-    { key: 'importExport', text: t('nav.importExport') || 'Import / Export', icon: <ImportExport />, path: '/tools/import-export' },
-    { key: 'todo', text: t('nav.todo') || 'TODO', icon: <Assessment />, path: '/todo' },
-    { key: 'reports', text: t('nav.reports'), icon: <Assessment />, path: '/reports' },
+    { key: 'dashboard', text: t('nav.dashboard'), icon: <DashboardIcon />, path: '/', featureKey: 'dashboard.view' },
+    { key: 'vehicles', text: t('nav.vehicles'), icon: <DirectionsCar />, path: '/vehicles', featureKey: 'vehicles.view' },
+    { key: 'insurance', text: t('nav.insurance'), icon: <Security />, path: '/insurance', featureKey: 'insurance.view' },
+    { key: 'roadTax', text: t('nav.roadTax'), icon: <AssignmentTurnedIn />, path: '/road-tax', featureKey: 'tax.view' },
+    { key: 'motRecords', text: t('nav.motRecords'), icon: <AssignmentTurnedIn />, path: '/mot-records', featureKey: 'mot.view' },
+    { key: 'serviceRecords', text: t('nav.serviceRecords'), icon: <HomeRepairService />, path: '/service-records', featureKey: 'services.view' },
+    { key: 'parts', text: t('nav.parts'), icon: <Build />, path: '/parts', featureKey: 'parts.view' },
+    { key: 'consumables', text: t('nav.consumables'), icon: <Inventory />, path: '/consumables', featureKey: 'consumables.view' },
+    { key: 'fuel', text: t('nav.fuel'), icon: <LocalGasStation />, path: '/fuel', featureKey: 'fuel.view' },
+    { key: 'importExport', text: t('nav.importExport') || 'Import / Export', icon: <ImportExport />, path: '/tools/import-export', featureKey: 'import_export.export' },
+    { key: 'todo', text: t('nav.todo') || 'TODO', icon: <Assessment />, path: '/todo', featureKey: 'todos.view' },
+    { key: 'reports', text: t('nav.reports'), icon: <Assessment />, path: '/reports', featureKey: 'reports.generate' },
     { key: 'profile', text: t('nav.profile'), icon: <AccountCircle />, path: '/profile' },
-  ];
+    ...(isAdmin ? [{ key: 'admin', text: t('nav.admin', 'Admin'), icon: <AdminPanelSettings />, path: '/admin/users' }] : []),
+  ].filter(item => !item.featureKey || can(item.featureKey));
 
   const [menuItems, setMenuItems] = React.useState(defaultMenu);
 

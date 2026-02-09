@@ -6,6 +6,7 @@ namespace App\Controller;
 
 use App\Controller\Trait\JsonValidationTrait;
 use App\Entity\User;
+use App\Service\FeatureFlagService;
 use Doctrine\ORM\EntityManagerInterface;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 use Lexik\Bundle\JWTAuthenticationBundle\Encoder\JWTEncoderInterface;
@@ -27,7 +28,8 @@ class AuthController extends AbstractController
         private UserPasswordHasherInterface $passwordHasher,
         private JWTTokenManagerInterface $jwtManager,
         private JWTEncoderInterface $jwtEncoder,
-        private TagAwareCacheInterface $cache
+        private TagAwareCacheInterface $cache,
+        private FeatureFlagService $featureFlagService
     ) {
     }
 
@@ -195,7 +197,9 @@ class AuthController extends AbstractController
             'sessionTimeout' => $sessionTimeout,
             'distanceUnit' => $distanceUnit,
             'roles' => $user->getRoles(),
-            'passwordChangeRequired' => $user->isPasswordChangeRequired()
+            'passwordChangeRequired' => $user->isPasswordChangeRequired(),
+            'features' => $this->featureFlagService->getEffectiveFlags($user),
+            'vehicleAssignments' => $this->featureFlagService->getSerializedAssignments($user),
         ]);
     }
 

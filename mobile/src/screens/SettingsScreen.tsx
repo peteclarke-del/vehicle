@@ -193,24 +193,23 @@ const SettingsScreen: React.FC = () => {
           onPress={() => setLanguageDialogVisible(true)}
         />
 
-        {/* Theme */}
-        <List.Item
-          title={t('settings.theme')}
-          description={t('settings.chooseTheme')}
-          left={props => <List.Icon {...props} icon="theme-light-dark" />}
-          right={() => (
-            <SegmentedButtons
-              value={preferences.theme}
-              onValueChange={(value) => updatePreferences({theme: value as 'light' | 'dark' | 'system'})}
-              buttons={[
-                {value: 'light', icon: 'white-balance-sunny'},
-                {value: 'system', icon: 'cellphone'},
-                {value: 'dark', icon: 'weather-night'},
-              ]}
-              style={styles.themeButtons}
-            />
-          )}
-        />
+        {/* Theme - full width row */}
+        <View style={styles.settingRow}>
+          <View style={styles.settingRowHeader}>
+            <Icon name="theme-light-dark" size={24} color={theme.colors.onSurfaceVariant} style={styles.settingRowIcon} />
+            <Text variant="bodyLarge">{t('settings.theme')}</Text>
+          </View>
+          <SegmentedButtons
+            value={preferences.theme}
+            onValueChange={(value) => updatePreferences({theme: value as 'light' | 'dark' | 'system'})}
+            buttons={[
+              {value: 'light', label: t('settings.light', 'Light'), icon: 'white-balance-sunny'},
+              {value: 'system', label: t('settings.system', 'System'), icon: 'cellphone'},
+              {value: 'dark', label: t('settings.dark', 'Dark'), icon: 'weather-night'},
+            ]}
+            style={styles.fullWidthSegmented}
+          />
+        </View>
 
         {/* Currency */}
         <List.Item
@@ -444,9 +443,6 @@ const styles = StyleSheet.create({
   },
   section: {
     marginBottom: 8,
-  },
-  themeButtons: {
-    marginRight: -8,
   },
   settingRow: {
     paddingHorizontal: 16,

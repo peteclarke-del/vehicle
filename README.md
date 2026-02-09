@@ -31,19 +31,45 @@ A comprehensive web application for managing personal or fleet vehicles, built w
 
 ### User Experience
 - **Modern UI**: Clean, responsive interface built with Material-UI
-- **Multi-language Support**: Full internationalisation via i18next
-- **Dark/Light Themes**: User-selectable interface themes
+- **Multi-language Support**: 21 languages including Arabic, Chinese, Czech, Danish, Dutch, English, Finnish, French, German, Hindi, Italian, Japanese, Korean, Norwegian, Pirate 🏴‍☠️, Polish, Portuguese, Russian, Spanish, Swedish, and Turkish
+- **Dark/Light/System Themes**: User-selectable interface themes with system auto-detection
+- **Currency Support**: Per-user currency preferences with auto-mapping by language
 - **Distance Units**: Support for both miles and kilometres
+- **Volume Units**: Support for both litres and gallons
 - **Mobile Responsive**: Works on desktop, tablet, and mobile devices
 - **Real-time Notifications**: SSE-based notifications for MOT, insurance, and tax expiries
 
 ### Mobile Application (Android)
 - **Native Mobile Experience**: React Native app for Android devices
-- **Offline Support**: Work without internet, sync when connected
+- **Standalone Mode**: Full offline operation with local AsyncStorage — no server required
+- **Web Mode**: Connect to any backend instance for full server-backed operation
 - **Camera Integration**: Take photos of receipts directly from the app
 - **Gallery Upload**: Select existing photos from your device
 - **Data Sync**: Keeps mobile and web data in sync via the API
 - **Material Design 3**: Modern UI matching the web app's look and feel
+- **20 Languages**: Full internationalisation matching web app (all languages except Pirate)
+- **Preferences**: Theme (light/dark/system), currency, distance units, volume units
+- **Docker Build**: Reproducible APK builds via Docker container
+
+### Administration Panel
+- **User Management**: Create, enable/disable, and manage users with role assignment
+- **Role Management**: Assign ROLE_USER and ROLE_ADMIN with multi-select dropdown
+- **Force Password Change**: Require users to reset their password on next login
+- **Feature Flag System**: 49 granular feature flags across 13 categories
+- **Per-User Feature Overrides**: Enable/disable specific features per user (admins get all features)
+- **Vehicle Assignments**: Assign vehicles to users with granular permissions (view, edit, add records, delete)
+- **Bulk Operations**: Toggle all flags per category, reset user flags to defaults
+
+### Standalone / Offline Mode (Mobile)
+- **Dual Mode**: Mobile app operates in standalone (offline) or web (server-connected) mode
+- **Local Storage API**: Full offline API layer backed by AsyncStorage with CRUD operations
+- **Server Configuration**: Connect to any backend instance via configurable URL
+- **Seamless Switching**: Toggle between modes from the settings screen
+
+### Promotional Website
+- **Landing Page**: Static marketing site showcasing platform features
+- **Self-Contained**: Pure HTML/CSS/JS with no build step required
+- **Responsive Design**: Works across all device sizes
 
 ### Technical Features
 - **Secure Authentication**: JWT-based authentication with role management
@@ -130,6 +156,7 @@ make fixtures           # Load sample data
 |---------|----------------|----------------|
 | Frontend | http://localhost:3000 | http://localhost:80 |
 | Backend API | http://localhost:8081/api | http://localhost:8081/api |
+| Promotional Site | http://localhost:8083 | http://localhost:8083 |
 | MySQL | localhost:3306 | localhost:3306 |
 
 ### 5. Default Credentials
@@ -428,6 +455,10 @@ vehicle-management-system/
 │   │   ├── theme/           # Material Design 3 themes
 │   │   └── utils/           # Utility functions
 │   └── README.md            # Mobile app documentation
+├── web/                     # Promotional website
+│   ├── index.html           # Landing page
+│   ├── css/                 # Stylesheets
+│   └── js/                  # Scripts
 ├── docker/                  # Docker configurations
 │   ├── nginx/               # Web server config
 │   ├── php/                 # PHP-FPM config
@@ -439,6 +470,7 @@ vehicle-management-system/
 │   └── AI_CONTEXT.md
 ├── uploads/                 # User file uploads
 ├── docker-compose.yml       # Docker services
+├── docker-compose.mobile.yml # Mobile APK build config
 ├── Makefile                 # Development commands
 └── README.md
 ```
@@ -688,8 +720,12 @@ Key endpoint groups:
 - `/api/road-tax` - Road tax records
 - `/api/attachments` - File uploads
 - `/api/reports` - Report generation
+- `/api/admin/users` - User management (list, create, toggle active, roles, force password change)
+- `/api/admin/feature-flags` - Feature flag administration
+- `/api/admin/users/{id}/features` - Per-user feature overrides (get, update, reset)
+- `/api/admin/users/{id}/assignments` - Vehicle assignment management
 
-Authentication required for all endpoints using JWT tokens.
+Authentication required for all endpoints using JWT tokens. Admin endpoints require `ROLE_ADMIN`.
 
 ## Documentation
 
@@ -702,6 +738,47 @@ Comprehensive documentation is available in the `docs/` folder:
 | [API_REFERENCE.md](docs/API_REFERENCE.md) | Complete REST API documentation |
 | [AI_CONTEXT.md](docs/AI_CONTEXT.md) | Application overview for AI assistants |
 | [Mobile README](mobile/README.md) | React Native mobile app documentation |
+
+### Building the Mobile App
+
+The Android APK is built using Docker for reproducibility:
+
+```bash
+# Build the Docker image
+docker-compose -f docker-compose.mobile.yml build
+
+# Build the APK
+docker-compose -f docker-compose.mobile.yml run --rm mobile-build
+
+# Output: mobile/output/app-release.apk (~59MB)
+```
+
+Install on a connected device or emulator:
+```bash
+adb install -r mobile/output/app-release.apk
+```
+
+### Admin Panel
+
+The admin panel is accessible to users with `ROLE_ADMIN` and provides:
+
+**User Management**
+- View all users with status, roles, and last login
+- Create new users with default preferences
+- Enable/disable user accounts (with self-disable protection)
+- Force password change on next login
+- Assign roles via multi-select dropdown (with self-modification protection)
+
+**Feature Flags (49 flags across 13 categories)**
+- Categories: Vehicles, Fuel Records, Service Records, MOT Records, Parts, Consumables, Insurance, Road Tax, Todos, Reports, Attachments, Depreciation, User Settings
+- Per-user overrides — enable or disable specific features for individual users
+- Admins automatically get all features enabled (bypass all overrides)
+- Bulk toggle all flags per category, reset user flags to defaults
+
+**Vehicle Assignments**
+- Assign specific vehicles to users with granular permissions
+- Permission levels: View, Edit, Add Records, Delete
+- Managed per-user from the admin user details page
 
 ## 🔒 Security
 
@@ -719,12 +796,17 @@ The application uses the following main entities:
 | Entity | Description |
 |--------|-------------|
 | User | User accounts with authentication |
-| UserPreference | User preferences (key-value) |
+| UserPreference | User preferences (language, theme, units, currency) |
 | Vehicle | Vehicle records and specifications |
 | VehicleType | Vehicle categories (Car, Motorcycle, etc.) |
 | VehicleImage | Vehicle photos |
+| VehicleMake | Vehicle manufacturer reference data |
+| VehicleModel | Vehicle model reference data |
+| VehicleAssignment | Vehicle-to-user assignments with granular permissions |
+| VehicleStatusHistory | Vehicle status change audit log |
 | FuelRecord | Fuel purchase tracking |
 | ServiceRecord | Service history with items |
+| ServiceItem | Individual items within a service |
 | MotRecord | MOT test results |
 | Part | Spare parts inventory |
 | PartCategory | Part categorisation |
@@ -734,8 +816,12 @@ The application uses the following main entities:
 | RoadTax | Road tax records |
 | Attachment | File attachments |
 | Specification | Vehicle specifications |
+| SecurityFeature | Vehicle security features |
 | Todo | Maintenance task lists |
 | Report | Generated reports |
+| FeatureFlag | System-wide feature flag definitions (49 flags, 13 categories) |
+| UserFeatureOverride | Per-user feature flag enable/disable overrides |
+| RefreshToken | JWT refresh tokens |
 
 See [docs/AI_CONTEXT.md](docs/AI_CONTEXT.md) for detailed entity relationships.
 
