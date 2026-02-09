@@ -17,13 +17,14 @@ interface VehicleSelectorProps {
 }
 
 const VehicleSelector: React.FC<VehicleSelectorProps> = ({
-  vehicles,
+  vehicles: rawVehicles,
   selectedVehicleId,
   onSelect,
   includeAll = false,
   allLabel = 'All',
 }) => {
   const theme = useTheme();
+  const vehicles = Array.isArray(rawVehicles) ? rawVehicles : [];
 
   const getVehicleLabel = (vehicle: Vehicle) => {
     if (vehicle.name) {

@@ -1,7 +1,7 @@
-import React, {createContext, useContext, useState, useEffect, useCallback, ReactNode} from 'react';
+import React, {createContext, useContext, useState, useEffect, useCallback, useRef, useMemo, ReactNode} from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios, {AxiosInstance} from 'axios';
-import Config from 'react-native-config';
+import Config from '../config';
 
 interface User {
   id: number;
@@ -33,30 +33,6 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const API_URL = Config.API_URL || 'http://10.0.2.2:8081/api';
 
-// Create axios instance
-const createApiInstance = (token: string | null): AxiosInstance => {
-  const instance = axios.create({
-    baseURL: API_URL,
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    timeout: 30000,
-  });
-
-  // Add auth token to requests
-  instance.interceptors.request.use(
-    config => {
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
-      return config;
-    },
-    error => Promise.reject(error),
-  );
-
-  return instance;
-};
-
 interface AuthProviderProps {
   children: ReactNode;
 }
@@ -65,19 +41,67 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [api, setApi] = useState<AxiosInstance>(() => createApiInstance(null));
 
-  // Load stored auth data on mount
+  // Use a ref to always have the latest token available for the interceptor.
+  // This eliminates race conditions where React state hasn't propagated yet.
+  const tokenRef = useRef<string | null>(null);
+
+  // Single stable axios instance — never recreated
+  const api = useMemo<AxiosInstance>(() => {
+    const instance = axios.create({
+      baseURL: API_URL,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      timeout: 30000,
+    });
+
+    // Interceptor reads token from ref, so it always uses the latest value
+    instance.interceptors.request.use(
+      config => {
+        const currentToken = tokenRef.current;
+        if (currentToken) {
+          config.headers.Authorization = `Bearer ${currentToken}`;
+        }
+        return config;
+      },
+      error => Promise.reject(error),
+    );
+
+    return instance;
+  }, []);
+
+  // Helper: update token in both ref (immediate) and state (triggers re-render)
+  const updateAuth = useCallback((newToken: string | null, userData: User | null) => {
+    tokenRef.current = newToken;
+    setToken(newToken);
+    setUser(userData);
+  }, []);
+
+  // Load and verify stored auth data on mount
   useEffect(() => {
     const loadStoredAuth = async () => {
       try {
         const storedToken = await AsyncStorage.getItem('authToken');
-        const storedUser = await AsyncStorage.getItem('authUser');
 
-        if (storedToken && storedUser) {
-          setToken(storedToken);
-          setUser(JSON.parse(storedUser));
-          setApi(createApiInstance(storedToken));
+        if (storedToken) {
+          // Set token in ref immediately so the api instance can use it
+          tokenRef.current = storedToken;
+
+          try {
+            // Verify the stored token is still valid
+            const response = await api.get('/me');
+            const userData = response.data;
+            setToken(storedToken);
+            setUser(userData);
+            await AsyncStorage.setItem('authUser', JSON.stringify(userData));
+          } catch (verifyError) {
+            // Token expired or invalid — clear
+            console.warn('Stored token invalid, clearing auth');
+            tokenRef.current = null;
+            await AsyncStorage.removeItem('authToken');
+            await AsyncStorage.removeItem('authUser');
+          }
         }
       } catch (error) {
         console.error('Error loading stored auth:', error);
@@ -87,56 +111,58 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
     };
 
     loadStoredAuth();
-  }, []);
+  }, [api, updateAuth]);
 
-  // Verify token is still valid
-  useEffect(() => {
-    const verifyToken = async () => {
-      if (!token) return;
-
-      try {
-        const response = await api.get('/me');
-        setUser(response.data);
-        await AsyncStorage.setItem('authUser', JSON.stringify(response.data));
-      } catch (error) {
-        // Token is invalid, clear auth
-        console.error('Token verification failed:', error);
-        await logout();
-      }
-    };
-
-    if (token && !loading) {
-      verifyToken();
-    }
-  }, [token, loading]);
-
-  const login = useCallback(async (email: string, password: string) => {
+  const login = useCallback(async (emailAddress: string, password: string) => {
     try {
       const response = await axios.post(`${API_URL}/login`, {
-        username: email,
+        email: emailAddress,
         password,
       });
 
-      const {token: newToken, user: userData} = response.data;
+      const newToken = response.data.token;
+
+      if (!newToken) {
+        throw new Error('No token received from server');
+      }
+
+      // Set token in ref FIRST so subsequent api calls are authenticated
+      tokenRef.current = newToken;
+
+      // Fetch user profile using the now-authenticated api instance
+      const userResponse = await api.get('/me');
+      const userData = userResponse.data;
 
       await AsyncStorage.setItem('authToken', newToken);
       await AsyncStorage.setItem('authUser', JSON.stringify(userData));
 
+      // Update state to trigger re-render (isAuthenticated becomes true)
       setToken(newToken);
       setUser(userData);
-      setApi(createApiInstance(newToken));
     } catch (error: any) {
-      const message = error.response?.data?.message || 'Login failed';
+      // If login failed, clear the ref
+      tokenRef.current = null;
+      const message = error.response?.data?.detail || error.response?.data?.message || 'Login failed';
       throw new Error(message);
     }
-  }, []);
+  }, [api]);
 
   const logout = useCallback(async () => {
+    tokenRef.current = null;
     await AsyncStorage.removeItem('authToken');
     await AsyncStorage.removeItem('authUser');
+    // Clear offline caches
+    try {
+      const keys = await AsyncStorage.getAllKeys();
+      const cacheKeys = keys.filter(k => k.startsWith('cache_') || k.startsWith('offline_cache_') || k === 'global_selected_vehicle_id');
+      if (cacheKeys.length > 0) {
+        await AsyncStorage.multiRemove(cacheKeys);
+      }
+    } catch (e) {
+      // Non-critical
+    }
     setToken(null);
     setUser(null);
-    setApi(createApiInstance(null));
   }, []);
 
   const register = useCallback(async (data: RegisterData) => {
@@ -145,11 +171,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
       const {token: newToken, user: userData} = response.data;
 
       if (newToken) {
+        tokenRef.current = newToken;
         await AsyncStorage.setItem('authToken', newToken);
         await AsyncStorage.setItem('authUser', JSON.stringify(userData));
         setToken(newToken);
         setUser(userData);
-        setApi(createApiInstance(newToken));
       }
     } catch (error: any) {
       const message = error.response?.data?.error || 'Registration failed';

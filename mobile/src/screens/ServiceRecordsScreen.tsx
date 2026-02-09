@@ -16,9 +16,12 @@ import {
 import {useNavigation} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useAuth} from '../contexts/AuthContext';
+import {useSync} from '../contexts/SyncContext';
 import {useUserPreferences} from '../contexts/UserPreferencesContext';
-import {formatCurrency, formatDate} from '../utils/formatters';
+import {useVehicleSelection} from '../contexts/VehicleSelectionContext';
+import {formatCurrency, formatDate, formatMileage} from '../utils/formatters';
 import {MainStackParamList} from '../navigation/MainNavigator';
 import VehicleSelector from '../components/VehicleSelector';
 
@@ -27,14 +30,21 @@ type NavigationProp = NativeStackNavigationProp<MainStackParamList>;
 interface ServiceRecord {
   id: number;
   vehicleId: number;
-  date: string;
+  serviceDate: string;
   mileage: number | null;
   serviceType: string | null;
-  description: string | null;
-  cost: number | null;
-  garage: string | null;
+  workPerformed: string | null;
+  totalCost: string | null;
+  laborCost: string | null;
+  partsCost: string | null;
+  consumablesCost: string | null;
+  additionalCosts: string | null;
+  serviceProvider: string | null;
   nextServiceDate: string | null;
   nextServiceMileage: number | null;
+  notes: string | null;
+  receiptAttachmentId: number | null;
+  createdAt: string;
 }
 
 interface Vehicle {
@@ -47,16 +57,30 @@ const ServiceRecordsScreen: React.FC = () => {
   const theme = useTheme();
   const navigation = useNavigation<NavigationProp>();
   const {api} = useAuth();
+  const {isOnline} = useSync();
   const {preferences} = useUserPreferences();
+  const {globalVehicleId, setGlobalVehicleId} = useVehicleSelection();
   
   const [records, setRecords] = useState<ServiceRecord[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [selectedVehicleId, setSelectedVehicleId] = useState<number | 'all'>('all');
+  const selectedVehicleId = globalVehicleId;
+  const setSelectedVehicleId = setGlobalVehicleId;
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const loadData = useCallback(async () => {
     try {
+      // Load from cache first
+      const cacheKey = `cache_service_${selectedVehicleId}`;
+      try {
+        const cached = await AsyncStorage.getItem(cacheKey);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          setVehicles(parsed.vehicles || []);
+          setRecords(parsed.records || []);
+        }
+      } catch (e) { /* cache miss is fine */ }
+
       const [vehiclesRes, recordsRes] = await Promise.all([
         api.get('/vehicles'),
         api.get('/service-records', {
@@ -64,8 +88,12 @@ const ServiceRecordsScreen: React.FC = () => {
         }),
       ]);
       
-      setVehicles(vehiclesRes.data || []);
-      setRecords(recordsRes.data || []);
+      const newVehicles = vehiclesRes.data || [];
+      const newRecords = recordsRes.data || [];
+      setVehicles(newVehicles);
+      setRecords(newRecords);
+
+      await AsyncStorage.setItem(cacheKey, JSON.stringify({vehicles: newVehicles, records: newRecords})).catch(() => {});
     } catch (error) {
       console.error('Error loading service records:', error);
     } finally {
@@ -99,7 +127,7 @@ const ServiceRecordsScreen: React.FC = () => {
     return 'wrench';
   };
 
-  const distanceUnit = preferences.distanceUnit === 'km' ? 'km' : 'mi';
+  const userUnit = preferences.distanceUnit === 'km' ? 'km' : 'mi' as const;
 
   const renderRecord = ({item}: {item: ServiceRecord}) => (
     <Card
@@ -119,33 +147,33 @@ const ServiceRecordsScreen: React.FC = () => {
                 {item.serviceType || 'Service'}
               </Text>
               <Text variant="bodySmall" style={{color: theme.colors.onSurfaceVariant}}>
-                {getVehicleLabel(item.vehicleId)} • {formatDate(item.date)}
+                {getVehicleLabel(item.vehicleId)} • {formatDate(item.serviceDate)}
               </Text>
             </View>
           </View>
           <Text variant="titleLarge" style={{color: theme.colors.primary}}>
-            {formatCurrency(item.cost || 0, preferences.currency)}
+            {formatCurrency(item.totalCost, preferences.currency)}
           </Text>
         </View>
 
-        {item.description && (
+        {item.workPerformed && (
           <Text 
             variant="bodyMedium" 
             style={styles.description}
             numberOfLines={2}>
-            {item.description}
+            {item.workPerformed}
           </Text>
         )}
         
         <View style={styles.recordDetails}>
           {item.mileage && (
             <Chip icon="speedometer" compact style={styles.chip}>
-              {item.mileage.toLocaleString()} {distanceUnit}
+              {formatMileage(item.mileage, userUnit)}
             </Chip>
           )}
-          {item.garage && (
+          {item.serviceProvider && (
             <Chip icon="garage" compact style={styles.chip}>
-              {item.garage}
+              {item.serviceProvider}
             </Chip>
           )}
           {item.nextServiceDate && (
@@ -168,6 +196,12 @@ const ServiceRecordsScreen: React.FC = () => {
 
   return (
     <View style={[styles.container, {backgroundColor: theme.colors.background}]}>
+      {!isOnline && (
+        <View style={{backgroundColor: theme.colors.errorContainer, padding: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'center'}}>
+          <Icon name="cloud-off-outline" size={16} color={theme.colors.onErrorContainer} />
+          <Text style={{color: theme.colors.onErrorContainer, marginLeft: 6, fontSize: 13}}>Offline — showing cached data</Text>
+        </View>
+      )}
       <VehicleSelector
         vehicles={vehicles}
         selectedVehicleId={selectedVehicleId}

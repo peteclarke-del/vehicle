@@ -16,9 +16,12 @@ import {
 import {useNavigation} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useAuth} from '../contexts/AuthContext';
+import {useSync} from '../contexts/SyncContext';
 import {useUserPreferences} from '../contexts/UserPreferencesContext';
-import {formatCurrency, formatDate} from '../utils/formatters';
+import {useVehicleSelection} from '../contexts/VehicleSelectionContext';
+import {formatCurrency, formatDate, formatMileage} from '../utils/formatters';
 import {MainStackParamList} from '../navigation/MainNavigator';
 import VehicleSelector from '../components/VehicleSelector';
 
@@ -29,12 +32,13 @@ interface FuelRecord {
   vehicleId: number;
   date: string;
   mileage: number | null;
-  litres: number | null;
-  cost: number | null;
+  litres: string | number | null;
+  cost: string | number | null;
   station: string | null;
   fuelType: string | null;
-  fullTank: boolean;
-  mpg: number | null;
+  notes: string | null;
+  receiptAttachmentId: number | null;
+  createdAt: string;
 }
 
 interface Vehicle {
@@ -47,16 +51,31 @@ const FuelRecordsScreen: React.FC = () => {
   const theme = useTheme();
   const navigation = useNavigation<NavigationProp>();
   const {api} = useAuth();
+  const {isOnline} = useSync();
   const {preferences} = useUserPreferences();
+  const {globalVehicleId, setGlobalVehicleId} = useVehicleSelection();
   
   const [records, setRecords] = useState<FuelRecord[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [selectedVehicleId, setSelectedVehicleId] = useState<number | 'all'>('all');
+  const selectedVehicleId = globalVehicleId;
+  const setSelectedVehicleId = setGlobalVehicleId;
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const loadData = useCallback(async () => {
     try {
+      // Try to load from cache first for instant display
+      const cacheKey = `cache_fuel_${selectedVehicleId}`;
+      try {
+        const cached = await AsyncStorage.getItem(cacheKey);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          setRecords(parsed.records || []);
+          setVehicles(parsed.vehicles || []);
+        }
+      } catch (e) { /* cache miss is fine */ }
+
+      // Then fetch from network
       const [vehiclesRes, recordsRes] = await Promise.all([
         api.get('/vehicles'),
         api.get('/fuel-records', {
@@ -64,8 +83,13 @@ const FuelRecordsScreen: React.FC = () => {
         }),
       ]);
       
-      setVehicles(vehiclesRes.data || []);
-      setRecords(recordsRes.data || []);
+      const newVehicles = vehiclesRes.data || [];
+      const newRecords = recordsRes.data || [];
+      setVehicles(newVehicles);
+      setRecords(newRecords);
+
+      // Cache the fresh data
+      await AsyncStorage.setItem(cacheKey, JSON.stringify({vehicles: newVehicles, records: newRecords})).catch(() => {});
     } catch (error) {
       console.error('Error loading fuel records:', error);
     } finally {
@@ -88,7 +112,7 @@ const FuelRecordsScreen: React.FC = () => {
     return vehicle?.name || vehicle?.registration || 'Unknown';
   };
 
-  const distanceUnit = preferences.distanceUnit === 'km' ? 'km' : 'mi';
+  const userUnit = preferences.distanceUnit === 'km' ? 'km' : 'mi' as const;
 
   const renderRecord = ({item}: {item: FuelRecord}) => (
     <Card
@@ -103,24 +127,24 @@ const FuelRecordsScreen: React.FC = () => {
             </Text>
           </View>
           <Text variant="titleLarge" style={{color: theme.colors.primary}}>
-            {formatCurrency(item.cost || 0, preferences.currency)}
+            {formatCurrency(item.cost, preferences.currency)}
           </Text>
         </View>
         
         <View style={styles.recordDetails}>
           {item.litres && (
             <Chip icon="water" compact style={styles.chip}>
-              {item.litres.toFixed(2)} L
+              {Number(item.litres).toFixed(2)} L
             </Chip>
           )}
           {item.mileage && (
             <Chip icon="speedometer" compact style={styles.chip}>
-              {item.mileage.toLocaleString()} {distanceUnit}
+              {formatMileage(item.mileage, userUnit)}
             </Chip>
           )}
-          {item.mpg && (
-            <Chip icon="gauge" compact style={styles.chip}>
-              {item.mpg.toFixed(1)} mpg
+          {item.fuelType && (
+            <Chip icon="fuel" compact style={styles.chip}>
+              {item.fuelType}
             </Chip>
           )}
           {item.station && (
@@ -143,6 +167,12 @@ const FuelRecordsScreen: React.FC = () => {
 
   return (
     <View style={[styles.container, {backgroundColor: theme.colors.background}]}>
+      {!isOnline && (
+        <View style={{backgroundColor: theme.colors.errorContainer, padding: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'center'}}>
+          <Icon name="cloud-off-outline" size={16} color={theme.colors.onErrorContainer} />
+          <Text style={{color: theme.colors.onErrorContainer, marginLeft: 6, fontSize: 13}}>Offline — showing cached data</Text>
+        </View>
+      )}
       <VehicleSelector
         vehicles={vehicles}
         selectedVehicleId={selectedVehicleId}

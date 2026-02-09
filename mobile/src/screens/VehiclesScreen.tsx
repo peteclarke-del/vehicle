@@ -18,8 +18,12 @@ import {
 import {useNavigation} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useAuth} from '../contexts/AuthContext';
+import {useSync} from '../contexts/SyncContext';
 import {useUserPreferences} from '../contexts/UserPreferencesContext';
+import {useVehicleSelection} from '../contexts/VehicleSelectionContext';
+import {formatMileage} from '../utils/formatters';
 import {MainStackParamList} from '../navigation/MainNavigator';
 
 type NavigationProp = NativeStackNavigationProp<MainStackParamList>;
@@ -44,19 +48,31 @@ const VehiclesScreen: React.FC = () => {
   const theme = useTheme();
   const navigation = useNavigation<NavigationProp>();
   const {api} = useAuth();
+  const {isOnline} = useSync();
   const {preferences} = useUserPreferences();
+  const {setGlobalVehicleId} = useVehicleSelection();
   
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [filteredVehicles, setFilteredVehicles] = useState<Vehicle[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('Live');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
 
   const loadVehicles = useCallback(async () => {
     try {
+      // Load from cache first
+      try {
+        const cached = await AsyncStorage.getItem('cache_vehicles');
+        if (cached) {
+          setVehicles(JSON.parse(cached));
+        }
+      } catch (e) { /* cache miss is fine */ }
+
       const response = await api.get('/vehicles');
-      setVehicles(response.data || []);
+      const data = Array.isArray(response.data) ? response.data : [];
+      setVehicles(data);
+      await AsyncStorage.setItem('cache_vehicles', JSON.stringify(data)).catch(() => {});
     } catch (error) {
       console.error('Error loading vehicles:', error);
     } finally {
@@ -73,7 +89,9 @@ const VehiclesScreen: React.FC = () => {
     
     // Apply status filter
     if (statusFilter && statusFilter !== 'all') {
-      filtered = filtered.filter(v => v.status === statusFilter);
+      filtered = filtered.filter(v => 
+        v.status?.toLowerCase() === statusFilter.toLowerCase()
+      );
     }
     
     // Apply search filter
@@ -96,7 +114,7 @@ const VehiclesScreen: React.FC = () => {
     setRefreshing(false);
   }, [loadVehicles]);
 
-  const distanceUnit = preferences.distanceUnit === 'km' ? 'km' : 'mi';
+  const userUnit = preferences.distanceUnit === 'km' ? 'km' : 'mi' as const;
 
   const getVehicleIcon = (fuelType: string | null) => {
     switch (fuelType?.toLowerCase()) {
@@ -112,7 +130,7 @@ const VehiclesScreen: React.FC = () => {
   const renderVehicle = ({item}: {item: Vehicle}) => (
     <Card
       style={styles.vehicleCard}
-      onPress={() => navigation.navigate('VehicleDetail', {vehicleId: item.id})}>
+      onPress={() => { setGlobalVehicleId(item.id); navigation.navigate('VehicleDetail', {vehicleId: item.id}); }}>
       <Card.Title
         title={item.name || item.registration}
         subtitle={`${item.make || ''} ${item.model || ''} ${item.year || ''}`.trim() || 'Unknown Vehicle'}
@@ -128,7 +146,7 @@ const VehiclesScreen: React.FC = () => {
           <IconButton
             {...props}
             icon="chevron-right"
-            onPress={() => navigation.navigate('VehicleDetail', {vehicleId: item.id})}
+            onPress={() => { setGlobalVehicleId(item.id); navigation.navigate('VehicleDetail', {vehicleId: item.id}); }}
           />
         )}
       />
@@ -144,7 +162,7 @@ const VehiclesScreen: React.FC = () => {
             <View style={styles.infoItem}>
               <Icon name="speedometer" size={16} color={theme.colors.onSurfaceVariant} />
               <Text variant="bodySmall" style={styles.infoText}>
-                {item.currentMileage.toLocaleString()} {distanceUnit}
+                {formatMileage(item.currentMileage, userUnit)}
               </Text>
             </View>
           )}
@@ -171,6 +189,12 @@ const VehiclesScreen: React.FC = () => {
 
   return (
     <View style={[styles.container, {backgroundColor: theme.colors.background}]}>
+      {!isOnline && (
+        <View style={{backgroundColor: theme.colors.errorContainer, padding: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'center'}}>
+          <Icon name="cloud-off-outline" size={16} color={theme.colors.onErrorContainer} />
+          <Text style={{color: theme.colors.onErrorContainer, marginLeft: 6, fontSize: 13}}>Offline — showing cached data</Text>
+        </View>
+      )}
       <Searchbar
         placeholder="Search vehicles..."
         onChangeText={setSearchQuery}

@@ -4,6 +4,7 @@ import {
   StyleSheet,
   ScrollView,
   RefreshControl,
+  TouchableOpacity,
 } from 'react-native';
 import {
   Text,
@@ -11,62 +12,123 @@ import {
   useTheme,
   ActivityIndicator,
   Surface,
-  Chip,
+  IconButton,
+  Button,
 } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {useNavigation} from '@react-navigation/native';
+import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {useAuth} from '../contexts/AuthContext';
 import {useSync} from '../contexts/SyncContext';
 import {useUserPreferences} from '../contexts/UserPreferencesContext';
-import {formatCurrency} from '../utils/formatters';
+import {formatCurrency, formatDate, convertDistance} from '../utils/formatters';
+import {
+  VehicleNotification,
+  calculateVehicleNotifications,
+  fireSystemNotifications,
+} from '../services/NotificationService';
+import {MainStackParamList} from '../navigation/MainNavigator';
+
+type NavigationProp = NativeStackNavigationProp<MainStackParamList>;
 
 interface DashboardStats {
   totalVehicles: number;
   totalFuelCost: number;
   totalServiceCost: number;
   totalMileage: number;
-  upcomingMots: number;
-  upcomingInsurance: number;
 }
 
 const DashboardScreen: React.FC = () => {
   const theme = useTheme();
+  const navigation = useNavigation<NavigationProp>();
   const {api} = useAuth();
   const {isOnline, pendingChanges, lastSyncTime} = useSync();
   const {preferences} = useUserPreferences();
-  
+
   const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [vehicles, setVehicles] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<VehicleNotification[]>([]);
+  const [dismissedKeys, setDismissedKeys] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
+  // Load dismissed notification keys from storage
+  useEffect(() => {
+    AsyncStorage.getItem('dismissed_notifications')
+      .then(val => {
+        if (val) setDismissedKeys(new Set(JSON.parse(val)));
+      })
+      .catch(() => {});
+  }, []);
+
+  const dismissNotification = useCallback((notif: VehicleNotification) => {
+    const key = `${notif.vehicleId}-${notif.type}`;
+    setDismissedKeys(prev => {
+      const next = new Set(prev);
+      next.add(key);
+      AsyncStorage.setItem('dismissed_notifications', JSON.stringify([...next])).catch(() => {});
+      return next;
+    });
+  }, []);
+
+  const clearAllNotifications = useCallback(() => {
+    const allKeys = notifications.map(n => `${n.vehicleId}-${n.type}`);
+    setDismissedKeys(new Set(allKeys));
+    AsyncStorage.setItem('dismissed_notifications', JSON.stringify(allKeys)).catch(() => {});
+  }, [notifications]);
+
+  const resetDismissed = useCallback(() => {
+    setDismissedKeys(new Set());
+    AsyncStorage.removeItem('dismissed_notifications').catch(() => {});
+  }, []);
+
   const loadDashboardData = useCallback(async () => {
     try {
+      // Load cached dashboard data first for instant display
+      try {
+        const cached = await AsyncStorage.getItem('cache_dashboard');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed.stats) setStats(parsed.stats);
+          if (parsed.notifications) setNotifications(parsed.notifications);
+        }
+      } catch (e) { /* cache miss is fine */ }
+
       const [vehiclesRes, totalsRes] = await Promise.all([
         api.get('/vehicles'),
         api.get('/vehicles/totals').catch(() => ({data: null})),
       ]);
 
-      setVehicles(vehiclesRes.data || []);
-      
-      if (totalsRes.data) {
-        setStats({
-          totalVehicles: totalsRes.data.totalVehicles || 0,
-          totalFuelCost: totalsRes.data.totalFuelCost || 0,
-          totalServiceCost: totalsRes.data.totalServiceCost || 0,
-          totalMileage: totalsRes.data.totalMileage || 0,
-          upcomingMots: totalsRes.data.upcomingMots || 0,
-          upcomingInsurance: totalsRes.data.upcomingInsurance || 0,
-        });
-      } else {
-        // Calculate basic stats from vehicles
-        setStats({
-          totalVehicles: vehiclesRes.data?.length || 0,
-          totalFuelCost: 0,
-          totalServiceCost: 0,
-          totalMileage: vehiclesRes.data?.reduce((sum: number, v: any) => sum + (v.currentMileage || 0), 0) || 0,
-          upcomingMots: 0,
-          upcomingInsurance: 0,
-        });
+      const vehicleList = Array.isArray(vehiclesRes.data) ? vehiclesRes.data : [];
+
+      // API returns: {periodMonths, fuel, parts, consumables, averageServiceCost}
+      const totals = totalsRes.data;
+      const totalMileage = vehicleList.reduce(
+        (sum: number, v: any) => sum + (v.currentMileage || 0),
+        0,
+      );
+
+      const newStats = {
+        totalVehicles: vehicleList.length,
+        totalFuelCost: Number(totals?.fuel) || 0,
+        totalServiceCost: (Number(totals?.parts) || 0) + (Number(totals?.consumables) || 0),
+        totalMileage,
+      };
+      setStats(newStats);
+
+      // Calculate vehicle notifications from real data
+      const vehicleNotifications = calculateVehicleNotifications(vehicleList);
+      setNotifications(vehicleNotifications);
+
+      // Cache the fresh data
+      await AsyncStorage.setItem('cache_dashboard', JSON.stringify({
+        stats: newStats,
+        notifications: vehicleNotifications,
+      })).catch(() => {});
+
+      // Fire system notifications for critical items (runs once per load)
+      if (vehicleNotifications.some(n => n.severity === 'danger' || n.severity === 'warning')) {
+        fireSystemNotifications(vehicleNotifications).catch(() => {});
       }
     } catch (error) {
       console.error('Error loading dashboard data:', error);
@@ -85,7 +147,32 @@ const DashboardScreen: React.FC = () => {
     setRefreshing(false);
   }, [loadDashboardData]);
 
-  const distanceUnit = preferences.distanceUnit === 'km' ? 'km' : 'miles';
+  const userUnit = preferences.distanceUnit === 'km' ? 'km' : 'mi' as const;
+  const distanceLabel = userUnit === 'km' ? 'km' : 'miles';
+
+  const getSeverityColors = (severity: string) => {
+    switch (severity) {
+      case 'danger':
+        return {
+          bg: theme.colors.errorContainer,
+          text: theme.colors.onErrorContainer,
+          icon: theme.colors.error,
+        };
+      case 'warning':
+        return {
+          bg: '#FEF3C7',
+          text: '#92400E',
+          icon: '#F59E0B',
+        };
+      case 'info':
+      default:
+        return {
+          bg: theme.colors.primaryContainer,
+          text: theme.colors.onPrimaryContainer,
+          icon: theme.colors.primary,
+        };
+    }
+  };
 
   if (loading) {
     return (
@@ -94,6 +181,15 @@ const DashboardScreen: React.FC = () => {
       </View>
     );
   }
+
+  const dangerCount = notifications.filter(n => n.severity === 'danger').length;
+  const warningCount = notifications.filter(n => n.severity === 'warning').length;
+  const infoCount = notifications.filter(n => n.severity === 'info').length;
+
+  // Filter out dismissed notifications for display
+  const visibleNotifications = notifications.filter(
+    n => !dismissedKeys.has(`${n.vehicleId}-${n.type}`),
+  );
 
   return (
     <ScrollView
@@ -132,7 +228,7 @@ const DashboardScreen: React.FC = () => {
           <Card.Content style={styles.statContent}>
             <Icon name="gas-station" size={32} color={theme.colors.tertiary} />
             <Text variant="headlineMedium" style={styles.statValue}>
-              {formatCurrency(stats?.totalFuelCost || 0, preferences.currency)}
+              {formatCurrency(stats?.totalFuelCost, preferences.currency)}
             </Text>
             <Text variant="bodySmall" style={{color: theme.colors.onSurfaceVariant}}>
               Fuel Costs
@@ -144,7 +240,7 @@ const DashboardScreen: React.FC = () => {
           <Card.Content style={styles.statContent}>
             <Icon name="wrench" size={32} color={theme.colors.secondary} />
             <Text variant="headlineMedium" style={styles.statValue}>
-              {formatCurrency(stats?.totalServiceCost || 0, preferences.currency)}
+              {formatCurrency(stats?.totalServiceCost, preferences.currency)}
             </Text>
             <Text variant="bodySmall" style={{color: theme.colors.onSurfaceVariant}}>
               Service Costs
@@ -156,67 +252,131 @@ const DashboardScreen: React.FC = () => {
           <Card.Content style={styles.statContent}>
             <Icon name="road-variant" size={32} color={theme.colors.primary} />
             <Text variant="headlineMedium" style={styles.statValue}>
-              {stats?.totalMileage?.toLocaleString() || 0}
+              {(convertDistance(stats?.totalMileage, userUnit) || 0).toLocaleString('en-GB')}
             </Text>
             <Text variant="bodySmall" style={{color: theme.colors.onSurfaceVariant}}>
-              Total {distanceUnit}
+              Total {distanceLabel}
             </Text>
           </Card.Content>
         </Card>
       </View>
 
-      {/* Alerts Section */}
-      {(stats?.upcomingMots || 0) > 0 || (stats?.upcomingInsurance || 0) > 0 ? (
-        <Card style={styles.alertCard}>
-          <Card.Title title="Upcoming Renewals" />
-          <Card.Content>
-            <View style={styles.alertsRow}>
-              {(stats?.upcomingMots || 0) > 0 && (
-                <Chip icon="file-document" style={styles.alertChip}>
-                  {stats?.upcomingMots} MOT{stats?.upcomingMots !== 1 ? 's' : ''} due
-                </Chip>
+      {/* Quick Actions */}
+      <View style={styles.quickActionsRow}>
+        <TouchableOpacity
+          style={[styles.quickAction, {backgroundColor: theme.colors.primaryContainer}]}
+          onPress={() => navigation.navigate('QuickFuel')}
+          activeOpacity={0.7}>
+          <Icon name="gas-station" size={28} color={theme.colors.primary} />
+          <Text variant="labelMedium" style={{color: theme.colors.onPrimaryContainer, marginTop: 4}}>
+            Quick Fuel
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.quickAction, {backgroundColor: theme.colors.secondaryContainer}]}
+          onPress={() => navigation.navigate('VehicleLookup')}
+          activeOpacity={0.7}>
+          <Icon name="car-search" size={28} color={theme.colors.secondary} />
+          <Text variant="labelMedium" style={{color: theme.colors.onSecondaryContainer, marginTop: 4}}>
+            Reg Lookup
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Notifications Section */}
+      <View style={styles.notificationsHeader}>
+        <Text variant="titleMedium" style={{fontWeight: 'bold'}}>
+          Notifications
+        </Text>
+        <View style={styles.notificationActions}>
+          {notifications.length > 0 && (
+            <View style={styles.notificationBadges}>
+              {dangerCount > 0 && (
+                <View style={[styles.badge, {backgroundColor: theme.colors.error}]}>
+                  <Text variant="labelSmall" style={{color: theme.colors.onError, fontWeight: 'bold'}}>
+                    {dangerCount}
+                  </Text>
+                </View>
               )}
-              {(stats?.upcomingInsurance || 0) > 0 && (
-                <Chip icon="shield-car" style={styles.alertChip}>
-                  {stats?.upcomingInsurance} Insurance due
-                </Chip>
+              {warningCount > 0 && (
+                <View style={[styles.badge, {backgroundColor: '#F59E0B'}]}>
+                  <Text variant="labelSmall" style={{color: '#FFFFFF', fontWeight: 'bold'}}>
+                    {warningCount}
+                  </Text>
+                </View>
+              )}
+              {infoCount > 0 && (
+                <View style={[styles.badge, {backgroundColor: theme.colors.primary}]}>
+                  <Text variant="labelSmall" style={{color: theme.colors.onPrimary, fontWeight: 'bold'}}>
+                    {infoCount}
+                  </Text>
+                </View>
               )}
             </View>
-          </Card.Content>
-        </Card>
-      ) : null}
+          )}
+          {visibleNotifications.length > 0 && (
+            <TouchableOpacity onPress={clearAllNotifications} style={{marginLeft: 8}}>
+              <Text variant="labelSmall" style={{color: theme.colors.primary}}>Clear all</Text>
+            </TouchableOpacity>
+          )}
+          {dismissedKeys.size > 0 && visibleNotifications.length === 0 && (
+            <TouchableOpacity onPress={resetDismissed} style={{marginLeft: 8}}>
+              <Text variant="labelSmall" style={{color: theme.colors.primary}}>Show all</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
 
-      {/* Recent Vehicles */}
-      <Text variant="titleMedium" style={styles.sectionTitle}>
-        Your Vehicles
-      </Text>
-      {vehicles.slice(0, 5).map(vehicle => (
-        <Card key={vehicle.id} style={styles.vehicleCard}>
-          <Card.Title
-            title={vehicle.name || vehicle.registration}
-            subtitle={`${vehicle.make || ''} ${vehicle.model || ''} ${vehicle.year || ''}`.trim()}
-            left={props => <Icon {...props} name="car" size={24} color={theme.colors.primary} />}
-            right={props => (
-              <Text {...props} style={styles.mileageText}>
-                {vehicle.currentMileage?.toLocaleString() || 0} {distanceUnit}
-              </Text>
-            )}
-          />
-        </Card>
-      ))}
-
-      {vehicles.length === 0 && (
-        <Card style={styles.emptyCard}>
-          <Card.Content style={styles.emptyContent}>
-            <Icon name="car-off" size={48} color={theme.colors.onSurfaceVariant} />
-            <Text variant="bodyLarge" style={{color: theme.colors.onSurfaceVariant, marginTop: 16}}>
-              No vehicles yet
+      {visibleNotifications.length === 0 ? (
+        <Card style={styles.emptyNotificationCard}>
+          <Card.Content style={styles.emptyNotificationContent}>
+            <Icon name="check-circle" size={48} color={theme.colors.primary} />
+            <Text variant="bodyLarge" style={{marginTop: 12, color: theme.colors.onSurfaceVariant}}>
+              All clear!
             </Text>
-            <Text variant="bodySmall" style={{color: theme.colors.onSurfaceVariant}}>
-              Add your first vehicle to get started
+            <Text variant="bodySmall" style={{color: theme.colors.onSurfaceVariant, textAlign: 'center'}}>
+              No upcoming MOT, insurance, road tax or service reminders.
             </Text>
           </Card.Content>
         </Card>
+      ) : (
+        visibleNotifications.map((notif, index) => {
+          const colors = getSeverityColors(notif.severity);
+          return (
+            <Card
+              key={`${notif.vehicleId}-${notif.type}-${index}`}
+              style={[styles.notificationCard, {backgroundColor: colors.bg}]}>
+              <Card.Content style={styles.notificationContent}>
+                <TouchableOpacity
+                  style={{flexDirection: 'row', alignItems: 'center', flex: 1}}
+                  onPress={() => navigation.navigate('VehicleDetail', {vehicleId: notif.vehicleId})}
+                  activeOpacity={0.7}>
+                  <Icon name={notif.icon} size={28} color={colors.icon} />
+                  <View style={styles.notificationText}>
+                    <Text variant="titleSmall" style={{color: colors.text, fontWeight: 'bold'}}>
+                      {notif.title}
+                    </Text>
+                    <Text variant="bodySmall" style={{color: colors.text}}>
+                      {notif.message}
+                    </Text>
+                    {notif.dueDate && (
+                      <Text variant="labelSmall" style={{color: colors.text, opacity: 0.7, marginTop: 2}}>
+                        {formatDate(notif.dueDate)}
+                      </Text>
+                    )}
+                  </View>
+                </TouchableOpacity>
+                <IconButton
+                  icon="close"
+                  size={18}
+                  iconColor={colors.text}
+                  onPress={() => dismissNotification(notif)}
+                  style={{margin: -4, opacity: 0.7}}
+                />
+              </Card.Content>
+            </Card>
+          );
+        })
       )}
 
       {/* Last Sync Info */}
@@ -263,42 +423,67 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginTop: 8,
   },
-  alertCard: {
-    margin: 16,
-    marginTop: 8,
-  },
-  alertsRow: {
+  notificationsHeader: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  alertChip: {
-    marginRight: 8,
-  },
-  sectionTitle: {
-    marginHorizontal: 16,
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  vehicleCard: {
-    marginHorizontal: 16,
-    marginBottom: 8,
-  },
-  mileageText: {
-    marginRight: 16,
-    fontSize: 12,
-  },
-  emptyCard: {
-    margin: 16,
-  },
-  emptyContent: {
+    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 32,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 8,
+  },
+  notificationActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  notificationBadges: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  badge: {
+    minWidth: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 6,
+  },
+  emptyNotificationCard: {
+    marginHorizontal: 16,
+    marginBottom: 8,
+  },
+  emptyNotificationContent: {
+    alignItems: 'center',
+    paddingVertical: 24,
+  },
+  notificationCard: {
+    marginHorizontal: 16,
+    marginBottom: 8,
+  },
+  notificationContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  notificationText: {
+    flex: 1,
   },
   lastSync: {
     textAlign: 'center',
     padding: 16,
     opacity: 0.6,
+  },
+  quickActionsRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 12,
+    paddingTop: 8,
+    gap: 8,
+  },
+  quickAction: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    borderRadius: 12,
   },
 });
 

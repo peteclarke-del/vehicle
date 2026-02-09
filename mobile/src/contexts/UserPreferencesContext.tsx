@@ -5,16 +5,21 @@ import {useAuth} from './AuthContext';
 interface Preferences {
   defaultVehicleId: number | null;
   defaultRowsPerPage: number;
-  theme: 'light' | 'dark';
+  theme: 'light' | 'dark' | 'system';
   preferredLanguage: string;
   distanceUnit: 'km' | 'mi';
+  volumeUnit: 'l' | 'gal';
   currency: string;
+  serviceReminders: boolean;
+  motReminders: boolean;
+  insuranceReminders: boolean;
 }
 
 interface UserPreferencesContextType {
   preferences: Preferences;
   loading: boolean;
   updatePreference: (key: keyof Preferences, value: any) => Promise<void>;
+  updatePreferences: (updates: Partial<Preferences>) => Promise<void>;
   refreshPreferences: () => Promise<void>;
   setDefaultVehicle: (vehicleId: number | null) => Promise<void>;
 }
@@ -22,10 +27,14 @@ interface UserPreferencesContextType {
 const defaultPreferences: Preferences = {
   defaultVehicleId: null,
   defaultRowsPerPage: 10,
-  theme: 'light',
+  theme: 'system',
   preferredLanguage: 'en',
   distanceUnit: 'mi',
+  volumeUnit: 'l',
   currency: 'GBP',
+  serviceReminders: true,
+  motReminders: true,
+  insuranceReminders: true,
 };
 
 const UserPreferencesContext = createContext<UserPreferencesContextType | undefined>(undefined);
@@ -50,7 +59,8 @@ export const UserPreferencesProvider: React.FC<UserPreferencesProviderProps> = (
       // Then fetch from server if authenticated
       if (isAuthenticated) {
         const response = await api.get('/user/preferences');
-        const serverPrefs = response.data;
+        // API returns {data: {preferredLanguage, distanceUnit, ...}} — unwrap the envelope
+        const serverPrefs = response.data?.data || response.data || {};
         
         const merged = {
           ...defaultPreferences,
@@ -78,11 +88,24 @@ export const UserPreferencesProvider: React.FC<UserPreferencesProviderProps> = (
       await AsyncStorage.setItem('userPreferences', JSON.stringify(newPreferences));
 
       if (isAuthenticated) {
-        await api.post('/user/preferences', {[key]: value});
+        await api.post('/user/preferences', {[key]: value}).catch(() => {});
       }
     } catch (error) {
       console.error('Error updating preference:', error);
-      throw error;
+    }
+  }, [api, isAuthenticated, preferences]);
+
+  const updatePreferences = useCallback(async (updates: Partial<Preferences>) => {
+    try {
+      const newPreferences = {...preferences, ...updates};
+      setPreferences(newPreferences);
+      await AsyncStorage.setItem('userPreferences', JSON.stringify(newPreferences));
+
+      if (isAuthenticated) {
+        await api.post('/user/preferences', updates).catch(() => {});
+      }
+    } catch (error) {
+      console.error('Error updating preferences:', error);
     }
   }, [api, isAuthenticated, preferences]);
 
@@ -99,6 +122,7 @@ export const UserPreferencesProvider: React.FC<UserPreferencesProviderProps> = (
     preferences,
     loading,
     updatePreference,
+    updatePreferences,
     refreshPreferences,
     setDefaultVehicle,
   };

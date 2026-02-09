@@ -1,0 +1,21 @@
+# Docker Compose for building the Vehicle Manager Android APK
+# Usage: docker compose -f docker-compose.mobile.yml up --build
+
+services:
+  mobile-build:
+    build:
+      context: ./mobile
+      dockerfile: docker/Dockerfile
+    container_name: vehicle-mobile-build
+    volumes:
+      # Output directory for the built APK
+      - ./mobile/output:/app/output
+      # Cache gradle dependencies
+      - gradle-cache:/root/.gradle
+    environment:
+      - ANDROID_HOME=/opt/android-sdk
+      - JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+    command: /bin/bash /app/docker/build.sh
+
+volumes:
+  gradle-cache:

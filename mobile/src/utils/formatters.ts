@@ -6,17 +6,18 @@
  * Format a number as currency
  */
 export const formatCurrency = (
-  amount: number,
+  amount: number | string | null | undefined,
   currency: string = 'GBP',
   locale: string = 'en-GB',
 ): string => {
+  const safeAmount = Number(amount) || 0;
   try {
     return new Intl.NumberFormat(locale, {
       style: 'currency',
       currency,
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
-    }).format(amount);
+    }).format(safeAmount);
   } catch {
     // Fallback if Intl is not available
     const symbols: Record<string, string> = {
@@ -27,7 +28,7 @@ export const formatCurrency = (
       CAD: 'C$',
     };
     const symbol = symbols[currency] || currency;
-    return `${symbol}${amount.toFixed(2)}`;
+    return `${symbol}${safeAmount.toFixed(2)}`;
   }
 };
 
@@ -89,14 +90,32 @@ export const formatNumber = (num: number | null | undefined): string => {
 };
 
 /**
- * Format mileage with unit
+ * Convert distance from km (DB storage) to user's preferred unit.
+ * The database stores all distances in kilometres.
+ * If user prefers miles, convert km → miles.
+ * If user prefers km, return as-is.
+ */
+export const convertDistance = (
+  valueInKm: number | null | undefined,
+  userUnit: 'mi' | 'km' = 'km',
+): number | null => {
+  if (valueInKm === null || valueInKm === undefined) return null;
+  if (userUnit === 'mi') {
+    return Math.round(valueInKm / 1.60934);
+  }
+  return valueInKm;
+};
+
+/**
+ * Format mileage with unit, converting from km (DB) to user preference.
  */
 export const formatMileage = (
-  mileage: number | null | undefined,
-  unit: 'mi' | 'km' = 'mi',
+  mileageInKm: number | null | undefined,
+  unit: 'mi' | 'km' = 'km',
 ): string => {
-  if (mileage === null || mileage === undefined) return '-';
-  return `${formatNumber(mileage)} ${unit}`;
+  const converted = convertDistance(mileageInKm, unit);
+  if (converted === null) return '-';
+  return `${formatNumber(converted)} ${unit === 'mi' ? 'miles' : 'km'}`;
 };
 
 /**

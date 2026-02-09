@@ -23,7 +23,7 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {useAuth} from '../contexts/AuthContext';
 import {formatDate} from '../utils/formatters';
 import {MainStackParamList} from '../navigation/MainNavigator';
-import Config from 'react-native-config';
+import Config from '../config';
 
 type NavigationProp = NativeStackNavigationProp<MainStackParamList>;
 type RouteProps = RouteProp<MainStackParamList, 'AttachmentViewer'>;

@@ -15,6 +15,14 @@ import ServiceRecordsScreen from '../screens/ServiceRecordsScreen';
 import ServiceRecordFormScreen from '../screens/ServiceRecordFormScreen';
 import PartsScreen from '../screens/PartsScreen';
 import PartFormScreen from '../screens/PartFormScreen';
+import ConsumablesScreen from '../screens/ConsumablesScreen';
+import ConsumableFormScreen from '../screens/ConsumableFormScreen';
+import MotRecordsScreen from '../screens/MotRecordsScreen';
+import MotRecordDetailScreen from '../screens/MotRecordDetailScreen';
+import MotRecordFormScreen from '../screens/MotRecordFormScreen';
+import QuickFuelScreen from '../screens/QuickFuelScreen';
+import VehicleLookupScreen from '../screens/VehicleLookupScreen';
+import MoreScreen from '../screens/MoreScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import CameraScreen from '../screens/CameraScreen';
 import AttachmentViewerScreen from '../screens/AttachmentViewerScreen';
@@ -24,8 +32,7 @@ export type MainTabParamList = {
   VehiclesTab: undefined;
   FuelTab: undefined;
   ServiceTab: undefined;
-  PartsTab: undefined;
-  SettingsTab: undefined;
+  MoreTab: undefined;
 };
 
 export type MainStackParamList = {
@@ -35,6 +42,15 @@ export type MainStackParamList = {
   FuelRecordForm: {recordId?: number; vehicleId?: number};
   ServiceRecordForm: {recordId?: number; vehicleId?: number};
   PartForm: {partId?: number; vehicleId?: number};
+  ConsumableForm: {consumableId?: number; vehicleId?: number};
+  PartsList: undefined;
+  ConsumablesList: undefined;
+  MotRecordsList: undefined;
+  MotRecordDetail: {recordId: number; vehicleId: number};
+  MotRecordForm: {recordId?: number; vehicleId?: number};
+  QuickFuel: undefined;
+  VehicleLookup: undefined;
+  Settings: undefined;
   PartsTab: undefined;
   Camera: {
     vehicleId?: number;
@@ -73,11 +89,8 @@ const TabNavigator: React.FC = () => {
             case 'ServiceTab':
               iconName = focused ? 'wrench' : 'wrench-outline';
               break;
-            case 'PartsTab':
-              iconName = focused ? 'package-variant' : 'package-variant-closed';
-              break;
-            case 'SettingsTab':
-              iconName = focused ? 'cog' : 'cog-outline';
+            case 'MoreTab':
+              iconName = focused ? 'dots-horizontal-circle' : 'dots-horizontal-circle-outline';
               break;
             default:
               iconName = 'circle';
@@ -117,14 +130,9 @@ const TabNavigator: React.FC = () => {
         options={{title: 'Service'}}
       />
       <Tab.Screen
-        name="PartsTab"
-        component={PartsScreen}
-        options={{title: 'Parts'}}
-      />
-      <Tab.Screen
-        name="SettingsTab"
-        component={SettingsScreen}
-        options={{title: 'Settings'}}
+        name="MoreTab"
+        component={MoreScreen}
+        options={{title: 'More'}}
       />
     </Tab.Navigator>
   );
@@ -173,11 +181,60 @@ const MainNavigator: React.FC = () => {
         })}
       />
       <Stack.Screen
+        name="PartsList"
+        component={PartsScreen}
+        options={{title: 'Parts'}}
+      />
+      <Stack.Screen
         name="PartForm"
         component={PartFormScreen}
         options={({route}) => ({
           title: route.params?.partId ? 'Edit Part' : 'Add Part',
         })}
+      />
+      <Stack.Screen
+        name="ConsumablesList"
+        component={ConsumablesScreen}
+        options={{title: 'Consumables'}}
+      />
+      <Stack.Screen
+        name="ConsumableForm"
+        component={ConsumableFormScreen}
+        options={({route}) => ({
+          title: route.params?.consumableId ? 'Edit Consumable' : 'Add Consumable',
+        })}
+      />
+      <Stack.Screen
+        name="MotRecordsList"
+        component={MotRecordsScreen}
+        options={{title: 'MOT Records'}}
+      />
+      <Stack.Screen
+        name="MotRecordDetail"
+        component={MotRecordDetailScreen}
+        options={{title: 'MOT Record'}}
+      />
+      <Stack.Screen
+        name="MotRecordForm"
+        component={MotRecordFormScreen}
+        options={({route}) => ({
+          title: route.params?.recordId ? 'Edit MOT Record' : 'Add MOT Record',
+        })}
+      />
+      <Stack.Screen
+        name="QuickFuel"
+        component={QuickFuelScreen}
+        options={{title: 'Quick Fuel Up'}}
+      />
+      <Stack.Screen
+        name="VehicleLookup"
+        component={VehicleLookupScreen}
+        options={{title: 'Vehicle Lookup'}}
+      />
+      <Stack.Screen
+        name="Settings"
+        component={SettingsScreen}
+        options={{title: 'Settings'}}
       />
       <Stack.Screen
         name="Camera"

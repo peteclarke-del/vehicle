@@ -17,8 +17,11 @@ import {
 import {useNavigation} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useAuth} from '../contexts/AuthContext';
+import {useSync} from '../contexts/SyncContext';
 import {useUserPreferences} from '../contexts/UserPreferencesContext';
+import {useVehicleSelection} from '../contexts/VehicleSelectionContext';
 import {formatCurrency} from '../utils/formatters';
 import {MainStackParamList} from '../navigation/MainNavigator';
 import VehicleSelector from '../components/VehicleSelector';
@@ -28,15 +31,19 @@ type NavigationProp = NativeStackNavigationProp<MainStackParamList>;
 interface Part {
   id: number;
   vehicleId: number | null;
-  name: string;
+  description: string;
   partNumber: string | null;
   manufacturer: string | null;
-  category: string | null;
+  partCategory: {id: number; name: string} | null;
   quantity: number;
-  cost: number | null;
+  cost: string | null;
+  price: string | null;
   supplier: string | null;
   purchaseDate: string | null;
-  location: string | null;
+  installationDate: string | null;
+  mileageAtInstallation: number | null;
+  notes: string | null;
+  productUrl: string | null;
 }
 
 interface Vehicle {
@@ -49,18 +56,32 @@ const PartsScreen: React.FC = () => {
   const theme = useTheme();
   const navigation = useNavigation<NavigationProp>();
   const {api} = useAuth();
+  const {isOnline} = useSync();
   const {preferences} = useUserPreferences();
+  const {globalVehicleId, setGlobalVehicleId} = useVehicleSelection();
   
   const [parts, setParts] = useState<Part[]>([]);
   const [filteredParts, setFilteredParts] = useState<Part[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [selectedVehicleId, setSelectedVehicleId] = useState<number | 'all'>('all');
+  const selectedVehicleId = globalVehicleId;
+  const setSelectedVehicleId = setGlobalVehicleId;
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const loadData = useCallback(async () => {
     try {
+      // Load from cache first
+      const cacheKey = `cache_parts_${selectedVehicleId}`;
+      try {
+        const cached = await AsyncStorage.getItem(cacheKey);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          setVehicles(parsed.vehicles || []);
+          setParts(parsed.parts || []);
+        }
+      } catch (e) { /* cache miss is fine */ }
+
       const [vehiclesRes, partsRes] = await Promise.all([
         api.get('/vehicles'),
         api.get('/parts', {
@@ -68,8 +89,13 @@ const PartsScreen: React.FC = () => {
         }),
       ]);
       
-      setVehicles(vehiclesRes.data || []);
-      setParts(partsRes.data || []);
+      const newVehicles = Array.isArray(vehiclesRes.data) ? vehiclesRes.data : [];
+      const newParts = Array.isArray(partsRes.data) ? partsRes.data : [];
+      setVehicles(newVehicles);
+      setParts(newParts);
+
+      // Cache the fresh data
+      await AsyncStorage.setItem(cacheKey, JSON.stringify({vehicles: newVehicles, parts: newParts})).catch(() => {});
     } catch (error) {
       console.error('Error loading parts:', error);
     } finally {
@@ -87,10 +113,10 @@ const PartsScreen: React.FC = () => {
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(part =>
-        part.name.toLowerCase().includes(query) ||
+        part.description?.toLowerCase().includes(query) ||
         part.partNumber?.toLowerCase().includes(query) ||
         part.manufacturer?.toLowerCase().includes(query) ||
-        part.category?.toLowerCase().includes(query)
+        part.partCategory?.name?.toLowerCase().includes(query)
       );
     }
     
@@ -109,7 +135,7 @@ const PartsScreen: React.FC = () => {
     return vehicle?.name || vehicle?.registration || 'Unknown';
   };
 
-  const getCategoryIcon = (category: string | null) => {
+  const getCategoryIcon = (category: string | null | undefined) => {
     const cat = (category || '').toLowerCase();
     if (cat.includes('oil') || cat.includes('fluid')) return 'oil';
     if (cat.includes('filter')) return 'air-filter';
@@ -130,13 +156,13 @@ const PartsScreen: React.FC = () => {
           <View style={styles.headerLeft}>
             <View style={[styles.iconContainer, {backgroundColor: theme.colors.primaryContainer}]}>
               <Icon
-                name={getCategoryIcon(item.category)}
+                name={getCategoryIcon(item.partCategory?.name)}
                 size={24}
                 color={theme.colors.primary}
               />
             </View>
             <View style={styles.partInfo}>
-              <Text variant="titleMedium">{item.name}</Text>
+              <Text variant="titleMedium" numberOfLines={2}>{item.description || 'Unnamed Part'}</Text>
               {item.partNumber && (
                 <Text variant="bodySmall" style={{color: theme.colors.onSurfaceVariant}}>
                   #{item.partNumber}
@@ -146,13 +172,15 @@ const PartsScreen: React.FC = () => {
           </View>
           <View style={styles.headerRight}>
             <Text variant="titleMedium" style={{color: theme.colors.primary}}>
-              {formatCurrency(item.cost || 0, preferences.currency)}
+              {formatCurrency(item.cost || item.price || 0, preferences.currency)}
             </Text>
-            <View style={[styles.quantityBadge, {backgroundColor: theme.colors.secondaryContainer}]}>
-              <Text variant="labelMedium" style={{color: theme.colors.onSecondaryContainer}}>
-                x{item.quantity}
-              </Text>
-            </View>
+            {item.quantity > 1 && (
+              <View style={[styles.quantityBadge, {backgroundColor: theme.colors.secondaryContainer}]}>
+                <Text variant="labelMedium" style={{color: theme.colors.onSecondaryContainer}}>
+                  x{item.quantity}
+                </Text>
+              </View>
+            )}
           </View>
         </View>
         
@@ -162,9 +190,9 @@ const PartsScreen: React.FC = () => {
               {item.manufacturer}
             </Chip>
           )}
-          {item.category && (
+          {item.partCategory && (
             <Chip icon="tag" compact style={styles.chip}>
-              {item.category}
+              {item.partCategory.name}
             </Chip>
           )}
           {item.vehicleId && (
@@ -172,9 +200,9 @@ const PartsScreen: React.FC = () => {
               {getVehicleLabel(item.vehicleId)}
             </Chip>
           )}
-          {item.location && (
-            <Chip icon="map-marker" compact style={styles.chip}>
-              {item.location}
+          {item.supplier && (
+            <Chip icon="store" compact style={styles.chip}>
+              {item.supplier}
             </Chip>
           )}
         </View>
@@ -192,6 +220,12 @@ const PartsScreen: React.FC = () => {
 
   return (
     <View style={[styles.container, {backgroundColor: theme.colors.background}]}>
+      {!isOnline && (
+        <View style={{backgroundColor: theme.colors.errorContainer, padding: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'center'}}>
+          <Icon name="cloud-off-outline" size={16} color={theme.colors.onErrorContainer} />
+          <Text style={{color: theme.colors.onErrorContainer, marginLeft: 6, fontSize: 13}}>Offline — showing cached data</Text>
+        </View>
+      )}
       <Searchbar
         placeholder="Search parts..."
         onChangeText={setSearchQuery}

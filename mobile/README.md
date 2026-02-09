@@ -131,21 +131,58 @@ The app implements offline-first architecture:
 
 ## Building for Production
 
-### Debug APK
+### Option 1: Build with Docker (Recommended)
+
+This method requires no local Android SDK installation:
+
+```bash
+# From the project root directory
+docker compose -f docker-compose.mobile.yml up --build
+```
+
+The APK will be output to `mobile/output/app-release.apk`
+
+### Option 2: Local Build
+
+If you have Android SDK installed locally:
+
+#### Debug APK
 ```bash
 cd android
 ./gradlew assembleDebug
 ```
 The APK will be at `android/app/build/outputs/apk/debug/app-debug.apk`
 
-### Release APK
+#### Release APK
 ```bash
 cd android
 ./gradlew assembleRelease
 ```
 The APK will be at `android/app/build/outputs/apk/release/app-release.apk`
 
-Note: For release builds, you'll need to configure signing keys.
+### Installing the APK
+
+1. Transfer the APK to your Android device
+2. Enable "Install from unknown sources" in Settings > Security
+3. Open the APK file to install
+4. Launch "Vehicle Manager" from your app drawer
+
+### Signing for Release
+
+For Google Play Store distribution, create a release keystore:
+
+```bash
+keytool -genkey -v -keystore vehicle-release.keystore \
+  -alias vehicle-key -keyalg RSA -keysize 2048 -validity 10000
+```
+
+Then add to `android/gradle.properties`:
+```
+VEHICLE_RELEASE_STORE_FILE=vehicle-release.keystore
+VEHICLE_RELEASE_STORE_PASSWORD=your_store_password
+VEHICLE_RELEASE_KEY_ALIAS=vehicle-key
+VEHICLE_RELEASE_KEY_PASSWORD=your_key_password
+```
 
 ## Troubleshooting
 
