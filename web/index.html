@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Vehicle Manager — Track, Manage, Own It</title>
-  <meta name="description" content="The ultimate vehicle management platform. Track fuel, services, MOT, insurance, parts, admin panel with feature flags — web & mobile. Free, open source, self-hosted." />
+  <meta name="description" content="The ultimate vehicle management platform. Track fuel, services, MOT, insurance, parts — web & mobile. Free, open source, offline-capable." />
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="css/animations.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -27,17 +27,13 @@
       </a>
       <div class="nav-links" id="navLinks">
         <a href="#features">Features</a>
-        <a href="#admin">Admin</a>
         <a href="#platforms">Platforms</a>
         <a href="#integrations">Integrations</a>
-        <a href="#i18n">Languages</a>
+        <a href="#stats">Stats</a>
         <a href="#tech">Tech Stack</a>
+        <a href="docs/" class="nav-docs-link">Documentation</a>
       </div>
       <div class="nav-actions">
-        <a href="https://github.com/peteclarke-del/vehicle" target="_blank" rel="noopener" class="btn btn-ghost btn-sm">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
-          GitHub
-        </a>
         <a href="#get-started" class="btn btn-primary btn-sm">Get Started</a>
         <button class="nav-toggle" id="navToggle" aria-label="Menu">
           <span></span><span></span><span></span>
@@ -64,32 +60,27 @@
           <span class="gradient-text">Completely Managed.</span>
         </h1>
         <p class="hero-subtitle animate-fade-in-up delay-1">
-          Track fuel costs, service history, MOT records, insurance, parts, depreciation, and more —
-          across all your vehicles. On the web and on your phone. With a full admin panel,
-          feature flags, and multi-user vehicle sharing.
+          Track fuel costs, service history, MOT records, insurance, parts, and more — 
+          across all your vehicles. On the web and on your phone.
         </p>
         <div class="hero-cta animate-fade-in-up delay-2">
           <a href="#get-started" class="btn btn-primary btn-lg">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor"><path d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"/></svg>
             Start Managing
           </a>
-          <a href="https://github.com/peteclarke-del/vehicle" target="_blank" rel="noopener" class="btn btn-ghost btn-lg">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
-            View on GitHub
+          <a href="#features" class="btn btn-ghost btn-lg">
+            See Features
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 2a1 1 0 011 1v8.586l3.293-3.293a1 1 0 111.414 1.414l-5 5a1 1 0 01-1.414 0l-5-5a1 1 0 111.414-1.414L7 11.586V3a1 1 0 011-1z"/></svg>
           </a>
         </div>
         <div class="hero-trust animate-fade-in-up delay-3">
           <div class="trust-item">
             <svg width="18" height="18" viewBox="0 0 20 20" fill="#22c55e"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg>
+            No credit card
+          </div>
+          <div class="trust-item">
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="#22c55e"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg>
             Self-hosted
-          </div>
-          <div class="trust-item">
-            <svg width="18" height="18" viewBox="0 0 20 20" fill="#22c55e"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg>
-            127+ API endpoints
-          </div>
-          <div class="trust-item">
-            <svg width="18" height="18" viewBox="0 0 20 20" fill="#22c55e"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg>
-            21 languages
           </div>
           <div class="trust-item">
             <svg width="18" height="18" viewBox="0 0 20 20" fill="#22c55e"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg>
@@ -99,6 +90,7 @@
       </div>
       <div class="hero-visual animate-fade-in-up delay-2">
         <div class="device-showcase">
+          <!-- Laptop mockup -->
           <div class="laptop-mockup">
             <div class="laptop-screen">
               <div class="screen-content" id="laptopScreen">
@@ -108,13 +100,11 @@
                 </div>
                 <div class="mock-dashboard">
                   <div class="mock-sidebar">
-                    <div class="sb-item active"><div class="sb-icon"></div></div>
-                    <div class="sb-item"><div class="sb-icon"></div></div>
-                    <div class="sb-item"><div class="sb-icon"></div></div>
-                    <div class="sb-item"><div class="sb-icon"></div></div>
-                    <div class="sb-item"><div class="sb-icon"></div></div>
-                    <div class="sb-item"><div class="sb-icon"></div></div>
-                    <div class="sb-item"><div class="sb-icon"></div></div>
+                    <div class="sb-item active"><div class="sb-icon"></div><div class="sb-label"></div></div>
+                    <div class="sb-item"><div class="sb-icon"></div><div class="sb-label"></div></div>
+                    <div class="sb-item"><div class="sb-icon"></div><div class="sb-label"></div></div>
+                    <div class="sb-item"><div class="sb-icon"></div><div class="sb-label"></div></div>
+                    <div class="sb-item"><div class="sb-icon"></div><div class="sb-label"></div></div>
                   </div>
                   <div class="mock-main">
                     <div class="mock-cards">
@@ -162,6 +152,7 @@
             </div>
             <div class="laptop-base"></div>
           </div>
+          <!-- Phone mockup (overlapping) -->
           <div class="phone-mockup">
             <div class="phone-notch"></div>
             <div class="phone-screen">
@@ -202,8 +193,7 @@
                 <div class="pn-item active">🏠</div>
                 <div class="pn-item">🚗</div>
                 <div class="pn-item">⛽</div>
-                <div class="pn-item">🔧</div>
-                <div class="pn-item">⋯</div>
+                <div class="pn-item">⚙️</div>
               </div>
             </div>
           </div>
@@ -223,7 +213,7 @@
       <div class="section-header">
         <span class="section-tag">Features</span>
         <h2>Everything You Need.<br/><span class="gradient-text">Nothing You Don't.</span></h2>
-        <p>A complete vehicle management toolkit — 19 web pages, 24 mobile screens, 30 backend controllers.</p>
+        <p>A complete vehicle management toolkit that grows with your garage.</p>
       </div>
       <div class="features-grid">
         <div class="feature-card" data-animate>
@@ -231,317 +221,56 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9L18 10l-2.7-3.6A2 2 0 0013.6 5H6.4a2 2 0 00-1.7 1.4L2 10l-1.5 1.1A2 2 0 000 13v3c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>
           </div>
           <h3>Vehicle Profiles</h3>
-          <p>Complete profiles with make, model, year, specs, VIN decode, images, depreciation tracking, and DVLA registration lookup. Cars, vans, trucks, motorcycles, and EVs.</p>
-          <div class="feature-platforms"><span class="fp-web">Web</span><span class="fp-mobile">Mobile</span></div>
+          <p>Complete profiles with make, model, year, specs, images, depreciation tracking, and registration lookup. Every detail at a glance.</p>
         </div>
         <div class="feature-card" data-animate>
           <div class="feature-icon" style="--accent:#f59e0b">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
           </div>
           <h3>Fuel Tracking</h3>
-          <p>Log every fill-up with cost, litres, mileage, station. See MPG, cost per mile, monthly trends, and spending breakdowns. Quick fuel-up mode on mobile.</p>
-          <div class="feature-platforms"><span class="fp-web">Web</span><span class="fp-mobile">Mobile</span></div>
+          <p>Log every fill-up. See MPG, cost per mile, monthly trends, and spending breakdowns. Snap receipt photos instantly.</p>
         </div>
         <div class="feature-card" data-animate>
           <div class="feature-icon" style="--accent:#22c55e">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
           </div>
           <h3>Service History</h3>
-          <p>Detailed service records with line items, labour costs, parts used, provider info. Link services to MOT advisory work. Track per-service-item costs.</p>
-          <div class="feature-platforms"><span class="fp-web">Web</span><span class="fp-mobile">Mobile</span></div>
+          <p>Detailed service records with line items, labour costs, parts used, and provider info. Link services to MOT work.</p>
         </div>
         <div class="feature-card" data-animate>
           <div class="feature-icon" style="--accent:#ef4444">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
           </div>
           <h3>MOT Records</h3>
-          <p>Track test results, advisories, failures, mileage, and expiry dates. One-click DVSA history import. View detailed advisory breakdowns and danger items.</p>
-          <div class="feature-platforms"><span class="fp-web">Web</span><span class="fp-mobile">Mobile</span></div>
+          <p>Track test results, advisories, failures, and expiry dates. Import full DVSA history with one click. Never miss a renewal.</p>
         </div>
         <div class="feature-card" data-animate>
           <div class="feature-icon" style="--accent:#8b5cf6">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><path d="M9 7a4 4 0 005.292 3.778A4 4 0 0015.5 7.5"/><rect x="2" y="3" width="20" height="5" rx="2"/></svg>
           </div>
           <h3>Insurance &amp; Tax</h3>
-          <p>Manage insurance policies with many-to-many vehicle linking, premiums, cover levels, and renewal dates. Track road tax status with automatic expiry notifications.</p>
-          <div class="feature-platforms"><span class="fp-web">Web</span></div>
+          <p>Manage policies, premiums, cover levels, and renewal dates. Track road tax status with automatic expiry notifications.</p>
         </div>
         <div class="feature-card" data-animate>
           <div class="feature-icon" style="--accent:#ec4899">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
           </div>
           <h3>Parts &amp; Consumables</h3>
-          <p>Full inventory for parts, fluids, filters, brake pads, spark plugs. Track suppliers, warranties, replacement intervals. URL scraping auto-fills product details.</p>
-          <div class="feature-platforms"><span class="fp-web">Web</span><span class="fp-mobile">Mobile</span></div>
+          <p>Inventory management for parts, fluids, filters. Track suppliers, warranties, replacement intervals, and costs.</p>
         </div>
         <div class="feature-card" data-animate>
           <div class="feature-icon" style="--accent:#14b8a6">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 17H7A5 5 0 017 7h2"/><path d="M15 7h2a5 5 0 010 10h-2"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
           </div>
           <h3>Smart Notifications</h3>
-          <p>Real-time SSE alerts for upcoming MOTs, expiring insurance, tax renewals, overdue services. Push notifications on mobile. Snooze or dismiss individually.</p>
-          <div class="feature-platforms"><span class="fp-web">Web</span><span class="fp-mobile">Mobile</span></div>
+          <p>Real-time alerts for upcoming MOTs, expiring insurance, tax renewals, and overdue services. Stay ahead, never behind.</p>
         </div>
         <div class="feature-card" data-animate>
           <div class="feature-icon" style="--accent:#f97316">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
           </div>
-          <h3>Reports &amp; Export</h3>
-          <p>Generate custom PDF and Excel reports — fuel analysis, cost breakdowns, vehicle overviews. Full import/export with ZIP archives including all attachments.</p>
-          <div class="feature-platforms"><span class="fp-web">Web</span></div>
-        </div>
-        <div class="feature-card" data-animate>
-          <div class="feature-icon" style="--accent:#06b6d4">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
-          </div>
-          <h3>Depreciation &amp; Costs</h3>
-          <p>Track vehicle depreciation over time with purchase price, current value, and annual cost calculations. See total cost of ownership across all record types.</p>
-          <div class="feature-platforms"><span class="fp-web">Web</span></div>
-        </div>
-        <div class="feature-card" data-animate>
-          <div class="feature-icon" style="--accent:#a855f7">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
-          </div>
-          <h3>Attachments &amp; OCR</h3>
-          <p>Upload receipts, documents, photos against any record. Camera capture on mobile. Receipt OCR auto-extracts fuel amounts, litres, and station details.</p>
-          <div class="feature-platforms"><span class="fp-web">Web</span><span class="fp-mobile">Mobile</span></div>
-        </div>
-        <div class="feature-card" data-animate>
-          <div class="feature-icon" style="--accent:#eab308">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
-          </div>
-          <h3>TODO &amp; Reminders</h3>
-          <p>Per-vehicle task lists with priority levels. Track planned maintenance, needed repairs, and shopping lists. Never forget a service appointment.</p>
-          <div class="feature-platforms"><span class="fp-web">Web</span></div>
-        </div>
-        <div class="feature-card" data-animate>
-          <div class="feature-icon" style="--accent:#10b981">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>
-          </div>
-          <h3>Drag-Reorder Navigation</h3>
-          <p>Personalise your navigation menu with drag-and-drop reordering. Your preferred order is saved per-user and persists across sessions.</p>
-          <div class="feature-platforms"><span class="fp-web">Web</span></div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ===================== ADMIN PANEL ===================== -->
-  <section class="admin-section" id="admin">
-    <div class="container">
-      <div class="section-header">
-        <span class="section-tag">Administration</span>
-        <h2>Complete Control.<br/><span class="gradient-text">Fine-Grained Permissions.</span></h2>
-        <p>A full admin panel with user management, 49 feature flags across 17 categories, and per-vehicle assignment permissions.</p>
-      </div>
-
-      <div class="admin-showcase">
-        <!-- User Management -->
-        <div class="admin-card" data-animate>
-          <div class="admin-card-header">
-            <div class="admin-icon" style="--accent:#6366f1">👥</div>
-            <h3>User Management</h3>
-          </div>
-          <div class="admin-card-body">
-            <p>Complete user lifecycle management from the admin panel.</p>
-            <ul class="admin-features-list">
-              <li>Create new users with role assignment</li>
-              <li>Enable / disable user accounts</li>
-              <li>Force password change on next login</li>
-              <li>Assign roles (ROLE_USER, ROLE_ADMIN)</li>
-              <li>View last login time and account status</li>
-              <li>Click-to-edit role chips with multi-select</li>
-              <li>Row-click navigation to user details</li>
-            </ul>
-          </div>
-          <div class="admin-card-visual">
-            <div class="mock-table">
-              <div class="mt-header">
-                <span>Name</span><span>Email</span><span>Roles</span><span>Status</span>
-              </div>
-              <div class="mt-row">
-                <span>👤 John Smith</span>
-                <span class="text-muted">john@example.com</span>
-                <span><span class="mini-chip">USER</span></span>
-                <span><span class="mini-chip success">Active</span></span>
-              </div>
-              <div class="mt-row">
-                <span>🛡️ Admin User</span>
-                <span class="text-muted">admin@vehicle.local</span>
-                <span><span class="mini-chip primary">ADMIN</span> <span class="mini-chip">USER</span></span>
-                <span><span class="mini-chip success">Active</span></span>
-              </div>
-              <div class="mt-row">
-                <span>👤 Jane Doe</span>
-                <span class="text-muted">jane@example.com</span>
-                <span><span class="mini-chip">USER</span></span>
-                <span><span class="mini-chip danger">Inactive</span></span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Feature Flags -->
-        <div class="admin-card" data-animate>
-          <div class="admin-card-header">
-            <div class="admin-icon" style="--accent:#8b5cf6">🚩</div>
-            <h3>Feature Flags</h3>
-          </div>
-          <div class="admin-card-body">
-            <p>49 feature flags across 17 categories. Enable or disable any feature per-user with a single toggle.</p>
-            <ul class="admin-features-list">
-              <li>Per-user feature overrides</li>
-              <li>Category-level enable/disable all</li>
-              <li>Real-time enforcement via EventSubscriber</li>
-              <li>One-click reset to defaults</li>
-              <li>Admins bypass all flags automatically</li>
-              <li>Both API-level and UI-level enforcement</li>
-            </ul>
-          </div>
-          <div class="admin-card-visual">
-            <div class="flag-grid">
-              <div class="flag-category">
-                <span class="flag-cat-name">Vehicles</span>
-                <div class="flag-toggles">
-                  <div class="flag-toggle on" title="View"><span>View</span></div>
-                  <div class="flag-toggle on" title="Create"><span>Create</span></div>
-                  <div class="flag-toggle on" title="Edit"><span>Edit</span></div>
-                  <div class="flag-toggle off" title="Delete"><span>Delete</span></div>
-                </div>
-                <span class="flag-count">3/4</span>
-              </div>
-              <div class="flag-category">
-                <span class="flag-cat-name">Fuel Records</span>
-                <div class="flag-toggles">
-                  <div class="flag-toggle on"><span>View</span></div>
-                  <div class="flag-toggle on"><span>Create</span></div>
-                  <div class="flag-toggle on"><span>Edit</span></div>
-                  <div class="flag-toggle on"><span>Delete</span></div>
-                </div>
-                <span class="flag-count success">4/4</span>
-              </div>
-              <div class="flag-category">
-                <span class="flag-cat-name">Reports</span>
-                <div class="flag-toggles">
-                  <div class="flag-toggle off"><span>Generate</span></div>
-                </div>
-                <span class="flag-count danger">0/1</span>
-              </div>
-              <div class="flag-category">
-                <span class="flag-cat-name">Import/Export</span>
-                <div class="flag-toggles">
-                  <div class="flag-toggle on"><span>Import</span></div>
-                  <div class="flag-toggle off"><span>Export</span></div>
-                </div>
-                <span class="flag-count">1/2</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Vehicle Assignments -->
-        <div class="admin-card wide" data-animate>
-          <div class="admin-card-header">
-            <div class="admin-icon" style="--accent:#22c55e">🚗</div>
-            <h3>Vehicle Assignments</h3>
-          </div>
-          <div class="admin-card-body">
-            <p>Share vehicles across users with granular permissions. Users always see their own vehicles — assignments grant access to vehicles owned by other users.</p>
-          </div>
-          <div class="assignment-visual">
-            <div class="assignment-diagram">
-              <div class="assign-user">
-                <div class="assign-avatar">👤</div>
-                <div class="assign-name">John</div>
-                <div class="assign-role">ROLE_USER</div>
-              </div>
-              <div class="assign-arrows">
-                <div class="assign-arrow">
-                  <div class="arrow-line"></div>
-                  <div class="arrow-perms">
-                    <span class="perm on">View</span>
-                    <span class="perm on">Edit</span>
-                    <span class="perm on">Add</span>
-                    <span class="perm off">Delete</span>
-                  </div>
-                </div>
-                <div class="assign-arrow">
-                  <div class="arrow-line"></div>
-                  <div class="arrow-perms">
-                    <span class="perm on">View</span>
-                    <span class="perm off">Edit</span>
-                    <span class="perm off">Add</span>
-                    <span class="perm off">Delete</span>
-                  </div>
-                </div>
-              </div>
-              <div class="assign-vehicles">
-                <div class="assign-vehicle">
-                  <span>🚙</span>
-                  <div>
-                    <strong>BMW 320d</strong>
-                    <small>Owned by Admin</small>
-                  </div>
-                </div>
-                <div class="assign-vehicle">
-                  <span>🏎️</span>
-                  <div>
-                    <strong>Tesla Model 3</strong>
-                    <small>Owned by Jane</small>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="assignment-perms-legend">
-              <h4>Per-Vehicle Permissions</h4>
-              <div class="perms-grid">
-                <div class="perm-item"><span class="perm-dot green"></span><strong>canView</strong> — See vehicle and all records</div>
-                <div class="perm-item"><span class="perm-dot blue"></span><strong>canEdit</strong> — Modify vehicle details</div>
-                <div class="perm-item"><span class="perm-dot amber"></span><strong>canAddRecords</strong> — Create fuel, service, MOT records</div>
-                <div class="perm-item"><span class="perm-dot red"></span><strong>canDelete</strong> — Remove vehicle or records</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Admin API endpoints callout -->
-      <div class="admin-api-callout" data-animate>
-        <h4>🔌 15 Admin API Endpoints</h4>
-        <div class="api-endpoints">
-          <div class="api-group">
-            <span class="api-method get">GET</span>
-            <span class="api-method post">POST</span>
-            <code>/api/admin/users</code>
-            <span class="api-desc">List &amp; create users</span>
-          </div>
-          <div class="api-group">
-            <span class="api-method get">GET</span>
-            <code>/api/admin/users/{id}</code>
-            <span class="api-desc">User details with flags &amp; assignments</span>
-          </div>
-          <div class="api-group">
-            <span class="api-method patch">PATCH</span>
-            <code>/api/admin/users/{id}/roles</code>
-            <span class="api-desc">Update roles</span>
-          </div>
-          <div class="api-group">
-            <span class="api-method patch">PATCH</span>
-            <code>/api/admin/users/{id}/toggle-active</code>
-            <span class="api-desc">Enable/disable</span>
-          </div>
-          <div class="api-group">
-            <span class="api-method get">GET</span>
-            <span class="api-method put">PUT</span>
-            <code>/api/admin/users/{id}/features</code>
-            <span class="api-desc">Feature flag overrides</span>
-          </div>
-          <div class="api-group">
-            <span class="api-method get">GET</span>
-            <span class="api-method put">PUT</span>
-            <code>/api/admin/users/{id}/assignments</code>
-            <span class="api-desc">Vehicle assignments</span>
-          </div>
+          <h3>Custom Reports</h3>
+          <p>Generate PDF and Excel reports. Fuel analysis, cost breakdowns, vehicle overviews — from built-in templates or your own.</p>
         </div>
       </div>
     </div>
@@ -581,20 +310,17 @@
           <div class="platform-info">
             <div class="platform-badge">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-              Web Application — 19 Pages
+              Web Application
             </div>
             <h3>Full-Featured Desktop Experience</h3>
             <ul class="platform-features">
               <li>React 18 with Material-UI 5</li>
               <li>Interactive charts &amp; cost analysis</li>
               <li>Custom PDF &amp; Excel reports</li>
-              <li>Drag-and-drop file uploads &amp; nav reordering</li>
+              <li>Drag-and-drop file uploads</li>
               <li>Dark &amp; light themes</li>
-              <li>21 languages with auto-currency mapping</li>
+              <li>20 languages supported</li>
               <li>Real-time SSE notifications</li>
-              <li>Admin panel with feature flags &amp; assignments</li>
-              <li>Feature-gated navigation menu</li>
-              <li>Full data import/export with ZIP</li>
             </ul>
           </div>
         </div>
@@ -614,7 +340,6 @@
                   <div class="mp-tab"></div>
                   <div class="mp-tab"></div>
                   <div class="mp-tab"></div>
-                  <div class="mp-tab"></div>
                 </div>
               </div>
             </div>
@@ -622,62 +347,21 @@
           <div class="platform-info">
             <div class="platform-badge">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
-              Mobile App — 24 Screens
+              Mobile App (Android)
             </div>
             <h3>Native Android Experience</h3>
             <ul class="platform-features">
               <li>React Native with Material Design 3</li>
               <li>Offline-first with sync queue</li>
-              <li>Camera capture for receipts &amp; photos</li>
+              <li>Camera for receipt scanning</li>
               <li>Standalone or server-connected mode</li>
-              <li>Quick fuel-up mode — log in seconds</li>
-              <li>20 languages with currency &amp; unit mapping</li>
-              <li>Pull-to-refresh &amp; infinite scroll</li>
-              <li>Feature-gated "More" menu</li>
-              <li>DVLA vehicle lookup</li>
-              <li>Docker-based APK build pipeline</li>
+              <li>Quick fuel logging</li>
+              <li>Pull-to-refresh everywhere</li>
+              <li>Background data sync</li>
             </ul>
           </div>
         </div>
       </div>
-
-      <!-- Web-Mobile connection -->
-      <div class="platform-link-diagram" data-animate>
-        <h3>🔗 Web &amp; Mobile — Shared Architecture</h3>
-        <div class="link-grid">
-          <div class="link-item">
-            <div class="link-icon">🔑</div>
-            <h4>Same JWT Auth</h4>
-            <p>Both platforms authenticate against the same API with JWT tokens and refresh token rotation.</p>
-          </div>
-          <div class="link-item">
-            <div class="link-icon">🗄️</div>
-            <h4>Same Database</h4>
-            <p>One MySQL database serves web and mobile. All data is shared, multi-tenant per user.</p>
-          </div>
-          <div class="link-item">
-            <div class="link-icon">🚩</div>
-            <h4>Same Feature Flags</h4>
-            <p>PermissionsContext on both platforms reads the same flags from the /me endpoint. Admin changes apply everywhere.</p>
-          </div>
-          <div class="link-item">
-            <div class="link-icon">🌍</div>
-            <h4>Same i18n Keys</h4>
-            <p>Translation keys are consistent. Switch language on web or mobile — both use the same locale structure.</p>
-          </div>
-          <div class="link-item">
-            <div class="link-icon">📎</div>
-            <h4>Same Attachments</h4>
-            <p>Upload a receipt photo on mobile, view it on web. Shared attachment storage via the API.</p>
-          </div>
-          <div class="link-item">
-            <div class="link-icon">🔔</div>
-            <h4>Same Notifications</h4>
-            <p>Upcoming MOT, expiring insurance, overdue services — alerts appear on both platforms.</p>
-          </div>
-        </div>
-      </div>
-
       <!-- Standalone callout -->
       <div class="standalone-callout" data-animate>
         <div class="callout-icon">
@@ -685,7 +369,7 @@
         </div>
         <div class="callout-content">
           <h3>🔌 No Server? No Problem.</h3>
-          <p>The mobile app has a full <strong>Standalone Mode</strong>. All your data is stored locally on your device — no account, no server, no internet required. ServerConfigScreen lets you switch between standalone and connected mode at any time. Want to sync later? Just add your server URL.</p>
+          <p>The mobile app has a full <strong>Standalone Mode</strong>. All your data is stored locally on your device — no account, no server, no internet required. Want to sync later? Just add your server URL anytime.</p>
         </div>
       </div>
     </div>
@@ -702,101 +386,33 @@
       <div class="integration-grid">
         <div class="integration-card" data-animate>
           <div class="int-icon">🏛️</div>
-          <div>
-            <h4>DVLA Vehicle Lookup</h4>
-            <p>Enter a UK registration and auto-populate make, model, year, fuel type, engine size, colour, and tax status.</p>
-            <div class="feature-platforms"><span class="fp-web">Web</span><span class="fp-mobile">Mobile</span></div>
-          </div>
+          <h4>DVLA Vehicle Lookup</h4>
+          <p>Enter a UK registration and auto-populate make, model, year, fuel type, engine size, and colour.</p>
         </div>
         <div class="integration-card" data-animate>
           <div class="int-icon">📋</div>
-          <div>
-            <h4>DVSA MOT History</h4>
-            <p>Import full MOT history from government records — test results, advisories, failures, mileage readings. One-click bulk import.</p>
-            <div class="feature-platforms"><span class="fp-web">Web</span><span class="fp-mobile">Mobile</span></div>
-          </div>
+          <h4>DVSA MOT History</h4>
+          <p>Import your complete MOT history from government records — test results, advisories, failures, mileage readings.</p>
         </div>
         <div class="integration-card" data-animate>
           <div class="int-icon">🔍</div>
-          <div>
-            <h4>VIN Decoder</h4>
-            <p>Decode Vehicle Identification Numbers to auto-fill detailed specifications and manufacturing data via API Ninjas.</p>
-            <div class="feature-platforms"><span class="fp-web">Web</span></div>
-          </div>
+          <h4>VIN Decoder</h4>
+          <p>Decode Vehicle Identification Numbers to auto-fill detailed specifications and manufacturing data.</p>
         </div>
         <div class="integration-card" data-animate>
           <div class="int-icon">🧾</div>
-          <div>
-            <h4>Receipt OCR</h4>
-            <p>Photograph fuel receipts and automatically extract the amount, litres, price per litre, and station name.</p>
-            <div class="feature-platforms"><span class="fp-web">Web</span><span class="fp-mobile">Mobile</span></div>
-          </div>
+          <h4>Receipt OCR</h4>
+          <p>Photograph fuel receipts and automatically extract the amount, litres, price per litre, and station.</p>
         </div>
         <div class="integration-card" data-animate>
           <div class="int-icon">🌐</div>
-          <div>
-            <h4>URL Scraping</h4>
-            <p>Paste an eBay, Amazon, or parts URL and automatically pull in product name, price, supplier, and image.</p>
-            <div class="feature-platforms"><span class="fp-web">Web</span></div>
-          </div>
+          <h4>URL Scraping</h4>
+          <p>Paste a parts URL and automatically pull in product name, price, and supplier information.</p>
         </div>
         <div class="integration-card" data-animate>
           <div class="int-icon">📦</div>
-          <div>
-            <h4>Import / Export</h4>
-            <p>Full data portability. Export everything as JSON or ZIP (including all attachments). Import into any fresh instance. Purge-all for clean restarts.</p>
-            <div class="feature-platforms"><span class="fp-web">Web</span></div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ===================== LANGUAGES ===================== -->
-  <section class="i18n-section" id="i18n">
-    <div class="container">
-      <div class="section-header">
-        <span class="section-tag">Internationalisation</span>
-        <h2>21 Languages.<br/><span class="gradient-text">Auto Currency &amp; Units.</span></h2>
-        <p>Every label, every menu, every notification — fully translated. Currency and measurement units auto-map to your locale.</p>
-      </div>
-      <div class="language-showcase" data-animate>
-        <div class="lang-grid">
-          <div class="lang-item"><span class="lang-flag">🇬🇧</span><span class="lang-name">English</span><span class="lang-currency">£ GBP</span></div>
-          <div class="lang-item"><span class="lang-flag">🇩🇪</span><span class="lang-name">Deutsch</span><span class="lang-currency">€ EUR</span></div>
-          <div class="lang-item"><span class="lang-flag">🇫🇷</span><span class="lang-name">Français</span><span class="lang-currency">€ EUR</span></div>
-          <div class="lang-item"><span class="lang-flag">🇪🇸</span><span class="lang-name">Español</span><span class="lang-currency">€ EUR</span></div>
-          <div class="lang-item"><span class="lang-flag">🇮🇹</span><span class="lang-name">Italiano</span><span class="lang-currency">€ EUR</span></div>
-          <div class="lang-item"><span class="lang-flag">🇵🇹</span><span class="lang-name">Português</span><span class="lang-currency">€ EUR</span></div>
-          <div class="lang-item"><span class="lang-flag">🇳🇱</span><span class="lang-name">Nederlands</span><span class="lang-currency">€ EUR</span></div>
-          <div class="lang-item"><span class="lang-flag">🇵🇱</span><span class="lang-name">Polski</span><span class="lang-currency">zł PLN</span></div>
-          <div class="lang-item"><span class="lang-flag">🇨🇿</span><span class="lang-name">Čeština</span><span class="lang-currency">Kč CZK</span></div>
-          <div class="lang-item"><span class="lang-flag">🇩🇰</span><span class="lang-name">Dansk</span><span class="lang-currency">kr DKK</span></div>
-          <div class="lang-item"><span class="lang-flag">🇸🇪</span><span class="lang-name">Svenska</span><span class="lang-currency">kr SEK</span></div>
-          <div class="lang-item"><span class="lang-flag">🇳🇴</span><span class="lang-name">Norsk</span><span class="lang-currency">kr NOK</span></div>
-          <div class="lang-item"><span class="lang-flag">🇫🇮</span><span class="lang-name">Suomi</span><span class="lang-currency">€ EUR</span></div>
-          <div class="lang-item"><span class="lang-flag">🇹🇷</span><span class="lang-name">Türkçe</span><span class="lang-currency">₺ TRY</span></div>
-          <div class="lang-item"><span class="lang-flag">🇷🇺</span><span class="lang-name">Русский</span><span class="lang-currency">₽ RUB</span></div>
-          <div class="lang-item"><span class="lang-flag">🇸🇦</span><span class="lang-name">العربية</span><span class="lang-currency">﷼ SAR</span></div>
-          <div class="lang-item"><span class="lang-flag">🇮🇳</span><span class="lang-name">हिन्दी</span><span class="lang-currency">₹ INR</span></div>
-          <div class="lang-item"><span class="lang-flag">🇯🇵</span><span class="lang-name">日本語</span><span class="lang-currency">¥ JPY</span></div>
-          <div class="lang-item"><span class="lang-flag">🇨🇳</span><span class="lang-name">中文</span><span class="lang-currency">¥ CNY</span></div>
-          <div class="lang-item"><span class="lang-flag">🇰🇷</span><span class="lang-name">한국어</span><span class="lang-currency">₩ KRW</span></div>
-          <div class="lang-item pirate"><span class="lang-flag">🏴‍☠️</span><span class="lang-name">Pirate</span><span class="lang-currency">🪙 Doubloons</span></div>
-        </div>
-        <div class="i18n-details">
-          <div class="i18n-detail-item">
-            <strong>Distance Units</strong>
-            <p>Kilometres (km) or Miles (mi) — auto-mapped per locale, user-overridable</p>
-          </div>
-          <div class="i18n-detail-item">
-            <strong>Volume Units</strong>
-            <p>Litres (L) or Gallons (gal) — affects fuel tracking calculations</p>
-          </div>
-          <div class="i18n-detail-item">
-            <strong>17+ Currencies</strong>
-            <p>£ $ € ¥ ₩ ₹ ₽ zł Kč kr ₺ ﷼ and more — all with correct symbol placement</p>
-          </div>
+          <h4>Import / Export</h4>
+          <p>Full data portability. Export everything including attachments. Import into any instance.</p>
         </div>
       </div>
     </div>
@@ -807,24 +423,24 @@
     <div class="container">
       <div class="stats-grid">
         <div class="stat-item" data-animate>
-          <div class="stat-number" data-count="127" data-suffix="+">0</div>
+          <div class="stat-number" data-count="20">0</div>
+          <div class="stat-label">Languages Supported</div>
+          <div class="stat-flags">🇬🇧 🇩🇪 🇫🇷 🇪🇸 🇮🇹 🇵🇹 🇯🇵 🇨🇳 🇰🇷 🇷🇺 🇸🇦 🇵🇱 🇳🇱 🇩🇰 🇸🇪 🇳🇴 🇫🇮 🇹🇷 🇨🇿 🇮🇳</div>
+        </div>
+        <div class="stat-item" data-animate>
+          <div class="stat-number" data-count="15">0</div>
+          <div class="stat-label">Entity Types Managed</div>
+          <div class="stat-detail">Vehicles, fuel, services, MOT, parts, consumables, insurance, tax, todos, attachments…</div>
+        </div>
+        <div class="stat-item" data-animate>
+          <div class="stat-number" data-count="50" data-suffix="+">0</div>
           <div class="stat-label">API Endpoints</div>
           <div class="stat-detail">Full REST API with JWT auth, consumed by both web &amp; mobile</div>
         </div>
         <div class="stat-item" data-animate>
-          <div class="stat-number" data-count="27">0</div>
-          <div class="stat-label">Database Entities</div>
-          <div class="stat-detail">Vehicle, FuelRecord, ServiceRecord, MotRecord, Part, Consumable, Insurance, FeatureFlag…</div>
-        </div>
-        <div class="stat-item" data-animate>
-          <div class="stat-number" data-count="49">0</div>
-          <div class="stat-label">Feature Flags</div>
-          <div class="stat-detail">Across 17 categories — Vehicles, Fuel, Services, MOT, Parts, Reports, Import/Export…</div>
-        </div>
-        <div class="stat-item" data-animate>
-          <div class="stat-number" data-count="30">0</div>
-          <div class="stat-label">Backend Controllers</div>
-          <div class="stat-detail">AdminController, VehicleController, FuelRecordController, AuthController…</div>
+          <div class="stat-number" data-count="17">0</div>
+          <div class="stat-label">Currencies Supported</div>
+          <div class="stat-detail">£ $ € ¥ ₩ ₹ ₽ zł Kč kr ₺ ﷼ and more</div>
         </div>
       </div>
     </div>
@@ -842,35 +458,28 @@
           <div class="timeline-number">1</div>
           <div class="timeline-content">
             <h4>Deploy</h4>
-            <p><code>docker compose up -d</code> — that's it. Nginx, PHP 8.4, MySQL 8, Redis 7 — all configured and ready. Or use <code>docker-compose.portainer.yml</code> for production stacks.</p>
+            <p><code>docker compose up -d</code> — that's it. Nginx, PHP, MySQL, Redis — all configured and ready.</p>
           </div>
         </div>
         <div class="timeline-item" data-animate>
           <div class="timeline-number">2</div>
           <div class="timeline-content">
-            <h4>Register &amp; Configure</h4>
-            <p>Create your admin account. Seed 49 feature flags with <code>app:seed-feature-flags</code>. The admin panel lets you create users, assign roles, and control access.</p>
+            <h4>Register</h4>
+            <p>Create your account. Multi-user, multi-tenant — each user sees only their own vehicles.</p>
           </div>
         </div>
         <div class="timeline-item" data-animate>
           <div class="timeline-number">3</div>
           <div class="timeline-content">
             <h4>Add Vehicles</h4>
-            <p>Enter a registration number for automatic DVLA lookup, or add details manually. Upload photos, decode VINs, scrape specs. Cars, vans, trucks, motorcycles, EVs.</p>
+            <p>Enter a reg number for automatic lookup, or add details manually. Upload photos.</p>
           </div>
         </div>
         <div class="timeline-item" data-animate>
           <div class="timeline-number">4</div>
           <div class="timeline-content">
             <h4>Track Everything</h4>
-            <p>Log fuel, record services, track MOTs, manage parts, file insurance — on web or mobile. Your data syncs seamlessly across platforms via the shared REST API.</p>
-          </div>
-        </div>
-        <div class="timeline-item" data-animate>
-          <div class="timeline-number">5</div>
-          <div class="timeline-content">
-            <h4>Share &amp; Control</h4>
-            <p>Assign vehicles to other users with per-vehicle permissions. Use feature flags to control what each user can see and do. Export reports to PDF or Excel.</p>
+            <p>Log fuel, record services, track MOTs, manage parts — on web or mobile. Your data syncs seamlessly.</p>
           </div>
         </div>
       </div>
@@ -883,20 +492,18 @@
       <div class="section-header">
         <span class="section-tag">Tech Stack</span>
         <h2>Built With<br/><span class="gradient-text">Modern Tools.</span></h2>
-        <p>Production-grade technologies. 30 controllers, 27 entities, comprehensive test suites.</p>
+        <p>Production-grade technologies. Battle-tested. Well-documented.</p>
       </div>
       <div class="tech-grid">
         <div class="tech-card" data-animate>
           <div class="tech-layer">Backend</div>
           <div class="tech-items">
             <div class="tech-pill">Symfony 6.4</div>
-            <div class="tech-pill">PHP 8.4</div>
+            <div class="tech-pill">PHP 8.3</div>
             <div class="tech-pill">MySQL 8</div>
             <div class="tech-pill">Doctrine ORM</div>
             <div class="tech-pill">Redis 7</div>
             <div class="tech-pill">JWT Auth</div>
-            <div class="tech-pill">Feature Flags</div>
-            <div class="tech-pill">EventSubscriber</div>
           </div>
         </div>
         <div class="tech-card" data-animate>
@@ -908,7 +515,6 @@
             <div class="tech-pill">Axios</div>
             <div class="tech-pill">i18next</div>
             <div class="tech-pill">MUI X Charts</div>
-            <div class="tech-pill">dnd-kit</div>
           </div>
         </div>
         <div class="tech-card" data-animate>
@@ -919,7 +525,6 @@
             <div class="tech-pill">React Native Paper</div>
             <div class="tech-pill">React Navigation</div>
             <div class="tech-pill">AsyncStorage</div>
-            <div class="tech-pill">Camera/OCR</div>
           </div>
         </div>
         <div class="tech-card" data-animate>
@@ -927,7 +532,6 @@
           <div class="tech-items">
             <div class="tech-pill">Docker</div>
             <div class="tech-pill">Docker Compose</div>
-            <div class="tech-pill">Portainer Stack</div>
             <div class="tech-pill">Nginx</div>
             <div class="tech-pill">PHPUnit</div>
             <div class="tech-pill">Jest</div>
@@ -946,7 +550,7 @@
     <div class="container">
       <div class="cta-content" data-animate>
         <h2>Ready to Take Control<br/>of Your Vehicles?</h2>
-        <p>Self-host for free. Keep your data private. Full admin panel, feature flags, 21 languages, web + mobile.</p>
+        <p>Self-host for free. Keep your data private. Manage everything in one place.</p>
         <div class="cta-code">
           <div class="code-header">
             <span class="code-dot red"></span>
@@ -955,24 +559,21 @@
             <span class="code-title">terminal</span>
           </div>
           <pre><code><span class="code-comment"># Clone and start</span>
-<span class="code-prompt">$</span> git clone https://github.com/peteclarke-del/vehicle.git
-<span class="code-prompt">$</span> cd vehicle
-<span class="code-prompt">$</span> cp .env.example .env
+<span class="code-prompt">$</span> git clone https://github.com/your-org/vehicle-manager.git
+<span class="code-prompt">$</span> cd vehicle-manager
 <span class="code-prompt">$</span> docker compose up -d
-<span class="code-comment"># 🚀 Open http://localhost:80 (frontend)</span>
-<span class="code-comment"># 📡 API at http://localhost:8081</span></code></pre>
+<span class="code-comment"># 🚀 Open http://localhost:8081</span></code></pre>
         </div>
         <div class="cta-buttons">
-          <a href="https://github.com/peteclarke-del/vehicle" target="_blank" rel="noopener" class="btn btn-white btn-lg">
+          <a href="#" class="btn btn-white btn-lg">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
             View on GitHub
           </a>
-          <a href="https://github.com/peteclarke-del/vehicle/releases" target="_blank" rel="noopener" class="btn btn-primary btn-lg">
+          <a href="#" class="btn btn-primary btn-lg">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             Download APK
           </a>
         </div>
-        <p class="cta-note">APK builds are generated via Docker — see <a href="https://github.com/peteclarke-del/vehicle#mobile-build" target="_blank" rel="noopener">Mobile Build</a> in the README for instructions.</p>
       </div>
     </div>
   </section>
@@ -993,14 +594,12 @@
         </div>
         <div class="footer-links">
           <a href="#features">Features</a>
-          <a href="#admin">Admin</a>
           <a href="#platforms">Platforms</a>
-          <a href="#i18n">Languages</a>
           <a href="#tech">Tech Stack</a>
-          <a href="https://github.com/peteclarke-del/vehicle" target="_blank" rel="noopener">GitHub</a>
+          <a href="#get-started">Get Started</a>
         </div>
         <div class="footer-copy">
-          &copy; 2025 Vehicle Manager. Open source under MIT License.
+          &copy; 2026 Vehicle Manager. Open source under MIT License.
         </div>
       </div>
     </div>
