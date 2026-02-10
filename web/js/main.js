@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initScrollAnimations();
   initCounters();
   initParticles();
+  initDemoLinks();
 });
 
 /* ===================== NAVBAR ===================== */
@@ -147,3 +148,16 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     }
   });
 });
+
+/* ===================== DEMO LINKS ===================== */
+function initDemoLinks() {
+  const cfg = window.SITE_CONFIG || {};
+  const url = (cfg.demoUrl || '').trim();
+
+  if (!url) return; // No demo URL configured – buttons stay hidden
+
+  document.querySelectorAll('#navDemoLink, #heroDemoLink').forEach(el => {
+    el.href = url;
+    el.style.display = '';
+  });
+}

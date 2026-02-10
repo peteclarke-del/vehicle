@@ -90,6 +90,17 @@ code { font-family: var(--font-mono); }
   border: 1px solid var(--border);
 }
 .btn-ghost:hover { background: var(--bg-card); color: var(--text); border-color: var(--border-light); }
+.btn-demo {
+  background: linear-gradient(135deg, #f59e0b, #f97316);
+  color: #fff;
+  box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+  border: none;
+}
+.btn-demo:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(245, 158, 11, 0.45);
+  color: #fff;
+}
 .btn-white {
   background: #fff;
   color: #111;
