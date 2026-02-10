@@ -278,6 +278,11 @@ class AttachmentController extends AbstractController
 
         if ($vehicle) {
             $attachment->setVehicle($vehicle);
+            // When an admin uploads to a vehicle, attribute the attachment to the vehicle's owner
+            $owner = $vehicle->getOwner();
+            if ($owner) {
+                $attachment->setUser($owner);
+            }
         }
         
         if ($description) {
