@@ -26,7 +26,7 @@
 version: '3.9'
 
 # ---------------------------------------------------------------------------
-# Environment variable defaults — override via Portainer environment variables
+# Environment variable defaults - override via Portainer environment variables
 # ---------------------------------------------------------------------------
 x-common-env: &common-env
   # ── Symfony ──────────────────────────────────────────────────────────────
@@ -94,7 +94,7 @@ x-common-env: &common-env
 
 services:
   # =========================================================================
-  # MySQL — Optional internal database
+  # MySQL - Optional internal database
   # =========================================================================
   # To use an EXTERNAL database instead:
   #   1. Remove or comment out this entire mysql service
@@ -131,7 +131,7 @@ services:
           memory: 512M
 
   # =========================================================================
-  # Redis — Session & cache store
+  # Redis - Session & cache store
   # =========================================================================
   redis:
     image: redis:7-alpine
@@ -157,7 +157,7 @@ services:
           memory: 128M
 
   # =========================================================================
-  # PHP-FPM — Symfony API backend
+  # PHP-FPM - Symfony API backend
   # =========================================================================
   php:
     image: ${PHP_IMAGE:-vehicle-php:latest}
@@ -194,7 +194,7 @@ services:
           memory: 256M
 
   # =========================================================================
-  # Nginx — API reverse proxy (serves backend API on port 8081)
+  # Nginx - API reverse proxy (serves backend API on port 8081)
   # =========================================================================
   nginx:
     image: ${NGINX_IMAGE:-vehicle-nginx:latest}
@@ -231,7 +231,7 @@ services:
           memory: 128M
 
   # =========================================================================
-  # Frontend — React SPA served via nginx (port 80)
+  # Frontend - React SPA served via nginx (port 80)
   # =========================================================================
   frontend:
     image: ${FRONTEND_IMAGE:-vehicle-frontend:latest}
@@ -264,7 +264,7 @@ services:
           memory: 64M
 
   # =========================================================================
-  # Website — Promotional / landing page (port 8083)
+  # Website - Promotional / landing page (port 8083)
   # =========================================================================
   website:
     image: nginx:alpine
@@ -378,7 +378,7 @@ volumes:
 #    docker build -t your-registry/vehicle-php:latest \
 #      -f docker/php/Dockerfile docker/php/
 #
-#    # Nginx (API proxy) — includes the nginx config
+#    # Nginx (API proxy) - includes the nginx config
 #    docker build -t your-registry/vehicle-nginx:latest \
 #      -f docker/nginx/Dockerfile docker/nginx/
 #

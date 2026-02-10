@@ -816,7 +816,7 @@ const Dashboard = () => {
                   </Box>
                 </Box>
 
-                {/* Pie Chart: Col 10-13, spans both rows — Total Cost per Vehicle */}
+                {/* Pie Chart: Col 10-13, spans both rows - Total Cost per Vehicle */}
                 <Box sx={{ gridColumn: { lg: '10 / 13' }, gridRow: { lg: '1 / 3' } }}>
                   <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
                     <Typography variant="h6" gutterBottom>{t('dashboard.costPerVehicle')}</Typography>

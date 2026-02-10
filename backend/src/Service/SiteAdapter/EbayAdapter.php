@@ -145,7 +145,7 @@ class EbayAdapter implements SiteAdapterInterface
                 throw new \RuntimeException('eBay Browse API error: ' . $message);
             }
 
-            // Some responses include an `errors` array even with a 200-ish status — treat as error
+            // Some responses include an `errors` array even with a 200-ish status - treat as error
             if (!empty($data['errors'])) {
                 $this->logger->error('eBay API returned errors', ['errors' => $data['errors']]);
                 foreach ($data['errors'] as $err) {

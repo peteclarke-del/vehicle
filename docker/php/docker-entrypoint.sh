@@ -83,7 +83,7 @@ if [ -f "$TARGET_DIR/bin/console" ]; then
 
   if [ ! -d "$VENDOR_DIR" ] || [ ! -f "$VENDOR_AUTOLOAD" ] || [ "$vendor_empty" = true ]; then
     if command -v composer >/dev/null 2>&1; then
-      echo "[entrypoint] vendor directory missing or empty — installing composer dependencies"
+      echo "[entrypoint] vendor directory missing or empty - installing composer dependencies"
       # Choose flags based on environment
       if [ "${APP_ENV:-dev}" = "prod" ]; then
         COMPOSER_FLAGS=(--no-interaction --prefer-dist --no-dev --optimize-autoloader)

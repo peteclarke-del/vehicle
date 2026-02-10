@@ -152,6 +152,7 @@ services:
     environment:
       - REACT_APP_API_URL=${REACT_APP_API_URL}
       - REACT_APP_PASSWORD_POLICY=${REACT_APP_PASSWORD_POLICY}
+      - REACT_APP_DEMO_MODE=${REACT_APP_DEMO_MODE:-}
       - CHOKIDAR_USEPOLLING=true
       - NODE_OPTIONS=--max-old-space-size=1024
     command: npm start

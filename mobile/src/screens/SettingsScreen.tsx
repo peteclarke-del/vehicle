@@ -316,7 +316,7 @@ const SettingsScreen: React.FC = () => {
       <List.Section style={styles.section}>
         <List.Item
           title="Connection Mode"
-          description={isStandalone ? 'Standalone (local data only)' : `Web — ${serverUrl}`}
+          description={isStandalone ? 'Standalone (local data only)' : `Web - ${serverUrl}`}
           left={props => <List.Icon {...props} icon={isStandalone ? 'cellphone' : 'cloud-sync'} />}
         />
         <List.Item

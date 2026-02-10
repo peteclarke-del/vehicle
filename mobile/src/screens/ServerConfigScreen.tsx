@@ -212,7 +212,7 @@ const ServerConfigScreen: React.FC = () => {
               <Text
                 variant="bodyMedium"
                 style={{color: theme.colors.onSurfaceVariant, marginBottom: 16}}>
-                Use the app entirely on this device. All data is stored locally —
+                Use the app entirely on this device. All data is stored locally -
                 no server or account required. You can switch to server mode later.
               </Text>
 

@@ -90,7 +90,7 @@ export function useOfflineData<T = any>(
       const response = await api.get(endpoint, {params});
       return response.data;
     } catch (e: any) {
-      // Network error — we're offline or server is down
+      // Network error - we're offline or server is down
       console.warn(`Network fetch failed for ${endpoint}:`, e.message);
       return null;
     }
@@ -121,7 +121,7 @@ export function useOfflineData<T = any>(
       setError(null);
       await saveToCache(fresh);
     } else if (cached === null) {
-      // No cache and no network — show error
+      // No cache and no network - show error
       setError('No connection and no cached data available');
     }
     // else: we already showed cached data, leave it
@@ -129,7 +129,7 @@ export function useOfflineData<T = any>(
     setLoading(false);
   }, [enabled, loadFromCache, fetchFromNetwork, saveToCache]);
 
-  // Refresh — forces a network fetch
+  // Refresh - forces a network fetch
   const refresh = useCallback(async () => {
     setError(null);
     const fresh = await fetchFromNetwork();
@@ -199,7 +199,7 @@ export function useOfflineMutation() {
         throw error;
       }
     } else {
-      // Offline — queue the change
+      // Offline - queue the change
       await addPendingChange({type: method, entityType, entityId, data});
       return {success: true, offline: true};
     }

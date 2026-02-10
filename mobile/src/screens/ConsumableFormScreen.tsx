@@ -224,7 +224,7 @@ const ConsumableFormScreen: React.FC = () => {
         contentContainerStyle={formStyles.content}
         keyboardShouldPersistTaps="handled">
 
-        {!isOnline && <OfflineBanner message="Offline — changes will be synced later" />}
+        {!isOnline && <OfflineBanner message="Offline - changes will be synced later" />}
 
         <Text variant="titleMedium" style={formStyles.sectionTitle}>Consumable Details</Text>
 

@@ -429,7 +429,7 @@ const AdminUserDetails = () => {
                       </TableCell>
                       <TableCell>
                         <Typography variant="body2" color="text.secondary">
-                          {vehicle.ownerName || '—'}
+                          {vehicle.ownerName || '-'}
                         </Typography>
                       </TableCell>
                       <TableCell align="center">

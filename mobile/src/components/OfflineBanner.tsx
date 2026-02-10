@@ -8,7 +8,7 @@ interface OfflineBannerProps {
 }
 
 const OfflineBanner: React.FC<OfflineBannerProps> = ({
-  message = 'Offline — showing cached data',
+  message = 'Offline - showing cached data',
 }) => {
   const theme = useTheme();
 

@@ -29,7 +29,7 @@ class InsurancePolicy
     #[ORM\Column(type: 'integer', nullable: true)]
     private ?int $ncdYears = null;
 
-    // NCD percentage removed — stored as years only
+    // NCD percentage removed - stored as years only
 
     #[ORM\Column(type: 'date', nullable: true)]
     private ?\DateTimeInterface $startDate = null;
@@ -47,7 +47,7 @@ class InsurancePolicy
     private ?int $mileageLimit = null;
 
     /**
-     * Owner/holder id — now stored as the User id of the logged-in user.
+     * Owner/holder id - now stored as the User id of the logged-in user.
      */
     #[ORM\Column(type: 'integer', nullable: true)]
     private ?int $holderId = null;
@@ -131,7 +131,7 @@ class InsurancePolicy
         return $this;
     }
 
-    // ncdPercentage removed — use ncdYears only
+    // ncdPercentage removed - use ncdYears only
 
     public function getStartDate(): ?\DateTimeInterface
     {

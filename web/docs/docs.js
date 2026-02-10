@@ -1,5 +1,5 @@
 /* ============================================
-   Vehicle Manager — Documentation JS
+   Vehicle Manager - Documentation JS
    Sidebar toggling, search, scrollspy
    ============================================ */
 

@@ -418,7 +418,7 @@ const VehicleDialog = ({ open, vehicle, onClose }) => {
           ? formData.securityFeatures.join(', ')
           : formData.securityFeatures,
       };
-      // Do not send service/MOT/road-tax dates from the vehicle form — these
+      // Do not send service/MOT/road-tax dates from the vehicle form - these
       // are computed from related records and should not be editable here.
       delete dataToSend.lastServiceDate;
       delete dataToSend.motExpiryDate;

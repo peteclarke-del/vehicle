@@ -68,7 +68,7 @@ class UrlScraperService
         $finalUrlInfo = $response->getInfo('url');
         $finalUrl = is_string($finalUrlInfo) ? $finalUrlInfo : $url;
 
-        // Detect eBay anti-bot/challenge redirects — surface a clear error instead of attempting fragile HTML parsing.
+        // Detect eBay anti-bot/challenge redirects - surface a clear error instead of attempting fragile HTML parsing.
         if (
             str_contains($finalUrl, 'splashui/challenge') ||
             str_contains($finalUrl, 'pages.ebay.com/messages') ||

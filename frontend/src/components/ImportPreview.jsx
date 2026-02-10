@@ -22,7 +22,7 @@ const ImportPreview = ({ open, data, fileName, onConfirm, onClose }) => {
 
   return (
     <Dialog open={!!open} onClose={onClose} maxWidth="lg" fullWidth>
-      <DialogTitle>{t('importExport.previewTitle')}{fileName ? ` — ${fileName}` : ''}</DialogTitle>
+      <DialogTitle>{t('importExport.previewTitle')}{fileName ? ` - ${fileName}` : ''}</DialogTitle>
       <DialogContent dividers>
         {validTable ? (
           <>

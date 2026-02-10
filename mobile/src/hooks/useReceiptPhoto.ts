@@ -1,5 +1,5 @@
 /**
- * useReceiptPhoto — shared hook for receipt photo capture and upload.
+ * useReceiptPhoto - shared hook for receipt photo capture and upload.
  *
  * Eliminates duplicate handleTakePhoto / handleChooseFromGallery / uploadReceipt
  * code from FuelRecordFormScreen, ServiceRecordFormScreen, and QuickFuelScreen.

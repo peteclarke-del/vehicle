@@ -1001,7 +1001,7 @@ class VehicleController extends AbstractController
             }
         }
 
-        // Ensure a vehicle type is set — tests often omit this; choose a sensible
+        // Ensure a vehicle type is set - tests often omit this; choose a sensible
         // default by using the first existing VehicleType, or create one.
         if (!$vehicle->getVehicleType()) {
             $vehicleTypeRepo = $this->entityManager

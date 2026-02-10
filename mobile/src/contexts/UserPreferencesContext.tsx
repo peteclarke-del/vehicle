@@ -59,7 +59,7 @@ export const UserPreferencesProvider: React.FC<UserPreferencesProviderProps> = (
       // Then fetch from server if authenticated
       if (isAuthenticated) {
         const response = await api.get('/user/preferences');
-        // API returns {data: {preferredLanguage, distanceUnit, ...}} — unwrap the envelope
+        // API returns {data: {preferredLanguage, distanceUnit, ...}} - unwrap the envelope
         const serverPrefs = response.data?.data || response.data || {};
         
         const merged = {

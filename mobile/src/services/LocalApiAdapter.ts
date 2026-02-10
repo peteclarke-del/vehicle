@@ -251,7 +251,7 @@ export function createLocalApiAdapter(): any {
         return {data: await saveLocalPreferences(data)};
       }
       if (entity === 'attachments') {
-        // Simplified attachment handling — store metadata only
+        // Simplified attachment handling - store metadata only
         const record = await createRecord('attachments', {
           filename: 'local_attachment',
           originalFilename: 'photo.jpg',
@@ -283,7 +283,7 @@ export function createLocalApiAdapter(): any {
       return {data: {message: 'Deleted successfully'}};
     },
 
-    // Compatibility stubs — some code may reference interceptors
+    // Compatibility stubs - some code may reference interceptors
     interceptors: {
       request: {use: () => 0, eject: () => {}},
       response: {use: () => 0, eject: () => {}},

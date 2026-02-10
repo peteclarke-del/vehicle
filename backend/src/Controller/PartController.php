@@ -299,7 +299,7 @@ class PartController extends AbstractController
             $part->setQuantity((int)$data['quantity']);
         }
         if (isset($data['cost'])) {
-            // Ensure entity expects a string — cast numeric values to string
+            // Ensure entity expects a string - cast numeric values to string
             $part->setCost((string) $data['cost']);
         }
 

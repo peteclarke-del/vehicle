@@ -3,6 +3,7 @@ import logger from '../utils/logger';
 import {
   Box,
   Button,
+  ButtonBase,
   Container,
   Paper,
   TextField,
@@ -12,6 +13,15 @@ import {
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
+
+const DEMO_MODE = process.env.REACT_APP_DEMO_MODE === 'true';
+
+const DEMO_ACCOUNTS = [
+  { label: 'Admin',  email: 'demo-admin@vehicle.local', password: 'DemoAdmin123!' },
+  { label: 'John',   email: 'john.smith@example.com',   password: 'DemoUser123!' },
+  { label: 'Sarah',  email: 'sarah.jones@example.com',  password: 'DemoUser123!' },
+  { label: 'Mike',   email: 'mike.wilson@example.com',  password: 'DemoUser123!' },
+];
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -96,6 +106,69 @@ const Login = () => {
               </Link>
             </Box>
           </Box>
+          {DEMO_MODE && (
+            <Box
+              component="fieldset"
+              sx={{
+                mt: 3,
+                border: '1px solid',
+                borderColor: 'divider',
+                borderRadius: 1,
+                p: 0,
+                mx: 0,
+              }}
+            >
+              <Typography
+                component="legend"
+                variant="overline"
+                sx={{
+                  px: 1,
+                  ml: 1.5,
+                  color: 'text.secondary',
+                  letterSpacing: '0.1em',
+                }}
+              >
+                Demo Accounts
+              </Typography>
+              {DEMO_ACCOUNTS.map((acct, idx) => (
+                <ButtonBase
+                  key={acct.email}
+                  onClick={() => {
+                    setEmail(acct.email);
+                    setPassword(acct.password);
+                    setError('');
+                  }}
+                  sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    width: '100%',
+                    px: 2.5,
+                    py: 1.5,
+                    borderTop: idx > 0 ? '1px solid' : 'none',
+                    borderColor: 'divider',
+                    textAlign: 'left',
+                    transition: 'background-color 0.15s',
+                    '&:hover': { bgcolor: 'action.hover' },
+                  }}
+                >
+                  <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                    {acct.label}
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: 'text.secondary',
+                      fontFamily: 'monospace',
+                      fontSize: '0.8rem',
+                    }}
+                  >
+                    {acct.email}
+                  </Typography>
+                </ButtonBase>
+              ))}
+            </Box>
+          )}
         </Paper>
       </Box>
     </Container>

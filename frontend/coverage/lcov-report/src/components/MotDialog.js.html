@@ -1848,9 +1848,9 @@ const MotDialog = <span class="cstat-no" title="statement not covered" ><span cl
                       &lt;/Typography&gt;
                       {/* Don't show cost for existing items (includedInServiceCost=false) */}
                       {p.includedInServiceCost !== false ? (
-                        &lt;span&gt;— {p.quantity || 1} @ {p.cost || ''}&lt;/span&gt;
+                        &lt;span&gt;- {p.quantity || 1} @ {p.cost || ''}&lt;/span&gt;
                       ) : (
-                        &lt;span style={{ fontStyle: 'italic', color: '#666' }}&gt;— {t('mot.existingItem') || 'Existing item'}&lt;/span&gt;
+                        &lt;span style={{ fontStyle: 'italic', color: '#666' }}&gt;- {t('mot.existingItem') || 'Existing item'}&lt;/span&gt;
                       )}
                     &lt;/div&gt;
                     &lt;div&gt;
@@ -1878,7 +1878,7 @@ const MotDialog = <span class="cstat-no" title="statement not covered" ><span cl
                         &lt;MiscellaneousServicesIcon fontSize="small" sx={{ mr: 1, verticalAlign: 'middle' }} /&gt;
                         { (s.items &amp;&amp; s.items.length &gt; 0) ? (s.items.map(<span class="fstat-no" title="function not covered" >it</span> =&gt; <span class="cstat-no" title="statement not covered" >it.description || '')</span>.filter(Boolean).join(', ')) : (s.workPerformed || s.serviceProvider || (t('service.service') || 'Service')) }
                       &lt;/Typography&gt;
-                      &lt;span&gt;— {s.totalCost || s.total || ''} ({s.mileage || ''})&lt;/span&gt;
+                      &lt;span&gt;- {s.totalCost || s.total || ''} ({s.mileage || ''})&lt;/span&gt;
                     &lt;/div&gt;
                     &lt;div&gt;
                       &lt;Tooltip title={t('common.delete')}&gt;
@@ -1897,9 +1897,9 @@ const MotDialog = <span class="cstat-no" title="statement not covered" ><span cl
                       &lt;/Typography&gt;
                       {/* Don't show cost for existing items (includedInServiceCost=false) */}
                       {c.includedInServiceCost !== false ? (
-                        &lt;span&gt;— {c.quantity || 1} @ {c.cost || ''}&lt;/span&gt;
+                        &lt;span&gt;- {c.quantity || 1} @ {c.cost || ''}&lt;/span&gt;
                       ) : (
-                        &lt;span style={{ fontStyle: 'italic', color: '#666' }}&gt;— {t('mot.existingItem') || 'Existing item'}&lt;/span&gt;
+                        &lt;span style={{ fontStyle: 'italic', color: '#666' }}&gt;- {t('mot.existingItem') || 'Existing item'}&lt;/span&gt;
                       )}
                     &lt;/div&gt;
                     &lt;div&gt;

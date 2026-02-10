@@ -173,7 +173,7 @@ const PolicyDialog = ({ open, policy, vehicles, selectedVehicleId, existingPolic
             <Grid item xs={12} sm={6}>
               <TextField fullWidth name="policyNumber" label={t('insurance.policies.policyNumber')} value={formData.policyNumber} onChange={handleChange} />
             </Grid>
-            {/* holder is removed — policies are owned by the logged-in user */}
+            {/* holder is removed - policies are owned by the logged-in user */}
             <Grid item xs={12} sm={6}>
               <FormControl fullWidth>
                 <InputLabel>{t('insurance.policies.coverType')}</InputLabel>

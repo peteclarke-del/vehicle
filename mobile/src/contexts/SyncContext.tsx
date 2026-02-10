@@ -109,11 +109,11 @@ export const SyncProvider: React.FC<SyncProviderProps> = ({children}) => {
           console.error(`[Sync] Failed to sync change ${change.id}:`, error.message);
 
           if (error.response?.status >= 400 && error.response?.status < 500) {
-            // Client error (4xx) — discard, no point retrying
+            // Client error (4xx) - discard, no point retrying
             successfulIds.push(change.id);
             failedCount++;
           } else {
-            // Server/network error — retry later
+            // Server/network error - retry later
             const newRetryCount = (change.retryCount || 0) + 1;
             if (newRetryCount >= MAX_RETRIES) {
               successfulIds.push(change.id);
@@ -162,8 +162,8 @@ export const SyncProvider: React.FC<SyncProviderProps> = ({children}) => {
       const online = state.isConnected ?? false;
 
       if (online && wasOffline.current) {
-        // Just came back online — trigger auto-sync
-        console.log('[Sync] Back online — auto-syncing pending changes');
+        // Just came back online - trigger auto-sync
+        console.log('[Sync] Back online - auto-syncing pending changes');
         setTimeout(() => {
           if (pendingRef.current.length > 0) {
             doSync();

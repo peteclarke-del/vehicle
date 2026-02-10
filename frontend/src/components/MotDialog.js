@@ -581,9 +581,9 @@ const MotDialog = ({ open, motRecord, vehicleId, vehicles, onClose }) => {
                       </Typography>
                       {/* Don't show cost for existing items (includedInServiceCost=false) */}
                       {p.includedInServiceCost !== false ? (
-                        <span>— {p.quantity || 1} @ {p.cost || ''}</span>
+                        <span>- {p.quantity || 1} @ {p.cost || ''}</span>
                       ) : (
-                        <span style={{ fontStyle: 'italic', color: '#666' }}>— {t('mot.existingItem') || 'Existing item'}</span>
+                        <span style={{ fontStyle: 'italic', color: '#666' }}>- {t('mot.existingItem') || 'Existing item'}</span>
                       )}
                     </div>
                     <div>
@@ -620,9 +620,9 @@ const MotDialog = ({ open, motRecord, vehicleId, vehicles, onClose }) => {
                         { (s.items && s.items.length > 0) ? (s.items.map(it => it.description || '').filter(Boolean).join(', ')) : (s.workPerformed || s.serviceProvider || (t('service.service') || 'Service')) }
                       </Typography>
                       {s.includedInMotCost !== false ? (
-                        <span>— {s.totalCost || s.total || ''} ({s.mileage || ''})</span>
+                        <span>- {s.totalCost || s.total || ''} ({s.mileage || ''})</span>
                       ) : (
-                        <span style={{ fontStyle: 'italic', color: '#666' }}>— {t('mot.linkedService') || 'Linked (cost separate)'}</span>
+                        <span style={{ fontStyle: 'italic', color: '#666' }}>- {t('mot.linkedService') || 'Linked (cost separate)'}</span>
                       )}
                     </div>
                     <div>
@@ -642,9 +642,9 @@ const MotDialog = ({ open, motRecord, vehicleId, vehicles, onClose }) => {
                       </Typography>
                       {/* Don't show cost for existing items (includedInServiceCost=false) */}
                       {c.includedInServiceCost !== false ? (
-                        <span>— {c.quantity || 1} @ {c.cost || ''}</span>
+                        <span>- {c.quantity || 1} @ {c.cost || ''}</span>
                       ) : (
-                        <span style={{ fontStyle: 'italic', color: '#666' }}>— {t('mot.existingItem') || 'Existing item'}</span>
+                        <span style={{ fontStyle: 'italic', color: '#666' }}>- {t('mot.existingItem') || 'Existing item'}</span>
                       )}
                     </div>
                     <div>

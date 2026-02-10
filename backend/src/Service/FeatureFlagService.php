@@ -409,7 +409,7 @@ class FeatureFlagService
         $allDefaults = $this->getDefaultFeatureFlags();
         $knownKeys = array_column($allDefaults, 'key');
         if (!in_array($featureKey, $knownKeys, true)) {
-            return null; // Unknown combination — allow by default
+            return null; // Unknown combination - allow by default
         }
 
         return $featureKey;
@@ -419,7 +419,7 @@ class FeatureFlagService
      * function seedDefaults
      *
      * Seed the default feature flags into the database.
-     * Safe to call multiple times — skips existing keys.
+     * Safe to call multiple times - skips existing keys.
      *
      * @return int
      */

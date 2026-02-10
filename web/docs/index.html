@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Vehicle Manager — Documentation</title>
-  <meta name="description" content="Complete documentation for the Vehicle Manager platform — backend API, frontend, mobile app, setup guides, and FAQ." />
+  <title>Vehicle Manager - Documentation</title>
+  <meta name="description" content="Complete documentation for the Vehicle Manager platform - backend API, frontend, mobile app, setup guides, and FAQ." />
   <link rel="stylesheet" href="docs.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
@@ -191,7 +191,7 @@
 <section id="introduction" data-section-name="Getting Started">
   <h1>Vehicle Manager Documentation</h1>
   <p class="lead">
-    Welcome to the official documentation for <strong>Vehicle Manager</strong> — a comprehensive, self-hosted platform
+    Welcome to the official documentation for <strong>Vehicle Manager</strong> - a comprehensive, self-hosted platform
     for tracking every aspect of vehicle ownership. Whether you manage a single car or a whole fleet of motorcycles,
     vans, and trucks, this guide will walk you through everything from initial setup to the deepest corners of the API.
   </p>
@@ -199,8 +199,8 @@
   <h2>Introduction</h2>
   <p>
     Vehicle Manager was built with a simple philosophy: <strong>you should own your data</strong>. There are no cloud
-    subscriptions, no third-party analytics, and no telemetry. You host it yourself, and everything — every fuel receipt,
-    every MOT advisory, every depreciation calculation — lives on your own infrastructure.
+    subscriptions, no third-party analytics, and no telemetry. You host it yourself, and everything - every fuel receipt,
+    every MOT advisory, every depreciation calculation - lives on your own infrastructure.
   </p>
   <p>
     The platform covers fuel costs, service history, MOT records, insurance policies, road tax, parts, consumables,
@@ -256,7 +256,7 @@
   <h2>Docker Setup</h2>
   <p>
     The entire application runs inside Docker containers. Clone the repository, bring the containers up, and you're
-    ready to go — no manual PHP, MySQL, or Redis installation required.
+    ready to go - no manual PHP, MySQL, or Redis installation required.
   </p>
   <h3>1. Clone the Repository</h3>
   <pre><code>git clone https://github.com/peteclarke-del/vehicle.git
@@ -270,11 +270,11 @@ cd vehicle</code></pre>
   <table class="docs-table">
     <thead><tr><th>Service</th><th>Image</th><th>Port</th><th>Purpose</th></tr></thead>
     <tbody>
-      <tr><td><strong>mysql</strong></td><td>mysql:8.0</td><td>3306</td><td>Primary database — 512 MB memory limit, health-checked</td></tr>
-      <tr><td><strong>redis</strong></td><td>redis:7-alpine</td><td>6379</td><td>Cache layer — 256 MB maxmemory, AOF persistence, noeviction policy</td></tr>
-      <tr><td><strong>php</strong></td><td>Custom PHP 8.4 FPM</td><td>9000 (internal)</td><td>Application server — Xdebug, Composer, 200 MB upload limit, 1 GB memory</td></tr>
-      <tr><td><strong>nginx</strong></td><td>Custom Nginx</td><td>8081</td><td>Reverse proxy to PHP-FPM — serves the API</td></tr>
-      <tr><td><strong>frontend</strong></td><td>Custom Node</td><td>3000</td><td>React dev server — hot-reload, 2 GB memory limit</td></tr>
+      <tr><td><strong>mysql</strong></td><td>mysql:8.0</td><td>3306</td><td>Primary database - 512 MB memory limit, health-checked</td></tr>
+      <tr><td><strong>redis</strong></td><td>redis:7-alpine</td><td>6379</td><td>Cache layer - 256 MB maxmemory, AOF persistence, noeviction policy</td></tr>
+      <tr><td><strong>php</strong></td><td>Custom PHP 8.4 FPM</td><td>9000 (internal)</td><td>Application server - Xdebug, Composer, 200 MB upload limit, 1 GB memory</td></tr>
+      <tr><td><strong>nginx</strong></td><td>Custom Nginx</td><td>8081</td><td>Reverse proxy to PHP-FPM - serves the API</td></tr>
+      <tr><td><strong>frontend</strong></td><td>Custom Node</td><td>3000</td><td>React dev server - hot-reload, 2 GB memory limit</td></tr>
     </tbody>
   </table>
 
@@ -357,7 +357,7 @@ cd vehicle</code></pre>
   <h3>Becoming an Admin</h3>
   <p>
     The first user you create will have standard <code>ROLE_USER</code> permissions. To promote yourself to an
-    administrator — which unlocks user management, feature flag control, and vehicle assignment features — run
+    administrator - which unlocks user management, feature flag control, and vehicle assignment features - run
     this SQL against your database:
   </p>
   <pre><code>UPDATE users SET roles = '["ROLE_USER","ROLE_ADMIN"]' WHERE id = 1;</code></pre>
@@ -375,7 +375,7 @@ cd vehicle</code></pre>
   <h2>Architecture Overview</h2>
   <p>
     Vehicle Manager follows a clean <strong>API-first</strong> architecture. The backend exposes a RESTful JSON API
-    that both the web and mobile front-ends consume identically. There is no server-side rendering — the backend
+    that both the web and mobile front-ends consume identically. There is no server-side rendering - the backend
     is purely an API server, and the front-ends are fully decoupled single-page applications.
   </p>
   <div class="arch-grid">
@@ -430,12 +430,12 @@ cd vehicle</code></pre>
     container for dependency injection. The codebase is organised into these key layers:
   </p>
   <ul>
-    <li><strong>Controllers</strong> (32 files) — Handle HTTP requests, validate input, enforce authorisation, and return JSON responses. Seven reusable traits provide common functionality like ownership verification, JSON validation, and entity hydration.</li>
-    <li><strong>Services</strong> (16+ files) — Encapsulate business logic: cost calculation, depreciation, OCR, report generation, URL scraping (with adapters for eBay, Amazon, Shopify, and generic sites), VIN decoding, DVLA/DVSA integration, and import/export.</li>
-    <li><strong>Entities</strong> (27 files) — Doctrine ORM entities mapping to MySQL tables. Rich relationships: User → Vehicles → all sub-records. Vehicle → Specification (OneToOne). InsurancePolicy ↔ Vehicles (ManyToMany).</li>
-    <li><strong>Event Subscribers</strong> (3 files) — FeatureFlagSubscriber enforces per-user feature flags on API routes. TestAuthSubscriber enables mock authentication in test environments. PreventFixturesLoadSubscriber blocks fixture loading in production.</li>
-    <li><strong>Commands</strong> (5 files) — Console commands for seeding feature flags, importing consumables/parts, migrating attachments, and normalising MOT advisories.</li>
-    <li><strong>Data Fixtures</strong> (8 files) — Seed lookup data from bundled JSON files covering vehicle types, makes, models, consumable types, part categories, and security features.</li>
+    <li><strong>Controllers</strong> (32 files) - Handle HTTP requests, validate input, enforce authorisation, and return JSON responses. Seven reusable traits provide common functionality like ownership verification, JSON validation, and entity hydration.</li>
+    <li><strong>Services</strong> (16+ files) - Encapsulate business logic: cost calculation, depreciation, OCR, report generation, URL scraping (with adapters for eBay, Amazon, Shopify, and generic sites), VIN decoding, DVLA/DVSA integration, and import/export.</li>
+    <li><strong>Entities</strong> (27 files) - Doctrine ORM entities mapping to MySQL tables. Rich relationships: User → Vehicles → all sub-records. Vehicle → Specification (OneToOne). InsurancePolicy ↔ Vehicles (ManyToMany).</li>
+    <li><strong>Event Subscribers</strong> (3 files) - FeatureFlagSubscriber enforces per-user feature flags on API routes. TestAuthSubscriber enables mock authentication in test environments. PreventFixturesLoadSubscriber blocks fixture loading in production.</li>
+    <li><strong>Commands</strong> (5 files) - Console commands for seeding feature flags, importing consumables/parts, migrating attachments, and normalising MOT advisories.</li>
+    <li><strong>Data Fixtures</strong> (8 files) - Seed lookup data from bundled JSON files covering vehicle types, makes, models, consumable types, part categories, and security features.</li>
   </ul>
   <h3>Controller Traits</h3>
   <p>Seven traits keep controllers DRY:</p>
@@ -472,7 +472,7 @@ cd vehicle</code></pre>
     preferences. The drawer can be pinned open or collapsed to a mini-rail (48 px icons only).
   </p>
   <p>
-    Charts are powered by <code>@mui/x-charts</code> — PieChart for cost breakdowns, BarChart for monthly spend,
+    Charts are powered by <code>@mui/x-charts</code> - PieChart for cost breakdowns, BarChart for monthly spend,
     and LineChart for depreciation curves. Reports use 13 JSON template definitions and can be previewed in-browser
     via SheetJS (XLSX) or downloaded as PDF.
   </p>
@@ -493,7 +493,7 @@ cd vehicle</code></pre>
   </p>
   <p>
     In web mode, a <strong>SyncContext</strong> manages an offline change queue. When the device loses connectivity,
-    mutations are queued in AsyncStorage and automatically replayed when the connection returns — with a 2-second
+    mutations are queued in AsyncStorage and automatically replayed when the connection returns - with a 2-second
     debounce, up to 5 retries per operation, and automatic discard of 4xx errors (which indicate permanently invalid
     data). The <code>useOfflineData</code> hook provides cache-first loading with a 24-hour TTL, so the app always
     shows data even when offline.
@@ -504,19 +504,19 @@ cd vehicle</code></pre>
   <h2>Database Schema</h2>
   <p>
     The database is <strong>MySQL 8.0</strong> with 27 Doctrine ORM entities. The central entity is <strong>Vehicle</strong>,
-    which has cascade-remove relationships to almost everything else — deleting a vehicle automatically removes all
+    which has cascade-remove relationships to almost everything else - deleting a vehicle automatically removes all
     of its fuel records, service records, parts, consumables, MOT records, road tax, todos, images, status history,
     and specification.
   </p>
   <p>Key relationships to understand:</p>
   <ul>
-    <li><strong>User → Vehicles</strong> — A user owns many vehicles (OneToMany)</li>
-    <li><strong>Vehicle → Sub-records</strong> — Each vehicle has many fuel records, service records, parts, consumables, MOT records, road tax records, todos, images, and status history entries (all OneToMany with cascade remove)</li>
-    <li><strong>Vehicle → Specification</strong> — Each vehicle has at most one specification entity (OneToOne with cascade remove), covering ~40 fields for engine, drivetrain, chassis, and dimensions</li>
-    <li><strong>InsurancePolicy ↔ Vehicles</strong> — Policies can cover multiple vehicles, and a vehicle can be on multiple policies (ManyToMany via a join table)</li>
-    <li><strong>ServiceRecord → ServiceItems</strong> — A service record contains multiple line items, each of which may link to a Part or Consumable</li>
-    <li><strong>VehicleAssignment</strong> — Allows sharing vehicles between users with granular permissions (canView, canEdit, canAddRecords, canDelete)</li>
-    <li><strong>FeatureFlag ↔ UserFeatureOverride ↔ User</strong> — 49 feature flags with per-user overrides</li>
+    <li><strong>User → Vehicles</strong> - A user owns many vehicles (OneToMany)</li>
+    <li><strong>Vehicle → Sub-records</strong> - Each vehicle has many fuel records, service records, parts, consumables, MOT records, road tax records, todos, images, and status history entries (all OneToMany with cascade remove)</li>
+    <li><strong>Vehicle → Specification</strong> - Each vehicle has at most one specification entity (OneToOne with cascade remove), covering ~40 fields for engine, drivetrain, chassis, and dimensions</li>
+    <li><strong>InsurancePolicy ↔ Vehicles</strong> - Policies can cover multiple vehicles, and a vehicle can be on multiple policies (ManyToMany via a join table)</li>
+    <li><strong>ServiceRecord → ServiceItems</strong> - A service record contains multiple line items, each of which may link to a Part or Consumable</li>
+    <li><strong>VehicleAssignment</strong> - Allows sharing vehicles between users with granular permissions (canView, canEdit, canAddRecords, canDelete)</li>
+    <li><strong>FeatureFlag ↔ UserFeatureOverride ↔ User</strong> - 49 feature flags with per-user overrides</li>
   </ul>
 </section>
 
@@ -529,7 +529,7 @@ cd vehicle</code></pre>
   <p>
     All authenticated endpoints require a <code>Bearer</code> token in the <code>Authorization</code> header.
     Tokens are issued on login, last one hour, and can be refreshed using a long-lived refresh token (30 days).
-    The authentication flow is entirely stateless — there are no server-side sessions.
+    The authentication flow is entirely stateless - there are no server-side sessions.
   </p>
 
   <div class="endpoint">
@@ -551,7 +551,7 @@ cd vehicle</code></pre>
       <h4>Response (200)</h4>
       <pre><code>{ "token": "eyJ0eXAiOiJKV1Qi..." }</code></pre>
       <h4>Errors</h4>
-      <p><code>401</code> — Invalid credentials.</p>
+      <p><code>401</code> - Invalid credentials.</p>
     </div>
   </div>
 
@@ -644,7 +644,7 @@ cd vehicle</code></pre>
       <span class="endpoint-desc">Refresh your JWT using a refresh token</span>
     </div>
     <div class="endpoint-body">
-      <p>Exchange a valid refresh token for a new JWT access token. This is a <strong>public endpoint</strong> — no Bearer token required.</p>
+      <p>Exchange a valid refresh token for a new JWT access token. This is a <strong>public endpoint</strong> - no Bearer token required.</p>
       <h4>Request Body</h4>
       <pre><code>{ "refreshToken": "a1b2c3d4e5..." }</code></pre>
       <h4>Response (200)</h4>
@@ -781,7 +781,7 @@ cd vehicle</code></pre>
       <span class="endpoint-desc">Get a user's feature overrides</span>
     </div>
     <div class="endpoint-body">
-      <p>Returns the effective feature flags for a specific user — the result of merging default flag values with any per-user overrides.</p>
+      <p>Returns the effective feature flags for a specific user - the result of merging default flag values with any per-user overrides.</p>
     </div>
   </div>
 
@@ -853,7 +853,7 @@ cd vehicle</code></pre>
       <span class="endpoint-desc">Seed default feature flags</span>
     </div>
     <div class="endpoint-body">
-      <p>Creates or updates the 49 default feature flags in the database. Safe to run multiple times — existing flags are updated, not duplicated.</p>
+      <p>Creates or updates the 49 default feature flags in the database. Safe to run multiple times - existing flags are updated, not duplicated.</p>
     </div>
   </div>
 </section>
@@ -862,7 +862,7 @@ cd vehicle</code></pre>
   <h2>Vehicles API</h2>
   <p>
     The vehicle endpoints form the core of the application. Vehicles are the top-level entity that everything else
-    hangs off — fuel records, services, parts, MOT history, and more. Admin users see all vehicles across all
+    hangs off - fuel records, services, parts, MOT history, and more. Admin users see all vehicles across all
     users; regular users see only their own vehicles plus any that have been assigned to them.
   </p>
 
@@ -897,7 +897,7 @@ cd vehicle</code></pre>
       <span class="endpoint-desc">Create a new vehicle</span>
     </div>
     <div class="endpoint-body">
-      <p>Create a new vehicle. The authenticated user is set as the owner. Vehicle type is required. Registration number and VIN are optional but recommended — they're used for DVLA/DVSA lookups and attachment file organisation.</p>
+      <p>Create a new vehicle. The authenticated user is set as the owner. Vehicle type is required. Registration number and VIN are optional but recommended - they're used for DVLA/DVSA lookups and attachment file organisation.</p>
       <h4>Request Body</h4>
       <table class="docs-table">
         <thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Notes</th></tr></thead>
@@ -958,10 +958,10 @@ cd vehicle</code></pre>
     <div class="endpoint-body">
       <p>Returns a year-by-year depreciation schedule for the vehicle. The schedule shows the value at the start of each year, the depreciation amount for that year, and the cumulative depreciation. Cached for 1 hour. Supports four methods:</p>
       <ul>
-        <li><strong>automotive_standard</strong> (default) — 20% in year one, then 15% per year thereafter</li>
-        <li><strong>straight_line</strong> — Equal depreciation each year (purchase cost ÷ years)</li>
-        <li><strong>declining_balance</strong> — Fixed percentage of the remaining value each year</li>
-        <li><strong>double_declining</strong> — Accelerated: double the straight-line rate applied to remaining value</li>
+        <li><strong>automotive_standard</strong> (default) - 20% in year one, then 15% per year thereafter</li>
+        <li><strong>straight_line</strong> - Equal depreciation each year (purchase cost ÷ years)</li>
+        <li><strong>declining_balance</strong> - Fixed percentage of the remaining value each year</li>
+        <li><strong>double_declining</strong> - Accelerated: double the straight-line rate applied to remaining value</li>
       </ul>
     </div>
   </div>
@@ -995,7 +995,7 @@ cd vehicle</code></pre>
       <span class="endpoint-desc">Monthly cost data for charts</span>
     </div>
     <div class="endpoint-body">
-      <p>Returns monthly fuel and maintenance costs per vehicle over a configurable period. This powers the dashboard bar charts. Also includes <code>vehicleTotals</code> — the total cost per vehicle across the period — used for the pie chart.</p>
+      <p>Returns monthly fuel and maintenance costs per vehicle over a configurable period. This powers the dashboard bar charts. Also includes <code>vehicleTotals</code> - the total cost per vehicle across the period - used for the pie chart.</p>
       <h4>Query Parameters</h4>
       <table class="docs-table">
         <thead><tr><th>Param</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
@@ -1124,7 +1124,7 @@ cd vehicle</code></pre>
 <section id="service-api" data-section-name="Backend API">
   <h2>Service Records API</h2>
   <p>
-    Service records capture maintenance work — oil changes, brake replacements, tyre fitting, and anything else
+    Service records capture maintenance work - oil changes, brake replacements, tyre fitting, and anything else
     done to the vehicle. Each record can have multiple <strong>service items</strong>, each typed as a part,
     consumable, or labour charge. Items can be linked to existing Part or Consumable entities.
   </p>
@@ -1244,7 +1244,7 @@ cd vehicle</code></pre>
 <section id="parts-api" data-section-name="Backend API">
   <h2>Parts API</h2>
   <p>
-    Parts represent physical components purchased for a vehicle — brake pads, filters, spark plugs, bulbs,
+    Parts represent physical components purchased for a vehicle - brake pads, filters, spark plugs, bulbs,
     and so on. Each part can be linked to a service record, MOT record, or todo. The URL scraper endpoint
     lets you pull product details directly from online retailers.
   </p>
@@ -1350,7 +1350,7 @@ cd vehicle</code></pre>
 <section id="consumables-api" data-section-name="Backend API">
   <h2>Consumables API</h2>
   <p>
-    Consumables are items that need regular replacement — engine oil, coolant, brake fluid, tyres, chain lubricant,
+    Consumables are items that need regular replacement - engine oil, coolant, brake fluid, tyres, chain lubricant,
     and so on. Unlike parts, consumables have <strong>replacement tracking</strong>: you can record the replacement
     interval (in miles), when it was last changed, and the mileage at change. The system uses this data to trigger
     notifications when a consumable is due for replacement.
@@ -1436,7 +1436,7 @@ cd vehicle</code></pre>
       <span class="endpoint-path">/api/consumables/scrape-url</span>
       <span class="endpoint-desc">Scrape product details from URL</span>
     </div>
-    <div class="endpoint-body"><p>Identical to the parts scraper — extracts product name, price, and description from a retailer URL.</p></div>
+    <div class="endpoint-body"><p>Identical to the parts scraper - extracts product name, price, and description from a retailer URL.</p></div>
   </div>
 </section>
 
@@ -1527,7 +1527,7 @@ cd vehicle</code></pre>
       <span class="endpoint-path">/api/mot-records/{id}/items</span>
       <span class="endpoint-desc">Get related parts, consumables, and services</span>
     </div>
-    <div class="endpoint-body"><p>Returns all parts, consumables, and service records that are linked to this specific MOT record — useful for seeing what work was done to pass the test.</p></div>
+    <div class="endpoint-body"><p>Returns all parts, consumables, and service records that are linked to this specific MOT record - useful for seeing what work was done to pass the test.</p></div>
   </div>
 
   <div class="endpoint">
@@ -1537,7 +1537,7 @@ cd vehicle</code></pre>
       <span class="endpoint-desc">Fetch MOT history from DVSA</span>
     </div>
     <div class="endpoint-body">
-      <p>Queries the UK DVSA API to retrieve the full MOT test history for a vehicle registration. Returns test dates, results, mileage, advisories, and failures. Does not create records — use the import endpoint for that.</p>
+      <p>Queries the UK DVSA API to retrieve the full MOT test history for a vehicle registration. Returns test dates, results, mileage, advisories, and failures. Does not create records - use the import endpoint for that.</p>
       <h4>Query Parameters</h4>
       <table class="docs-table">
         <thead><tr><th>Param</th><th>Type</th></tr></thead>
@@ -1564,7 +1564,7 @@ cd vehicle</code></pre>
   <h2>Insurance API</h2>
   <p>
     Insurance is modelled with two levels. <strong>Insurance policies</strong> represent the actual policy documents
-    from providers — these can cover multiple vehicles via a ManyToMany relationship. There are also
+    from providers - these can cover multiple vehicles via a ManyToMany relationship. There are also
     <strong>vehicle-specific insurance records</strong> for simpler per-vehicle tracking. Both approaches are supported
     and you can use whichever fits your situation.
   </p>
@@ -1704,7 +1704,7 @@ cd vehicle</code></pre>
           <tr><td><code>startDate</code></td><td>date</td></tr>
           <tr><td><code>expiryDate</code></td><td>date</td></tr>
           <tr><td><code>amount</code></td><td>decimal</td></tr>
-          <tr><td><code>frequency</code></td><td>string (annual, 6_month — default: annual)</td></tr>
+          <tr><td><code>frequency</code></td><td>string (annual, 6_month - default: annual)</td></tr>
           <tr><td><code>sorn</code></td><td>bool (default: false)</td></tr>
           <tr><td><code>notes</code></td><td>string</td></tr>
         </tbody>
@@ -1738,7 +1738,7 @@ cd vehicle</code></pre>
 <section id="todos-api" data-section-name="Backend API">
   <h2>Todos API</h2>
   <p>
-    Todos let you track upcoming work for a vehicle — "replace front tyre", "book MOT", "order new battery".
+    Todos let you track upcoming work for a vehicle - "replace front tyre", "book MOT", "order new battery".
     Each todo can be linked to parts and consumables, and when you mark a todo as done, the completion timestamp
     is recorded. Overdue todos trigger notifications.
   </p>
@@ -1794,14 +1794,14 @@ cd vehicle</code></pre>
 <section id="attachments-api" data-section-name="Backend API">
   <h2>Attachments API</h2>
   <p>
-    Attachments handle file uploads — primarily receipt photographs for OCR, but also general documentation,
+    Attachments handle file uploads - primarily receipt photographs for OCR, but also general documentation,
     user manuals, and service manuals. Files are organised on disk into
     <code>uploads/vehicles/{registration}/{category}/</code> for clean file management. The system validates
     MIME types and enforces a configurable size limit (default 200 MB).
   </p>
   <p>
     When an admin user uploads an attachment for a vehicle they don't own, the attachment is automatically
-    attributed to the vehicle's owner — not the admin.
+    attributed to the vehicle's owner - not the admin.
   </p>
 
   <div class="endpoint">
@@ -1950,7 +1950,7 @@ cd vehicle</code></pre>
 <section id="notifications-api" data-section-name="Backend API">
   <h2>Notifications API</h2>
   <p>
-    The notification system checks for items that need attention — MOT tests expiring soon, road tax renewals,
+    The notification system checks for items that need attention - MOT tests expiring soon, road tax renewals,
     overdue service dates, insurance expiry, consumables due for replacement, and todo deadlines. The web app
     uses Server-Sent Events (SSE) for real-time updates, with a fallback to polling.
   </p>
@@ -2052,7 +2052,7 @@ cd vehicle</code></pre>
     and graceful error handling.
   </p>
 
-  <h3>DVLA — Vehicle Registration Lookup</h3>
+  <h3>DVLA - Vehicle Registration Lookup</h3>
   <div class="endpoint">
     <div class="endpoint-header">
       <span class="method method-get">GET</span>
@@ -2064,7 +2064,7 @@ cd vehicle</code></pre>
     </div>
   </div>
 
-  <h3>DVSA — MOT History</h3>
+  <h3>DVSA - MOT History</h3>
   <div class="endpoint">
     <div class="endpoint-header">
       <span class="method method-get">GET</span>
@@ -2080,7 +2080,7 @@ cd vehicle</code></pre>
       <span class="endpoint-path">/api/dvsa/mot-history/{registration}</span>
       <span class="endpoint-desc">Get full MOT history</span>
     </div>
-    <div class="endpoint-body"><p>Returns every MOT test ever conducted on the vehicle — dates, results, mileage, advisories, and failure items.</p></div>
+    <div class="endpoint-body"><p>Returns every MOT test ever conducted on the vehicle - dates, results, mileage, advisories, and failure items.</p></div>
   </div>
 
   <div class="endpoint">
@@ -2148,7 +2148,7 @@ cd vehicle</code></pre>
       <span class="endpoint-desc">Import vehicles from JSON or CSV</span>
     </div>
     <div class="endpoint-body">
-      <p>Upload a previously exported file. The import is fully transactional — either everything succeeds, or nothing is committed. All sub-entities are created, including fuel records, service records, parts, consumables, MOT records, insurance, road tax, todos, and specifications. Duplicate VINs and registration numbers are handled gracefully.</p>
+      <p>Upload a previously exported file. The import is fully transactional - either everything succeeds, or nothing is committed. All sub-entities are created, including fuel records, service records, parts, consumables, MOT records, insurance, road tax, todos, and specifications. Duplicate VINs and registration numbers are handled gracefully.</p>
     </div>
   </div>
 
@@ -2229,7 +2229,7 @@ cd vehicle</code></pre>
   <h2>Cost Calculator Service</h2>
   <p>
     The <code>CostCalculator</code> is the engine behind every cost display in the application. It queries
-    across all record types — fuel, parts, consumables, service, insurance, road tax, and MOT — to compute
+    across all record types - fuel, parts, consumables, service, insurance, road tax, and MOT - to compute
     total costs, per-category breakdowns, cost per mile, average fuel consumption (in both MPG and L/100km),
     and comprehensive vehicle statistics. It depends on the Entity Manager for database queries and the
     Depreciation Calculator for current-value computations.
@@ -2248,10 +2248,10 @@ cd vehicle</code></pre>
     schedules showing the vehicle's value over time:
   </p>
   <ul>
-    <li><strong>automotive_standard</strong> (default) — Mimics real-world vehicle depreciation: 20% in the first year, then 15% per year thereafter. This is the most realistic for most vehicles.</li>
-    <li><strong>straight_line</strong> — Equal depreciation each year: purchase cost divided by the number of years.</li>
-    <li><strong>declining_balance</strong> — A fixed percentage of the remaining value each year (the rate is configurable, default 20%).</li>
-    <li><strong>double_declining</strong> — An accelerated method: double the straight-line rate applied to the remaining value each year.</li>
+    <li><strong>automotive_standard</strong> (default) - Mimics real-world vehicle depreciation: 20% in the first year, then 15% per year thereafter. This is the most realistic for most vehicles.</li>
+    <li><strong>straight_line</strong> - Equal depreciation each year: purchase cost divided by the number of years.</li>
+    <li><strong>declining_balance</strong> - A fixed percentage of the remaining value each year (the rate is configurable, default 20%).</li>
+    <li><strong>double_declining</strong> - An accelerated method: double the straight-line rate applied to the remaining value each year.</li>
   </ul>
   <p>
     The schedule output includes the value at the start of each year, the depreciation amount, and the
@@ -2281,11 +2281,11 @@ cd vehicle</code></pre>
   </p>
   <p>Key methods:</p>
   <ul>
-    <li><code>getMotHistory(registration)</code> — Full MOT test history</li>
-    <li><code>parseFailureItems(data)</code> — Extracts structured failure items from raw data</li>
-    <li><code>parseAdvisoryItems(data)</code> — Extracts structured advisory items</li>
-    <li><code>getCurrentMotStatus(data)</code> — Derives the current MOT status</li>
-    <li><code>getPassRate(data)</code> — Calculates the vehicle's overall MOT pass rate</li>
+    <li><code>getMotHistory(registration)</code> - Full MOT test history</li>
+    <li><code>parseFailureItems(data)</code> - Extracts structured failure items from raw data</li>
+    <li><code>parseAdvisoryItems(data)</code> - Extracts structured advisory items</li>
+    <li><code>getCurrentMotStatus(data)</code> - Derives the current MOT status</li>
+    <li><code>getPassRate(data)</code> - Calculates the vehicle's overall MOT pass rate</li>
   </ul>
 </section>
 
@@ -2299,13 +2299,13 @@ cd vehicle</code></pre>
   </p>
   <p>Key methods:</p>
   <ul>
-    <li><code>getEffectiveFlags(user)</code> — Returns the resolved flag map for a user</li>
-    <li><code>isFeatureEnabled(user, featureKey)</code> — Check a single flag</li>
-    <li><code>setFeatureOverride(user, featureKey, enabled)</code> — Set one override</li>
-    <li><code>bulkSetFeatureOverrides(user, overrides)</code> — Set many overrides at once</li>
-    <li><code>resetFeatureOverrides(user)</code> — Remove all overrides, revert to defaults</li>
-    <li><code>seedDefaults()</code> — Create or update the 49 default flags</li>
-    <li><code>getAllFlagsGrouped()</code> — Returns flags organised by category for the admin UI</li>
+    <li><code>getEffectiveFlags(user)</code> - Returns the resolved flag map for a user</li>
+    <li><code>isFeatureEnabled(user, featureKey)</code> - Check a single flag</li>
+    <li><code>setFeatureOverride(user, featureKey, enabled)</code> - Set one override</li>
+    <li><code>bulkSetFeatureOverrides(user, overrides)</code> - Set many overrides at once</li>
+    <li><code>resetFeatureOverrides(user)</code> - Remove all overrides, revert to defaults</li>
+    <li><code>seedDefaults()</code> - Create or update the 49 default flags</li>
+    <li><code>getAllFlagsGrouped()</code> - Returns flags organised by category for the admin UI</li>
   </ul>
   <p>
     The <code>FeatureFlagSubscriber</code> event subscriber enforces these flags on every API request.
@@ -2323,10 +2323,10 @@ cd vehicle</code></pre>
   </p>
   <p>Supported receipt types:</p>
   <ul>
-    <li><strong>Fuel receipts</strong> — Extracts date, total cost, litres, station name, and fuel type</li>
-    <li><strong>Part receipts</strong> — Extracts product name, part number, price, quantity, and supplier</li>
-    <li><strong>Consumable receipts</strong> — Same as part receipts</li>
-    <li><strong>Service receipts</strong> — Extracts work description, labour cost, parts cost, and date</li>
+    <li><strong>Fuel receipts</strong> - Extracts date, total cost, litres, station name, and fuel type</li>
+    <li><strong>Part receipts</strong> - Extracts product name, part number, price, quantity, and supplier</li>
+    <li><strong>Consumable receipts</strong> - Same as part receipts</li>
+    <li><strong>Service receipts</strong> - Extracts work description, labour cost, parts cost, and date</li>
   </ul>
   <div class="info-card tip">
     <div class="info-card-title">💡 OCR accuracy tips</div>
@@ -2343,7 +2343,7 @@ cd vehicle</code></pre>
     as XLSX (via PhpSpreadsheet) or PDF (via TCPDF).
   </p>
   <p>
-    The system supports unit conversion — distances can be rendered in miles or kilometres based on user
+    The system supports unit conversion - distances can be rendered in miles or kilometres based on user
     preference. There are 13 built-in templates (listed in the Reports API section above), and the
     template format is extensible for custom reports.
   </p>
@@ -2356,13 +2356,13 @@ cd vehicle</code></pre>
     product URL into the parts or consumables form, this service attempts to pull the product name,
     price, description, images, and part numbers automatically.
   </p>
-  <p>It uses an <strong>adapter pipeline</strong> — each adapter is tried in order until one succeeds:</p>
+  <p>It uses an <strong>adapter pipeline</strong> - each adapter is tried in order until one succeeds:</p>
   <ol>
-    <li><strong>eBay Browse API</strong> — Fast path for eBay links using the official API (client credentials flow)</li>
-    <li><strong>Shopify Adapter</strong> — Parses Shopify product JSON and HTML</li>
-    <li><strong>Amazon Adapter</strong> — Uses the Amazon product API (API key required)</li>
-    <li><strong>eBay HTML Adapter</strong> — Fallback HTML parsing for eBay when the API isn't available</li>
-    <li><strong>Generic DOM Adapter</strong> — Last resort: parses OpenGraph meta tags, JSON-LD, and DOM elements</li>
+    <li><strong>eBay Browse API</strong> - Fast path for eBay links using the official API (client credentials flow)</li>
+    <li><strong>Shopify Adapter</strong> - Parses Shopify product JSON and HTML</li>
+    <li><strong>Amazon Adapter</strong> - Uses the Amazon product API (API key required)</li>
+    <li><strong>eBay HTML Adapter</strong> - Fallback HTML parsing for eBay when the API isn't available</li>
+    <li><strong>Generic DOM Adapter</strong> - Last resort: parses OpenGraph meta tags, JSON-LD, and DOM elements</li>
   </ol>
   <p>The service handles bot detection, retries on transient failures, and gracefully returns partial results when not all fields can be extracted.</p>
 </section>
@@ -2380,7 +2380,7 @@ cd vehicle</code></pre>
   <h2>Vehicle Import Service</h2>
   <p>
     The <code>VehicleImportService</code> is approximately 2,800 lines of import logic that handles every
-    entity type. Imports are fully transactional — if any part of the import fails, the entire operation
+    entity type. Imports are fully transactional - if any part of the import fails, the entire operation
     is rolled back. The service creates vehicles and all sub-entities (fuel records, service records with
     items, parts, consumables, MOT records, insurance policies, road tax, todos, attachments, and specifications).
     It handles duplicate detection, ID remapping, and relationship reconstruction.
@@ -2394,12 +2394,12 @@ cd vehicle</code></pre>
     sources using an adapter pattern. Three adapters are registered:
   </p>
   <ul>
-    <li><strong>DvlaAdapter</strong> — Extracts specification data from DVLA vehicle records</li>
-    <li><strong>ApiNinjasMotorcycleAdapter</strong> — Queries the API Ninjas Motorcycles API for detailed specs</li>
-    <li><strong>ApiNinjasCarAdapter</strong> — Queries the API Ninjas Cars API</li>
+    <li><strong>DvlaAdapter</strong> - Extracts specification data from DVLA vehicle records</li>
+    <li><strong>ApiNinjasMotorcycleAdapter</strong> - Queries the API Ninjas Motorcycles API for detailed specs</li>
+    <li><strong>ApiNinjasCarAdapter</strong> - Queries the API Ninjas Cars API</li>
   </ul>
   <p>
-    Adapters are tried in priority order. Results are merged to fill gaps — if one adapter returns engine
+    Adapters are tried in priority order. Results are merged to fill gaps - if one adapter returns engine
     specs but not chassis data, the next adapter can fill in the missing fields. Covers approximately
     40 specification fields including engine, fluids, drivetrain, chassis, brakes, tyres, dimensions,
     weights, and performance data.
@@ -2421,7 +2421,7 @@ cd vehicle</code></pre>
   <p>
     The <code>AttachmentLinkingService</code> manages bidirectional links between attachments and entities.
     When you link a receipt to a fuel record, this service updates both the attachment's entity reference
-    and the fuel record's receipt reference. It also handles <strong>file reorganisation</strong> — when an
+    and the fuel record's receipt reference. It also handles <strong>file reorganisation</strong> - when an
     attachment is linked to a vehicle, the physical file is moved from the generic uploads directory to
     <code>uploads/vehicles/{registration}/{category}/</code> for clean file management.
   </p>
@@ -2434,7 +2434,7 @@ cd vehicle</code></pre>
 <section id="user-entity" data-section-name="Entities">
   <h2>Entity Reference</h2>
   <p>
-    This section documents every Doctrine entity in the system — the database tables, their fields, types,
+    This section documents every Doctrine entity in the system - the database tables, their fields, types,
     and relationships. Click on an entity card to expand its field list.
   </p>
 
@@ -2568,7 +2568,7 @@ cd vehicle</code></pre>
           <tr><td><code>motRecord</code></td><td>ManyToOne → MotRecord</td></tr>
           <tr><td><code>includedInMotCost</code></td><td>bool (default true)</td></tr>
           <tr><td><code>includesMotTestCost</code></td><td>bool (default false)</td></tr>
-          <tr><td><code>notes</code>, <code>createdAt</code>, <code>receiptAttachment</code></td><td>—</td></tr>
+          <tr><td><code>notes</code>, <code>createdAt</code>, <code>receiptAttachment</code></td><td>-</td></tr>
         </tbody>
       </table>
       <p><strong>Relationships:</strong> OneToMany → ServiceItem (cascade persist/remove, orphanRemoval)</p>
@@ -2586,7 +2586,7 @@ cd vehicle</code></pre>
         <tbody>
           <tr><td><code>id</code></td><td>int (PK)</td></tr>
           <tr><td><code>serviceRecord</code></td><td>ManyToOne → ServiceRecord (CASCADE)</td></tr>
-          <tr><td><code>type</code></td><td>string(20) — part, labour, consumable</td></tr>
+          <tr><td><code>type</code></td><td>string(20) - part, labour, consumable</td></tr>
           <tr><td><code>description</code></td><td>string(255), nullable</td></tr>
           <tr><td><code>cost</code></td><td>decimal(10,2)</td></tr>
           <tr><td><code>quantity</code></td><td>decimal(10,2), default 1.00</td></tr>
@@ -2631,7 +2631,7 @@ cd vehicle</code></pre>
           <tr><td><code>todo</code></td><td>ManyToOne → Todo (SET NULL)</td></tr>
           <tr><td><code>motRecord</code></td><td>ManyToOne → MotRecord (SET NULL)</td></tr>
           <tr><td><code>receiptAttachment</code></td><td>ManyToOne → Attachment (SET NULL)</td></tr>
-          <tr><td><code>notes</code>, <code>createdAt</code></td><td>—</td></tr>
+          <tr><td><code>notes</code>, <code>createdAt</code></td><td>-</td></tr>
         </tbody>
       </table>
     </div>
@@ -2665,7 +2665,7 @@ cd vehicle</code></pre>
           <tr><td><code>productUrl</code></td><td>string(500), nullable</td></tr>
           <tr><td><code>includedInServiceCost</code></td><td>bool, default false</td></tr>
           <tr><td><code>serviceRecord</code>, <code>todo</code>, <code>motRecord</code>, <code>receiptAttachment</code></td><td>ManyToOne (SET NULL)</td></tr>
-          <tr><td><code>notes</code>, <code>createdAt</code>, <code>updatedAt</code></td><td>—</td></tr>
+          <tr><td><code>notes</code>, <code>createdAt</code>, <code>updatedAt</code></td><td>-</td></tr>
         </tbody>
       </table>
     </div>
@@ -2686,7 +2686,7 @@ cd vehicle</code></pre>
           <tr><td><code>id</code></td><td>int (PK)</td></tr>
           <tr><td><code>vehicle</code></td><td>ManyToOne → Vehicle (CASCADE)</td></tr>
           <tr><td><code>testDate</code></td><td>date</td></tr>
-          <tr><td><code>result</code></td><td>string(20) — Pass, Fail, Advisory</td></tr>
+          <tr><td><code>result</code></td><td>string(20) - Pass, Fail, Advisory</td></tr>
           <tr><td><code>testCost</code></td><td>decimal(10,2)</td></tr>
           <tr><td><code>repairCost</code></td><td>decimal(10,2), default 0</td></tr>
           <tr><td><code>mileage</code></td><td>int, nullable</td></tr>
@@ -2941,7 +2941,7 @@ cd vehicle</code></pre>
     The application wraps all pages in a layered context hierarchy: ThemeContext → AuthContext →
     UserPreferencesContext → VehicleContext → PermissionsContext. This means every page has access to
     the current theme, authentication state, user preferences, the global vehicle list, and feature-flag
-    permissions — without prop drilling.
+    permissions - without prop drilling.
   </p>
   <h3>Key Pages</h3>
   <table class="docs-table">
@@ -3006,7 +3006,7 @@ cd vehicle</code></pre>
     entity linking.
   </p>
   <p>
-    Service record forms are the most complex — they support inline addition of service items, each typed
+    Service record forms are the most complex - they support inline addition of service items, each typed
     as a part, labour charge, or consumable, with the ability to link to existing Part or Consumable entities.
     MOT record forms include structured advisory and failure item entry. Insurance forms support multi-vehicle
     policy assignment.
@@ -3041,21 +3041,21 @@ cd vehicle</code></pre>
   <h3>Contexts &amp; Hooks</h3>
   <p>The frontend uses five React contexts:</p>
   <ul>
-    <li><strong>AuthContext</strong> — Manages JWT tokens (SafeStorage), login/logout, user profile, 401 interceptor</li>
-    <li><strong>ThemeContext</strong> — MUI light/dark theme, persisted to localStorage and user preferences</li>
-    <li><strong>UserPreferencesContext</strong> — Default vehicle, rows per page, distance unit, currency</li>
-    <li><strong>VehicleContext</strong> — Global vehicle list with 30-second cache, auto-fetch on mount</li>
-    <li><strong>PermissionsContext</strong> — Feature-flag and vehicle-assignment based access control; admin bypass</li>
+    <li><strong>AuthContext</strong> - Manages JWT tokens (SafeStorage), login/logout, user profile, 401 interceptor</li>
+    <li><strong>ThemeContext</strong> - MUI light/dark theme, persisted to localStorage and user preferences</li>
+    <li><strong>UserPreferencesContext</strong> - Default vehicle, rows per page, distance unit, currency</li>
+    <li><strong>VehicleContext</strong> - Global vehicle list with 30-second cache, auto-fetch on mount</li>
+    <li><strong>PermissionsContext</strong> - Feature-flag and vehicle-assignment based access control; admin bypass</li>
   </ul>
   <p>And seven custom hooks:</p>
   <ul>
-    <li><code>useApi</code> — Generic data fetching with loading/error state</li>
-    <li><code>useDistance</code> — Distance unit conversion (miles/km) based on user preference</li>
-    <li><code>useFileDrop</code> — Drag-and-drop file handling</li>
-    <li><code>useNotifications</code> — SSE stream with fallback polling, 90-day dismissed/snoozed cleanup</li>
-    <li><code>useSortPreference</code> — Persisted sort field/order</li>
-    <li><code>usePagination</code> — Pagination state with user-preferred default rows</li>
-    <li><code>useVehicleSelection</code> — Vehicle selection synced with user preferences</li>
+    <li><code>useApi</code> - Generic data fetching with loading/error state</li>
+    <li><code>useDistance</code> - Distance unit conversion (miles/km) based on user preference</li>
+    <li><code>useFileDrop</code> - Drag-and-drop file handling</li>
+    <li><code>useNotifications</code> - SSE stream with fallback polling, 90-day dismissed/snoozed cleanup</li>
+    <li><code>useSortPreference</code> - Persisted sort field/order</li>
+    <li><code>usePagination</code> - Pagination state with user-preferred default rows</li>
+    <li><code>useVehicleSelection</code> - Vehicle selection synced with user preferences</li>
   </ul>
 </section>
 
@@ -3083,7 +3083,7 @@ cd vehicle</code></pre>
     The mobile app is built with <strong>React Native 0.73</strong> and <strong>TypeScript</strong>. It uses
     <strong>React Native Paper</strong> (Material Design 3) for the UI, <strong>React Navigation</strong>
     for navigation, and <strong>Axios</strong> for HTTP communication. The app supports <strong>20 languages</strong>
-    with bundled JSON translations (no Pirate — that's a web-only Easter egg).
+    with bundled JSON translations (no Pirate - that's a web-only Easter egg).
   </p>
   <p>
     The bottom tab navigation has five tabs: Dashboard, Vehicles, Fuel, Service, and More. The "More" tab
@@ -3099,10 +3099,10 @@ cd vehicle</code></pre>
     the <strong>ServerConfigScreen</strong> presents two choices:
   </p>
   <ul>
-    <li><strong>Connect to Server</strong> — Enter your Vehicle Manager server URL. The app tests the connection
+    <li><strong>Connect to Server</strong> - Enter your Vehicle Manager server URL. The app tests the connection
     before proceeding. All data is synced with the backend. The URL is auto-normalised (adds https:// if missing,
     appends /api if needed).</li>
-    <li><strong>Use Standalone</strong> — The app runs entirely offline. A <code>LocalApiAdapter</code> provides
+    <li><strong>Use Standalone</strong> - The app runs entirely offline. A <code>LocalApiAdapter</code> provides
     full CRUD operations backed by AsyncStorage. No server required. Data lives entirely on the device.</li>
   </ul>
   <p>
@@ -3185,15 +3185,15 @@ cd vehicle</code></pre>
     The Settings screen provides comprehensive configuration:
   </p>
   <ul>
-    <li><strong>Sync status</strong> — Shows online/offline state with a "Sync Now" button and pending count</li>
-    <li><strong>Language selector</strong> — 20 languages with flag emojis and native names</li>
-    <li><strong>Theme</strong> — Light, System, or Dark (segmented buttons)</li>
-    <li><strong>Currency</strong> — 17 currencies (GBP, USD, EUR, JPY, etc.)</li>
-    <li><strong>Distance unit</strong> — Miles or kilometres</li>
-    <li><strong>Volume unit</strong> — Litres or gallons</li>
-    <li><strong>Notification toggles</strong> — Service, MOT, and insurance reminder switches</li>
-    <li><strong>Server info</strong> — Connected server URL</li>
-    <li><strong>Clear Data &amp; Disconnect</strong> — Reset the app to ServerConfigScreen</li>
+    <li><strong>Sync status</strong> - Shows online/offline state with a "Sync Now" button and pending count</li>
+    <li><strong>Language selector</strong> - 20 languages with flag emojis and native names</li>
+    <li><strong>Theme</strong> - Light, System, or Dark (segmented buttons)</li>
+    <li><strong>Currency</strong> - 17 currencies (GBP, USD, EUR, JPY, etc.)</li>
+    <li><strong>Distance unit</strong> - Miles or kilometres</li>
+    <li><strong>Volume unit</strong> - Litres or gallons</li>
+    <li><strong>Notification toggles</strong> - Service, MOT, and insurance reminder switches</li>
+    <li><strong>Server info</strong> - Connected server URL</li>
+    <li><strong>Clear Data &amp; Disconnect</strong> - Reset the app to ServerConfigScreen</li>
     <li><strong>Logout</strong></li>
   </ul>
 </section>
@@ -3207,7 +3207,7 @@ cd vehicle</code></pre>
   <p>
     The admin panel is available to users with the <code>ROLE_ADMIN</code> role. It provides three main
     capabilities: user management, feature flag control, and vehicle assignment management. All admin
-    operations are enforced server-side — the frontend simply hides the UI for non-admin users, but the
+    operations are enforced server-side - the frontend simply hides the UI for non-admin users, but the
     API will reject unauthorised requests regardless.
   </p>
 </section>
@@ -3219,10 +3219,10 @@ cd vehicle</code></pre>
     last login time, and active status. Available actions include:
   </p>
   <ul>
-    <li><strong>Create user</strong> — Set up a new account with email, password, name, and role. Useful for onboarding family members or fleet drivers.</li>
-    <li><strong>Toggle active</strong> — Disable or re-enable a user account. Disabled users cannot log in.</li>
-    <li><strong>Force password change</strong> — Sets a flag that forces the user to choose a new password on their next login. Use this if you suspect a compromised account.</li>
-    <li><strong>Manage roles</strong> — Promote a user to ROLE_ADMIN or demote back to ROLE_USER.</li>
+    <li><strong>Create user</strong> - Set up a new account with email, password, name, and role. Useful for onboarding family members or fleet drivers.</li>
+    <li><strong>Toggle active</strong> - Disable or re-enable a user account. Disabled users cannot log in.</li>
+    <li><strong>Force password change</strong> - Sets a flag that forces the user to choose a new password on their next login. Use this if you suspect a compromised account.</li>
+    <li><strong>Manage roles</strong> - Promote a user to ROLE_ADMIN or demote back to ROLE_USER.</li>
   </ul>
 </section>
 
@@ -3230,7 +3230,7 @@ cd vehicle</code></pre>
   <h3>Feature Flags</h3>
   <p>
     Vehicle Manager has <strong>49 feature flags</strong> organised by category. By default, all flags are
-    enabled for everyone. Admins can override flags on a per-user basis — for example, disabling the Reports
+    enabled for everyone. Admins can override flags on a per-user basis - for example, disabling the Reports
     feature for a specific user, or restricting a user to only view fuel records and nothing else.
   </p>
   <p>
@@ -3284,7 +3284,7 @@ cd vehicle</code></pre>
 
   <div class="info-card info">
     <div class="info-card-title">How do I make myself an admin?</div>
-    <p>Run this SQL against your database: <code>UPDATE users SET roles = '["ROLE_USER","ROLE_ADMIN"]' WHERE id = 1;</code> — replacing <code>1</code> with your user ID. There is no UI for the initial admin promotion since it would be a security risk.</p>
+    <p>Run this SQL against your database: <code>UPDATE users SET roles = '["ROLE_USER","ROLE_ADMIN"]' WHERE id = 1;</code> - replacing <code>1</code> with your user ID. There is no UI for the initial admin promotion since it would be a security risk.</p>
   </div>
 
   <div class="info-card info">
@@ -3299,12 +3299,12 @@ cd vehicle</code></pre>
 
   <div class="info-card info">
     <div class="info-card-title">How is depreciation calculated?</div>
-    <p>Four methods are available. The default is <strong>automotive_standard</strong>, which applies 20% depreciation in the first year and 15% per year thereafter — closely matching real-world vehicle depreciation patterns. You can also choose straight-line, declining balance, or double-declining balance.</p>
+    <p>Four methods are available. The default is <strong>automotive_standard</strong>, which applies 20% depreciation in the first year and 15% per year thereafter - closely matching real-world vehicle depreciation patterns. You can also choose straight-line, declining balance, or double-declining balance.</p>
   </div>
 
   <div class="info-card info">
     <div class="info-card-title">What's the difference between parts and consumables?</div>
-    <p><strong>Parts</strong> are permanent replacements — brake pads, air filters, bulbs, exhaust components. They're bought, installed, and that's it. <strong>Consumables</strong> are items that need regular, repeated replacement — engine oil, coolant, brake fluid, tyres, chain lube. Consumables have replacement-interval tracking, so the system can notify you when they're due.</p>
+    <p><strong>Parts</strong> are permanent replacements - brake pads, air filters, bulbs, exhaust components. They're bought, installed, and that's it. <strong>Consumables</strong> are items that need regular, repeated replacement - engine oil, coolant, brake fluid, tyres, chain lube. Consumables have replacement-interval tracking, so the system can notify you when they're due.</p>
   </div>
 
   <div class="info-card info">
@@ -3328,7 +3328,7 @@ cd vehicle</code></pre>
 
   <div class="info-card warning">
     <div class="info-card-title">MySQL won't connect</div>
-    <p>MySQL has a health check configured — it may take 30–60 seconds to become ready after starting. Check with <code>docker-compose ps</code> and wait for the MySQL container to show "healthy". Verify <code>DATABASE_URL</code> in your <code>.env</code> file points to the correct host (usually <code>mysql</code> inside Docker).</p>
+    <p>MySQL has a health check configured - it may take 30–60 seconds to become ready after starting. Check with <code>docker-compose ps</code> and wait for the MySQL container to show "healthy". Verify <code>DATABASE_URL</code> in your <code>.env</code> file points to the correct host (usually <code>mysql</code> inside Docker).</p>
   </div>
 
   <div class="info-card warning">
@@ -3343,7 +3343,7 @@ cd vehicle</code></pre>
 
   <div class="info-card info">
     <div class="info-card-title">How do I run migrations?</div>
-    <p><code>docker-compose exec php bin/console doctrine:migrations:migrate --no-interaction</code> — though migrations typically run automatically via the PHP entrypoint script on container start.</p>
+    <p><code>docker-compose exec php bin/console doctrine:migrations:migrate --no-interaction</code> - though migrations typically run automatically via the PHP entrypoint script on container start.</p>
   </div>
 
   <div class="info-card info">
@@ -3367,17 +3367,17 @@ cd vehicle</code></pre>
 
   <div class="info-card warning">
     <div class="info-card-title">CORS errors</div>
-    <p>In development, CORS is set to allow all origins. In production, check the <code>CORS_ALLOW_ORIGIN</code> environment variable — it must match your frontend's URL exactly (including the protocol and port).</p>
+    <p>In development, CORS is set to allow all origins. In production, check the <code>CORS_ALLOW_ORIGIN</code> environment variable - it must match your frontend's URL exactly (including the protocol and port).</p>
   </div>
 
   <div class="info-card warning">
     <div class="info-card-title">Upload fails</div>
-    <p>Check the file size against <code>UPLOAD_MAX_BYTES</code> (default 200 MB). Also verify the MIME type is allowed — the system rejects certain file types for security. The PHP container has a 200 MB upload limit and 1 GB memory limit.</p>
+    <p>Check the file size against <code>UPLOAD_MAX_BYTES</code> (default 200 MB). Also verify the MIME type is allowed - the system rejects certain file types for security. The PHP container has a 200 MB upload limit and 1 GB memory limit.</p>
   </div>
 
   <div class="info-card warning">
     <div class="info-card-title">OCR returns empty or garbage</div>
-    <p>Ensure Tesseract is installed in the PHP container (it's included in the default Dockerfile). OCR quality depends heavily on image quality — photograph receipts in good lighting, flat against a dark surface. Thermal receipts from petrol stations fade quickly, so photograph them promptly.</p>
+    <p>Ensure Tesseract is installed in the PHP container (it's included in the default Dockerfile). OCR quality depends heavily on image quality - photograph receipts in good lighting, flat against a dark surface. Thermal receipts from petrol stations fade quickly, so photograph them promptly.</p>
   </div>
 </section>
 
@@ -3386,7 +3386,7 @@ cd vehicle</code></pre>
 
   <div class="info-card danger">
     <div class="info-card-title">App can't connect to server</div>
-    <p>On Android emulators, use <code>10.0.2.2</code> instead of <code>localhost</code> — the emulator routes that address to the host machine. Make sure the URL ends with <code>/api</code>. For physical devices, use your computer's local network IP (e.g., <code>192.168.1.x:8081/api</code>).</p>
+    <p>On Android emulators, use <code>10.0.2.2</code> instead of <code>localhost</code> - the emulator routes that address to the host machine. Make sure the URL ends with <code>/api</code>. For physical devices, use your computer's local network IP (e.g., <code>192.168.1.x:8081/api</code>).</p>
   </div>
 
   <div class="info-card warning">
@@ -3396,12 +3396,12 @@ cd vehicle</code></pre>
 
   <div class="info-card warning">
     <div class="info-card-title">Notifications not appearing</div>
-    <p>System notifications require explicit permission on Android. Check your device's notification settings for the app. Only Android is supported — iOS notifications are not yet implemented. The app creates two channels: "vehicle-reminders" and "vehicle-urgent".</p>
+    <p>System notifications require explicit permission on Android. Check your device's notification settings for the app. Only Android is supported - iOS notifications are not yet implemented. The app creates two channels: "vehicle-reminders" and "vehicle-urgent".</p>
   </div>
 
   <div class="info-card info">
     <div class="info-card-title">How do I switch from standalone to web mode?</div>
-    <p>Go to Settings → scroll to the bottom → tap "Clear Data &amp; Disconnect". This wipes local data and restarts the app at the ServerConfigScreen, where you can enter a server URL. Note: standalone data is not migrated — back it up first if needed.</p>
+    <p>Go to Settings → scroll to the bottom → tap "Clear Data &amp; Disconnect". This wipes local data and restarts the app at the ServerConfigScreen, where you can enter a server URL. Note: standalone data is not migrated - back it up first if needed.</p>
   </div>
 </section>
 
@@ -3410,7 +3410,7 @@ cd vehicle</code></pre>
 
   <div class="info-card warning">
     <div class="info-card-title">Import fails</div>
-    <p>Ensure the JSON format matches the export format exactly. Common issues include duplicate VINs or registration numbers (the system enforces uniqueness), missing required fields, and malformed dates. The import is transactional — if anything fails, nothing is committed. Check the error response body for specifics.</p>
+    <p>Ensure the JSON format matches the export format exactly. Common issues include duplicate VINs or registration numbers (the system enforces uniqueness), missing required fields, and malformed dates. The import is transactional - if anything fails, nothing is committed. Check the error response body for specifics.</p>
   </div>
 
   <div class="info-card warning">

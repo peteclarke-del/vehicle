@@ -392,7 +392,7 @@ const VehicleDetailScreen: React.FC = () => {
               vehicle.isMotExempt
                 ? 'Exempt'
                 : vehicle.motExpiryDate
-                  ? `${formatDate(vehicle.motExpiryDate)}${motStatus ? ` — ${motStatus.label}` : ''}`
+                  ? `${formatDate(vehicle.motExpiryDate)}${motStatus ? ` - ${motStatus.label}` : ''}`
                   : 'Not set'
             }
             left={props => <List.Icon {...props} icon="file-document" />}
@@ -407,7 +407,7 @@ const VehicleDetailScreen: React.FC = () => {
             title="Insurance Expiry"
             description={
               vehicle.insuranceExpiryDate
-                ? `${formatDate(vehicle.insuranceExpiryDate)}${insuranceStatus ? ` — ${insuranceStatus.label}` : ''}`
+                ? `${formatDate(vehicle.insuranceExpiryDate)}${insuranceStatus ? ` - ${insuranceStatus.label}` : ''}`
                 : 'Not set'
             }
             left={props => <List.Icon {...props} icon="shield-car" />}
@@ -424,7 +424,7 @@ const VehicleDetailScreen: React.FC = () => {
               vehicle.isRoadTaxExempt
                 ? 'Exempt'
                 : vehicle.roadTaxExpiryDate
-                  ? `${formatDate(vehicle.roadTaxExpiryDate)}${taxStatus ? ` — ${taxStatus.label}` : ''}`
+                  ? `${formatDate(vehicle.roadTaxExpiryDate)}${taxStatus ? ` - ${taxStatus.label}` : ''}`
                   : 'Not set'
             }
             left={props => <List.Icon {...props} icon="cash" />}

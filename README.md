@@ -41,7 +41,7 @@ A comprehensive web application for managing personal or fleet vehicles, built w
 
 ### Mobile Application (Android)
 - **Native Mobile Experience**: React Native app for Android devices
-- **Standalone Mode**: Full offline operation with local AsyncStorage — no server required
+- **Standalone Mode**: Full offline operation with local AsyncStorage - no server required
 - **Web Mode**: Connect to any backend instance for full server-backed operation
 - **Camera Integration**: Take photos of receipts directly from the app
 - **Gallery Upload**: Select existing photos from your device
@@ -771,7 +771,7 @@ The admin panel is accessible to users with `ROLE_ADMIN` and provides:
 
 **Feature Flags (49 flags across 13 categories)**
 - Categories: Vehicles, Fuel Records, Service Records, MOT Records, Parts, Consumables, Insurance, Road Tax, Todos, Reports, Attachments, Depreciation, User Settings
-- Per-user overrides — enable or disable specific features for individual users
+- Per-user overrides - enable or disable specific features for individual users
 - Admins automatically get all features enabled (bypass all overrides)
 - Bulk toggle all flags per category, reset user flags to defaults
 

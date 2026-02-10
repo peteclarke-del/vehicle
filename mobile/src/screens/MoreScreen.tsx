@@ -31,7 +31,7 @@ const MoreScreen: React.FC = () => {
           color: isOnline ? theme.colors.onPrimaryContainer : theme.colors.onErrorContainer,
           marginLeft: 8,
         }}>
-          {isOnline ? 'Online' : 'Offline — changes will sync when reconnected'}
+          {isOnline ? 'Online' : 'Offline - changes will sync when reconnected'}
           {pendingChanges.length > 0 && ` • ${pendingChanges.length} pending`}
           {isSyncing && ' • Syncing...'}
         </Text>

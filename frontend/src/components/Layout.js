@@ -220,7 +220,7 @@ const Layout = () => {
   }, [user, api, t]);
 
   const handleDrawerToggle = () => {
-    // toggle temporary drawer (mobile or desktop) — pin/unpin is controlled by the pin button
+    // toggle temporary drawer (mobile or desktop) - pin/unpin is controlled by the pin button
     setTempOpen((s) => !s);
   };
 
