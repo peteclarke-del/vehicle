@@ -66,7 +66,8 @@
     "category": "Category",
     "close": "Close",
     "confirm": "Confirm",
-    "download": "Download"
+    "download": "Download",
+    "noData": "لا توجد بيانات"
   },
   "vehicleImages": {
     "title": "Vehicle Pictures",
@@ -178,7 +179,14 @@
     "totalPartsCost": "Parts Cost",
     "totalConsumablesCost": "Consumables Cost",
     "consumables": "Consumables",
-    "totalFuelCost": "Fuel Cost"
+    "totalFuelCost": "Fuel Cost",
+    "costPerVehicle": "التكلفة لكل مركبة",
+    "monthlySpend": "الإنفاق الشهري",
+    "period": "الفترة",
+    "months": "أشهر",
+    "fuelSpend": "نفقات الوقود",
+    "maintenanceSpend": "قطع غيار / خدمة / مستهلكات",
+    "otherVehicles": "أخرى"
   },
   "vehicle": {
     "title": "Vehicles",

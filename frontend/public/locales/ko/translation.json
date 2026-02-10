@@ -66,7 +66,8 @@
     "category": "Category",
     "close": "Close",
     "confirm": "Confirm",
-    "download": "Download"
+    "download": "Download",
+    "noData": "데이터 없음"
   },
   "vehicleImages": {
     "title": "Vehicle Pictures",
@@ -178,7 +179,14 @@
     "totalPartsCost": "Parts Cost",
     "totalConsumablesCost": "Consumables Cost",
     "consumables": "Consumables",
-    "totalFuelCost": "Fuel Cost"
+    "totalFuelCost": "Fuel Cost",
+    "costPerVehicle": "차량별 비용",
+    "monthlySpend": "월간 지출",
+    "period": "기간",
+    "months": "개월",
+    "fuelSpend": "연료 지출",
+    "maintenanceSpend": "부품 / 서비스 / 소모품",
+    "otherVehicles": "기타"
   },
   "vehicle": {
     "title": "Vehicles",

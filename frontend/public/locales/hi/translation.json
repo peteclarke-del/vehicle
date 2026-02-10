@@ -66,7 +66,8 @@
     "category": "Category",
     "close": "Close",
     "confirm": "Confirm",
-    "download": "Download"
+    "download": "Download",
+    "noData": "कोई डेटा नहीं"
   },
   "vehicleImages": {
     "title": "Vehicle Pictures",
@@ -178,7 +179,14 @@
     "totalPartsCost": "Parts Cost",
     "totalConsumablesCost": "Consumables Cost",
     "consumables": "Consumables",
-    "totalFuelCost": "Fuel Cost"
+    "totalFuelCost": "Fuel Cost",
+    "costPerVehicle": "प्रति वाहन लागत",
+    "monthlySpend": "मासिक खर्च",
+    "period": "अवधि",
+    "months": "महीने",
+    "fuelSpend": "ईंधन खर्च",
+    "maintenanceSpend": "पुर्जे / सर्विस / उपभोग्य",
+    "otherVehicles": "अन्य"
   },
   "vehicle": {
     "title": "Vehicles",

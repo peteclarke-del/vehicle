@@ -66,7 +66,8 @@
     "category": "Category",
     "close": "Close",
     "confirm": "Aye",
-    "download": "Download"
+    "download": "Download",
+    "noData": "No booty found"
   },
   "vehicleImages": {
     "title": "Vehicle Pictures",
@@ -178,7 +179,14 @@
     "totalPartsCost": "Parts Cost",
     "totalConsumablesCost": "Consumables Cost",
     "consumables": "Consumables",
-    "totalFuelCost": "Total Fuel Cost"
+    "totalFuelCost": "Total Fuel Cost",
+    "costPerVehicle": "Doubloons per vessel",
+    "monthlySpend": "Monthly plunder",
+    "period": "Season",
+    "months": "moons",
+    "fuelSpend": "Grog expenses",
+    "maintenanceSpend": "Timber / Riggin' / Supplies",
+    "otherVehicles": "Other vessels"
   },
   "vehicle": {
     "title": "Vessels",

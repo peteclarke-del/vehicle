@@ -66,7 +66,8 @@
     "category": "Category",
     "close": "Close",
     "confirm": "Confirm",
-    "download": "Download"
+    "download": "Download",
+    "noData": "Veri yok"
   },
   "vehicleImages": {
     "title": "Vehicle Pictures",
@@ -178,7 +179,14 @@
     "totalPartsCost": "Parts Cost",
     "totalConsumablesCost": "Consumables Cost",
     "consumables": "Consumables",
-    "totalFuelCost": "Fuel Cost"
+    "totalFuelCost": "Fuel Cost",
+    "costPerVehicle": "Araç başına maliyet",
+    "monthlySpend": "Aylık harcamalar",
+    "period": "Dönem",
+    "months": "ay",
+    "fuelSpend": "Yakıt harcaması",
+    "maintenanceSpend": "Parçalar / Servis / Sarf Malzemeler",
+    "otherVehicles": "Diğer"
   },
   "vehicle": {
     "title": "Vehicles",

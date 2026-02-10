@@ -66,7 +66,8 @@
     "category": "Category",
     "close": "Close",
     "confirm": "Confirm",
-    "download": "Download"
+    "download": "Download",
+    "noData": "暂无数据"
   },
   "vehicleImages": {
     "title": "Vehicle Pictures",
@@ -178,7 +179,14 @@
     "totalPartsCost": "Parts Cost",
     "totalConsumablesCost": "Consumables Cost",
     "consumables": "Consumables",
-    "totalFuelCost": "Fuel Cost"
+    "totalFuelCost": "Fuel Cost",
+    "costPerVehicle": "每辆车费用",
+    "monthlySpend": "月度支出",
+    "period": "周期",
+    "months": "个月",
+    "fuelSpend": "燃油支出",
+    "maintenanceSpend": "零件 / 服务 / 消耗品",
+    "otherVehicles": "其他"
   },
   "vehicle": {
     "title": "Vehicles",

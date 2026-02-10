@@ -118,7 +118,8 @@
     "serviceRecord": "Service Record",
     "selectService": "Select Service",
     "vehicleDetails": "Vehicle Details",
-    "reports": "Reports"
+    "reports": "Reports",
+    "noData": "No data"
   },
   "vehicleImages": {
     "title": "Vehicle Pictures",
@@ -281,7 +282,14 @@
     "totalPartsCost": "Parts Cost",
     "totalConsumablesCost": "Consumables Cost",
     "consumables": "Consumables",
-    "totalFuelCost": "Fuel Cost"
+    "totalFuelCost": "Fuel Cost",
+    "costPerVehicle": "Cost per Vehicle",
+    "monthlySpend": "Monthly Spend",
+    "period": "Period",
+    "months": "months",
+    "fuelSpend": "Fuel Spend",
+    "maintenanceSpend": "Parts / Service / Consumables",
+    "otherVehicles": "Other"
   },
   "vehicle": {
     "title": "Vehicles",

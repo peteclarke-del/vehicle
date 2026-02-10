@@ -66,7 +66,8 @@
     "category": "Category",
     "close": "Close",
     "confirm": "Confirm",
-    "download": "Download"
+    "download": "Download",
+    "noData": "Ingen data"
   },
   "vehicleImages": {
     "title": "Vehicle Pictures",
@@ -178,7 +179,14 @@
     "totalPartsCost": "Parts Cost",
     "totalConsumablesCost": "Consumables Cost",
     "consumables": "Consumables",
-    "totalFuelCost": "Fuel Cost"
+    "totalFuelCost": "Fuel Cost",
+    "costPerVehicle": "Omkostning pr. køretøj",
+    "monthlySpend": "Månedlige udgifter",
+    "period": "Periode",
+    "months": "måneder",
+    "fuelSpend": "Brændstofudgifter",
+    "maintenanceSpend": "Dele / Service / Forbrugsvarer",
+    "otherVehicles": "Andre"
   },
   "vehicle": {
     "title": "Vehicles",

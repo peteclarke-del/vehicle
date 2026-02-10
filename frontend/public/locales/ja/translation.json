@@ -66,7 +66,8 @@
     "category": "Category",
     "close": "Close",
     "confirm": "Confirm",
-    "download": "Download"
+    "download": "Download",
+    "noData": "データなし"
   },
   "vehicleImages": {
     "title": "Vehicle Pictures",
@@ -178,7 +179,14 @@
     "totalPartsCost": "Parts Cost",
     "totalConsumablesCost": "Consumables Cost",
     "consumables": "Consumables",
-    "totalFuelCost": "Fuel Cost"
+    "totalFuelCost": "Fuel Cost",
+    "costPerVehicle": "車両別コスト",
+    "monthlySpend": "月間支出",
+    "period": "期間",
+    "months": "ヶ月",
+    "fuelSpend": "燃料費",
+    "maintenanceSpend": "部品 / 整備 / 消耗品",
+    "otherVehicles": "その他"
   },
   "vehicle": {
     "title": "Vehicles",

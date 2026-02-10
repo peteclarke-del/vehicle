@@ -66,7 +66,8 @@
     "category": "Category",
     "close": "Close",
     "confirm": "Confirm",
-    "download": "Download"
+    "download": "Download",
+    "noData": "Nessun dato"
   },
   "vehicleImages": {
     "title": "Vehicle Pictures",
@@ -178,7 +179,14 @@
     "totalPartsCost": "Parts Cost",
     "totalConsumablesCost": "Consumables Cost",
     "consumables": "Consumables",
-    "totalFuelCost": "Fuel Cost"
+    "totalFuelCost": "Fuel Cost",
+    "costPerVehicle": "Costo per veicolo",
+    "monthlySpend": "Spese mensili",
+    "period": "Periodo",
+    "months": "mesi",
+    "fuelSpend": "Spesa carburante",
+    "maintenanceSpend": "Ricambi / Assistenza / Consumabili",
+    "otherVehicles": "Altri"
   },
   "vehicle": {
     "title": "Vehicles",

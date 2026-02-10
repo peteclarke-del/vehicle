@@ -21,6 +21,7 @@ import {
 import logger from '../utils/logger';
 import SafeStorage from '../utils/SafeStorage';
 import { PieChart } from '@mui/x-charts/PieChart';
+import { BarChart } from '@mui/x-charts/BarChart';
 import { useTranslation } from 'react-i18next';
 import { useUserPreferences } from '../contexts/UserPreferencesContext';
 import formatCurrency from '../utils/formatCurrency';
@@ -57,6 +58,9 @@ const Dashboard = () => {
   const [last12ConsumablesTotal, setLast12ConsumablesTotal] = useState(0);
   const [avgServiceCost, setAvgServiceCost] = useState(0);
   const [totalsLoading, setTotalsLoading] = useState(false);
+  const [monthlyCosts, setMonthlyCosts] = useState(null);
+  const [monthlyCostsLoading, setMonthlyCostsLoading] = useState(false);
+  const [chartPeriod, setChartPeriod] = useState(12);
   const [sornVehicles, setSornVehicles] = useState(0);
   const [roadTaxData, setRoadTaxData] = useState([]);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -261,11 +265,24 @@ const Dashboard = () => {
     }
   }, [api, vehicles]);
 
+  const fetchMonthlyCosts = useCallback(async (months = 12) => {
+    setMonthlyCostsLoading(true);
+    try {
+      const resp = await api.get(`/vehicles/monthly-costs?months=${months}`);
+      setMonthlyCosts(resp.data);
+    } catch (err) {
+      logger.warn('Failed to load monthly costs', err);
+    } finally {
+      setMonthlyCostsLoading(false);
+    }
+  }, [api]);
+
   useEffect(() => {
     // Fetch both dashboard totals and road tax data in parallel
     fetchDashboardTotals(12);
     fetchRoadTaxData();
-  }, [fetchDashboardTotals, fetchRoadTaxData]);
+    fetchMonthlyCosts(chartPeriod);
+  }, [fetchDashboardTotals, fetchRoadTaxData, fetchMonthlyCosts, chartPeriod]);
 
   // Apply sort order when vehicles are loaded or sortOrder changes
   useEffect(() => {
@@ -674,12 +691,6 @@ const Dashboard = () => {
               return 'warning.main';
             };
 
-            const pieData = Object.entries(stats.byType).map(([type, count], index) => ({
-              id: index,
-              value: count,
-              label: type,
-            }));
-
             return (
               <Box 
                 mb={4}
@@ -805,58 +816,174 @@ const Dashboard = () => {
                   </Box>
                 </Box>
 
-                {/* Pie Chart: Col 10-13, spans both rows */}
+                {/* Pie Chart: Col 10-13, spans both rows — Total Cost per Vehicle */}
                 <Box sx={{ gridColumn: { lg: '10 / 13' }, gridRow: { lg: '1 / 3' } }}>
-                  <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', height: '100%' }}>
-                    <Typography variant="h6" gutterBottom>{t('dashboard.byType')}</Typography>
-                    <Box 
-                      sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                      onClick={(event) => {
-                        // Find the clicked arc element
-                        const target = event.target.closest('path[d]');
-                        if (target && target.getAttribute('d')) {
-                          // Get the aria-label or find the slice index from DOM
-                          const pieArcs = event.currentTarget.querySelectorAll('path[d]');
-                          const clickedIndex = Array.from(pieArcs).indexOf(target);
-                          
-                          if (clickedIndex >= 0 && pieData[clickedIndex]) {
-                            const clickedType = pieData[clickedIndex].label;
-                            const filterKey = `type:${clickedType}`;
-                            setActiveFilter(activeFilter === filterKey ? null : filterKey);
-                          }
-                        }
-                      }}
-                    >
-                      <PieChart
-                        series={[{
-                          data: pieData,
-                          highlightScope: { faded: 'global', highlighted: 'item' },
-                          faded: { innerRadius: 30, additionalRadius: -30, color: 'gray' },
-                        }]}
-                        width={300}
-                        height={300}
-                        sx={{
-                          cursor: 'pointer',
-                          '& .MuiPieArc-root': {
-                            cursor: 'pointer',
-                          }
-                        }}
-                        slotProps={{
-                          legend: {
-                            direction: 'row',
-                            position: { vertical: 'bottom', horizontal: 'middle' },
-                            padding: { bottom: 8 },
-                            itemMarkWidth: 10,
-                            itemMarkHeight: 10,
-                            markGap: 5,
-                            itemGap: 10,
-                          },
-                        }}
-                        margin={{ bottom: 35, left: 50, right: 50 }}
-                      />
-                    </Box>
+                  <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+                    <Typography variant="h6" gutterBottom>{t('dashboard.costPerVehicle')}</Typography>
+                    {(() => {
+                      const VEHICLE_COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#06b6d4', '#f59e0b', '#22c55e', '#ef4444', '#14b8a6', '#f97316', '#a855f7', '#64748b', '#e11d48'];
+                      const MAX_SLICES = 10;
+                      const allData = (monthlyCosts?.vehicleTotals || []).filter(v => v.total > 0);
+                      let pieCostData;
+                      if (allData.length <= MAX_SLICES) {
+                        pieCostData = allData.map((v, i) => ({
+                          id: i, value: v.total, label: v.name,
+                          color: VEHICLE_COLORS[i % VEHICLE_COLORS.length],
+                        }));
+                      } else {
+                        // Show top slices individually, group the rest into "Other"
+                        const top = allData.slice(0, MAX_SLICES - 1);
+                        const rest = allData.slice(MAX_SLICES - 1);
+                        const otherTotal = rest.reduce((s, v) => s + v.total, 0);
+                        pieCostData = top.map((v, i) => ({
+                          id: i, value: v.total, label: v.name,
+                          color: VEHICLE_COLORS[i % VEHICLE_COLORS.length],
+                        }));
+                        pieCostData.push({
+                          id: MAX_SLICES - 1, value: otherTotal,
+                          label: `${t('dashboard.otherVehicles')} (${rest.length})`,
+                          color: '#94a3b8',
+                        });
+                      }
+                      if (pieCostData.length === 0) {
+                        return <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Typography color="text.secondary" variant="body2">{t('common.noData')}</Typography></Box>;
+                      }
+                      return (
+                        <>
+                          <Box sx={{ display: 'flex', justifyContent: 'center', flex: 1, alignItems: 'center', minHeight: 0 }}>
+                            <PieChart
+                              series={[{
+                                data: pieCostData,
+                                highlightScope: { faded: 'global', highlighted: 'item' },
+                                faded: { innerRadius: 20, additionalRadius: -20, color: 'gray' },
+                                valueFormatter: (v) => formatCurrency(v.value, 'GBP', i18n.language),
+                                innerRadius: 30,
+                                outerRadius: 95,
+                              }]}
+                              width={220}
+                              height={220}
+                              slotProps={{ legend: { hidden: true } }}
+                              margin={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                            />
+                          </Box>
+                          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, justifyContent: 'center', mt: 1.5, pt: 1, borderTop: '1px solid', borderColor: 'divider', px: 0.5 }}>
+                            {pieCostData.map((d) => (
+                              <Box key={d.id} sx={{ display: 'flex', alignItems: 'center', gap: 0.4, px: 0.5 }}>
+                                <Box sx={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: d.color, flexShrink: 0 }} />
+                                <Typography variant="caption" sx={{ fontSize: 10, lineHeight: 1.3, whiteSpace: 'nowrap' }} color="text.secondary">{d.label}</Typography>
+                              </Box>
+                            ))}
+                          </Box>
+                        </>
+                      );
+                    })()}
                   </Paper>
                 </Box>
+              </Box>
+            );
+          })()}
+
+          {/* ─── Monthly Spend Bar Charts ─── */}
+          {(() => {
+            const VEHICLE_COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#06b6d4', '#f59e0b', '#22c55e', '#ef4444', '#14b8a6', '#f97316', '#a855f7', '#64748b', '#e11d48'];
+            const mc = monthlyCosts;
+            if (!mc || !mc.months || mc.months.length === 0) return null;
+
+            const vehicleIds = Object.keys(mc.vehicles || {}).map(Number);
+            const shortMonths = mc.months.map(m => {
+              const [y, mo] = m.split('-');
+              const d = new Date(parseInt(y), parseInt(mo) - 1);
+              return d.toLocaleDateString(i18n.language || 'en', { month: 'short', year: '2-digit' });
+            });
+
+            // Build series for fuel chart: one series per vehicle
+            const fuelSeries = vehicleIds.map((vid, idx) => ({
+              data: mc.months.map(m => mc.fuel?.[m]?.[vid] ?? 0),
+              label: mc.vehicles[vid],
+              stack: 'fuel',
+              color: VEHICLE_COLORS[idx % VEHICLE_COLORS.length],
+            }));
+
+            // Build series for maintenance chart: one series per vehicle
+            const maintSeries = vehicleIds.map((vid, idx) => ({
+              data: mc.months.map(m => mc.maintenance?.[m]?.[vid] ?? 0),
+              label: mc.vehicles[vid],
+              stack: 'maint',
+              color: VEHICLE_COLORS[idx % VEHICLE_COLORS.length],
+            }));
+
+            const chartHeight = 300;
+            const handlePeriodChange = (e) => {
+              const newPeriod = e.target.value;
+              setChartPeriod(newPeriod);
+            };
+
+            const valueFormatter = (v) => formatCurrency(v, 'GBP', i18n.language);
+
+            return (
+              <Box sx={{ mb: 4 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                  <Typography variant="h6">{t('dashboard.monthlySpend')}</Typography>
+                  <FormControl size="small" sx={{ minWidth: 140 }}>
+                    <InputLabel>{t('dashboard.period')}</InputLabel>
+                    <Select value={chartPeriod} label={t('dashboard.period')} onChange={handlePeriodChange}>
+                      <MenuItem value={3}>3 {t('dashboard.months')}</MenuItem>
+                      <MenuItem value={6}>6 {t('dashboard.months')}</MenuItem>
+                      <MenuItem value={12}>12 {t('dashboard.months')}</MenuItem>
+                      <MenuItem value={24}>24 {t('dashboard.months')}</MenuItem>
+                      <MenuItem value={36}>36 {t('dashboard.months')}</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Box>
+                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 3 }}>
+                  {/* Fuel Spend */}
+                  <Paper sx={{ p: 2, overflow: 'hidden' }}>
+                    <Typography variant="subtitle2" gutterBottom>{t('dashboard.fuelSpend')}</Typography>
+                    {monthlyCostsLoading ? (
+                      <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}><KnightRiderLoader size={28} /></Box>
+                    ) : fuelSeries.length === 0 || fuelSeries.every(s => s.data.every(v => v === 0)) ? (
+                      <Typography color="text.secondary" variant="body2" sx={{ py: 6, textAlign: 'center' }}>{t('common.noData')}</Typography>
+                    ) : (
+                      <BarChart
+                        xAxis={[{ scaleType: 'band', data: shortMonths, tickLabelStyle: { fontSize: 10, angle: -45, textAnchor: 'end' } }]}
+                        series={fuelSeries}
+                        height={chartHeight}
+                        yAxis={[{ valueFormatter }]}
+                        slotProps={{ legend: { hidden: true } }}
+                        margin={{ left: 60, right: 10, top: 10, bottom: 50 }}
+                      />
+                    )}
+                  </Paper>
+                  {/* Parts / Services / Consumables */}
+                  <Paper sx={{ p: 2, overflow: 'hidden' }}>
+                    <Typography variant="subtitle2" gutterBottom>{t('dashboard.maintenanceSpend')}</Typography>
+                    {monthlyCostsLoading ? (
+                      <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}><KnightRiderLoader size={28} /></Box>
+                    ) : maintSeries.length === 0 || maintSeries.every(s => s.data.every(v => v === 0)) ? (
+                      <Typography color="text.secondary" variant="body2" sx={{ py: 6, textAlign: 'center' }}>{t('common.noData')}</Typography>
+                    ) : (
+                      <BarChart
+                        xAxis={[{ scaleType: 'band', data: shortMonths, tickLabelStyle: { fontSize: 10, angle: -45, textAnchor: 'end' } }]}
+                        series={maintSeries}
+                        height={chartHeight}
+                        yAxis={[{ valueFormatter }]}
+                        slotProps={{ legend: { hidden: true } }}
+                        margin={{ left: 60, right: 10, top: 10, bottom: 50 }}
+                      />
+                    )}
+                  </Paper>
+                </Box>
+                {/* Shared legend below both charts */}
+                {vehicleIds.length > 0 && (
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, justifyContent: 'center', mt: 1.5, px: 1 }}>
+                    {vehicleIds.map((vid, idx) => (
+                      <Box key={vid} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        <Box sx={{ width: 10, height: 10, borderRadius: '50%', backgroundColor: VEHICLE_COLORS[idx % VEHICLE_COLORS.length], flexShrink: 0 }} />
+                        <Typography variant="caption" color="text.secondary">{mc.vehicles[vid]}</Typography>
+                      </Box>
+                    ))}
+                  </Box>
+                )}
               </Box>
             );
           })()}

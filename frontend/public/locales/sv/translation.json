@@ -66,7 +66,8 @@
     "category": "Category",
     "close": "Close",
     "confirm": "Confirm",
-    "download": "Download"
+    "download": "Download",
+    "noData": "Inga data"
   },
   "vehicleImages": {
     "title": "Vehicle Pictures",
@@ -178,7 +179,14 @@
     "totalPartsCost": "Parts Cost",
     "totalConsumablesCost": "Consumables Cost",
     "consumables": "Consumables",
-    "totalFuelCost": "Fuel Cost"
+    "totalFuelCost": "Fuel Cost",
+    "costPerVehicle": "Kostnad per fordon",
+    "monthlySpend": "Månadsutgifter",
+    "period": "Period",
+    "months": "månader",
+    "fuelSpend": "Bränslekostnad",
+    "maintenanceSpend": "Delar / Service / Förbrukning",
+    "otherVehicles": "Övriga"
   },
   "vehicle": {
     "title": "Vehicles",

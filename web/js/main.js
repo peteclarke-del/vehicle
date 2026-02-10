@@ -1,52 +1,34 @@
-/* ============================================
-   Vehicle Manager — Promo Site JavaScript
-   ============================================ */
+/* ================================================================
+   VEHICLE MANAGER — MAIN JS
+   ================================================================ */
 
 document.addEventListener('DOMContentLoaded', () => {
-  initNavbar();
-  initScrollAnimations();
-  initCounters();
-  initParticles();
-});
+  // ─── Navbar scroll effect ──────────────────────────────────
+  const navbar = document.querySelector('.navbar');
+  const handleScroll = () => {
+    navbar?.classList.toggle('scrolled', window.scrollY > 50);
+  };
+  window.addEventListener('scroll', handleScroll, { passive: true });
+  handleScroll();
 
-/* ===================== NAVBAR ===================== */
-function initNavbar() {
-  const navbar = document.getElementById('navbar');
-  const toggle = document.getElementById('navToggle');
-  const links = document.getElementById('navLinks');
-
-  // Scroll effect
-  let ticking = false;
-  window.addEventListener('scroll', () => {
-    if (!ticking) {
-      requestAnimationFrame(() => {
-        navbar.classList.toggle('scrolled', window.scrollY > 50);
-        ticking = false;
-      });
-      ticking = true;
-    }
-  });
-
-  // Mobile toggle
-  toggle.addEventListener('click', () => {
-    links.classList.toggle('active');
-    toggle.classList.toggle('active');
-  });
-
-  // Close menu on link click
-  links.querySelectorAll('a').forEach(a => {
-    a.addEventListener('click', () => {
-      links.classList.remove('active');
-      toggle.classList.remove('active');
+  // ─── Mobile nav toggle ─────────────────────────────────────
+  const navToggle = document.getElementById('navToggle');
+  const navLinks = document.getElementById('navLinks');
+  if (navToggle && navLinks) {
+    navToggle.addEventListener('click', () => {
+      navLinks.classList.toggle('active');
     });
-  });
-}
+    // Close on link click
+    navLinks.querySelectorAll('a').forEach(link => {
+      link.addEventListener('click', () => {
+        navLinks.classList.remove('active');
+      });
+    });
+  }
 
-/* ===================== SCROLL ANIMATIONS ===================== */
-function initScrollAnimations() {
-  const elements = document.querySelectorAll('[data-animate]');
-
-  if ('IntersectionObserver' in window) {
+  // ─── Scroll animations (IntersectionObserver) ──────────────
+  const animatedEls = document.querySelectorAll('.fade-up, .stagger');
+  if (animatedEls.length > 0) {
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach(entry => {
@@ -58,92 +40,87 @@ function initScrollAnimations() {
       },
       { threshold: 0.1, rootMargin: '0px 0px -40px 0px' }
     );
-
-    elements.forEach(el => observer.observe(el));
-  } else {
-    // Fallback: show all
-    elements.forEach(el => el.classList.add('visible'));
+    animatedEls.forEach(el => observer.observe(el));
   }
-}
 
-/* ===================== ANIMATED COUNTERS ===================== */
-function initCounters() {
+  // ─── Animated counters ─────────────────────────────────────
   const counters = document.querySelectorAll('[data-count]');
+  if (counters.length > 0) {
+    const counterObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            animateCounter(entry.target);
+            counterObserver.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.5 }
+    );
+    counters.forEach(el => counterObserver.observe(el));
+  }
 
-  if (!counters.length) return;
+  function animateCounter(el) {
+    const target = parseInt(el.dataset.count, 10);
+    const suffix = el.dataset.suffix || '';
+    const duration = 2000;
+    const start = performance.now();
 
-  const observer = new IntersectionObserver(
-    (entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          animateCounter(entry.target);
-          observer.unobserve(entry.target);
+    function update(now) {
+      const elapsed = now - start;
+      const progress = Math.min(elapsed / duration, 1);
+      // Ease out cubic
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const current = Math.round(eased * target);
+      el.textContent = current + suffix;
+      if (progress < 1) {
+        requestAnimationFrame(update);
+      }
+    }
+    requestAnimationFrame(update);
+  }
+
+  // ─── Floating particles ────────────────────────────────────
+  const particleContainer = document.querySelector('.hero-particles');
+  if (particleContainer) {
+    const count = Math.min(20, Math.floor(window.innerWidth / 80));
+    for (let i = 0; i < count; i++) {
+      const p = document.createElement('div');
+      p.className = 'particle';
+      p.style.left = Math.random() * 100 + '%';
+      p.style.animationDelay = Math.random() * 8 + 's';
+      p.style.animationDuration = (6 + Math.random() * 8) + 's';
+      p.style.width = p.style.height = (2 + Math.random() * 3) + 'px';
+      particleContainer.appendChild(p);
+    }
+  }
+
+  // ─── Smooth scroll for anchor links ────────────────────────
+  document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', (e) => {
+      const id = anchor.getAttribute('href');
+      if (id && id !== '#') {
+        const target = document.querySelector(id);
+        if (target) {
+          e.preventDefault();
+          target.scrollIntoView({ behavior: 'smooth' });
         }
-      });
-    },
-    { threshold: 0.5 }
-  );
-
-  counters.forEach(el => observer.observe(el));
-}
-
-function animateCounter(el) {
-  const target = parseInt(el.getAttribute('data-count'), 10);
-  const suffix = el.getAttribute('data-suffix') || '';
-  const duration = 2000;
-  const start = performance.now();
-
-  function update(now) {
-    const elapsed = now - start;
-    const progress = Math.min(elapsed / duration, 1);
-
-    // Ease-out cubic
-    const eased = 1 - Math.pow(1 - progress, 3);
-    const current = Math.round(eased * target);
-
-    el.textContent = current + suffix;
-
-    if (progress < 1) {
-      requestAnimationFrame(update);
-    }
-  }
-
-  requestAnimationFrame(update);
-}
-
-/* ===================== PARTICLES ===================== */
-function initParticles() {
-  const container = document.getElementById('particles');
-  if (!container) return;
-
-  const count = 20;
-  const colors = ['#6366f1', '#8b5cf6', '#a78bfa', '#c4b5fd', '#f59e0b'];
-
-  for (let i = 0; i < count; i++) {
-    const particle = document.createElement('div');
-    particle.classList.add('particle');
-    particle.style.left = Math.random() * 100 + '%';
-    particle.style.animationDelay = Math.random() * 8 + 's';
-    particle.style.animationDuration = (6 + Math.random() * 6) + 's';
-    particle.style.background = colors[Math.floor(Math.random() * colors.length)];
-    particle.style.width = (2 + Math.random() * 4) + 'px';
-    particle.style.height = particle.style.width;
-    container.appendChild(particle);
-  }
-}
-
-/* ===================== SMOOTH ANCHOR SCROLLING ===================== */
-document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-  anchor.addEventListener('click', function (e) {
-    const id = this.getAttribute('href');
-    if (id === '#') return;
-    
-    const target = document.querySelector(id);
-    if (target) {
-      e.preventDefault();
-      const offset = 80; // navbar height
-      const top = target.getBoundingClientRect().top + window.pageYOffset - offset;
-      window.scrollTo({ top, behavior: 'smooth' });
-    }
+      }
+    });
   });
+
+  // ─── Copy code on click (CTA block) ───────────────────────
+  const ctaCode = document.querySelector('.cta-code pre');
+  if (ctaCode) {
+    ctaCode.style.cursor = 'pointer';
+    ctaCode.title = 'Click to copy';
+    ctaCode.addEventListener('click', () => {
+      const text = ctaCode.textContent.replace(/\$ /g, '').trim();
+      navigator.clipboard.writeText(text).then(() => {
+        const original = ctaCode.title;
+        ctaCode.title = 'Copied!';
+        setTimeout(() => { ctaCode.title = original; }, 2000);
+      }).catch(() => {});
+    });
+  }
 });

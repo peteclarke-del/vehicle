@@ -657,6 +657,130 @@ class VehicleController extends AbstractController
         ]);
     }
 
+    /**
+     * Monthly cost data per vehicle for dashboard charts.
+     * Returns fuel spend and maintenance (parts + services + consumables) grouped by month and vehicle.
+     *
+     * Query params:
+     *   - months: number of months to include (default 12, max 60)
+     */
+    #[Route('/monthly-costs', name: 'api_vehicles_monthly_costs', methods: ['GET'])]
+    public function monthlyCosts(Request $request): JsonResponse
+    {
+        $user = $this->getUser();
+        if (!$user instanceof User) {
+            return $this->json(['error' => 'Not authenticated'], 401);
+        }
+
+        $months = min(60, max(1, (int) ($request->query->get('months') ?? 12)));
+        $cutoff = new \DateTimeImmutable(sprintf('-%d months', $months));
+        $isAdmin = $this->isAdminForUser($user);
+
+        $cacheKey = 'dashboard.monthly_costs.' . ($isAdmin ? 'admin' : 'user.' . $user->getId()) . '.months.' . $months;
+
+        $result = $this->cache->get($cacheKey, function (ItemInterface $item) use ($user, $isAdmin, $cutoff, $months) {
+            $item->expiresAfter(120);
+            $item->tag(['dashboard', 'user.' . $user->getId()]);
+
+            $ownerJoin = $isAdmin ? '' : ' AND v.owner = :user';
+
+            // Fuel: SUM(cost) GROUP BY month, vehicle
+            $dqlFuel = 'SELECT SUBSTRING(fr.date, 1, 7) AS month, IDENTITY(fr.vehicle) AS vehicleId, v.name AS vehicleName, SUM(fr.cost) AS total'
+                . ' FROM App\\Entity\\FuelRecord fr JOIN fr.vehicle v'
+                . ' WHERE fr.date >= :cutoff' . $ownerJoin
+                . ' GROUP BY month, vehicleId, vehicleName ORDER BY month ASC';
+            $qFuel = $this->entityManager->createQuery($dqlFuel)->setParameter('cutoff', $cutoff);
+            if (!$isAdmin) { $qFuel->setParameter('user', $user); }
+            $fuelRows = $qFuel->getResult();
+
+            // Parts: SUM(cost) GROUP BY month, vehicle
+            $dqlParts = 'SELECT SUBSTRING(p.purchaseDate, 1, 7) AS month, IDENTITY(p.vehicle) AS vehicleId, v.name AS vehicleName, SUM(p.cost) AS total'
+                . ' FROM App\\Entity\\Part p JOIN p.vehicle v'
+                . ' WHERE p.purchaseDate >= :cutoff' . $ownerJoin
+                . ' GROUP BY month, vehicleId, vehicleName ORDER BY month ASC';
+            $qParts = $this->entityManager->createQuery($dqlParts)->setParameter('cutoff', $cutoff);
+            if (!$isAdmin) { $qParts->setParameter('user', $user); }
+            $partsRows = $qParts->getResult();
+
+            // Services: SUM(labor + parts + additional + consumables) GROUP BY month, vehicle
+            $dqlSvc = 'SELECT SUBSTRING(sr.serviceDate, 1, 7) AS month, IDENTITY(sr.vehicle) AS vehicleId, v.name AS vehicleName,'
+                . ' SUM(COALESCE(sr.laborCost, 0) + COALESCE(sr.partsCost, 0) + COALESCE(sr.additionalCosts, 0) + COALESCE(sr.consumablesCost, 0)) AS total'
+                . ' FROM App\\Entity\\ServiceRecord sr JOIN sr.vehicle v'
+                . ' WHERE sr.serviceDate >= :cutoff' . $ownerJoin
+                . ' GROUP BY month, vehicleId, vehicleName ORDER BY month ASC';
+            $qSvc = $this->entityManager->createQuery($dqlSvc)->setParameter('cutoff', $cutoff);
+            if (!$isAdmin) { $qSvc->setParameter('user', $user); }
+            $svcRows = $qSvc->getResult();
+
+            // Consumables: SUM(cost) GROUP BY month, vehicle
+            $dqlCons = 'SELECT SUBSTRING(c.lastChanged, 1, 7) AS month, IDENTITY(c.vehicle) AS vehicleId, v.name AS vehicleName, SUM(c.cost) AS total'
+                . ' FROM App\\Entity\\Consumable c JOIN c.vehicle v'
+                . ' WHERE c.lastChanged >= :cutoff AND c.cost IS NOT NULL' . $ownerJoin
+                . ' GROUP BY month, vehicleId, vehicleName ORDER BY month ASC';
+            $qCons = $this->entityManager->createQuery($dqlCons)->setParameter('cutoff', $cutoff);
+            if (!$isAdmin) { $qCons->setParameter('user', $user); }
+            $consRows = $qCons->getResult();
+
+            // Build lookup: vehicleId → name
+            $vehicleNames = [];
+            foreach (array_merge($fuelRows, $partsRows, $svcRows, $consRows) as $row) {
+                $vehicleNames[(int)$row['vehicleId']] = $row['vehicleName'];
+            }
+
+            // Build month labels for the full range
+            $monthLabels = [];
+            $d = new \DateTimeImmutable(sprintf('-%d months', $months - 1));
+            for ($i = 0; $i < $months; $i++) {
+                $monthLabels[] = $d->modify("+{$i} months")->format('Y-m');
+            }
+
+            // Merge maintenance = parts + services + consumables
+            $fuelMap = [];
+            foreach ($fuelRows as $r) {
+                $fuelMap[$r['month']][(int)$r['vehicleId']] = round((float)$r['total'], 2);
+            }
+
+            $maintMap = [];
+            foreach ($partsRows as $r) {
+                $key = $r['month'];
+                $vid = (int)$r['vehicleId'];
+                $maintMap[$key][$vid] = round(($maintMap[$key][$vid] ?? 0) + (float)$r['total'], 2);
+            }
+            foreach ($svcRows as $r) {
+                $key = $r['month'];
+                $vid = (int)$r['vehicleId'];
+                $maintMap[$key][$vid] = round(($maintMap[$key][$vid] ?? 0) + (float)$r['total'], 2);
+            }
+            foreach ($consRows as $r) {
+                $key = $r['month'];
+                $vid = (int)$r['vehicleId'];
+                $maintMap[$key][$vid] = round(($maintMap[$key][$vid] ?? 0) + (float)$r['total'], 2);
+            }
+
+            // Per-vehicle totals for pie chart
+            $vehicleTotals = [];
+            foreach ($vehicleNames as $vid => $name) {
+                $total = 0;
+                foreach ($monthLabels as $m) {
+                    $total += ($fuelMap[$m][$vid] ?? 0) + ($maintMap[$m][$vid] ?? 0);
+                }
+                $vehicleTotals[] = ['vehicleId' => $vid, 'name' => $name, 'total' => round($total, 2)];
+            }
+            // Sort descending by total
+            usort($vehicleTotals, fn($a, $b) => $b['total'] <=> $a['total']);
+
+            return [
+                'months' => $monthLabels,
+                'vehicles' => $vehicleNames,
+                'fuel' => $fuelMap,
+                'maintenance' => $maintMap,
+                'vehicleTotals' => $vehicleTotals,
+            ];
+        });
+
+        return $this->json($result);
+    }
+
     #[Route('/totals', name: 'api_vehicles_totals', methods: ['GET'])]
     public function totals(Request $request): JsonResponse
     {
