@@ -1,0 +1,195 @@
+# =============================================================================
+# Vehicle Management System - Raspberry Pi / External-DB Production Deployment
+# =============================================================================
+#
+# Standalone production stack with NO bundled database.
+# Designed for a Raspberry Pi (or any host) that connects to an external
+# PostgreSQL or MySQL server.
+#
+# Usage:
+#   docker-compose -f docker-compose.pi.yml up -d --build
+#
+# Required environment variables (set in .env or export before running):
+#   DATABASE_URL        - e.g. pgsql://user:pass@db-host:5432/vehicle_management?serverVersion=16&charset=UTF8
+#                         or   mysql://user:pass@db-host:3306/vehicle_management?serverVersion=8.0&charset=utf8mb4
+#   APP_SECRET          - Random 32-char hex string (openssl rand -hex 16)
+#
+# Recommended overrides (set in .env):
+#   REACT_APP_API_URL   - API URL as seen by the BROWSER, e.g. http://mypi:8081/api
+#   CORS_ALLOW_ORIGIN   - Regex of allowed origins, e.g. '^https?://mypi(:[0-9]+)?$'
+#
+# First deploy only:
+#   LOAD_FIXTURES=1     - Seeds the database with initial users and reference data
+#                         Remove after first successful start.
+#
+# =============================================================================
+
+version: '3.9'
+
+services:
+  # =========================================================================
+  # Redis - Session & cache store
+  # =========================================================================
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes --maxmemory 128mb --maxmemory-policy noeviction
+    volumes:
+      - redis_data:/data
+    networks:
+      - vehicle_network
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 192M
+          cpus: '0.25'
+        reservations:
+          memory: 64M
+
+  # =========================================================================
+  # PHP-FPM - Symfony API backend
+  # =========================================================================
+  php:
+    build:
+      context: ./docker/php
+      dockerfile: Dockerfile
+    volumes:
+      - ./backend:/var/www/html:ro
+      - backend_var:/var/www/html/var:rw
+      - ./backend/vendor:/var/www/html/vendor:rw
+      - ./uploads:/var/www/html/uploads:rw
+    networks:
+      - vehicle_network
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+    healthcheck:
+      test: ["CMD", "php-fpm", "-t"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    env_file:
+      - .env
+    environment:
+      APP_ENV: prod
+      APP_DEBUG: '0'
+      DATABASE_URL: ${DATABASE_URL}
+      CORS_ALLOW_ORIGIN: ${CORS_ALLOW_ORIGIN:-'^https?://.*$$'}
+      LOAD_FIXTURES: ${LOAD_FIXTURES:-0}
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.0'
+        reservations:
+          memory: 256M
+
+  # =========================================================================
+  # Nginx - API reverse proxy (backend API)
+  # =========================================================================
+  nginx:
+    build:
+      context: ./docker/nginx
+      dockerfile: Dockerfile
+    ports:
+      - "${API_PORT:-8081}:80"
+    volumes:
+      - ./backend:/var/www/html:ro
+      - ./uploads:/var/www/html/uploads:ro
+    networks:
+      - vehicle_network
+    depends_on:
+      php:
+        condition: service_healthy
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/run
+      - /var/cache/nginx
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 80 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.5'
+        reservations:
+          memory: 64M
+
+  # =========================================================================
+  # Frontend - React SPA served via nginx (production build)
+  # =========================================================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: ../docker/node/Dockerfile
+      target: production
+      args:
+        REACT_APP_API_URL: ${REACT_APP_API_URL:-http://localhost:8081/api}
+        REACT_APP_PASSWORD_POLICY: ${REACT_APP_PASSWORD_POLICY:-}
+        REACT_APP_DEMO_MODE: ${REACT_APP_DEMO_MODE:-}
+    ports:
+      - "${FRONTEND_PORT:-80}:80"
+    networks:
+      - vehicle_network
+    depends_on:
+      - nginx
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/run
+      - /var/cache/nginx
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 80 || exit 1"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.5'
+        reservations:
+          memory: 64M
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  vehicle_network:
+    driver: bridge
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  redis_data:
+    driver: local
+
+  # Symfony var/ directory (cache, logs, sessions) — must be writable
+  backend_var:
+    driver: local

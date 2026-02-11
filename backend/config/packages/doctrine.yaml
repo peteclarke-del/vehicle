@@ -1,12 +1,9 @@
 doctrine:
     dbal:
         url: '%env(resolve:DATABASE_URL)%'
-        driver: 'pdo_mysql'
-        server_version: '8.0'
-        charset: utf8mb4
-        default_table_options:
-            charset: utf8mb4
-            collate: utf8mb4_unicode_ci
+        # Driver, charset, and server version are auto-detected from DATABASE_URL
+        # MySQL:      mysql://user:pass@host:3306/db?serverVersion=8.0&charset=utf8mb4
+        # PostgreSQL: pgsql://user:pass@host:5432/db?serverVersion=16&charset=UTF8
 
     orm:
         auto_generate_proxy_classes: true

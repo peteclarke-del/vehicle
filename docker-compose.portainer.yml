@@ -35,8 +35,9 @@ x-common-env: &common-env
   APP_SECRET: ${APP_SECRET:?Set APP_SECRET in Portainer environment variables}
 
   # ── Database ─────────────────────────────────────────────────────────────
-  # For external DB: mysql://user:password@db-host:3306/vehicle_management
-  # For internal DB: mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE}
+  # PostgreSQL: pgsql://user:password@db-host:5432/vehicle_management?serverVersion=16&charset=UTF8
+  # MySQL:      mysql://user:password@db-host:3306/vehicle_management?serverVersion=8.0&charset=utf8mb4
+  # Internal:   mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE}?serverVersion=8.0&charset=utf8mb4
   DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in Portainer environment variables}
 
   # ── JWT ──────────────────────────────────────────────────────────────────
@@ -91,6 +92,7 @@ x-common-env: &common-env
   # ── Entrypoint behaviour ───────────────────────────────────────────────
   SKIP_MIGRATIONS: ${SKIP_MIGRATIONS:-0}
   SKIP_FIXTURES: ${SKIP_FIXTURES:-1}
+  LOAD_FIXTURES: ${LOAD_FIXTURES:-0}
 
 services:
   # =========================================================================
@@ -420,7 +422,8 @@ volumes:
 # 4. REQUIRED PORTAINER ENVIRONMENT VARIABLES
 #    ─────────────────────────────────────────────────────────────────────────
 #    APP_SECRET          = <random-32-char-hex-string>
-#    DATABASE_URL        = mysql://user:pass@host:3306/vehicle_management
+#    DATABASE_URL        = pgsql://user:pass@host:5432/vehicle_management?serverVersion=16&charset=UTF8
+#                          or mysql://user:pass@host:3306/vehicle_management?serverVersion=8.0&charset=utf8mb4
 #    JWT_PASSPHRASE      = <your-jwt-passphrase>
 #
 #    # If using internal DB (add --profile internal-db):
@@ -440,6 +443,7 @@ volumes:
 #    WEBSITE_PORT        = 8083       (promotional site port)
 #    SKIP_MIGRATIONS     = 0          (set to 1 to skip auto-migrations)
 #    SKIP_FIXTURES       = 1          (set to 0 to load sample data)
+#    LOAD_FIXTURES       = 0          (set to 1 on first deploy to seed data, then remove)
 #    REDIS_URL           = redis://redis:6379
 #
 #    # External API keys (all optional):
@@ -451,8 +455,9 @@ volumes:
 #
 # 6. USING AN EXTERNAL DATABASE
 #    ─────────────────────────────────────────────────────────────────────────
-#    Simply set DATABASE_URL to point to your external MySQL/MariaDB:
-#      DATABASE_URL=mysql://myuser:mypass@db.example.com:3306/vehicle_management
+#    Simply set DATABASE_URL to point to your external database:
+#      DATABASE_URL=pgsql://myuser:mypass@db.example.com:5432/vehicle_management?serverVersion=16&charset=UTF8
+#      DATABASE_URL=mysql://myuser:mypass@db.example.com:3306/vehicle_management?serverVersion=8.0&charset=utf8mb4
 #
 #    The internal mysql service uses Docker profiles and will NOT start
 #    unless you explicitly add --profile internal-db. In Portainer, leave

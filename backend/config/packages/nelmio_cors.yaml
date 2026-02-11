@@ -38,14 +38,14 @@ when@prod:
             origin_regex: true
             # Use CORS_ALLOW_ORIGIN environment variable
             # Example: CORS_ALLOW_ORIGIN='^https?://(yourdomain\.com)(:[0-9]+)?$'
-            allow_origin: '%env(CORS_ALLOW_ORIGIN)%'
+            allow_origin: ['%env(CORS_ALLOW_ORIGIN)%']
             allow_methods: ['GET', 'OPTIONS', 'POST', 'PUT', 'PATCH', 'DELETE']
             allow_headers: ['Content-Type', 'Authorization']
             expose_headers: ['Link']
             max_age: 3600
         paths:
             '^/api':
-                allow_origin: '%env(CORS_ALLOW_ORIGIN)%'
+                allow_origin: ['%env(CORS_ALLOW_ORIGIN)%']
                 allow_headers: ['Content-Type', 'Authorization', 'X-Requested-With']
                 allow_methods: ['POST', 'PUT', 'GET', 'DELETE', 'PATCH', 'OPTIONS']
                 max_age: 3600

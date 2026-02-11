@@ -3,4 +3,5 @@ FROM nginx:alpine
 # Install netcat for healthcheck
 RUN apk add --no-cache netcat-openbsd
 
-# Copy will be done via volume mount in docker-compose
+# Bake in the default config (dev compose can override via volume mount)
+COPY default.conf /etc/nginx/conf.d/default.conf

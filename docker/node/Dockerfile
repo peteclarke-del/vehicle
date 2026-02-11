@@ -30,6 +30,12 @@ RUN npm ci --prefer-offline --no-audit
 # Copy source code
 COPY . .
 
+# Allow overriding React environment variables at build time.
+# When not set, values fall back to frontend/.env defaults.
+ARG REACT_APP_API_URL
+ARG REACT_APP_PASSWORD_POLICY
+ARG REACT_APP_DEMO_MODE
+
 # Build the React application
 RUN npm run build
 

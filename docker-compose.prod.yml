@@ -1,6 +1,26 @@
 version: '3.9'
 
-# Production overrides - use with: docker-compose -f docker-compose.yml -f docker-compose.prod.yml up
+# =============================================================================
+# Production overrides — full stack (includes MySQL)
+# =============================================================================
+#
+# Usage:
+#   docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+#
+# For deployments with an EXTERNAL database (PostgreSQL / MySQL), use the
+# standalone docker-compose.pi.yml instead — it has no MySQL service.
+#
+# NOTE: This is a compose OVERLAY. Some base-file settings (e.g. exposed
+# MySQL/Redis ports) cannot be removed via override. Bind those ports to
+# 127.0.0.1 in your .env if you want to restrict access:
+#   DB_PORT=127.0.0.1:3306:3306
+#
+# Recommended .env overrides:
+#   REACT_APP_API_URL   - API URL as seen by the BROWSER
+#   CORS_ALLOW_ORIGIN   - Regex of allowed origins
+#   LOAD_FIXTURES=1     - Set on first deploy only, then remove
+#
+# =============================================================================
 
 services:
   mysql:
@@ -15,7 +35,9 @@ services:
   php:
     environment:
       APP_ENV: prod
-      APP_DEBUG: 0
+      APP_DEBUG: '0'
+      CORS_ALLOW_ORIGIN: ${CORS_ALLOW_ORIGIN:-'^https?://.*$$'}
+      LOAD_FIXTURES: ${LOAD_FIXTURES:-0}
     deploy:
       resources:
         limits:
@@ -23,12 +45,6 @@ services:
           cpus: '1.0'
         reservations:
           memory: 256M
-      replicas: 2
-    volumes:
-      # Production: read-only mounts, no source code changes
-      - ./backend:/var/www/html:ro
-      - backend_var:/var/www/html/var:rw
-      - backend_uploads:/var/www/html/uploads:rw
 
   nginx:
     deploy:
@@ -38,19 +54,35 @@ services:
           cpus: '0.5'
         reservations:
           memory: 128M
-      replicas: 2
 
   frontend:
     build:
       context: ./frontend
       dockerfile: ../docker/node/Dockerfile
       target: production
+      args:
+        REACT_APP_API_URL: ${REACT_APP_API_URL:-http://localhost:8081/api}
+        REACT_APP_PASSWORD_POLICY: ${REACT_APP_PASSWORD_POLICY:-}
+        REACT_APP_DEMO_MODE: ${REACT_APP_DEMO_MODE:-}
     ports:
-      - "80:80"
+      - "${FRONTEND_PORT:-80}:80"
     environment:
       - NODE_ENV=production
     command: ["nginx", "-g", "daemon off;"]
-    volumes: []  # No volume mounts in production
+    # Dev source-code volumes are harmless here — nginx serves from
+    # /usr/share/nginx/html (baked into the production image stage),
+    # not /app where the dev volumes mount.
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/run
+      - /var/cache/nginx
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 80 || exit 1"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
     deploy:
       resources:
         limits:
@@ -58,10 +90,3 @@ services:
           cpus: '0.5'
         reservations:
           memory: 64M
-      replicas: 2
-
-volumes:
-  backend_var:
-    driver: local
-  backend_uploads:
-    driver: local

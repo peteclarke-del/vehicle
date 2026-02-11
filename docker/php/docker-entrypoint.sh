@@ -51,21 +51,47 @@ if [ -f "$TARGET_DIR/bin/console" ]; then
   # Wait for database to be ready
   echo "[entrypoint] waiting for database to be ready"
   
-  # Extract database connection details from environment
-  export DB_HOST="${DB_HOST:-mysql}"
-  export DB_PORT="${DB_PORT:-3306}"
-  export DB_NAME="${MYSQL_DATABASE:-vehicle_management}"
-  export DB_USER="${MYSQL_USER:-vehicle_user}"
-  export DB_PASS="${MYSQL_PASSWORD:-vehicle_pass}"
+  # Parse DATABASE_URL into components.
+  # Supports: mysql://, pgsql://, postgresql://, sqlite:///
+  # Falls back to individual env vars if DATABASE_URL is not set.
+  export DATABASE_URL="${DATABASE_URL:-mysql://${MYSQL_USER:-vehicle_user}:${MYSQL_PASSWORD:-vehicle_pass}@${DB_HOST:-mysql}:${DB_PORT:-3306}/${MYSQL_DATABASE:-vehicle_management}}"
   
+  # PHP snippet that parses DATABASE_URL and builds a PDO connection
+  read -r -d '' DB_PARSE_PHP << 'EOPHP' || true
+    $url = getenv('DATABASE_URL') ?: $_ENV['DATABASE_URL'] ?? '';
+    $parts = parse_url($url);
+    $scheme = $parts['scheme'] ?? 'mysql';
+    $host   = $parts['host'] ?? 'localhost';
+    $port   = $parts['port'] ?? ($scheme === 'pgsql' || $scheme === 'postgresql' ? 5432 : 3306);
+    $user   = rawurldecode($parts['user'] ?? 'root');
+    $pass   = rawurldecode($parts['pass'] ?? '');
+    $dbname = ltrim($parts['path'] ?? '', '/');
+    // Normalise driver name
+    $driver = match($scheme) {
+      'mysql', 'mysql2', 'mariadb' => 'mysql',
+      'pgsql', 'postgresql', 'postgres' => 'pgsql',
+      'sqlite', 'sqlite3' => 'sqlite',
+      default => $scheme,
+    };
+EOPHP
+
   while ! php -r "
+    $DB_PARSE_PHP
+    fwrite(STDERR, '[entrypoint] DSN: ' . \$driver . '://' . \$user . ':***@' . \$host . ':' . \$port . '/' . \$dbname . PHP_EOL);
     try {
-      \$pdo = new PDO('mysql:host='.\$_ENV['DB_HOST'].';port='.\$_ENV['DB_PORT'].';dbname='.\$_ENV['DB_NAME'], \$_ENV['DB_USER'], \$_ENV['DB_PASS']);
+      if (\$driver === 'sqlite') {
+        \$pdo = new PDO('sqlite:' . \$dbname);
+      } else {
+        \$dsn = \$driver . ':host=' . \$host . ';port=' . \$port . ';dbname=' . \$dbname;
+        fwrite(STDERR, '[entrypoint] PDO DSN: ' . \$dsn . PHP_EOL);
+        \$pdo = new PDO(\$dsn, \$user, \$pass, [PDO::ATTR_TIMEOUT => 3]);
+      }
       echo 'OK';
     } catch (Exception \$e) {
+      fwrite(STDERR, '[entrypoint] PDO error: ' . \$e->getMessage() . PHP_EOL);
       exit(1);
     }
-  " 2>/dev/null | grep -q OK; do
+  " | grep -q OK; do
     echo '[entrypoint] database not ready, waiting...'
     sleep 2
   done
@@ -84,8 +110,10 @@ if [ -f "$TARGET_DIR/bin/console" ]; then
   if [ ! -d "$VENDOR_DIR" ] || [ ! -f "$VENDOR_AUTOLOAD" ] || [ "$vendor_empty" = true ]; then
     if command -v composer >/dev/null 2>&1; then
       echo "[entrypoint] vendor directory missing or empty - installing composer dependencies"
-      # Choose flags based on environment
-      if [ "${APP_ENV:-dev}" = "prod" ]; then
+      # Choose flags based on environment.
+      # When LOAD_FIXTURES=1 we need require-dev packages (doctrine-fixtures-bundle),
+      # so we skip the --no-dev flag even in prod.
+      if [ "${APP_ENV:-dev}" = "prod" ] && [ "${LOAD_FIXTURES:-0}" != "1" ]; then
         COMPOSER_FLAGS=(--no-interaction --prefer-dist --no-dev --optimize-autoloader)
       else
         COMPOSER_FLAGS=(--no-interaction --prefer-dist)
@@ -103,11 +131,17 @@ if [ -f "$TARGET_DIR/bin/console" ]; then
     echo "[entrypoint] SKIP_MIGRATIONS=1 set; skipping migrations"
   fi
 
-  if [ "${APP_ENV:-dev}" != "prod" ] && [ "${SKIP_FIXTURES:-0}" != "1" ]; then
+  if [ "${APP_ENV:-dev}" != "prod" ] && [ "${SKIP_FIXTURES:-0}" != "1" ] || [ "${LOAD_FIXTURES:-0}" = "1" ]; then
     # Check if fixtures have already been loaded by checking if vehicle_types table has data
     fixtures_loaded=$(php -r "
+      $DB_PARSE_PHP
       try {
-        \$pdo = new PDO('mysql:host='.\$_ENV['DB_HOST'].';port='.\$_ENV['DB_PORT'].';dbname='.\$_ENV['DB_NAME'], \$_ENV['DB_USER'], \$_ENV['DB_PASS']);
+        if (\$driver === 'sqlite') {
+          \$pdo = new PDO('sqlite:' . \$dbname);
+        } else {
+          \$dsn = \$driver . ':host=' . \$host . ';port=' . \$port . ';dbname=' . \$dbname;
+          \$pdo = new PDO(\$dsn, \$user, \$pass);
+        }
         \$stmt = \$pdo->query('SELECT COUNT(*) FROM vehicle_types');
         \$count = \$stmt->fetchColumn();
         echo \$count > 0 ? 'yes' : 'no';
@@ -119,11 +153,17 @@ if [ -f "$TARGET_DIR/bin/console" ]; then
     if [ "$fixtures_loaded" = "yes" ]; then
       echo "[entrypoint] fixtures already loaded, skipping"
     else
-      echo "[entrypoint] loading data fixtures (non-production only)"
-      (cd "$TARGET_DIR" && php bin/console doctrine:fixtures:load --no-interaction --append) || echo "[entrypoint] fixtures load failed"
+      echo "[entrypoint] loading data fixtures"
+      # In prod mode, the fixtures bundle is only registered for dev/test,
+      # so we temporarily override APP_ENV to make the command available.
+      if [ "${APP_ENV:-dev}" = "prod" ]; then
+        (cd "$TARGET_DIR" && APP_ENV=dev php bin/console doctrine:fixtures:load --no-interaction --append) || echo "[entrypoint] fixtures load failed"
+      else
+        (cd "$TARGET_DIR" && php bin/console doctrine:fixtures:load --no-interaction --append) || echo "[entrypoint] fixtures load failed"
+      fi
     fi
   else
-    echo "[entrypoint] skipping fixtures (production or SKIP_FIXTURES set)"
+    echo "[entrypoint] skipping fixtures (production and LOAD_FIXTURES not set)"
   fi
 
   # Ensure runtime permissions again after any work that may have created files

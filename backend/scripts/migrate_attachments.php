@@ -39,22 +39,45 @@ if (!$dbUrl) {
     die("ERROR: DATABASE_URL not found in environment\n");
 }
 
-// Parse DATABASE_URL
-preg_match('/mysql:\/\/([^:]+):([^@]+)@([^:]+):(\d+)\/(.+)/', $dbUrl, $matches);
-if (count($matches) < 6) {
+// Parse DATABASE_URL (supports mysql://, pgsql://, postgresql://)
+$parts = parse_url($dbUrl);
+if (!$parts || empty($parts['host'])) {
     die("ERROR: Could not parse DATABASE_URL\n");
 }
 
-[, $dbUser, $dbPass, $dbHost, $dbPort, $dbName] = $matches;
+$scheme = $parts['scheme'] ?? 'mysql';
+$dbHost = $parts['host'];
+$dbUser = rawurldecode($parts['user'] ?? '');
+$dbPass = rawurldecode($parts['pass'] ?? '');
+$dbName = ltrim($parts['path'] ?? '', '/');
 $dbName = explode('?', $dbName)[0]; // Remove query params
+
+// Normalise driver and set default port
+$driver = match ($scheme) {
+    'mysql', 'mysql2', 'mariadb' => 'mysql',
+    'pgsql', 'postgresql', 'postgres' => 'pgsql',
+    default => $scheme,
+};
+$defaultPort = $driver === 'pgsql' ? 5432 : 3306;
+$dbPort = $parts['port'] ?? $defaultPort;
+
+// Build the PDO DSN
+$charset = $driver === 'pgsql' ? 'UTF8' : 'utf8mb4';
+$pdoDsn = "{$driver}:host={$dbHost};port={$dbPort};dbname={$dbName}";
+if ($driver === 'mysql') {
+    $pdoDsn .= ";charset={$charset}";
+}
 
 try {
     $pdo = new PDO(
-        "mysql:host=$dbHost;port=$dbPort;dbname=$dbName;charset=utf8mb4",
+        $pdoDsn,
         $dbUser,
         $dbPass,
         [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
     );
+    if ($driver === 'pgsql') {
+        $pdo->exec("SET client_encoding TO '{$charset}'");
+    }
 } catch (PDOException $e) {
     die("ERROR: Database connection failed: " . $e->getMessage() . "\n");
 }
