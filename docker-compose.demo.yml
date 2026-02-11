@@ -187,12 +187,12 @@ services:
     container_name: demo_frontend
     build:
       context: /mnt/data/docker/vehicle/frontend
-      dockerfile: ../docker/node/Dockerfile
+      dockerfile: /mnt/data/docker/vehicle/docker/node/Dockerfile
       target: production
       args:
-        REACT_APP_API_URL: https://demo.vehicle.theclarkefamily.org/api
-        REACT_APP_PASSWORD_POLICY: ^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d]{8,}$
-        REACT_APP_DEMO_MODE: 'true'
+        REACT_APP_API_URL: ${REACT_APP_API_URL:-/api}
+        REACT_APP_PASSWORD_POLICY: ${REACT_APP_PASSWORD_POLICY:-}
+        REACT_APP_DEMO_MODE: ${REACT_APP_DEMO_MODE:-true}
     ports:
       - "${DEMO_FRONTEND_PORT:-3001}:80"
     networks:

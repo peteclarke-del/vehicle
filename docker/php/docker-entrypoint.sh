@@ -129,9 +129,7 @@ EOPHP
     if command -v composer >/dev/null 2>&1; then
       echo "[entrypoint] vendor directory missing or empty - installing composer dependencies"
       # Choose flags based on environment.
-      # When LOAD_FIXTURES=1 we need require-dev packages (doctrine-fixtures-bundle),
-      # so we skip the --no-dev flag even in prod.
-      if [ "${APP_ENV:-dev}" = "prod" ] && [ "${LOAD_FIXTURES:-0}" != "1" ]; then
+      if [ "${APP_ENV:-dev}" = "prod" ]; then
         COMPOSER_FLAGS=(--no-interaction --prefer-dist --no-dev --optimize-autoloader --no-scripts)
       else
         COMPOSER_FLAGS=(--no-interaction --prefer-dist --no-scripts)
@@ -180,13 +178,7 @@ EOPHP
         FIXTURE_FLAGS+=(--group=demo)
       fi
 
-      # In prod mode, the fixtures bundle is only registered for dev/test,
-      # so we temporarily override APP_ENV to make the command available.
-      if [ "${APP_ENV:-dev}" == "prod" ]; then
-        (cd "$TARGET_DIR" && APP_ENV=dev php bin/console doctrine:fixtures:load "${FIXTURE_FLAGS[@]}") || echo "[entrypoint] fixtures load failed"
-      else
-        (cd "$TARGET_DIR" && php bin/console doctrine:fixtures:load "${FIXTURE_FLAGS[@]}") || echo "[entrypoint] fixtures load failed"
-      fi
+      (cd "$TARGET_DIR" && php bin/console doctrine:fixtures:load "${FIXTURE_FLAGS[@]}") || echo "[entrypoint] fixtures load failed"
     fi
   else
     echo "[entrypoint] skipping fixtures (production and LOAD_FIXTURES not set)"

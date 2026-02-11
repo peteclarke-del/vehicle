@@ -60,15 +60,15 @@ services:
   # =========================================================================
   php:
     build:
-      context: ./docker/php
+      context: /mnt/data/docker/vehicle/docker/php
       dockerfile: Dockerfile
     user: "0:0"
     command: ["php-fpm"]
     volumes:
-      - ./backend:/var/www/html
+      - /mnt/data/docker/vehicle/backend:/var/www/html
       - backend_var:/var/www/html/var:rw
-      - ./backend/vendor:/var/www/html/vendor:rw
-      - ./uploads:/var/www/html/uploads:rw
+      - /mnt/data/docker/vehicle/backend/vendor:/var/www/html/vendor:rw
+      - /mnt/data/docker/vehicle/uploads:/var/www/html/uploads:rw
     networks:
       - vehicle_network
     depends_on:
@@ -85,7 +85,7 @@ services:
       timeout: 10s
       retries: 3
     env_file:
-      - .env
+      - /mnt/data/docker/vehicle/.env
     deploy:
       resources:
         limits:
@@ -99,13 +99,13 @@ services:
   # =========================================================================
   nginx:
     build:
-      context: ./docker/nginx
+      context: /mnt/data/docker/vehicle/docker/nginx
       dockerfile: Dockerfile
     ports:
       - "${API_PORT:-8081}:80"
     volumes:
-      - ./backend:/var/www/html
-      - ./uploads:/var/www/html/uploads:ro
+      - /mnt/data/docker/vehicle/backend:/var/www/html
+      - /mnt/data/docker/vehicle/uploads:/var/www/html/uploads:ro
     networks:
       - vehicle_network
     depends_on:
@@ -139,9 +139,13 @@ services:
   # =========================================================================
   frontend:
     build:
-      context: ./frontend
-      dockerfile: ../docker/node/Dockerfile
+      context: /mnt/data/docker/vehicle/frontend
+      dockerfile: /mnt/data/docker/vehicle/docker/node/Dockerfile
       target: production
+      args:
+        REACT_APP_API_URL: ${REACT_APP_API_URL:-/api}
+        REACT_APP_PASSWORD_POLICY: ${REACT_APP_PASSWORD_POLICY:-}
+        REACT_APP_DEMO_MODE: ${REACT_APP_DEMO_MODE:-false}
     ports:
       - "${FRONTEND_PORT:-3000}:80"
     networks:
