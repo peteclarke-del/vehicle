@@ -180,6 +180,11 @@ EOPHP
   fi
 
   # Ensure runtime permissions again after any work that may have created files
+  # Clear and warm the cache so it's fully built before php-fpm starts
+  echo "[entrypoint] clearing and warming cache"
+  (cd "$TARGET_DIR" && php bin/console cache:clear --env="${APP_ENV:-prod}" --no-interaction 2>/dev/null) || true
+  (cd "$TARGET_DIR" && php bin/console cache:warmup --env="${APP_ENV:-prod}" --no-interaction 2>/dev/null) || true
+
   if [ -d "$TARGET_DIR/var" ]; then
     fix_perms "$TARGET_DIR/var"
   fi

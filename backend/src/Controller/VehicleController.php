@@ -685,7 +685,7 @@ class VehicleController extends AbstractController
             $ownerJoin = $isAdmin ? '' : ' AND v.owner = :user';
 
             // Fuel: SUM(cost) GROUP BY month, vehicle
-            $dqlFuel = 'SELECT SUBSTRING(fr.date, 1, 7) AS month, IDENTITY(fr.vehicle) AS vehicleId, v.name AS vehicleName, SUM(fr.cost) AS total'
+            $dqlFuel = 'SELECT YEAR_MONTH(fr.date) AS month, IDENTITY(fr.vehicle) AS vehicleId, v.name AS vehicleName, SUM(fr.cost) AS total'
                 . ' FROM App\\Entity\\FuelRecord fr JOIN fr.vehicle v'
                 . ' WHERE fr.date >= :cutoff' . $ownerJoin
                 . ' GROUP BY month, vehicleId, vehicleName ORDER BY month ASC';
@@ -694,7 +694,7 @@ class VehicleController extends AbstractController
             $fuelRows = $qFuel->getResult();
 
             // Parts: SUM(cost) GROUP BY month, vehicle
-            $dqlParts = 'SELECT SUBSTRING(p.purchaseDate, 1, 7) AS month, IDENTITY(p.vehicle) AS vehicleId, v.name AS vehicleName, SUM(p.cost) AS total'
+            $dqlParts = 'SELECT YEAR_MONTH(p.purchaseDate) AS month, IDENTITY(p.vehicle) AS vehicleId, v.name AS vehicleName, SUM(p.cost) AS total'
                 . ' FROM App\\Entity\\Part p JOIN p.vehicle v'
                 . ' WHERE p.purchaseDate >= :cutoff' . $ownerJoin
                 . ' GROUP BY month, vehicleId, vehicleName ORDER BY month ASC';
@@ -703,7 +703,7 @@ class VehicleController extends AbstractController
             $partsRows = $qParts->getResult();
 
             // Services: SUM(labor + parts + additional + consumables) GROUP BY month, vehicle
-            $dqlSvc = 'SELECT SUBSTRING(sr.serviceDate, 1, 7) AS month, IDENTITY(sr.vehicle) AS vehicleId, v.name AS vehicleName,'
+            $dqlSvc = 'SELECT YEAR_MONTH(sr.serviceDate) AS month, IDENTITY(sr.vehicle) AS vehicleId, v.name AS vehicleName,'
                 . ' SUM(COALESCE(sr.laborCost, 0) + COALESCE(sr.partsCost, 0) + COALESCE(sr.additionalCosts, 0) + COALESCE(sr.consumablesCost, 0)) AS total'
                 . ' FROM App\\Entity\\ServiceRecord sr JOIN sr.vehicle v'
                 . ' WHERE sr.serviceDate >= :cutoff' . $ownerJoin
@@ -713,7 +713,7 @@ class VehicleController extends AbstractController
             $svcRows = $qSvc->getResult();
 
             // Consumables: SUM(cost) GROUP BY month, vehicle
-            $dqlCons = 'SELECT SUBSTRING(c.lastChanged, 1, 7) AS month, IDENTITY(c.vehicle) AS vehicleId, v.name AS vehicleName, SUM(c.cost) AS total'
+            $dqlCons = 'SELECT YEAR_MONTH(c.lastChanged) AS month, IDENTITY(c.vehicle) AS vehicleId, v.name AS vehicleName, SUM(c.cost) AS total'
                 . ' FROM App\\Entity\\Consumable c JOIN c.vehicle v'
                 . ' WHERE c.lastChanged >= :cutoff AND c.cost IS NOT NULL' . $ownerJoin
                 . ' GROUP BY month, vehicleId, vehicleName ORDER BY month ASC';
