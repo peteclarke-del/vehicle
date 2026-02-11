@@ -41,3 +41,13 @@ Thumbs.db
 /mysql_data/
 .env
 backend/.env
+
+# Demo
+.env.demo
+backend/.env.demo
+frontend/.env.demo
+
+# Demo
+.env.demo
+backend/.env.demo
+frontend/.env.demo
