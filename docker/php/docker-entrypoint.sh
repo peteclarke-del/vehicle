@@ -172,12 +172,20 @@ EOPHP
       echo "[entrypoint] fixtures already loaded, skipping"
     else
       echo "[entrypoint] loading data fixtures"
+
+      # Build fixture flags.
+      # When LOAD_FIXTURES=1 (demo/prod), load only the demo group.
+      FIXTURE_FLAGS=(--no-interaction --append)
+      if [ "${LOAD_FIXTURES:-0}" = "1" ]; then
+        FIXTURE_FLAGS+=(--group=demo)
+      fi
+
       # In prod mode, the fixtures bundle is only registered for dev/test,
       # so we temporarily override APP_ENV to make the command available.
-      if [ "${APP_ENV:-dev}" != "dev" ]; then
-        (cd "$TARGET_DIR" && APP_ENV=dev php bin/console doctrine:fixtures:load --no-interaction --append) || echo "[entrypoint] fixtures load failed"
+      if [ "${APP_ENV:-dev}" == "prod" ]; then
+        (cd "$TARGET_DIR" && APP_ENV=dev php bin/console doctrine:fixtures:load "${FIXTURE_FLAGS[@]}") || echo "[entrypoint] fixtures load failed"
       else
-        (cd "$TARGET_DIR" && php bin/console doctrine:fixtures:load --no-interaction --append) || echo "[entrypoint] fixtures load failed"
+        (cd "$TARGET_DIR" && php bin/console doctrine:fixtures:load "${FIXTURE_FLAGS[@]}") || echo "[entrypoint] fixtures load failed"
       fi
     fi
   else
