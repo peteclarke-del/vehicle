@@ -41,6 +41,7 @@ services:
   # =========================================================================
   postgres:
     image: postgres:16-alpine
+    container_name: demo_postgres
     environment:
       POSTGRES_DB: vehicle_demo
       POSTGRES_USER: vehicle_demo
@@ -72,6 +73,7 @@ services:
   # =========================================================================
   redis:
     image: redis:7-alpine
+    container_name: demo_redis
     command: redis-server --appendonly yes --maxmemory 64mb --maxmemory-policy allkeys-lru
     ports:
       - "6380:6379"
@@ -99,13 +101,14 @@ services:
   # PHP-FPM - Symfony API backend
   # =========================================================================
   php:
+    container_name: demo_php
     build:
-      context: ./docker/php
+      context: /mnt/data/docker/vehicle/docker/php
       dockerfile: Dockerfile
     user: "0:0"
     command: ["php-fpm"]
     volumes:
-      - ./backend:/var/www/html
+      - /mnt/data/docker/vehicle/backend:/var/www/html
     networks:
       - demo_network
     depends_on:
@@ -127,7 +130,7 @@ services:
       timeout: 10s
       retries: 3
     env_file:
-      - .env.demo
+      - /mnt/data/docker/vehicle/.env.demo
     deploy:
       resources:
         limits:
@@ -140,13 +143,14 @@ services:
   # Nginx - API reverse proxy (backend API)
   # =========================================================================
   nginx:
+    container_name: demo_nginx
     build:
-      context: ./docker/nginx
+      context: /mnt/data/docker/vehicle/docker/nginx
       dockerfile: Dockerfile
     ports:
       - "${DEMO_API_PORT:-8082}:80"
     volumes:
-      - ./backend:/var/www/html
+      - /mnt/data/docker/vehicle/backend:/var/www/html
     networks:
       - demo_network
     depends_on:
@@ -180,13 +184,14 @@ services:
   # Frontend - React SPA served via nginx (production build, demo mode ON)
   # =========================================================================
   frontend:
+    container_name: demo_frontend
     build:
-      context: ./frontend
+      context: /mnt/data/docker/vehicle/frontend
       dockerfile: ../docker/node/Dockerfile
       target: production
       args:
-        REACT_APP_API_URL: ${REACT_APP_API_URL:-/api}
-        REACT_APP_PASSWORD_POLICY: ${REACT_APP_PASSWORD_POLICY:-}
+        REACT_APP_API_URL: https://demo.vehicle.theclarkefamily.org/api
+        REACT_APP_PASSWORD_POLICY: ^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d]{8,}$
         REACT_APP_DEMO_MODE: 'true'
     ports:
       - "${DEMO_FRONTEND_PORT:-3001}:80"
@@ -221,6 +226,7 @@ services:
   # Demo Reset (optional) - Resets DB on a schedule to keep demo clean
   # =========================================================================
   demo-reset:
+    container_name: demo_reset
     image: postgres:16-alpine
     entrypoint: /bin/sh
     command:

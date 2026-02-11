@@ -36,16 +36,22 @@ UPLOAD_DIR="$TARGET_DIR/uploads"
 mkdir -p "$UPLOAD_DIR"
 fix_perms "$UPLOAD_DIR"
 
-# Generate JWT keypair if missing
-JWT_DIR="$TARGET_DIR/config/jwt"
+# Generate JWT keypair if missing.
+# Resolve key paths from env vars, replacing Symfony's %kernel.project_dir% placeholder.
+JWT_SECRET_KEY="${JWT_SECRET_KEY:-%kernel.project_dir%/config/jwt/private.pem}"
+JWT_PUBLIC_KEY="${JWT_PUBLIC_KEY:-%kernel.project_dir%/config/jwt/public.pem}"
+JWT_PRIVATE_PATH="${JWT_SECRET_KEY/\%kernel.project_dir\%/$TARGET_DIR}"
+JWT_PUBLIC_PATH="${JWT_PUBLIC_KEY/\%kernel.project_dir\%/$TARGET_DIR}"
+JWT_DIR="$(dirname "$JWT_PRIVATE_PATH")"
 JWT_PASSPHRASE="${JWT_PASSPHRASE:-changeme}"
-if [ ! -f "$JWT_DIR/private.pem" ] || [ ! -f "$JWT_DIR/public.pem" ]; then
-  echo "[entrypoint] JWT keypair not found — generating"
+
+if [ ! -f "$JWT_PRIVATE_PATH" ] || [ ! -f "$JWT_PUBLIC_PATH" ]; then
+  echo "[entrypoint] JWT keypair not found — generating ($JWT_PRIVATE_PATH, $JWT_PUBLIC_PATH)"
   mkdir -p "$JWT_DIR"
-  openssl genpkey -out "$JWT_DIR/private.pem" -aes256 -algorithm rsa -pkeyopt rsa_keygen_bits:4096 -pass "pass:$JWT_PASSPHRASE"
-  openssl pkey -in "$JWT_DIR/private.pem" -out "$JWT_DIR/public.pem" -pubout -passin "pass:$JWT_PASSPHRASE"
-  chmod 644 "$JWT_DIR/private.pem" "$JWT_DIR/public.pem"
-  chown "$USER:$GROUP" "$JWT_DIR/private.pem" "$JWT_DIR/public.pem"
+  openssl genpkey -out "$JWT_PRIVATE_PATH" -aes256 -algorithm rsa -pkeyopt rsa_keygen_bits:4096 -pass "pass:$JWT_PASSPHRASE"
+  openssl pkey -in "$JWT_PRIVATE_PATH" -out "$JWT_PUBLIC_PATH" -pubout -passin "pass:$JWT_PASSPHRASE"
+  chmod 644 "$JWT_PRIVATE_PATH" "$JWT_PUBLIC_PATH"
+  chown "$USER:$GROUP" "$JWT_PRIVATE_PATH" "$JWT_PUBLIC_PATH"
   echo "[entrypoint] JWT keypair created"
 fi
 
@@ -168,7 +174,7 @@ EOPHP
       echo "[entrypoint] loading data fixtures"
       # In prod mode, the fixtures bundle is only registered for dev/test,
       # so we temporarily override APP_ENV to make the command available.
-      if [ "${APP_ENV:-dev}" = "prod" ]; then
+      if [ "${APP_ENV:-dev}" != "dev" ]; then
         (cd "$TARGET_DIR" && APP_ENV=dev php bin/console doctrine:fixtures:load --no-interaction --append) || echo "[entrypoint] fixtures load failed"
       else
         (cd "$TARGET_DIR" && php bin/console doctrine:fixtures:load --no-interaction --append) || echo "[entrypoint] fixtures load failed"
