@@ -61,7 +61,7 @@ services:
       context: ./docker/php
       dockerfile: Dockerfile
     user: "0:0"
-    entrypoint: ["/usr/local/bin/docker-entrypoint.sh"]
+    command: ["php-fpm"]
     volumes:
       - ./backend:/var/www/html
       - backend_var:/var/www/html/var:rw
