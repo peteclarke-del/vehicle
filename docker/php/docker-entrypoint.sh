@@ -183,7 +183,7 @@ EOPHP
         FIXTURE_FLAGS+=(--group=demo)
       fi
 
-      (cd "$TARGET_DIR" && php bin/console doctrine:fixtures:load "${FIXTURE_FLAGS[@]}") || echo "[entrypoint] fixtures load failed"
+      (cd "$TARGET_DIR" && FORCE_FIXTURES=1 php bin/console doctrine:fixtures:load "${FIXTURE_FLAGS[@]}") || echo "[entrypoint] fixtures load failed"
     fi
   else
     echo "[entrypoint] skipping fixtures (production and LOAD_FIXTURES not set)"

@@ -62,10 +62,10 @@ const Register = () => {
     special: dynamicReqs.special ? /[^A-Za-z0-9]/.test(formData.password) : true,
   } : {
     length: formData.password.length >= 8,
-    upper: /[A-Z]/.test(formData.password),
-    lower: /[a-z]/.test(formData.password),
-    digit: /[0-9]/.test(formData.password),
-    special: /[^A-Za-z0-9]/.test(formData.password),
+    upper: true,
+    lower: true,
+    digit: true,
+    special: true,
   };
 
   const isValidPassword = passwordRegex 
@@ -180,7 +180,7 @@ const Register = () => {
                       primaryTypographyProps={{ variant: 'caption', color: criteria.length ? 'success.main' : 'text.secondary' }}
                     />
                   </ListItem>
-                  {(dynamicReqs?.upper !== false) && (
+                  {dynamicReqs?.upper && (
                     <ListItem sx={{ py: 0 }}>
                       <ListItemIcon sx={{ minWidth: 28 }}>
                         {criteria.upper ? <CheckCircleIcon color="success" fontSize="small" /> : <RadioButtonUncheckedIcon fontSize="small" />}
@@ -191,7 +191,7 @@ const Register = () => {
                       />
                     </ListItem>
                   )}
-                  {(dynamicReqs?.lower !== false) && (
+                  {dynamicReqs?.lower && (
                     <ListItem sx={{ py: 0 }}>
                       <ListItemIcon sx={{ minWidth: 28 }}>
                         {criteria.lower ? <CheckCircleIcon color="success" fontSize="small" /> : <RadioButtonUncheckedIcon fontSize="small" />}
@@ -202,7 +202,7 @@ const Register = () => {
                       />
                     </ListItem>
                   )}
-                  {(dynamicReqs?.digit !== false) && (
+                  {dynamicReqs?.digit && (
                     <ListItem sx={{ py: 0 }}>
                       <ListItemIcon sx={{ minWidth: 28 }}>
                         {criteria.digit ? <CheckCircleIcon color="success" fontSize="small" /> : <RadioButtonUncheckedIcon fontSize="small" />}
@@ -213,7 +213,7 @@ const Register = () => {
                       />
                     </ListItem>
                   )}
-                  {(dynamicReqs?.special !== false) && (
+                  {dynamicReqs?.special && (
                     <ListItem sx={{ py: 0 }}>
                       <ListItemIcon sx={{ minWidth: 28 }}>
                         {criteria.special ? <CheckCircleIcon color="success" fontSize="small" /> : <RadioButtonUncheckedIcon fontSize="small" />}

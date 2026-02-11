@@ -60,10 +60,10 @@ export default function PasswordChangeDialog({ open, onClose, required = false }
     special: dynamicReqs.special ? /[^A-Za-z0-9]/.test(formData.newPassword) : true,
   } : {
     length: formData.newPassword.length >= 8,
-    upper: /[A-Z]/.test(formData.newPassword),
-    lower: /[a-z]/.test(formData.newPassword),
-    digit: /[0-9]/.test(formData.newPassword),
-    special: /[^A-Za-z0-9]/.test(formData.newPassword),
+    upper: true,
+    lower: true,
+    digit: true,
+    special: true,
   };
 
   const isValidPassword = passwordRegex ? new RegExp(passwordRegex).test(formData.newPassword) : Object.values(criteria).every(Boolean);
@@ -184,7 +184,7 @@ export default function PasswordChangeDialog({ open, onClose, required = false }
                     <ListItemText primary={t('password.requireLength', { count: dynamicReqs ? dynamicReqs.length : 8 })} />
                   </ListItem>
                 )}
-                {(dynamicReqs ? dynamicReqs.upper : true) && (
+                {dynamicReqs?.upper && (
                   <ListItem>
                     <ListItemIcon>
                       {criteria.upper ? (
@@ -196,7 +196,7 @@ export default function PasswordChangeDialog({ open, onClose, required = false }
                     <ListItemText primary={t('password.requireUpper')} />
                   </ListItem>
                 )}
-                {(dynamicReqs ? dynamicReqs.lower : true) && (
+                {dynamicReqs?.lower && (
                   <ListItem>
                     <ListItemIcon>
                       {criteria.lower ? (
@@ -208,7 +208,7 @@ export default function PasswordChangeDialog({ open, onClose, required = false }
                     <ListItemText primary={t('password.requireLower')} />
                   </ListItem>
                 )}
-                {(dynamicReqs ? dynamicReqs.digit : true) && (
+                {dynamicReqs?.digit && (
                   <ListItem>
                     <ListItemIcon>
                       {criteria.digit ? (
@@ -220,7 +220,7 @@ export default function PasswordChangeDialog({ open, onClose, required = false }
                     <ListItemText primary={t('password.requireDigit')} />
                   </ListItem>
                 )}
-                {(dynamicReqs ? dynamicReqs.special : true) && (
+                {dynamicReqs?.special && (
                   <ListItem>
                     <ListItemIcon>
                       {criteria.special ? (
