@@ -95,13 +95,15 @@ EOPHP
 
   while ! php -r "
     $DB_PARSE_PHP
-    fwrite(STDERR, '[entrypoint] DSN: ' . \$driver . '://' . \$user . ':***@' . \$host . ':' . \$port . '/' . \$dbname . PHP_EOL);
+    fwrite(STDERR, '[entrypoint] waiting for server: ' . \$driver . '://' . \$user . ':***@' . \$host . ':' . \$port . PHP_EOL);
     try {
       if (\$driver === 'sqlite') {
         \$pdo = new PDO('sqlite:' . \$dbname);
       } else {
-        \$dsn = \$driver . ':host=' . \$host . ';port=' . \$port . ';dbname=' . \$dbname;
-        fwrite(STDERR, '[entrypoint] PDO DSN: ' . \$dsn . PHP_EOL);
+        // Connect to the server without specifying the target database,
+        // so the wait loop succeeds even if the database doesn't exist yet.
+        \$defaultDb = (\$driver === 'pgsql') ? 'postgres' : '';
+        \$dsn = \$driver . ':host=' . \$host . ';port=' . \$port . (\$defaultDb ? ';dbname=' . \$defaultDb : '');
         \$pdo = new PDO(\$dsn, \$user, \$pass, [PDO::ATTR_TIMEOUT => 3]);
       }
       echo 'OK';
@@ -110,10 +112,10 @@ EOPHP
       exit(1);
     }
   " | grep -q OK; do
-    echo '[entrypoint] database not ready, waiting...'
+    echo '[entrypoint] database server not ready, waiting...'
     sleep 2
   done
-  echo '[entrypoint] database is ready'
+  echo '[entrypoint] database server is ready'
 
   # Install composer dependencies if `vendor` is missing or empty or missing autoload
   VENDOR_DIR="$TARGET_DIR/vendor"
@@ -141,6 +143,9 @@ EOPHP
   fi
 
   if [ "${SKIP_MIGRATIONS:-0}" != "1" ]; then
+    echo "[entrypoint] ensuring database exists"
+    (cd "$TARGET_DIR" && php bin/console doctrine:database:create --if-not-exists --no-interaction) || echo "[entrypoint] database create failed (may already exist)"
+
     echo "[entrypoint] running doctrine migrations (may take a moment)"
     (cd "$TARGET_DIR" && php bin/console doctrine:migrations:migrate --no-interaction --allow-no-migration) || echo "[entrypoint] migrations failed or no migrations to run"
   else
