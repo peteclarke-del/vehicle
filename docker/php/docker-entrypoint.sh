@@ -37,6 +37,19 @@ UPLOAD_DIR="$TARGET_DIR/uploads"
 mkdir -p "$UPLOAD_DIR"
 fix_perms "$UPLOAD_DIR"
 
+# Generate JWT keypair if missing
+JWT_DIR="$TARGET_DIR/config/jwt"
+JWT_PASSPHRASE="${JWT_PASSPHRASE:-changeme}"
+if [ ! -f "$JWT_DIR/private.pem" ] || [ ! -f "$JWT_DIR/public.pem" ]; then
+  echo "[entrypoint] JWT keypair not found — generating"
+  mkdir -p "$JWT_DIR"
+  openssl genpkey -out "$JWT_DIR/private.pem" -aes256 -algorithm rsa -pkeyopt rsa_keygen_bits:4096 -pass "pass:$JWT_PASSPHRASE"
+  openssl pkey -in "$JWT_DIR/private.pem" -out "$JWT_DIR/public.pem" -pubout -passin "pass:$JWT_PASSPHRASE"
+  chmod 644 "$JWT_DIR/private.pem" "$JWT_DIR/public.pem"
+  chown "$USER:$GROUP" "$JWT_DIR/private.pem" "$JWT_DIR/public.pem"
+  echo "[entrypoint] JWT keypair created"
+fi
+
 # If first arg is a flag (e.g. -F), prepend the default command
 if [[ "${1:-}" == -* ]]; then
   set -- php-fpm "$@"
