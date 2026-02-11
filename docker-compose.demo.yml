@@ -104,9 +104,6 @@ services:
     command: ["php-fpm"]
     volumes:
       - ./backend:/var/www/html
-      - demo_var:/var/www/html/var:rw
-      - demo_vendor:/var/www/html/vendor:rw
-      - demo_uploads:/var/www/html/uploads:rw
     networks:
       - demo_network
     depends_on:
@@ -119,22 +116,16 @@ services:
       - no-new-privileges:true
     tmpfs:
       - /tmp
+      - /var/www/html/var
+      - /var/www/html/vendor
+      - /var/www/html/uploads
     healthcheck:
       test: ["CMD", "php-fpm", "-t"]
       interval: 30s
       timeout: 10s
       retries: 3
-    environment:
-      APP_ENV: prod
-      APP_DEBUG: '0'
-      APP_SECRET: ${APP_SECRET:-demo_secret_change_me_in_prod}
-      DATABASE_URL: pgsql://vehicle_demo:vehicle_demo_pass@postgres:5432/vehicle_demo?serverVersion=16&charset=UTF8
-      REDIS_URL: redis://redis:6379
-      CORS_ALLOW_ORIGIN: ${CORS_ALLOW_ORIGIN:-'^https?://.*$$'}
-      LOAD_FIXTURES: '1'
-      JWT_SECRET_KEY: '%kernel.project_dir%/config/jwt/private.pem'
-      JWT_PUBLIC_KEY: '%kernel.project_dir%/config/jwt/public.pem'
-      JWT_PASSPHRASE: ${JWT_PASSPHRASE:-demo_jwt_passphrase}
+    env_file:
+      - .env.demo
     deploy:
       resources:
         limits:
@@ -153,8 +144,7 @@ services:
     ports:
       - "${DEMO_API_PORT:-8082}:80"
     volumes:
-      - ./backend:/var/www/html:ro
-      - demo_uploads:/var/www/html/uploads:ro
+      - ./backend:/var/www/html
     networks:
       - demo_network
     depends_on:
@@ -168,6 +158,7 @@ services:
       - /tmp
       - /var/run
       - /var/cache/nginx
+      - /var/www/html/uploads
       - /var/log/nginx
     healthcheck:
       test: ["CMD-SHELL", "nc -z localhost 80 || exit 1"]
@@ -274,10 +265,4 @@ volumes:
   demo_pgdata:
     driver: local
   demo_redis:
-    driver: local
-  demo_var:
-    driver: local
-  demo_vendor:
-    driver: local
-  demo_uploads:
     driver: local

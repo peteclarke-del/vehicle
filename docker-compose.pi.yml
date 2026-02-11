@@ -84,15 +84,6 @@ services:
       retries: 3
     env_file:
       - .env
-    environment:
-      APP_ENV: prod
-      APP_DEBUG: '0'
-      DATABASE_URL: ${DATABASE_URL}
-      CORS_ALLOW_ORIGIN: ${CORS_ALLOW_ORIGIN:-'^https?://.*$$'}
-      LOAD_FIXTURES: ${LOAD_FIXTURES:-0}
-      JWT_SECRET_KEY: '%kernel.project_dir%/config/jwt/private.pem'
-      JWT_PUBLIC_KEY: '%kernel.project_dir%/config/jwt/public.pem'
-      JWT_PASSPHRASE: ${JWT_PASSPHRASE:-changeme}
     deploy:
       resources:
         limits:
@@ -111,7 +102,7 @@ services:
     ports:
       - "${API_PORT:-8081}:80"
     volumes:
-      - ./backend:/var/www/html:ro
+      - ./backend:/var/www/html
       - ./uploads:/var/www/html/uploads:ro
     networks:
       - vehicle_network
@@ -149,10 +140,6 @@ services:
       context: ./frontend
       dockerfile: ../docker/node/Dockerfile
       target: production
-      args:
-        REACT_APP_API_URL: ${REACT_APP_API_URL:-http://localhost:8081/api}
-        REACT_APP_PASSWORD_POLICY: ${REACT_APP_PASSWORD_POLICY:-}
-        REACT_APP_DEMO_MODE: ${REACT_APP_DEMO_MODE:-}
     ports:
       - "${FRONTEND_PORT:-3000}:80"
     networks:

@@ -17,10 +17,9 @@ fix_perms() {
   # Ensure directory exists
   mkdir -p "$dir"
 
-  # Only chown if not already correct (avoids expensive full recursion)
-  if ! stat -c '%U:%G' "$dir" 2>/dev/null | grep -q "^$USER:$GROUP$"; then
-    chown -R "$USER:$GROUP" "$dir" || true
-  fi
+  # Always recursively chown — sub-directories may have been created by
+  # root (e.g. cache:clear, migrations) even if the top-level dir is correct.
+  chown -R "$USER:$GROUP" "$dir" || true
 
   # Ensure group writable with correct directory/file semantics
   chmod -R g+rwX "$dir" || true
@@ -28,7 +27,7 @@ fix_perms() {
 
 # Symfony runtime directories
 if [ -d "$TARGET_DIR/var" ]; then
-  mkdir -p "$TARGET_DIR/var/cache/dev/profiler"
+  mkdir -p "$TARGET_DIR/var/cache" "$TARGET_DIR/var/log"
   fix_perms "$TARGET_DIR/var"
 fi
 
@@ -127,9 +126,9 @@ EOPHP
       # When LOAD_FIXTURES=1 we need require-dev packages (doctrine-fixtures-bundle),
       # so we skip the --no-dev flag even in prod.
       if [ "${APP_ENV:-dev}" = "prod" ] && [ "${LOAD_FIXTURES:-0}" != "1" ]; then
-        COMPOSER_FLAGS=(--no-interaction --prefer-dist --no-dev --optimize-autoloader)
+        COMPOSER_FLAGS=(--no-interaction --prefer-dist --no-dev --optimize-autoloader --no-scripts)
       else
-        COMPOSER_FLAGS=(--no-interaction --prefer-dist)
+        COMPOSER_FLAGS=(--no-interaction --prefer-dist --no-scripts)
       fi
       (cd "$TARGET_DIR" && composer install "${COMPOSER_FLAGS[@]}") || echo "[entrypoint] composer install failed"
     else
