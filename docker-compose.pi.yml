@@ -60,8 +60,10 @@ services:
     build:
       context: ./docker/php
       dockerfile: Dockerfile
+    user: "0:0"
+    entrypoint: ["/usr/local/bin/docker-entrypoint.sh"]
     volumes:
-      - ./backend:/var/www/html:ro
+      - ./backend:/var/www/html
       - backend_var:/var/www/html/var:rw
       - ./backend/vendor:/var/www/html/vendor:rw
       - ./uploads:/var/www/html/uploads:rw
@@ -73,7 +75,6 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
-    read_only: true
     tmpfs:
       - /tmp
     healthcheck:
@@ -122,6 +123,7 @@ services:
       - /tmp
       - /var/run
       - /var/cache/nginx
+      - /var/log/nginx
     healthcheck:
       test: ["CMD-SHELL", "nc -z localhost 80 || exit 1"]
       interval: 30s
@@ -162,6 +164,7 @@ services:
       - /tmp
       - /var/run
       - /var/cache/nginx
+      - /var/log/nginx
     healthcheck:
       test: ["CMD-SHELL", "nc -z localhost 80 || exit 1"]
       interval: 30s
