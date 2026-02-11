@@ -31,18 +31,19 @@ RUN npm ci --prefer-offline --no-audit
 COPY . .
 
 # Allow overriding React environment variables at build time.
-# When not set, values fall back to frontend/.env defaults.
+# When not set (or empty), values fall back to frontend/.env defaults.
 ARG REACT_APP_API_URL
 ARG REACT_APP_PASSWORD_POLICY
 ARG REACT_APP_DEMO_MODE
 
-# Expose ARGs as ENV so CRA's build process picks them up
-ENV REACT_APP_API_URL=$REACT_APP_API_URL
-ENV REACT_APP_PASSWORD_POLICY=$REACT_APP_PASSWORD_POLICY
-ENV REACT_APP_DEMO_MODE=$REACT_APP_DEMO_MODE
-
-# Build the React application
-RUN npm run build
+# Build the React application.
+# Unset empty REACT_APP_* build-args so CRA falls back to frontend/.env
+# defaults.  This is critical when Portainer (or any runner) passes empty
+# strings for args it cannot resolve from the host environment.
+RUN for v in REACT_APP_API_URL REACT_APP_PASSWORD_POLICY REACT_APP_DEMO_MODE; do \
+      eval "val=\$$v"; \
+      if [ -z "$val" ]; then unset "$v"; fi; \
+    done && npm run build
 
 # Production stage - serve optimized build with nginx
 FROM nginx:alpine AS production

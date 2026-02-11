@@ -86,6 +86,10 @@ services:
       retries: 3
     env_file:
       - /mnt/data/docker/vehicle/.env
+    environment:
+      APP_ENV: prod
+      APP_DEBUG: '0'
+      LOAD_FIXTURES: ${LOAD_FIXTURES:-0}
     deploy:
       resources:
         limits:
