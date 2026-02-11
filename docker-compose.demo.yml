@@ -1,0 +1,283 @@
+# =============================================================================
+# Vehicle Management System - Self-Contained Demo Instance
+# =============================================================================
+#
+# Fully self-contained demo stack with bundled PostgreSQL.
+# Designed for public demos, trade shows, or the promotional website.
+#
+# Features:
+#   - Bundled PostgreSQL (no external DB needed)
+#   - Auto-loads demo fixtures on first boot (4 users, sample vehicles, etc.)
+#   - Demo mode banner with pre-filled login credentials
+#   - Optional scheduled database reset to keep the demo clean
+#
+# Usage:
+#   docker-compose -f docker-compose.demo.yml up -d --build
+#
+# Default demo credentials (loaded automatically):
+#   Admin:  admin@example.com      / Admin123!
+#   User 1: john.smith@example.com / DemoUser123!
+#   User 2: sarah.jones@example.com/ DemoUser123!
+#   User 3: mike.wilson@example.com/ DemoUser123!
+#
+# Isolation: All writable data uses demo-specific named volumes so this
+#            stack can safely share the same host and source directory as
+#            the production instance.
+#
+# Optional overrides (set in .env or export before running):
+#   DEMO_DOMAIN             - Public domain, e.g. demo.vehicle-app.com
+#   DEMO_FRONTEND_PORT      - Host port for frontend (default: 3001)
+#   DEMO_API_PORT           - Host port for API (default: 8082)
+#   DEMO_DB_PORT            - Host port for PostgreSQL (default: 5433)
+#   DEMO_RESET_HOURS        - Hours between automatic demo resets (default: 24)
+#
+# =============================================================================
+
+version: '3.9'
+
+services:
+  # =========================================================================
+  # PostgreSQL - Bundled demo database
+  # =========================================================================
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: vehicle_demo
+      POSTGRES_USER: vehicle_demo
+      POSTGRES_PASSWORD: vehicle_demo_pass
+    ports:
+      - "${DEMO_DB_PORT:-5433}:5432"
+    volumes:
+      - demo_pgdata:/var/lib/postgresql/data
+    networks:
+      - demo_network
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vehicle_demo -d vehicle_demo"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+        reservations:
+          memory: 128M
+
+  # =========================================================================
+  # Redis - Session & cache store
+  # =========================================================================
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes --maxmemory 64mb --maxmemory-policy allkeys-lru
+    volumes:
+      - demo_redis:/data
+    networks:
+      - demo_network
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 96M
+          cpus: '0.25'
+        reservations:
+          memory: 32M
+
+  # =========================================================================
+  # PHP-FPM - Symfony API backend
+  # =========================================================================
+  php:
+    build:
+      context: ./docker/php
+      dockerfile: Dockerfile
+    user: "0:0"
+    command: ["php-fpm"]
+    volumes:
+      - ./backend:/var/www/html
+      - demo_var:/var/www/html/var:rw
+      - demo_vendor:/var/www/html/vendor:rw
+      - demo_uploads:/var/www/html/uploads:rw
+    networks:
+      - demo_network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp
+    healthcheck:
+      test: ["CMD", "php-fpm", "-t"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    environment:
+      APP_ENV: prod
+      APP_DEBUG: '0'
+      APP_SECRET: ${APP_SECRET:-demo_secret_change_me_in_prod}
+      DATABASE_URL: pgsql://vehicle_demo:vehicle_demo_pass@postgres:5432/vehicle_demo?serverVersion=16&charset=UTF8
+      REDIS_URL: redis://redis:6379
+      CORS_ALLOW_ORIGIN: ${CORS_ALLOW_ORIGIN:-'^https?://.*$$'}
+      LOAD_FIXTURES: '1'
+      JWT_SECRET_KEY: '%kernel.project_dir%/config/jwt/private.pem'
+      JWT_PUBLIC_KEY: '%kernel.project_dir%/config/jwt/public.pem'
+      JWT_PASSPHRASE: ${JWT_PASSPHRASE:-demo_jwt_passphrase}
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.0'
+        reservations:
+          memory: 256M
+
+  # =========================================================================
+  # Nginx - API reverse proxy (backend API)
+  # =========================================================================
+  nginx:
+    build:
+      context: ./docker/nginx
+      dockerfile: Dockerfile
+    ports:
+      - "${DEMO_API_PORT:-8082}:80"
+    volumes:
+      - ./backend:/var/www/html:ro
+      - demo_uploads:/var/www/html/uploads:ro
+    networks:
+      - demo_network
+    depends_on:
+      php:
+        condition: service_healthy
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/run
+      - /var/cache/nginx
+      - /var/log/nginx
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 80 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.5'
+        reservations:
+          memory: 64M
+
+  # =========================================================================
+  # Frontend - React SPA served via nginx (production build, demo mode ON)
+  # =========================================================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: ../docker/node/Dockerfile
+      target: production
+      args:
+        REACT_APP_API_URL: ${REACT_APP_API_URL:-/api}
+        REACT_APP_PASSWORD_POLICY: ${REACT_APP_PASSWORD_POLICY:-}
+        REACT_APP_DEMO_MODE: 'true'
+    ports:
+      - "${DEMO_FRONTEND_PORT:-3001}:80"
+    networks:
+      - demo_network
+    depends_on:
+      - nginx
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/run
+      - /var/cache/nginx
+      - /var/log/nginx
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 80 || exit 1"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.5'
+        reservations:
+          memory: 64M
+
+  # =========================================================================
+  # Demo Reset (optional) - Resets DB on a schedule to keep demo clean
+  # =========================================================================
+  demo-reset:
+    image: postgres:16-alpine
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        echo "[demo-reset] Starting reset scheduler (every $${RESET_HOURS}h)"
+        while true; do
+          sleep $${RESET_HOURS}h
+          echo "[demo-reset] Resetting demo database at $$(date)"
+          PGPASSWORD=vehicle_demo_pass dropdb -h postgres -U vehicle_demo vehicle_demo --if-exists
+          PGPASSWORD=vehicle_demo_pass createdb -h postgres -U vehicle_demo vehicle_demo
+          echo "[demo-reset] Database dropped and recreated"
+          echo "[demo-reset] Restarting PHP to trigger migrations + fixtures"
+          # The PHP container will re-run migrations and load fixtures on next restart
+          echo "[demo-reset] Next reset in $${RESET_HOURS} hours"
+        done
+    environment:
+      RESET_HOURS: ${DEMO_RESET_HOURS:-24}
+    networks:
+      - demo_network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          memory: 32M
+          cpus: '0.1'
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  demo_network:
+    driver: bridge
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  demo_pgdata:
+    driver: local
+  demo_redis:
+    driver: local
+  demo_var:
+    driver: local
+  demo_vendor:
+    driver: local
+  demo_uploads:
+    driver: local
