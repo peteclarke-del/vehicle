@@ -17,6 +17,7 @@ import ServiceDialog from '../components/ServiceDialog';
 import KnightRiderLoader from '../components/KnightRiderLoader';
 import ViewAttachmentIconButton from '../components/ViewAttachmentIconButton';
 import TablePaginationBar from '../components/TablePaginationBar';
+import { demoGuard } from '../utils/demoMode';
 
 const Parts = () => {
   const [parts, setParts] = useState([]);
@@ -76,6 +77,7 @@ const Parts = () => {
   };
 
   const handleDelete = async (id) => {
+    if (demoGuard(t)) return;
     if (window.confirm(t('common.confirmDelete'))) {
       try {
         await api.delete(`/parts/${id}`);

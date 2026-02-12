@@ -33,6 +33,7 @@ import MotDialog from '../components/MotDialog';
 import TablePaginationBar from '../components/TablePaginationBar';
 import VehicleSelector from '../components/VehicleSelector';
 import ViewAttachmentIconButton from '../components/ViewAttachmentIconButton';
+import { demoGuard } from '../utils/demoMode';
 import KnightRiderLoader from '../components/KnightRiderLoader';
 
 const MotRecords = () => {
@@ -111,6 +112,7 @@ const MotRecords = () => {
   };
 
   const handleDelete = async (id) => {
+    if (demoGuard(t)) return;
     if (window.confirm(t('common.confirmDelete'))) {
       try {
         await api.delete(`/mot-records/${id}`);

@@ -56,6 +56,7 @@ import VehicleDialog from '../components/VehicleDialog';
 import VehicleSpecifications from '../components/VehicleSpecifications';
 import KnightRiderLoader from '../components/KnightRiderLoader';
 import TablePaginationBar from '../components/TablePaginationBar';
+import { demoGuard } from '../utils/demoMode';
 
 const Vehicles = () => {
   const [vehicles, setVehicles] = useState([]);
@@ -95,6 +96,7 @@ const Vehicles = () => {
   };
 
   const handlePurgeClick = () => {
+    if (demoGuard(t)) return;
     setPurgeDialogOpen(true);
   };
 
@@ -103,6 +105,7 @@ const Vehicles = () => {
   };
 
   const handlePurgeConfirm = async () => {
+    if (demoGuard(t)) return;
     setPurgeDialogOpen(false);
 
     try {
@@ -188,6 +191,7 @@ const Vehicles = () => {
   };
 
   const handleDelete = async (id) => {
+    if (demoGuard(t)) return;
     if (window.confirm(t('vehicle.deleteConfirm'))) {
       try {
         await api.delete(`/vehicles/${id}`);

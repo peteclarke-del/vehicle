@@ -42,6 +42,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { usePermissions } from '../contexts/PermissionsContext';
 import { useTranslation } from 'react-i18next';
 import KnightRiderLoader from '../components/KnightRiderLoader';
+import { demoGuard } from '../utils/demoMode';
 
 const AdminUsers = () => {
   const [users, setUsers] = useState([]);
@@ -58,6 +59,7 @@ const AdminUsers = () => {
   const [newUser, setNewUser] = useState({ firstName: '', lastName: '', email: '', password: '', isAdmin: false, forcePasswordChange: true });
 
   const handleCreateUser = async () => {
+    if (demoGuard(t)) return;
     if (!newUser.email || !newUser.password || !newUser.firstName || !newUser.lastName) {
       setSnack({ open: true, message: 'All fields are required', severity: 'error' });
       return;
@@ -90,6 +92,7 @@ const AdminUsers = () => {
   }, [api]);
 
   const toggleActive = async (userId) => {
+    if (demoGuard(t)) return;
     try {
       const resp = await api.patch(`/admin/users/${userId}/toggle-active`);
       setUsers(prev => prev.map(u => u.id === userId ? { ...u, isActive: resp.data.isActive } : u));
@@ -100,6 +103,7 @@ const AdminUsers = () => {
   };
 
   const forcePasswordChange = async (userId) => {
+    if (demoGuard(t)) return;
     try {
       const resp = await api.patch(`/admin/users/${userId}/force-password-change`);
       setUsers(prev => prev.map(u => u.id === userId ? { ...u, passwordChangeRequired: true } : u));
@@ -120,6 +124,7 @@ const AdminUsers = () => {
   };
 
   const toggleRole = async (role) => {
+    if (demoGuard(t)) return;
     const user = users.find(u => u.id === rolesUserId);
     if (!user) return;
     const currentRoles = user.roles || [];

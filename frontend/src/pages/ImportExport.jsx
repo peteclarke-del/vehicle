@@ -25,6 +25,7 @@ import ImportPreview from '../components/ImportPreview';
 import { buildUrl as helpersBuildUrl, authHeaders } from '../components/ImportHelpers';
 import { saveBlob, downloadJsonObject } from '../components/DownloadHelpers';
 import { useVehicles } from '../contexts/VehiclesContext';
+import { demoGuard } from '../utils/demoMode';
 
 const ImportExport = () => {
   const { t } = useTranslation();
@@ -208,6 +209,7 @@ const ImportExport = () => {
   };
 
   const confirmJsonImport = async (data) => {
+    if (demoGuard(t)) return;
     setImportPreviewOpen(false);
     setImportModalOpen(true);
     setImportStatus('processing');
@@ -259,6 +261,7 @@ const ImportExport = () => {
 
   const handleZipFileSelected = async (file) => {
     if (!file) return;
+    if (demoGuard(t)) return;
     
     setImportModalOpen(true);
     setImportStatus('uploading');

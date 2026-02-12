@@ -30,6 +30,7 @@ import usePersistedSort from '../hooks/usePersistedSort';
 import useVehicleSelection from '../hooks/useVehicleSelection';
 import { useRegistrationLabel } from '../utils/splitLabel';
 import TablePaginationBar from '../components/TablePaginationBar';
+import { demoGuard } from '../utils/demoMode';
 import VehicleSelector from '../components/VehicleSelector';
 
 const Todo = () => {
@@ -114,6 +115,7 @@ const Todo = () => {
   };
 
   const handleDelete = async (id) => {
+    if (demoGuard(t)) return;
     if (!window.confirm(t('common.confirmDelete'))) return;
     try {
       await api.delete(`/todos/${id}`);

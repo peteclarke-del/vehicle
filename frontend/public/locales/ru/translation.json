@@ -795,5 +795,8 @@
     "pearlWhite": "Pearl White",
     "metallicGrey": "Metallic Grey",
     "matteBlack": "Matte Black"
+  },
+  "demo": {
+    "actionBlocked": "Это действие отключено в демо-версии"
   }
 }

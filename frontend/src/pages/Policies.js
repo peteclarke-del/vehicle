@@ -26,6 +26,7 @@ import { fetchArrayData } from '../hooks/useApiData';
 import useTablePagination from '../hooks/useTablePagination';
 import PolicyDialog from '../components/PolicyDialog';
 import TablePaginationBar from '../components/TablePaginationBar';
+import { demoGuard } from '../utils/demoMode';
 
 const Policies = () => {
   const [policies, setPolicies] = useState([]);
@@ -66,6 +67,7 @@ const Policies = () => {
   };
 
   const handleDelete = (id) => {
+    if (demoGuard(t)) return;
     const p = policies.find(x => x.id === id);
     if (!p) return;
 

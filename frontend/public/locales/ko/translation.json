@@ -795,5 +795,8 @@
     "pearlWhite": "Pearl White",
     "metallicGrey": "Metallic Grey",
     "matteBlack": "Matte Black"
+  },
+  "demo": {
+    "actionBlocked": "이 작업은 데모에서 비활성화되어 있습니다"
   }
 }

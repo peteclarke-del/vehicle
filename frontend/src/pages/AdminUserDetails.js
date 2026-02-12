@@ -33,6 +33,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { usePermissions } from '../contexts/PermissionsContext';
 import { useTranslation } from 'react-i18next';
 import KnightRiderLoader from '../components/KnightRiderLoader';
+import { demoGuard } from '../utils/demoMode';
 
 const AdminUserDetails = () => {
   const { id } = useParams();
@@ -115,6 +116,7 @@ const AdminUserDetails = () => {
   };
 
   const resetFeatures = async () => {
+    if (demoGuard(t)) return;
     try {
       setSaving(true);
       const resp = await api.post(`/admin/users/${id}/features/reset`);
@@ -165,6 +167,7 @@ const AdminUserDetails = () => {
   };
 
   const clearAssignments = async () => {
+    if (demoGuard(t)) return;
     try {
       setSaving(true);
       await api.delete(`/admin/users/${id}/assignments`);

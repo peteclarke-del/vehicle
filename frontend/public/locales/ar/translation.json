@@ -795,5 +795,8 @@
     "pearlWhite": "Pearl White",
     "metallicGrey": "Metallic Grey",
     "matteBlack": "Matte Black"
+  },
+  "demo": {
+    "actionBlocked": "هذا الإجراء معطل في العرض التوضيحي"
   }
 }

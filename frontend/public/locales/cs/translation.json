@@ -795,5 +795,8 @@
     "pearlWhite": "Pearl White",
     "metallicGrey": "Metallic Grey",
     "matteBlack": "Matte Black"
+  },
+  "demo": {
+    "actionBlocked": "Tato akce je v ukázce zakázána"
   }
 }

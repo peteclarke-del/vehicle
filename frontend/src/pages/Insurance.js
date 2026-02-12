@@ -28,6 +28,7 @@ import PolicyDialog from '../components/PolicyDialog';
 import TablePaginationBar from '../components/TablePaginationBar';
 import VehicleSelector from '../components/VehicleSelector';
 import KnightRiderLoader from '../components/KnightRiderLoader';
+import { demoGuard } from '../utils/demoMode';
 
 const Insurance = () => {
   const { api } = useAuth();
@@ -108,6 +109,7 @@ const Insurance = () => {
   };
 
   const handleDeletePolicy = async (id) => {
+    if (demoGuard(t)) return;
     if (!window.confirm(t('common.confirmDelete'))) return;
     try {
       await api.delete(`/insurance/policies/${id}`);

@@ -16,6 +16,7 @@ import TablePaginationBar from '../components/TablePaginationBar';
 import VehicleSelector from '../components/VehicleSelector';
 import ViewAttachmentIconButton from '../components/ViewAttachmentIconButton';
 import KnightRiderLoader from '../components/KnightRiderLoader';
+import { demoGuard } from '../utils/demoMode';
 
 const FuelRecords = () => {
   const [records, setRecords] = useState([]);
@@ -102,6 +103,7 @@ const FuelRecords = () => {
   };
 
   const handleDelete = async (id) => {
+    if (demoGuard(t)) return;
     if (window.confirm(t('common.confirmDelete'))) {
       try {
         await api.delete(`/fuel-records/${id}`);

@@ -17,6 +17,7 @@ import KnightRiderLoader from '../components/KnightRiderLoader';
 import ViewAttachmentIconButton from '../components/ViewAttachmentIconButton';
 import TablePaginationBar from '../components/TablePaginationBar';
 import VehicleSelector from '../components/VehicleSelector';
+import { demoGuard } from '../utils/demoMode';
 
 const Consumables = () => {
   const [consumables, setConsumables] = useState([]);
@@ -79,6 +80,7 @@ const Consumables = () => {
 
   const handleDelete = async (id) => {
     if (!id) return;
+    if (demoGuard(t)) return;
     if (window.confirm(t('common.confirmDelete'))) {
       try {
         await api.delete(`/consumables/${id}`);

@@ -28,6 +28,7 @@ import RoadTaxDialog from '../components/RoadTaxDialog';
 import TablePaginationBar from '../components/TablePaginationBar';
 import VehicleSelector from '../components/VehicleSelector';
 import CenteredLoader from '../components/CenteredLoader';
+import { demoGuard } from '../utils/demoMode';
 
 const RoadTax = () => {
   const [records, setRecords] = useState([]);
@@ -77,6 +78,7 @@ const RoadTax = () => {
   };
 
   const handleDelete = async (id) => {
+    if (demoGuard(t)) return;
     if (window.confirm(t('common.confirmDelete'))) {
       try {
         await api.delete(`/road-tax/${id}`);
