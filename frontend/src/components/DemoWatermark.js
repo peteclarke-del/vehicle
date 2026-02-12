@@ -1,7 +1,6 @@
 import React from 'react';
 import { Box } from '@mui/material';
-
-const DEMO_MODE = process.env.REACT_APP_DEMO_MODE === 'true';
+import DEMO_MODE from '../utils/demoMode';
 
 const DemoWatermark = () => {
   if (!DEMO_MODE) return null;

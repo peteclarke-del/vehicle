@@ -13,8 +13,7 @@ import {
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
-
-const DEMO_MODE = process.env.REACT_APP_DEMO_MODE === 'true';
+import DEMO_MODE from '../utils/demoMode';
 
 const DEMO_ACCOUNTS = [
   { label: 'Admin',  email: 'demo-admin@vehicle.local', password: 'DemoAdmin123!' },
