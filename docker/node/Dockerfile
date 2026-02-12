@@ -30,26 +30,20 @@ RUN npm ci --prefer-offline --no-audit
 # Copy source code
 COPY . .
 
-# Allow overriding React environment variables at build time.
-# When not set (or empty), values fall back to frontend/.env defaults.
-ARG REACT_APP_API_URL
-ARG REACT_APP_PASSWORD_POLICY
-ARG REACT_APP_DEMO_MODE
-
-# Promote ARGs to ENV so they are reliably visible to child processes
-# (npm / react-scripts).  ARGs alone are not always inherited by child
-# processes in every Docker + shell combination.
-ENV REACT_APP_API_URL=${REACT_APP_API_URL}
-ENV REACT_APP_PASSWORD_POLICY=${REACT_APP_PASSWORD_POLICY}
-ENV REACT_APP_DEMO_MODE=${REACT_APP_DEMO_MODE}
-
-# Build the React application.
-# Unset any REACT_APP_* vars that are empty so CRA falls back to the
-# values in frontend/.env instead of seeing an empty string.
-RUN for v in REACT_APP_API_URL REACT_APP_PASSWORD_POLICY REACT_APP_DEMO_MODE; do \
-      eval "val=\$$v"; \
-      if [ -z "$val" ]; then unset "$v"; fi; \
-    done && npm run build
+# Choose which .env file to bake into the production bundle.
+# CRA reads .env.production.local with HIGHER priority than .env,
+# so any values in the chosen file override the defaults in .env.
+#
+#   .env       — production defaults (password policy, API at /api)
+#   .env.demo  — demo overrides      (demo mode ON, relaxed policy)
+#
+# Compose files pass the appropriate file via the ENV_FILE build arg.
+ARG ENV_FILE
+RUN if [ -n "$ENV_FILE" ] && [ -f "$ENV_FILE" ]; then \
+      cp "$ENV_FILE" .env.production.local; \
+      echo "--- .env.production.local (from $ENV_FILE) ---"; \
+      cat .env.production.local; echo "---"; \
+    fi && npm run build
 
 # Production stage - serve optimized build with nginx
 FROM nginx:alpine AS production

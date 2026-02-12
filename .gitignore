@@ -42,12 +42,6 @@ Thumbs.db
 .env
 backend/.env
 
-# Demo
+# Demo (root and backend contain secrets; frontend one is safe to commit)
 .env.demo
 backend/.env.demo
-frontend/.env.demo
-
-# Demo
-.env.demo
-backend/.env.demo
-frontend/.env.demo
