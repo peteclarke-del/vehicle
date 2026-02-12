@@ -60,8 +60,6 @@ services:
       context: ./frontend
       dockerfile: ../docker/node/Dockerfile
       target: production
-      args:
-        ENV_FILE: ""
     ports:
       - "${FRONTEND_PORT:-80}:80"
     environment:

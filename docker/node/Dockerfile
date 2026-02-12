@@ -39,21 +39,14 @@ COPY . .
 #
 # Compose files pass the appropriate file via the ENV_FILE build arg.
 ARG ENV_FILE
-RUN echo "=== ENV_FILE build arg: '${ENV_FILE}' ==="; \
-    echo "=== Files matching .env* ==="; ls -la .env* 2>/dev/null || echo "(none)"; \
-    if [ -n "$ENV_FILE" ]; then \
+RUN if [ -n "$ENV_FILE" ]; then \
       if [ -f "$ENV_FILE" ]; then \
         cp "$ENV_FILE" .env.production.local; \
-        echo "=== .env.production.local (copied from $ENV_FILE) ==="; \
-        cat .env.production.local; \
+        echo "Using $ENV_FILE as .env.production.local"; \
       else \
-        echo "WARNING: ENV_FILE='$ENV_FILE' not found, build continues with .env defaults"; \
+        echo "WARNING: ENV_FILE='$ENV_FILE' not found — using .env defaults"; \
       fi; \
-    fi && \
-    echo "=== Final REACT_APP_DEMO_MODE check ===" && \
-    grep -h REACT_APP .env.production.local .env 2>/dev/null | grep -v '^#' || true && \
-    echo "=== Starting npm run build ===" && \
-    npm run build
+    fi && npm run build
 
 # Production stage - serve optimized build with nginx
 FROM nginx:alpine AS production

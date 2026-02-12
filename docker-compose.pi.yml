@@ -146,8 +146,6 @@ services:
       context: /mnt/data/docker/vehicle/frontend
       dockerfile: /mnt/data/docker/vehicle/docker/node/Dockerfile
       target: production
-      args:
-        ENV_FILE: ""
     ports:
       - "${FRONTEND_PORT:-3000}:80"
     networks:
