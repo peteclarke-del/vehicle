@@ -149,7 +149,7 @@ services:
       args:
         REACT_APP_API_URL: ${REACT_APP_API_URL:-/api}
         REACT_APP_PASSWORD_POLICY: ${REACT_APP_PASSWORD_POLICY:-}
-        REACT_APP_DEMO_MODE: ${REACT_APP_DEMO_MODE:-false}
+        REACT_APP_DEMO_MODE: "false"
     ports:
       - "${FRONTEND_PORT:-3000}:80"
     networks:

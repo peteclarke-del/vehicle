@@ -36,10 +36,16 @@ ARG REACT_APP_API_URL
 ARG REACT_APP_PASSWORD_POLICY
 ARG REACT_APP_DEMO_MODE
 
+# Promote ARGs to ENV so they are reliably visible to child processes
+# (npm / react-scripts).  ARGs alone are not always inherited by child
+# processes in every Docker + shell combination.
+ENV REACT_APP_API_URL=${REACT_APP_API_URL}
+ENV REACT_APP_PASSWORD_POLICY=${REACT_APP_PASSWORD_POLICY}
+ENV REACT_APP_DEMO_MODE=${REACT_APP_DEMO_MODE}
+
 # Build the React application.
-# Unset empty REACT_APP_* build-args so CRA falls back to frontend/.env
-# defaults.  This is critical when Portainer (or any runner) passes empty
-# strings for args it cannot resolve from the host environment.
+# Unset any REACT_APP_* vars that are empty so CRA falls back to the
+# values in frontend/.env instead of seeing an empty string.
 RUN for v in REACT_APP_API_URL REACT_APP_PASSWORD_POLICY REACT_APP_DEMO_MODE; do \
       eval "val=\$$v"; \
       if [ -z "$val" ]; then unset "$v"; fi; \

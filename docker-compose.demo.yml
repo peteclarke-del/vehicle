@@ -196,7 +196,7 @@ services:
       args:
         REACT_APP_API_URL: ${REACT_APP_API_URL:-/api}
         REACT_APP_PASSWORD_POLICY: ${REACT_APP_PASSWORD_POLICY:-}
-        REACT_APP_DEMO_MODE: ${REACT_APP_DEMO_MODE:-true}
+        REACT_APP_DEMO_MODE: "true"
     ports:
       - "${DEMO_FRONTEND_PORT:-3001}:80"
     networks:
