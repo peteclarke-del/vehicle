@@ -1,42 +1,35 @@
 import React from 'react';
-import { Box } from '@mui/material';
 import DEMO_MODE from '../utils/demoMode';
 
+/**
+ * Full-screen repeating "DEMO" watermark overlay.
+ * Uses an inline SVG as a CSS background-image so it tiles across
+ * the entire viewport — no stacking-context issues with MUI.
+ */
 const DemoWatermark = () => {
   if (!DEMO_MODE) return null;
 
+  // Inline SVG tile: rotated "DEMO" text, repeated via background-repeat
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='320' height='240'>
+    <text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle'
+          font-size='48' font-weight='900' fill='rgba(180,0,0,0.07)'
+          letter-spacing='6' transform='rotate(-35,160,120)'>DEMO</text>
+  </svg>`;
+
+  const encoded = `data:image/svg+xml,${encodeURIComponent(svg)}`;
+
   return (
-    <Box
-      sx={{
+    <div
+      style={{
         position: 'fixed',
-        top: 0,
-        left: 0,
-        width: '100%',
-        height: '100%',
+        inset: 0,
+        zIndex: 99999,
         pointerEvents: 'none',
-        zIndex: 9999,
-        overflow: 'hidden',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
+        backgroundImage: `url("${encoded}")`,
+        backgroundRepeat: 'repeat',
+        backgroundSize: '320px 240px',
       }}
-    >
-      <Box
-        sx={{
-          transform: 'rotate(-35deg)',
-          fontSize: { xs: '4rem', sm: '6rem', md: '8rem' },
-          fontWeight: 900,
-          color: 'rgba(128, 128, 128, 0.08)',
-          letterSpacing: '0.15em',
-          textTransform: 'uppercase',
-          whiteSpace: 'nowrap',
-          userSelect: 'none',
-          lineHeight: 1,
-        }}
-      >
-        DEMO
-      </Box>
-    </Box>
+    />
   );
 };
 
