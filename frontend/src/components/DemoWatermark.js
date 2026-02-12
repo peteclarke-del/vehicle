@@ -3,20 +3,31 @@ import DEMO_MODE from '../utils/demoMode';
 
 /**
  * Full-screen repeating "DEMO" watermark overlay.
- * Uses an inline SVG as a CSS background-image so it tiles across
- * the entire viewport — no stacking-context issues with MUI.
+ * Pure CSS — no SVG, no encoding, no stacking-context issues.
  */
 const DemoWatermark = () => {
   if (!DEMO_MODE) return null;
 
-  // Inline SVG tile: rotated "DEMO" text, repeated via background-repeat
-  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='320' height='240'>
-    <text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle'
-          font-size='48' font-weight='900' fill='rgba(180,0,0,0.07)'
-          letter-spacing='6' transform='rotate(-35,160,120)'>DEMO</text>
-  </svg>`;
-
-  const encoded = `data:image/svg+xml,${encodeURIComponent(svg)}`;
+  // Build a grid of rotated "DEMO" labels that tiles the viewport
+  const cells = Array.from({ length: 20 }, (_, i) => (
+    <span
+      key={i}
+      style={{
+        display: 'inline-block',
+        transform: 'rotate(-35deg)',
+        fontSize: '3rem',
+        fontWeight: 900,
+        color: '#b40000',
+        opacity: 0.07,
+        letterSpacing: '0.15em',
+        whiteSpace: 'nowrap',
+        userSelect: 'none',
+        padding: '40px 60px',
+      }}
+    >
+      DEMO
+    </span>
+  ));
 
   return (
     <div
@@ -25,11 +36,15 @@ const DemoWatermark = () => {
         inset: 0,
         zIndex: 99999,
         pointerEvents: 'none',
-        backgroundImage: `url("${encoded}")`,
-        backgroundRepeat: 'repeat',
-        backgroundSize: '320px 240px',
+        overflow: 'hidden',
+        display: 'flex',
+        flexWrap: 'wrap',
+        alignContent: 'center',
+        justifyContent: 'center',
       }}
-    />
+    >
+      {cells}
+    </div>
   );
 };
 
