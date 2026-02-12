@@ -35,15 +35,25 @@ COPY . .
 # so any values in the chosen file override the defaults in .env.
 #
 #   .env       — production defaults (password policy, API at /api)
-#   .env.demo  — demo overrides      (demo mode ON, relaxed policy)
+#   .env.demo  — demo overrides      (demo mode ON, same policy)
 #
 # Compose files pass the appropriate file via the ENV_FILE build arg.
 ARG ENV_FILE
-RUN if [ -n "$ENV_FILE" ] && [ -f "$ENV_FILE" ]; then \
-      cp "$ENV_FILE" .env.production.local; \
-      echo "--- .env.production.local (from $ENV_FILE) ---"; \
-      cat .env.production.local; echo "---"; \
-    fi && npm run build
+RUN echo "=== ENV_FILE build arg: '${ENV_FILE}' ==="; \
+    echo "=== Files matching .env* ==="; ls -la .env* 2>/dev/null || echo "(none)"; \
+    if [ -n "$ENV_FILE" ]; then \
+      if [ -f "$ENV_FILE" ]; then \
+        cp "$ENV_FILE" .env.production.local; \
+        echo "=== .env.production.local (copied from $ENV_FILE) ==="; \
+        cat .env.production.local; \
+      else \
+        echo "WARNING: ENV_FILE='$ENV_FILE' not found, build continues with .env defaults"; \
+      fi; \
+    fi && \
+    echo "=== Final REACT_APP_DEMO_MODE check ===" && \
+    grep -h REACT_APP .env.production.local .env 2>/dev/null | grep -v '^#' || true && \
+    echo "=== Starting npm run build ===" && \
+    npm run build
 
 # Production stage - serve optimized build with nginx
 FROM nginx:alpine AS production
