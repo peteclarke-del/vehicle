@@ -125,6 +125,7 @@ const MotRecordFormScreen: React.FC = () => {
     isOnline,
     vehicleId: formData.vehicleId,
     entityType: 'mot',
+    entityId: recordId || null,
     onOcrComplete: handleOcrComplete,
   });
 

@@ -114,6 +114,7 @@ const ConsumableFormScreen: React.FC = () => {
     isOnline,
     vehicleId: formData.vehicleId,
     entityType: 'consumable',
+    entityId: consumableId || null,
     onOcrComplete: handleOcrComplete,
   });
 

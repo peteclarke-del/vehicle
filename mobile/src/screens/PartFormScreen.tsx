@@ -127,6 +127,7 @@ const PartFormScreen: React.FC = () => {
     isOnline,
     vehicleId: formData.vehicleId,
     entityType: 'part',
+    entityId: partId || null,
     onOcrComplete: handleOcrComplete,
   });
 

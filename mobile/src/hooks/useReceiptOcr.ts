@@ -44,6 +44,7 @@ interface UseReceiptOcrOptions {
   isOnline: boolean;
   vehicleId?: number | null;
   entityType?: string; // fuel, part, consumable, service, mot
+  entityId?: number | null; // for editing — links attachment to entity at upload time
   onOcrComplete?: (
     primaryAttachmentId: number,
     ocrData: OcrResult,
@@ -73,6 +74,7 @@ export function useReceiptOcr({
   isOnline,
   vehicleId,
   entityType = 'fuel',
+  entityId,
   onOcrComplete,
 }: UseReceiptOcrOptions): UseReceiptOcrResult {
   const [attachments, setAttachments] = useState<ReceiptAttachment[]>([]);
@@ -116,6 +118,12 @@ export function useReceiptOcr({
           name: asset.fileName || `receipt_${Date.now()}.jpg`,
         } as any);
 
+        formData.append('entityType', entityType);
+        formData.append('category', 'receipt');
+        formData.append('description', 'Receipt');
+        if (entityId) {
+          formData.append('entityId', entityId.toString());
+        }
         if (vehicleId) {
           formData.append('vehicleId', vehicleId.toString());
         }
@@ -146,7 +154,7 @@ export function useReceiptOcr({
         });
       }
     },
-    [api, isOnline, vehicleId],
+    [api, isOnline, vehicleId, entityType, entityId],
   );
 
   /**

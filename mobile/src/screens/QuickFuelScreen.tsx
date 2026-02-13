@@ -77,6 +77,7 @@ const QuickFuelScreen: React.FC = () => {
     isOnline,
     vehicleId,
     entityType: 'fuel',
+    entityId: null,
     onOcrComplete: handleOcrComplete,
   });
 

@@ -122,6 +122,7 @@ const ServiceRecordFormScreen: React.FC = () => {
     isOnline,
     vehicleId: formData.vehicleId,
     entityType: 'service',
+    entityId: recordId || null,
     onOcrComplete: handleOcrComplete,
   });
 

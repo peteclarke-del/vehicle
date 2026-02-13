@@ -104,6 +104,7 @@ const FuelRecordFormScreen: React.FC = () => {
     isOnline,
     vehicleId: formData.vehicleId,
     entityType: 'fuel',
+    entityId: recordId || null,
     onOcrComplete: handleOcrComplete,
   });
 
