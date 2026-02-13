@@ -9,7 +9,7 @@ This document provides a comprehensive overview of the Vehicle Management System
 The Vehicle Management System is a full-stack web application for tracking personal or fleet vehicles. It manages vehicle records, fuel purchases, service history, MOT tests, insurance policies, road tax, parts inventory, consumables, and generates reports.
 
 **Technology Stack:**
-- Backend: Symfony 6.4 (PHP 8.3+), Doctrine ORM, MySQL 8.0
+- Backend: Symfony 6.4 (PHP 8.4+), Doctrine ORM, MySQL 8.0
 - Frontend: React 18, Material-UI 5, React Router 6, Axios
 - Mobile: React Native 0.73, React Native Paper (MD3), TypeScript
 - Authentication: JWT via LexikJWTAuthenticationBundle

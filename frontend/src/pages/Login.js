@@ -97,13 +97,15 @@ const Login = () => {
             >
               {loading ? t('common.loading') : t('auth.login')}
             </Button>
-            <Box textAlign="center">
-              <Link to="/register" style={{ textDecoration: 'none' }}>
-                <Typography variant="body2" color="primary">
-                  {t('auth.dontHaveAccount')} {t('auth.register')}
-                </Typography>
-              </Link>
-            </Box>
+            {!DEMO_MODE && (
+              <Box textAlign="center">
+                <Link to="/register" style={{ textDecoration: 'none' }}>
+                  <Typography variant="body2" color="primary">
+                    {t('auth.dontHaveAccount')} {t('auth.register')}
+                  </Typography>
+                </Link>
+              </Box>
+            )}
           </Box>
           {DEMO_MODE && (
             <Box

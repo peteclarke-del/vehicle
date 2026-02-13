@@ -26,10 +26,13 @@ import SessionTimeoutWarning from './components/SessionTimeoutWarning';
 import ImportExport from './pages/ImportExport';
 import AdminUsers from './pages/AdminUsers';
 import AdminUserDetails from './pages/AdminUserDetails';
+import Policies from './pages/Policies';
 import { Box } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import KnightRiderLoader from './components/KnightRiderLoader';
 import ErrorBoundary from './components/ErrorBoundary';
+import DemoWatermark from './components/DemoWatermark';
+import DEMO_MODE from './utils/demoMode';
 import { preventDefaultDragDrop } from './hooks/useDragDrop';
 
 const PrivateRoute = ({ children }) => {
@@ -103,7 +106,7 @@ function AppRoutes() {
       <ErrorBoundary>
         <Routes>
           <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
+          <Route path="/register" element={DEMO_MODE ? <Navigate to="/login" replace /> : <Register />} />
           <Route
             path="/"
             element={
@@ -125,6 +128,7 @@ function AppRoutes() {
             <Route path="todo" element={<Todo />} />
             <Route path="reports" element={<Reports />} />
             <Route path="profile" element={<Profile />} />
+            <Route path="policies" element={<Policies />} />
             <Route path="tools/import-export" element={<ImportExport />} />
             <Route path="admin/users" element={<AdminUsers />} />
             <Route path="admin/users/:id" element={<AdminUserDetails />} />
@@ -156,6 +160,7 @@ function App() {
             <PermissionsProvider>
               <VehiclesProvider>
                 <AppRoutes />
+                <DemoWatermark />
               </VehiclesProvider>
             </PermissionsProvider>
           </UserPreferencesProvider>
