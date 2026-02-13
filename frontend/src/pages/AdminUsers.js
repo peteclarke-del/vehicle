@@ -48,7 +48,7 @@ const AdminUsers = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const { api } = useAuth();
+  const { api, user: currentUser } = useAuth();
   const { isAdmin } = usePermissions();
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -187,7 +187,7 @@ const AdminUsers = () => {
           </TableHead>
           <TableBody>
             {users.map((u) => {
-              const isSelf = u.roles?.includes('ROLE_ADMIN');
+              const isSelf = currentUser && u.id === currentUser.id;
               return (
                 <TableRow key={u.id} hover sx={{ cursor: 'pointer' }} onClick={() => navigate(`/admin/users/${u.id}`)}>
                   <TableCell>
