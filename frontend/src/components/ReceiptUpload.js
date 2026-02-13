@@ -173,13 +173,24 @@ export default function ReceiptUpload({
 
   /**
    * Remove an attachment from the list (and delete from server).
+   * If the list becomes empty, notify the parent so receiptAttachmentId
+   * is cleared and the upload UI is shown again (not the locked "Receipt attached" view).
    */
   const handleRemoveAttachment = async (attachmentId) => {
     try {
       if (typeof attachmentId === 'number') {
         await api.delete(`/attachments/${attachmentId}`);
       }
-      setAttachments(prev => prev.filter(a => a.id !== attachmentId));
+      setAttachments(prev => {
+        const remaining = prev.filter(a => a.id !== attachmentId);
+        // If no attachments left, tell the parent so it clears receiptAttachmentId
+        if (remaining.length === 0) {
+          setScanned(false);
+          setOcrResult(null);
+          onReceiptRemoved();
+        }
+        return remaining;
+      });
     } catch (error) {
       logger.error('Failed to remove attachment:', error);
     }
