@@ -1,15 +1,18 @@
 /**
  * useReceiptOcr - multi-image receipt upload with smart OCR processing.
  *
+ * Flow: attach receipt(s) → upload → auto-scan OCR → callback fills form.
+ *
  * Supports:
  * - Multiple photo captures and gallery picks
  * - Sequential upload with status tracking per file
- * - Single-image auto-scan or manual "Scan All" for multiple
+ * - Automatic OCR scan after upload completes
+ * - Manual "Scan All" for re-scanning
  * - OCR data returned to parent for form auto-fill
  * - Backward compatible with single-receipt entity fields
  */
 
-import {useState, useCallback, useRef, useEffect} from 'react';
+import {useState, useCallback, useRef} from 'react';
 import {Alert} from 'react-native';
 import {
   launchCamera,
@@ -85,7 +88,10 @@ export function useReceiptOcr({
   const [existingReceiptId, setExistingReceiptId] = useState<number | null>(
     null,
   );
-  const autoScanTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Stable ref for onOcrComplete to avoid stale closures
+  const onOcrCompleteRef = useRef(onOcrComplete);
+  onOcrCompleteRef.current = onOcrComplete;
 
   // Compute primary receipt ID
   const receiptAttachmentId =
@@ -93,10 +99,10 @@ export function useReceiptOcr({
     existingReceiptId;
 
   /**
-   * Upload a single asset to the backend.
+   * Upload a single asset to the backend. Returns the attachment ID or null.
    */
-  const uploadAsset = useCallback(
-    async (asset: Asset, index: number) => {
+  const uploadSingleAsset = useCallback(
+    async (asset: Asset, index: number): Promise<number | null> => {
       if (!isOnline) {
         setAttachments(prev => {
           const updated = [...prev];
@@ -107,7 +113,7 @@ export function useReceiptOcr({
           };
           return updated;
         });
-        return;
+        return null;
       }
 
       try {
@@ -128,37 +134,102 @@ export function useReceiptOcr({
           formData.append('vehicleId', vehicleId.toString());
         }
 
+        console.log('[OCR] Uploading receipt image...');
         const response = await api.post('/attachments', formData, {
           headers: {'Content-Type': 'multipart/form-data'},
         });
+
+        const attachmentId = response.data.id;
+        console.log('[OCR] Upload success, attachmentId:', attachmentId);
 
         setAttachments(prev => {
           const updated = [...prev];
           updated[index] = {
             ...updated[index],
-            id: response.data.id,
+            id: attachmentId,
             status: 'uploaded',
           };
           return updated;
         });
+
+        return attachmentId;
       } catch (error: any) {
-        console.error('Upload error:', error);
+        console.error('[OCR] Upload error:', error?.response?.data || error?.message);
         setAttachments(prev => {
           const updated = [...prev];
           updated[index] = {
             ...updated[index],
             status: 'error',
-            error: error.message || 'Upload failed',
+            error: error?.response?.data?.error || error.message || 'Upload failed',
           };
           return updated;
         });
+        return null;
       }
     },
     [api, isOnline, vehicleId, entityType, entityId],
   );
 
   /**
-   * Process multiple assets (from camera or gallery).
+   * Run OCR scan on the given attachment IDs.
+   * This is the core scan function — takes IDs as a parameter to avoid stale closures.
+   */
+  const scanAttachmentIds = useCallback(
+    async (ids: number[]) => {
+      if (ids.length === 0) {
+        console.warn('[OCR] No attachment IDs to scan');
+        return;
+      }
+      if (!isOnline) {
+        Alert.alert('Offline', 'OCR scanning requires an internet connection');
+        return;
+      }
+
+      console.log('[OCR] Scanning', ids.length, 'attachment(s) for type:', entityType);
+      setScanning(true);
+
+      try {
+        let ocrData: OcrResult;
+
+        if (ids.length === 1) {
+          const response = await api.get(`/attachments/${ids[0]}/ocr`, {
+            params: {type: entityType},
+          });
+          ocrData = response.data;
+        } else {
+          const response = await api.post('/attachments/ocr/multi', {
+            attachmentIds: ids,
+            type: entityType,
+          });
+          ocrData = response.data;
+        }
+
+        console.log('[OCR] Raw response:', JSON.stringify(ocrData, null, 2));
+
+        setOcrResult(ocrData);
+        setScanned(true);
+
+        if (onOcrCompleteRef.current) {
+          onOcrCompleteRef.current(ids[0], ocrData, ids);
+        }
+      } catch (error: any) {
+        console.warn('[OCR] Scanning failed:', error?.response?.data || error?.message || error);
+        setOcrResult(null);
+        setScanned(true);
+        // Still call callback so attachments get associated
+        if (onOcrCompleteRef.current) {
+          onOcrCompleteRef.current(ids[0], {}, ids);
+        }
+      } finally {
+        setScanning(false);
+      }
+    },
+    [isOnline, api, entityType],
+  );
+
+  /**
+   * Process assets: upload all, then auto-scan.
+   * This is the main flow: attach → upload → scan → fill form.
    */
   const processAssets = useCallback(
     async (assets: Asset[]) => {
@@ -178,14 +249,26 @@ export function useReceiptOcr({
 
       setAttachments(prev => [...prev, ...newAttachments]);
 
-      // Upload sequentially
+      // Upload sequentially, collect successful IDs
+      const uploadedIds: number[] = [];
       for (let i = 0; i < assets.length; i++) {
-        await uploadAsset(assets[i], startIndex + i);
+        const id = await uploadSingleAsset(assets[i], startIndex + i);
+        if (id !== null) {
+          uploadedIds.push(id);
+        }
       }
 
       setUploading(false);
+
+      // Auto-scan immediately after upload completes
+      if (uploadedIds.length > 0) {
+        console.log('[OCR] Upload complete, auto-scanning', uploadedIds.length, 'image(s)...');
+        await scanAttachmentIds(uploadedIds);
+      } else {
+        console.warn('[OCR] All uploads failed, skipping scan');
+      }
     },
-    [attachments.length, uploadAsset],
+    [attachments.length, uploadSingleAsset, scanAttachmentIds],
   );
 
   /**
@@ -203,7 +286,7 @@ export function useReceiptOcr({
         await processAssets(result.assets);
       }
     } catch (error) {
-      console.error('Camera error:', error);
+      console.error('[OCR] Camera error:', error);
       Alert.alert('Error', 'Failed to take photo');
     }
   }, [processAssets]);
@@ -223,77 +306,21 @@ export function useReceiptOcr({
         await processAssets(result.assets);
       }
     } catch (error) {
-      console.error('Gallery error:', error);
+      console.error('[OCR] Gallery error:', error);
       Alert.alert('Error', 'Failed to select images');
     }
   }, [processAssets]);
 
   /**
-   * Run OCR on all uploaded attachments.
+   * Manual "Scan All" — reads IDs from current state for re-scanning.
    */
   const handleScanAll = useCallback(async () => {
     const uploadedIds = attachments
       .filter(a => a.status === 'uploaded' && a.id !== null)
       .map(a => a.id as number);
 
-    if (uploadedIds.length === 0) return;
-    if (!isOnline) {
-      Alert.alert('Offline', 'OCR scanning requires an internet connection');
-      return;
-    }
-
-    setScanning(true);
-    try {
-      let ocrData: OcrResult;
-
-      if (uploadedIds.length === 1) {
-        const response = await api.get(`/attachments/${uploadedIds[0]}/ocr`, {
-          params: {type: entityType},
-        });
-        ocrData = response.data;
-      } else {
-        const response = await api.post('/attachments/ocr/multi', {
-          attachmentIds: uploadedIds,
-          type: entityType,
-        });
-        ocrData = response.data;
-      }
-
-      console.log('[OCR] Raw response for type=' + entityType + ':', JSON.stringify(ocrData, null, 2));
-
-      setOcrResult(ocrData);
-      setScanned(true);
-
-      if (onOcrComplete) {
-        onOcrComplete(uploadedIds[0], ocrData, uploadedIds);
-      }
-    } catch (error: any) {
-      console.warn('[OCR] Scanning failed:', error?.response?.data || error?.message || error);
-      setScanned(true);
-      // Still call callback so attachments get associated
-      if (onOcrComplete) {
-        onOcrComplete(uploadedIds[0], {}, uploadedIds);
-      }
-    } finally {
-      setScanning(false);
-    }
-  }, [attachments, isOnline, api, entityType, onOcrComplete]);
-
-  /**
-   * Auto-scan when a single image finishes uploading.
-   */
-  useEffect(() => {
-    const uploaded = attachments.filter(
-      a => a.status === 'uploaded' && a.id !== null,
-    );
-    if (uploaded.length === 1 && !scanned && !scanning && !uploading) {
-      if (autoScanTimer.current) clearTimeout(autoScanTimer.current);
-      autoScanTimer.current = setTimeout(() => handleScanAll(), 600);
-      return () => {
-        if (autoScanTimer.current) clearTimeout(autoScanTimer.current);
-      };
-    }
-  }, [attachments, scanned, scanning, uploading, handleScanAll]);
+    await scanAttachmentIds(uploadedIds);
+  }, [attachments, scanAttachmentIds]);
 
   /**
    * Remove an attachment (and delete from server if uploaded).
@@ -317,7 +344,6 @@ export function useReceiptOcr({
    * Clear all attachments.
    */
   const clearAll = useCallback(() => {
-    // Delete uploaded attachments from server
     attachments.forEach(a => {
       if (a.id && isOnline) {
         api.delete(`/attachments/${a.id}`).catch(() => {});
