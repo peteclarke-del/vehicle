@@ -201,7 +201,7 @@ const AdminUsers = () => {
                     </Box>
                   </TableCell>
                   <TableCell>{u.email}</TableCell>
-                  <TableCell>
+                  <TableCell onClick={(e) => e.stopPropagation()}>
                     <Box display="flex" alignItems="center" gap={0.5} onClick={(e) => handleRolesClick(e, u.id)} sx={{ cursor: 'pointer' }}>
                       {u.roles?.map((role) => (
                         <Chip
@@ -213,7 +213,7 @@ const AdminUsers = () => {
                       ))}
                     </Box>
                   </TableCell>
-                  <TableCell>
+                  <TableCell onClick={(e) => e.stopPropagation()}>
                     <Tooltip title={isSelf ? '' : (u.isActive ? t('admin.clickToDeactivate', 'Click to deactivate') : t('admin.clickToActivate', 'Click to activate'))}>
                       <Chip
                         icon={u.isActive ? <CheckCircle /> : <Cancel />}
@@ -221,7 +221,8 @@ const AdminUsers = () => {
                         size="small"
                         color={u.isActive ? 'success' : 'error'}
                         variant="outlined"
-                        onClick={isSelf ? undefined : (e) => { e.stopPropagation(); toggleActive(u.id); }}
+                        clickable={!isSelf}
+                        onClick={isSelf ? undefined : () => toggleActive(u.id)}
                         sx={isSelf ? {} : { cursor: 'pointer' }}
                       />
                     </Tooltip>
@@ -234,7 +235,7 @@ const AdminUsers = () => {
                       ? new Date(u.lastLoginAt).toLocaleDateString()
                       : t('admin.never', 'Never')}
                   </TableCell>
-                  <TableCell align="right">
+                  <TableCell align="right" onClick={(e) => e.stopPropagation()}>
                     <Box display="flex" justifyContent="flex-end" gap={0.5}>
                       <Tooltip title={t('admin.forcePasswordChange', 'Force password change')}>
                         <span>
