@@ -26,6 +26,7 @@ import SessionTimeoutWarning from './components/SessionTimeoutWarning';
 import ImportExport from './pages/ImportExport';
 import AdminUsers from './pages/AdminUsers';
 import AdminUserDetails from './pages/AdminUserDetails';
+import Policies from './pages/Policies';
 import { Box } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import KnightRiderLoader from './components/KnightRiderLoader';
@@ -127,6 +128,7 @@ function AppRoutes() {
             <Route path="todo" element={<Todo />} />
             <Route path="reports" element={<Reports />} />
             <Route path="profile" element={<Profile />} />
+            <Route path="policies" element={<Policies />} />
             <Route path="tools/import-export" element={<ImportExport />} />
             <Route path="admin/users" element={<AdminUsers />} />
             <Route path="admin/users/:id" element={<AdminUserDetails />} />

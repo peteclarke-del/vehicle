@@ -54,7 +54,7 @@ const Policies = () => {
   useEffect(() => {
     loadVehicles();
     loadPolicies();
-  }, [loadVehicles, loadPoliciesloadVehicles, loadPolicies]);
+  }, [loadVehicles, loadPolicies]);
 
   const handleAdd = () => {
     setEditingPolicy(null);
