@@ -58,7 +58,9 @@
     "ok": "موافق",
     "error": "خطأ",
     "success": "نجاح",
-    "offline": "أنت غير متصل حالياً"
+    "offline": "أنت غير متصل حالياً",
+    "camera": "كاميرا",
+    "gallery": "معرض"
   },
   "nav": {
     "dashboard": "لوحة التحكم",
@@ -149,5 +151,18 @@
     "logout": "تسجيل الخروج",
     "email": "البريد الإلكتروني",
     "password": "كلمة المرور"
+  },
+  "ocr": {
+    "uploadingImages": "جاري رفع الصور...",
+    "addMoreImages": "إضافة المزيد",
+    "uploadReceiptImages": "إيصال",
+    "scanning": "جاري المسح...",
+    "scanAll": "مسح الكل ({{count}})",
+    "vendorDetected": "تم الكشف عن: {{vendor}}",
+    "genericReceipt": "إيصال عام",
+    "pagesProcessed": "{{count}} صفحات",
+    "confidence": "الثقة: {{pct}}%",
+    "someUploadsFailed": "فشل رفع بعض الملفات. يمكنك المحاولة مرة أخرى أو المتابعة مع الملفات المرفوعة.",
+    "multiPageHint": "ارفع صفحات متعددة من نفس الإيصال للحصول على دقة أفضل"
   }
 }

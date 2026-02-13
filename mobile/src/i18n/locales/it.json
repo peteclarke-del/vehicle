@@ -58,7 +58,9 @@
     "ok": "OK",
     "error": "Errore",
     "success": "Successo",
-    "offline": "Sei attualmente offline"
+    "offline": "Sei attualmente offline",
+    "camera": "Fotocamera",
+    "gallery": "Galleria"
   },
   "nav": {
     "dashboard": "Cruscotto",
@@ -149,5 +151,18 @@
     "logout": "Esci",
     "email": "E-mail",
     "password": "Password"
+  },
+  "ocr": {
+    "uploadingImages": "Caricamento immagini...",
+    "addMoreImages": "Aggiungi altre",
+    "uploadReceiptImages": "Ricevuta",
+    "scanning": "Scansione...",
+    "scanAll": "Scansiona tutto ({{count}})",
+    "vendorDetected": "Rilevato: {{vendor}}",
+    "genericReceipt": "Ricevuta generica",
+    "pagesProcessed": "{{count}} pagine",
+    "confidence": "Affidabilità: {{pct}}%",
+    "someUploadsFailed": "Alcuni file non sono stati caricati. Puoi riprovare o continuare con quelli caricati.",
+    "multiPageHint": "Carica più pagine della stessa ricevuta per una maggiore precisione"
   }
 }

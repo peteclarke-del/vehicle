@@ -58,7 +58,9 @@
     "ok": "OK",
     "error": "Fel",
     "success": "Klart",
-    "offline": "Du är för närvarande offline"
+    "offline": "Du är för närvarande offline",
+    "camera": "Kamera",
+    "gallery": "Galleri"
   },
   "nav": {
     "dashboard": "Översikt",
@@ -149,5 +151,18 @@
     "logout": "Logga ut",
     "email": "E-post",
     "password": "Lösenord"
+  },
+  "ocr": {
+    "uploadingImages": "Laddar upp bilder...",
+    "addMoreImages": "Lägg till fler",
+    "uploadReceiptImages": "Kvitto",
+    "scanning": "Skannar...",
+    "scanAll": "Skanna alla ({{count}})",
+    "vendorDetected": "Identifierad: {{vendor}}",
+    "genericReceipt": "Allmänt kvitto",
+    "pagesProcessed": "{{count}} sidor",
+    "confidence": "Säkerhet: {{pct}}%",
+    "someUploadsFailed": "Vissa filer kunde inte laddas upp. Du kan försöka igen eller fortsätta med de uppladdade.",
+    "multiPageHint": "Ladda upp flera sidor av samma kvitto för bättre noggrannhet"
   }
 }

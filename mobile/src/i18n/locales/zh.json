@@ -58,7 +58,9 @@
     "ok": "确定",
     "error": "错误",
     "success": "成功",
-    "offline": "当前处于离线状态"
+    "offline": "当前处于离线状态",
+    "camera": "相机",
+    "gallery": "相册"
   },
   "nav": {
     "dashboard": "仪表盘",
@@ -149,5 +151,18 @@
     "logout": "退出登录",
     "email": "邮箱",
     "password": "密码"
+  },
+  "ocr": {
+    "uploadingImages": "正在上传图片...",
+    "addMoreImages": "添加更多",
+    "uploadReceiptImages": "收据",
+    "scanning": "扫描中...",
+    "scanAll": "扫描全部 ({{count}})",
+    "vendorDetected": "检测到: {{vendor}}",
+    "genericReceipt": "通用收据",
+    "pagesProcessed": "{{count}} 页",
+    "confidence": "置信度: {{pct}}%",
+    "someUploadsFailed": "部分文件上传失败。您可以重试或继续使用已上传的文件。",
+    "multiPageHint": "上传同一收据的多页以获得更好的准确性"
   }
 }

@@ -58,7 +58,9 @@
     "ok": "OK",
     "error": "Erreur",
     "success": "Succès",
-    "offline": "Vous êtes actuellement hors ligne"
+    "offline": "Vous êtes actuellement hors ligne",
+    "camera": "Appareil photo",
+    "gallery": "Galerie"
   },
   "nav": {
     "dashboard": "Tableau de bord",
@@ -149,5 +151,18 @@
     "logout": "Déconnexion",
     "email": "E-mail",
     "password": "Mot de passe"
+  },
+  "ocr": {
+    "uploadingImages": "Téléchargement des images...",
+    "addMoreImages": "Ajouter plus",
+    "uploadReceiptImages": "Reçu",
+    "scanning": "Numérisation...",
+    "scanAll": "Tout numériser ({{count}})",
+    "vendorDetected": "Détecté : {{vendor}}",
+    "genericReceipt": "Reçu générique",
+    "pagesProcessed": "{{count}} pages",
+    "confidence": "Confiance : {{pct}}%",
+    "someUploadsFailed": "Certains fichiers n'ont pas pu être téléchargés. Vous pouvez réessayer ou continuer avec les fichiers téléchargés.",
+    "multiPageHint": "Téléchargez plusieurs pages du même reçu pour une meilleure précision"
   }
 }

@@ -58,7 +58,9 @@
     "ok": "OK",
     "error": "Błąd",
     "success": "Sukces",
-    "offline": "Jesteś obecnie offline"
+    "offline": "Jesteś obecnie offline",
+    "camera": "Aparat",
+    "gallery": "Galeria"
   },
   "nav": {
     "dashboard": "Panel",
@@ -149,5 +151,18 @@
     "logout": "Wyloguj się",
     "email": "E-mail",
     "password": "Hasło"
+  },
+  "ocr": {
+    "uploadingImages": "Przesyłanie obrazów...",
+    "addMoreImages": "Dodaj więcej",
+    "uploadReceiptImages": "Paragon",
+    "scanning": "Skanowanie...",
+    "scanAll": "Skanuj wszystko ({{count}})",
+    "vendorDetected": "Wykryto: {{vendor}}",
+    "genericReceipt": "Ogólny paragon",
+    "pagesProcessed": "{{count}} stron",
+    "confidence": "Pewność: {{pct}}%",
+    "someUploadsFailed": "Nie udało się przesłać niektórych plików. Możesz spróbować ponownie lub kontynuować z przesłanymi.",
+    "multiPageHint": "Prześlij wiele stron tego samego paragonu dla lepszej dokładności"
   }
 }

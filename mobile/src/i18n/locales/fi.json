@@ -58,7 +58,9 @@
     "ok": "OK",
     "error": "Virhe",
     "success": "Onnistui",
-    "offline": "Olet tällä hetkellä offline-tilassa"
+    "offline": "Olet tällä hetkellä offline-tilassa",
+    "camera": "Kamera",
+    "gallery": "Galleria"
   },
   "nav": {
     "dashboard": "Yhteenveto",
@@ -149,5 +151,18 @@
     "logout": "Kirjaudu ulos",
     "email": "Sähköposti",
     "password": "Salasana"
+  },
+  "ocr": {
+    "uploadingImages": "Ladataan kuvia...",
+    "addMoreImages": "Lisää",
+    "uploadReceiptImages": "Kuitti",
+    "scanning": "Skannataan...",
+    "scanAll": "Skannaa kaikki ({{count}})",
+    "vendorDetected": "Tunnistettu: {{vendor}}",
+    "genericReceipt": "Yleinen kuitti",
+    "pagesProcessed": "{{count}} sivua",
+    "confidence": "Luottamus: {{pct}}%",
+    "someUploadsFailed": "Joidenkin tiedostojen lataus epäonnistui. Voit yrittää uudelleen tai jatkaa ladatuilla.",
+    "multiPageHint": "Lataa useita sivuja samasta kuitista paremman tarkkuuden saavuttamiseksi"
   }
 }

@@ -1,11 +1,10 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useCallback} from 'react';
 import {
   View,
   ScrollView,
   Alert,
   KeyboardAvoidingView,
   Platform,
-  Image,
 } from 'react-native';
 import {
   TextInput,
@@ -13,8 +12,6 @@ import {
   useTheme,
   Switch,
   Text,
-  IconButton,
-  Card,
 } from 'react-native-paper';
 import {useNavigation, useRoute, RouteProp} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
@@ -23,8 +20,9 @@ import {useSync} from '../contexts/SyncContext';
 import {MainStackParamList} from '../navigation/MainNavigator';
 import VehicleSelector from '../components/VehicleSelector';
 import LoadingScreen from '../components/LoadingScreen';
-import {useReceiptPhoto} from '../hooks/useReceiptPhoto';
-import {formStyles, receiptStyles} from '../theme/sharedStyles';
+import ReceiptCapture from '../components/ReceiptCapture';
+import {useReceiptOcr, OcrResult} from '../hooks/useReceiptOcr';
+import {formStyles} from '../theme/sharedStyles';
 
 type NavigationProp = NativeStackNavigationProp<MainStackParamList>;
 type RouteProps = RouteProp<MainStackParamList, 'FuelRecordForm'>;
@@ -72,14 +70,42 @@ const FuelRecordFormScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
+  const handleOcrComplete = useCallback(
+    (primaryId: number, ocrData: OcrResult) => {
+      const updates: Partial<FormData> = {};
+      if (ocrData.date && !formData.date) updates.date = ocrData.date;
+      if (ocrData.totalCost) updates.cost = ocrData.totalCost.toString();
+      if (ocrData.litres) updates.litres = ocrData.litres.toString();
+      if (ocrData.mileage) updates.mileage = ocrData.mileage.toString();
+      if (ocrData.station) updates.station = ocrData.station;
+      if (ocrData.fuelType) updates.fuelType = ocrData.fuelType;
+      if (Object.keys(updates).length > 0) {
+        setFormData(prev => ({...prev, ...updates}));
+      }
+    },
+    [formData.date],
+  );
+
   const {
-    receiptUri,
+    attachments: receiptAttachments,
+    uploading: receiptUploading,
+    scanning: receiptScanning,
+    scanned: receiptScanned,
+    ocrResult,
     receiptAttachmentId,
     handleTakePhoto,
     handleChooseFromGallery,
-    clearReceipt,
-    setReceiptAttachmentId,
-  } = useReceiptPhoto({api, isOnline, vehicleId: formData.vehicleId});
+    handleScanAll,
+    removeAttachment,
+    clearAll: clearReceipt,
+    setExistingReceipt,
+  } = useReceiptOcr({
+    api,
+    isOnline,
+    vehicleId: formData.vehicleId,
+    entityType: 'fuel',
+    onOcrComplete: handleOcrComplete,
+  });
 
   useEffect(() => {
     loadData();
@@ -105,7 +131,7 @@ const FuelRecordFormScreen: React.FC = () => {
           notes: record.notes || '',
         });
         if (record.receiptAttachmentId) {
-          setReceiptAttachmentId(record.receiptAttachmentId);
+          setExistingReceipt(record.receiptAttachmentId);
         }
       } else if (!formData.vehicleId && vehiclesRes.data?.length > 0) {
         setFormData(prev => ({...prev, vehicleId: vehiclesRes.data[0].id}));
@@ -285,44 +311,19 @@ const FuelRecordFormScreen: React.FC = () => {
           style={formStyles.input}
         />
 
-        {/* Receipt Section */}
-        <Text variant="titleMedium" style={formStyles.sectionTitle}>Receipt</Text>
-        
-        <View style={receiptStyles.receiptButtons}>
-          <Button
-            mode="outlined"
-            icon="camera"
-            onPress={handleTakePhoto}
-            style={receiptStyles.receiptButton}>
-            Take Photo
-          </Button>
-          <Button
-            mode="outlined"
-            icon="image"
-            onPress={handleChooseFromGallery}
-            style={receiptStyles.receiptButton}>
-            Gallery
-          </Button>
-        </View>
-
-        {receiptUri && (
-          <Card style={receiptStyles.receiptPreview}>
-            <Card.Content>
-              <View style={receiptStyles.receiptImageContainer}>
-                <Image
-                  source={{uri: receiptUri}}
-                  style={receiptStyles.receiptImage}
-                  resizeMode="contain"
-                />
-                <IconButton
-                  icon="close"
-                  style={receiptStyles.removeReceiptButton}
-                  onPress={clearReceipt}
-                />
-              </View>
-            </Card.Content>
-          </Card>
-        )}
+        {/* Receipt Section with OCR */}
+        <ReceiptCapture
+          attachments={receiptAttachments}
+          uploading={receiptUploading}
+          scanning={receiptScanning}
+          scanned={receiptScanned}
+          ocrResult={ocrResult}
+          onTakePhoto={handleTakePhoto}
+          onChooseGallery={handleChooseFromGallery}
+          onScanAll={handleScanAll}
+          onRemoveAttachment={removeAttachment}
+          onClearAll={clearReceipt}
+        />
 
         <Button
           mode="contained"

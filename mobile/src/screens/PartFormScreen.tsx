@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useCallback} from 'react';
 import {
   View,
   StyleSheet,
@@ -20,6 +20,8 @@ import {useSync} from '../contexts/SyncContext';
 import {MainStackParamList} from '../navigation/MainNavigator';
 import VehicleSelector from '../components/VehicleSelector';
 import LoadingScreen from '../components/LoadingScreen';
+import ReceiptCapture from '../components/ReceiptCapture';
+import {useReceiptOcr, OcrResult} from '../hooks/useReceiptOcr';
 import {formStyles} from '../theme/sharedStyles';
 
 type NavigationProp = NativeStackNavigationProp<MainStackParamList>;
@@ -89,6 +91,45 @@ const PartFormScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
+  const handleOcrComplete = useCallback(
+    (primaryId: number, ocrData: OcrResult) => {
+      const updates: Partial<FormData> = {};
+      if (ocrData.itemName) updates.name = ocrData.itemName;
+      if (ocrData.partNumber) updates.partNumber = ocrData.partNumber;
+      if (ocrData.manufacturer) updates.manufacturer = ocrData.manufacturer;
+      if (ocrData.totalCost) updates.cost = ocrData.totalCost.toString();
+      if (ocrData.supplier) updates.supplier = ocrData.supplier;
+      if (ocrData.date) updates.purchaseDate = ocrData.date;
+      if (ocrData.quantity) updates.quantity = ocrData.quantity.toString();
+      if (ocrData.sku) updates.partNumber = ocrData.sku;
+      if (Object.keys(updates).length > 0) {
+        setFormData(prev => ({...prev, ...updates}));
+      }
+    },
+    [],
+  );
+
+  const {
+    attachments: receiptAttachments,
+    uploading: receiptUploading,
+    scanning: receiptScanning,
+    scanned: receiptScanned,
+    ocrResult,
+    receiptAttachmentId,
+    handleTakePhoto,
+    handleChooseFromGallery,
+    handleScanAll,
+    removeAttachment,
+    clearAll: clearReceipt,
+    setExistingReceipt,
+  } = useReceiptOcr({
+    api,
+    isOnline,
+    vehicleId: formData.vehicleId,
+    entityType: 'part',
+    onOcrComplete: handleOcrComplete,
+  });
+
   useEffect(() => {
     loadData();
   }, [partId]);
@@ -114,6 +155,9 @@ const PartFormScreen: React.FC = () => {
           location: part.location || '',
           notes: part.notes || '',
         });
+        if (part.receiptAttachmentId) {
+          setExistingReceipt(part.receiptAttachmentId);
+        }
       }
     } catch (error) {
       console.error('Error loading data:', error);
@@ -143,6 +187,7 @@ const PartFormScreen: React.FC = () => {
       purchaseDate: formData.purchaseDate || null,
       location: formData.location.trim() || null,
       notes: formData.notes.trim() || null,
+      receiptAttachmentId: receiptAttachmentId,
     };
 
     try {
@@ -326,6 +371,20 @@ const PartFormScreen: React.FC = () => {
           multiline
           numberOfLines={3}
           style={formStyles.input}
+        />
+
+        {/* Receipt Section with OCR */}
+        <ReceiptCapture
+          attachments={receiptAttachments}
+          uploading={receiptUploading}
+          scanning={receiptScanning}
+          scanned={receiptScanned}
+          ocrResult={ocrResult}
+          onTakePhoto={handleTakePhoto}
+          onChooseGallery={handleChooseFromGallery}
+          onScanAll={handleScanAll}
+          onRemoveAttachment={removeAttachment}
+          onClearAll={clearReceipt}
         />
 
         <Button

@@ -58,7 +58,9 @@
     "ok": "OK",
     "error": "エラー",
     "success": "成功",
-    "offline": "現在オフラインです"
+    "offline": "現在オフラインです",
+    "camera": "カメラ",
+    "gallery": "ギャラリー"
   },
   "nav": {
     "dashboard": "ダッシュボード",
@@ -149,5 +151,18 @@
     "logout": "ログアウト",
     "email": "メールアドレス",
     "password": "パスワード"
+  },
+  "ocr": {
+    "uploadingImages": "画像をアップロード中...",
+    "addMoreImages": "追加",
+    "uploadReceiptImages": "領収書",
+    "scanning": "スキャン中...",
+    "scanAll": "すべてスキャン ({{count}})",
+    "vendorDetected": "検出: {{vendor}}",
+    "genericReceipt": "一般領収書",
+    "pagesProcessed": "{{count}} ページ",
+    "confidence": "信頼度: {{pct}}%",
+    "someUploadsFailed": "一部のファイルのアップロードに失敗しました。再試行するか、アップロード済みのファイルで続行できます。",
+    "multiPageHint": "精度向上のため、同じ領収書の複数ページをアップロードしてください"
   }
 }

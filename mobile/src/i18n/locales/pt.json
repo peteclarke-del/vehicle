@@ -58,7 +58,9 @@
     "ok": "OK",
     "error": "Erro",
     "success": "Sucesso",
-    "offline": "Está atualmente offline"
+    "offline": "Está atualmente offline",
+    "camera": "Câmera",
+    "gallery": "Galeria"
   },
   "nav": {
     "dashboard": "Painel",
@@ -149,5 +151,18 @@
     "logout": "Sair",
     "email": "E-mail",
     "password": "Palavra-passe"
+  },
+  "ocr": {
+    "uploadingImages": "Enviando imagens...",
+    "addMoreImages": "Adicionar mais",
+    "uploadReceiptImages": "Recibo",
+    "scanning": "Digitalizando...",
+    "scanAll": "Digitalizar tudo ({{count}})",
+    "vendorDetected": "Detectado: {{vendor}}",
+    "genericReceipt": "Recibo genérico",
+    "pagesProcessed": "{{count}} páginas",
+    "confidence": "Confiança: {{pct}}%",
+    "someUploadsFailed": "Alguns arquivos não puderam ser enviados. Você pode tentar novamente ou continuar com os enviados.",
+    "multiPageHint": "Envie várias páginas do mesmo recibo para maior precisão"
   }
 }

@@ -58,7 +58,9 @@
     "ok": "ОК",
     "error": "Ошибка",
     "success": "Успешно",
-    "offline": "Вы сейчас не в сети"
+    "offline": "Вы сейчас не в сети",
+    "camera": "Камера",
+    "gallery": "Галерея"
   },
   "nav": {
     "dashboard": "Панель",
@@ -149,5 +151,18 @@
     "logout": "Выйти",
     "email": "Электронная почта",
     "password": "Пароль"
+  },
+  "ocr": {
+    "uploadingImages": "Загрузка изображений...",
+    "addMoreImages": "Добавить ещё",
+    "uploadReceiptImages": "Чек",
+    "scanning": "Сканирование...",
+    "scanAll": "Сканировать всё ({{count}})",
+    "vendorDetected": "Обнаружено: {{vendor}}",
+    "genericReceipt": "Общий чек",
+    "pagesProcessed": "{{count}} страниц",
+    "confidence": "Уверенность: {{pct}}%",
+    "someUploadsFailed": "Некоторые файлы не удалось загрузить. Вы можете попробовать снова или продолжить с загруженными.",
+    "multiPageHint": "Загрузите несколько страниц одного чека для лучшей точности"
   }
 }
