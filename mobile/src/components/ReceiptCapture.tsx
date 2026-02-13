@@ -224,6 +224,22 @@ const ReceiptCapture: React.FC<ReceiptCaptureProps> = ({
                 })}
               </Text>
             )}
+            {/* Extracted fields debug display */}
+            <View style={styles.extractedFields}>
+              {Object.entries(ocrResult)
+                .filter(([key]) => key !== '_meta')
+                .filter(([, value]) => value !== null && value !== undefined && value !== '')
+                .map(([key, value]) => (
+                  <View key={key} style={styles.fieldRow}>
+                    <Text variant="labelSmall" style={{color: theme.colors.onPrimaryContainer, opacity: 0.7, width: 100}}>
+                      {key}:
+                    </Text>
+                    <Text variant="bodySmall" style={{color: theme.colors.onPrimaryContainer, flex: 1}} numberOfLines={2}>
+                      {String(value)}
+                    </Text>
+                  </View>
+                ))}
+            </View>
           </Card.Content>
         </Card>
       )}
@@ -330,6 +346,17 @@ const styles = StyleSheet.create({
   },
   metaChip: {
     marginLeft: 8,
+  },
+  extractedFields: {
+    marginTop: 8,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(0,0,0,0.12)',
+    paddingTop: 8,
+  },
+  fieldRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingVertical: 2,
   },
   existingPreview: {
     marginBottom: 16,

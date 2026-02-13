@@ -86,6 +86,7 @@ const ServiceRecordFormScreen: React.FC = () => {
 
   const handleOcrComplete = useCallback(
     (primaryId: number, ocrData: OcrResult) => {
+      console.log('[OCR] Service auto-fill data:', ocrData);
       const updates: Partial<FormData> = {};
       if (ocrData.date && !formData.date) updates.date = ocrData.date;
       if (ocrData.serviceType) updates.serviceType = ocrData.serviceType;

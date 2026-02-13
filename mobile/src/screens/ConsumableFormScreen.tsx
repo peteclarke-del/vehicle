@@ -81,10 +81,11 @@ const ConsumableFormScreen: React.FC = () => {
 
   const handleOcrComplete = useCallback(
     (primaryId: number, ocrData: OcrResult) => {
+      console.log('[OCR] Consumable auto-fill data:', ocrData);
       const updates: Partial<FormData> = {};
-      if (ocrData.itemName) updates.description = ocrData.itemName;
+      if (ocrData.name) updates.description = ocrData.name;
       if (ocrData.partNumber) updates.partNumber = ocrData.partNumber;
-      if (ocrData.totalCost) updates.cost = ocrData.totalCost.toString();
+      if (ocrData.price) updates.cost = ocrData.price.toString();
       if (ocrData.supplier) updates.supplier = ocrData.supplier;
       if (ocrData.quantity) updates.quantity = ocrData.quantity.toString();
       if (ocrData.manufacturer) updates.brand = ocrData.manufacturer;

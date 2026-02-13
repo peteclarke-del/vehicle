@@ -259,14 +259,16 @@ export function useReceiptOcr({
         ocrData = response.data;
       }
 
+      console.log('[OCR] Raw response for type=' + entityType + ':', JSON.stringify(ocrData, null, 2));
+
       setOcrResult(ocrData);
       setScanned(true);
 
       if (onOcrComplete) {
         onOcrComplete(uploadedIds[0], ocrData, uploadedIds);
       }
-    } catch (error) {
-      console.warn('OCR scanning failed:', error);
+    } catch (error: any) {
+      console.warn('[OCR] Scanning failed:', error?.response?.data || error?.message || error);
       setScanned(true);
       // Still call callback so attachments get associated
       if (onOcrComplete) {

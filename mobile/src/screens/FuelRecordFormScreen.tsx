@@ -72,9 +72,10 @@ const FuelRecordFormScreen: React.FC = () => {
 
   const handleOcrComplete = useCallback(
     (primaryId: number, ocrData: OcrResult) => {
+      console.log('[OCR] Fuel auto-fill data:', ocrData);
       const updates: Partial<FormData> = {};
       if (ocrData.date && !formData.date) updates.date = ocrData.date;
-      if (ocrData.totalCost) updates.cost = ocrData.totalCost.toString();
+      if (ocrData.cost) updates.cost = ocrData.cost.toString();
       if (ocrData.litres) updates.litres = ocrData.litres.toString();
       if (ocrData.mileage) updates.mileage = ocrData.mileage.toString();
       if (ocrData.station) updates.station = ocrData.station;

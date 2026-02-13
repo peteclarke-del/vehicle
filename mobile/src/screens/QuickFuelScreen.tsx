@@ -52,7 +52,8 @@ const QuickFuelScreen: React.FC = () => {
 
   const handleOcrComplete = useCallback(
     (primaryId: number, ocrData: OcrResult) => {
-      if (ocrData.totalCost && !cost) setCost(ocrData.totalCost.toString());
+      console.log('[OCR] QuickFuel auto-fill data:', ocrData);
+      if (ocrData.cost && !cost) setCost(ocrData.cost.toString());
       if (ocrData.litres && !litres) setLitres(ocrData.litres.toString());
       if (ocrData.mileage && !mileage) setMileage(ocrData.mileage.toString());
       if (ocrData.station && !station) setStation(ocrData.station);

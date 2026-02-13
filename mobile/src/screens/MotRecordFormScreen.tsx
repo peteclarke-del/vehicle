@@ -88,10 +88,11 @@ const MotRecordFormScreen: React.FC = () => {
 
   const handleOcrComplete = useCallback(
     (primaryId: number, ocrData: OcrResult) => {
+      console.log('[OCR] MOT auto-fill data:', ocrData);
       const updates: Partial<FormData> = {};
-      if (ocrData.date) updates.testDate = ocrData.date;
+      if (ocrData.testDate) updates.testDate = ocrData.testDate;
       if (ocrData.result) updates.result = ocrData.result;
-      if (ocrData.totalCost) updates.testCost = ocrData.totalCost.toString();
+      if (ocrData.testCost) updates.testCost = ocrData.testCost.toString();
       if (ocrData.mileage) updates.mileage = ocrData.mileage.toString();
       if (ocrData.testCenter || ocrData.serviceProvider) {
         updates.testCenter = ocrData.testCenter || ocrData.serviceProvider;
