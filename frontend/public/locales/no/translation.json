@@ -989,5 +989,18 @@
   },
   "demo": {
     "actionBlocked": "Denne handlingen er deaktivert i demoen"
+  },
+  "ocr": {
+    "uploadingImages": "Laster opp bilder...",
+    "addMoreImages": "Legg til flere bilder",
+    "uploadReceiptImages": "Last opp kvitteringsbilde(r)",
+    "scanning": "Skanner...",
+    "scanAll": "Skann alle ({{count}})",
+    "vendorDetected": "Oppdaget: {{vendor}}",
+    "genericReceipt": "Generisk kvittering",
+    "pagesProcessed": "{{count}} sider",
+    "confidence": "Pålitelighet: {{pct}}%",
+    "someUploadsFailed": "Noen filer kunne ikke lastes opp. Du kan prøve igjen eller fortsette med de opplastede.",
+    "multiPageHint": "Last opp flere sider av samme kvittering for bedre nøyaktighet"
   }
 }

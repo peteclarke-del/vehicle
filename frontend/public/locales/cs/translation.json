@@ -989,5 +989,18 @@
   },
   "demo": {
     "actionBlocked": "Tato akce je v demo režimu zakázána"
+  },
+  "ocr": {
+    "uploadingImages": "Nahrávání obrázků...",
+    "addMoreImages": "Přidat další obrázky",
+    "uploadReceiptImages": "Nahrát obrázek(y) účtenky",
+    "scanning": "Skenování...",
+    "scanAll": "Skenovat vše ({{count}})",
+    "vendorDetected": "Zjištěno: {{vendor}}",
+    "genericReceipt": "Obecná účtenka",
+    "pagesProcessed": "{{count}} stránek",
+    "confidence": "Spolehlivost: {{pct}}%",
+    "someUploadsFailed": "Některé soubory se nepodařilo nahrát. Můžete to zkusit znovu nebo pokračovat s nahranými.",
+    "multiPageHint": "Nahrajte více stránek stejné účtenky pro lepší přesnost"
   }
 }

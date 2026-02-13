@@ -989,5 +989,18 @@
   },
   "demo": {
     "actionBlocked": "Esta ação está desativada na demonstração"
+  },
+  "ocr": {
+    "uploadingImages": "Enviando imagens...",
+    "addMoreImages": "Adicionar mais imagens",
+    "uploadReceiptImages": "Enviar imagem(ns) do recibo",
+    "scanning": "Digitalizando...",
+    "scanAll": "Digitalizar tudo ({{count}})",
+    "vendorDetected": "Detectado: {{vendor}}",
+    "genericReceipt": "Recibo genérico",
+    "pagesProcessed": "{{count}} páginas",
+    "confidence": "Confiança: {{pct}}%",
+    "someUploadsFailed": "Alguns arquivos não puderam ser enviados. Você pode tentar novamente ou continuar com os enviados.",
+    "multiPageHint": "Envie várias páginas do mesmo recibo para maior precisão"
   }
 }

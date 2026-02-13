@@ -5,6 +5,8 @@ RUN apt-get update && apt-get install -y \
     git \
     curl \
     libpng-dev \
+    libjpeg62-turbo-dev \
+    libfreetype6-dev \
     libonig-dev \
     libxml2-dev \
     libzip-dev \
@@ -14,6 +16,16 @@ RUN apt-get update && apt-get install -y \
     libssl-dev \
     libsasl2-dev \
     libpq-dev \
+    # Tesseract OCR engine + language data for receipt processing
+    tesseract-ocr \
+    tesseract-ocr-eng \
+    tesseract-ocr-fra \
+    tesseract-ocr-deu \
+    tesseract-ocr-spa \
+    # Image preprocessing tools for OCR quality improvement
+    imagemagick \
+    ghostscript \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install pdo_mysql pdo_pgsql mbstring exif pcntl bcmath gd zip intl \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
@@ -40,6 +52,11 @@ RUN apt-get update \
 
 # Default XDEBUG_MODE to off (can be overridden by docker-compose environment)
 ENV XDEBUG_MODE=off
+
+# Allow ImageMagick to process PDFs (needed for PDF receipt OCR)
+RUN if [ -f /etc/ImageMagick-6/policy.xml ]; then \
+      sed -i 's/rights="none" pattern="PDF"/rights="read|write" pattern="PDF"/' /etc/ImageMagick-6/policy.xml; \
+    fi
 
 # Configure PHP upload limits
 RUN echo "upload_max_filesize = 200M" > /usr/local/etc/php/conf.d/uploads.ini \

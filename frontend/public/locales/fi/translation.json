@@ -989,5 +989,18 @@
   },
   "demo": {
     "actionBlocked": "Tämä toiminto on poissa käytöstä demossa"
+  },
+  "ocr": {
+    "uploadingImages": "Ladataan kuvia...",
+    "addMoreImages": "Lisää kuvia",
+    "uploadReceiptImages": "Lataa kuittikuva(t)",
+    "scanning": "Skannataan...",
+    "scanAll": "Skannaa kaikki ({{count}})",
+    "vendorDetected": "Tunnistettu: {{vendor}}",
+    "genericReceipt": "Yleinen kuitti",
+    "pagesProcessed": "{{count}} sivua",
+    "confidence": "Luottamus: {{pct}}%",
+    "someUploadsFailed": "Joidenkin tiedostojen lataus epäonnistui. Voit yrittää uudelleen tai jatkaa ladatuilla.",
+    "multiPageHint": "Lataa useita sivuja samasta kuitista paremman tarkkuuden saavuttamiseksi"
   }
 }

@@ -516,13 +516,107 @@ class AttachmentController extends AbstractController
 
         $type = $request->query->get('type', 'fuel');
         
-        $data = match ($type) {
-            'part', 'consumable' => $this->ocrService->extractPartReceiptData($filePath),
-            'service' => $this->ocrService->extractServiceReceiptData($filePath),
-            default => $this->ocrService->extractReceiptData($filePath),
-        };
+        $data = $this->ocrService->extractReceiptData($filePath, $type);
 
         return $this->json($data);
+    }
+
+    #[Route('/ocr/multi', methods: ['POST'])]
+
+    /**
+     * Process OCR on multiple already-uploaded attachments and merge the results.
+     *
+     * @param Request $request JSON body: { attachmentIds: int[], type: string }
+     * @return JsonResponse Merged extracted data from all attachments
+     */
+    public function processMultiOcr(Request $request): JsonResponse
+    {
+        $user = $this->getUserEntity();
+        if (!$user) {
+            return $this->json(['error' => 'Unauthorized'], 401);
+        }
+
+        $data = json_decode($request->getContent(), true) ?? [];
+        $attachmentIds = $data['attachmentIds'] ?? [];
+        $type = $data['type'] ?? 'fuel';
+
+        if (empty($attachmentIds) || !is_array($attachmentIds)) {
+            return $this->json(['error' => 'No attachment IDs provided'], 400);
+        }
+
+        // Cap at 10 attachments per OCR batch
+        $attachmentIds = array_slice($attachmentIds, 0, 10);
+
+        $filePaths = [];
+        foreach ($attachmentIds as $aid) {
+            $attachment = $this->entityManager->getRepository(Attachment::class)->findOneBy([
+                'id' => (int)$aid,
+                'user' => $user,
+            ]);
+
+            if (!$attachment) {
+                continue;
+            }
+
+            $filePath = $this->getAttachmentFilePath($attachment);
+            if (!$this->filesystem->exists($filePath)) {
+                continue;
+            }
+
+            $mimeType = $attachment->getMimeType();
+            if (!in_array($mimeType, self::OCR_SUPPORTED_TYPES, true)) {
+                continue;
+            }
+
+            $filePaths[] = $filePath;
+        }
+
+        if (empty($filePaths)) {
+            return $this->json(['error' => 'No valid OCR-compatible attachments found'], 400);
+        }
+
+        $result = $this->ocrService->extractFromMultipleFiles($filePaths, $type);
+
+        return $this->json($result);
+    }
+
+    #[Route('/{id}/ocr/raw', methods: ['GET'])]
+
+    /**
+     * Get raw OCR text from an attachment (useful for debugging).
+     */
+    public function processOcrRaw(int $id): JsonResponse
+    {
+        $user = $this->getUserEntity();
+        if (!$user) {
+            return $this->json(['error' => 'Unauthorized'], 401);
+        }
+
+        $attachment = $this->entityManager->getRepository(Attachment::class)->findOneBy([
+            'id' => $id,
+            'user' => $user
+        ]);
+
+        if (!$attachment) {
+            return $this->json(['error' => 'Attachment not found'], 404);
+        }
+
+        $filePath = $this->getAttachmentFilePath($attachment);
+        if (!$this->filesystem->exists($filePath)) {
+            return $this->json(['error' => 'File not found'], 404);
+        }
+
+        $mimeType = $attachment->getMimeType();
+        if (!in_array($mimeType, self::OCR_SUPPORTED_TYPES, true)) {
+            return $this->json(['error' => 'OCR only supports images and PDFs'], 400);
+        }
+
+        try {
+            $rawText = $this->ocrService->getRawText($filePath);
+            return $this->json(['text' => $rawText]);
+        } catch (\Exception $e) {
+            return $this->json(['error' => 'OCR processing failed: ' . $e->getMessage()], 500);
+        }
     }
 
     #[Route('', methods: ['GET'])]

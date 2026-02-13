@@ -989,5 +989,18 @@
   },
   "demo": {
     "actionBlocked": "此操作在演示模式下不可用"
+  },
+  "ocr": {
+    "uploadingImages": "正在上传图片...",
+    "addMoreImages": "添加更多图片",
+    "uploadReceiptImages": "上传收据图片",
+    "scanning": "扫描中...",
+    "scanAll": "扫描全部 ({{count}})",
+    "vendorDetected": "检测到: {{vendor}}",
+    "genericReceipt": "通用收据",
+    "pagesProcessed": "{{count}} 页",
+    "confidence": "置信度: {{pct}}%",
+    "someUploadsFailed": "部分文件上传失败。您可以重试或继续使用已上传的文件。",
+    "multiPageHint": "上传同一收据的多页以获得更好的准确性"
   }
 }

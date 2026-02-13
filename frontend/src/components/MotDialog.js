@@ -678,7 +678,22 @@ const MotDialog = ({ open, motRecord, vehicleId, vehicles, onClose }) => {
                 entityId={motRecord?.id}
                 vehicleId={formData.vehicleId || vehicleId}
                 receiptAttachmentId={receiptAttachmentId}
-                onReceiptUploaded={(id, ocrData) => setReceiptAttachmentId(id)}
+                onReceiptUploaded={(id, ocrData) => {
+                  setReceiptAttachmentId(id);
+                  if (ocrData) {
+                    const updates = {};
+                    if (ocrData.testDate) updates.testDate = ocrData.testDate;
+                    if (ocrData.result) updates.result = ocrData.result;
+                    if (ocrData.testCost) updates.testCost = ocrData.testCost;
+                    if (ocrData.mileage) updates.mileage = ocrData.mileage;
+                    if (ocrData.testCenter) updates.testCenter = ocrData.testCenter;
+                    if (ocrData.expiryDate) updates.expiryDate = ocrData.expiryDate;
+                    if (ocrData.motTestNumber) updates.motTestNumber = ocrData.motTestNumber;
+                    if (Object.keys(updates).length > 0) {
+                      setFormData(prev => ({ ...prev, ...updates }));
+                    }
+                  }
+                }}
                 onReceiptRemoved={() => setReceiptAttachmentId(null)}
               />
             </Grid>

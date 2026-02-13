@@ -989,5 +989,18 @@
   },
   "demo": {
     "actionBlocked": "Deze actie is uitgeschakeld in de demo"
+  },
+  "ocr": {
+    "uploadingImages": "Afbeeldingen uploaden...",
+    "addMoreImages": "Meer afbeeldingen toevoegen",
+    "uploadReceiptImages": "Bonafbeelding(en) uploaden",
+    "scanning": "Scannen...",
+    "scanAll": "Alles scannen ({{count}})",
+    "vendorDetected": "Gedetecteerd: {{vendor}}",
+    "genericReceipt": "Generieke bon",
+    "pagesProcessed": "{{count}} pagina's",
+    "confidence": "Betrouwbaarheid: {{pct}}%",
+    "someUploadsFailed": "Sommige bestanden konden niet worden geüpload. U kunt het opnieuw proberen of doorgaan met de geüploade bestanden.",
+    "multiPageHint": "Upload meerdere pagina's van dezelfde bon voor betere nauwkeurigheid"
   }
 }

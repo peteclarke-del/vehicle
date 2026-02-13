@@ -799,5 +799,18 @@
   },
   "demo": {
     "actionBlocked": "This action be disabled in the demo, ye scallywag!"
+  },
+  "ocr": {
+    "uploadingImages": "Haulin' images aboard...",
+    "addMoreImages": "Add more treasure maps",
+    "uploadReceiptImages": "Upload receipt scroll(s)",
+    "scanning": "Readin' the scrolls...",
+    "scanAll": "Read All Scrolls ({{count}})",
+    "vendorDetected": "Port o' origin: {{vendor}}",
+    "genericReceipt": "Unknown scroll",
+    "pagesProcessed": "{{count}} pages o' parchment",
+    "confidence": "Certainty: {{pct}}%",
+    "someUploadsFailed": "Some scrolls were lost at sea. Try again or sail on with what ye have.",
+    "multiPageHint": "Upload multiple pages o' the same scroll fer better readin'"
   }
 }

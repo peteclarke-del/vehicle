@@ -243,13 +243,14 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
   };
 
   const handleReceiptUploaded = (attachmentId, ocrData) => {
-    console.log('[ConsumableDialog] handleReceiptUploaded called', { attachmentId, ocrData });
     setReceiptAttachmentId(attachmentId);
     const updates = {};
     if (ocrData.name) updates.description = ocrData.name;
     if (ocrData.price) updates.cost = ocrData.price;
     if (ocrData.quantity) updates.quantity = ocrData.quantity;
     if (ocrData.manufacturer) updates.brand = ocrData.manufacturer;
+    if (ocrData.supplier) updates.supplier = ocrData.supplier;
+    if (ocrData.partNumber) updates.partNumber = ocrData.partNumber;
     if (ocrData.date) updates.lastChanged = ocrData.date;
     if (Object.keys(updates).length > 0) {
       setFormData(prev => ({ ...prev, ...updates }));
