@@ -109,7 +109,6 @@ const Layout = () => {
     { key: 'dashboard', text: t('nav.dashboard'), icon: <DashboardIcon />, path: '/', featureKey: 'dashboard.view' },
     { key: 'vehicles', text: t('nav.vehicles'), icon: <DirectionsCar />, path: '/vehicles', featureKey: 'vehicles.view' },
     { key: 'insurance', text: t('nav.insurance'), icon: <Security />, path: '/insurance', featureKey: 'insurance.view' },
-    { key: 'policies', text: t('nav.policies', 'Policies'), icon: <Security />, path: '/policies', featureKey: 'insurance.view' },
     { key: 'roadTax', text: t('nav.roadTax'), icon: <AssignmentTurnedIn />, path: '/road-tax', featureKey: 'tax.view' },
     { key: 'motRecords', text: t('nav.motRecords'), icon: <AssignmentTurnedIn />, path: '/mot-records', featureKey: 'mot.view' },
     { key: 'serviceRecords', text: t('nav.serviceRecords'), icon: <HomeRepairService />, path: '/service-records', featureKey: 'services.view' },
