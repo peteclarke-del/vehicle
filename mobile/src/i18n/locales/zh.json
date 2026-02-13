@@ -163,6 +163,8 @@
     "pagesProcessed": "{{count}} 页",
     "confidence": "置信度: {{pct}}%",
     "someUploadsFailed": "部分文件上传失败。您可以重试或继续使用已上传的文件。",
-    "multiPageHint": "上传同一收据的多页以获得更好的准确性"
+    "multiPageHint": "上传同一收据的多页以获得更好的准确性",
+    "scanningReceipt": "正在使用OCR读取收据...",
+    "scanningHint": "这可能需要10-30秒"
   }
 }

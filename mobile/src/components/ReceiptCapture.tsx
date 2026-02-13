@@ -5,7 +5,7 @@
  * OCR scan button, and confidence/vendor info display.
  */
 
-import React from 'react';
+import React, {useState, useEffect, useRef} from 'react';
 import {View, Image, StyleSheet, ScrollView} from 'react-native';
 import {
   Button,
@@ -14,6 +14,7 @@ import {
   IconButton,
   Chip,
   ProgressBar,
+  ActivityIndicator,
   useTheme,
 } from 'react-native-paper';
 import {useTranslation} from 'react-i18next';
@@ -33,6 +34,46 @@ interface ReceiptCaptureProps {
   /** Optional existing receipt preview URI */
   existingReceiptUri?: string | null;
 }
+
+/**
+ * ScanningCard — shows a prominent "processing" indicator with elapsed time
+ * so the user knows the backend OCR is working (can take 10-30s).
+ */
+const ScanningCard: React.FC = () => {
+  const {t} = useTranslation();
+  const theme = useTheme();
+  const [elapsed, setElapsed] = useState(0);
+  const timer = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    timer.current = setInterval(() => setElapsed(s => s + 1), 1000);
+    return () => {
+      if (timer.current) clearInterval(timer.current);
+    };
+  }, []);
+
+  return (
+    <Card style={[styles.scanningCard, {backgroundColor: theme.colors.secondaryContainer}]}>
+      <Card.Content>
+        <View style={styles.scanningRow}>
+          <ActivityIndicator size="small" color={theme.colors.primary} />
+          <View style={styles.scanningTextCol}>
+            <Text variant="bodyMedium" style={{fontWeight: '600', color: theme.colors.onSecondaryContainer}}>
+              {t('ocr.scanningReceipt', 'Reading receipt with OCR...')}
+            </Text>
+            <Text variant="bodySmall" style={{color: theme.colors.onSecondaryContainer, opacity: 0.7, marginTop: 2}}>
+              {t('ocr.scanningHint', 'This may take 10-30 seconds')}
+            </Text>
+          </View>
+          <Text variant="labelLarge" style={{color: theme.colors.onSecondaryContainer, opacity: 0.5}}>
+            {elapsed}s
+          </Text>
+        </View>
+        <ProgressBar indeterminate style={[styles.progressBar, {marginTop: 8}]} />
+      </Card.Content>
+    </Card>
+  );
+};
 
 const ReceiptCapture: React.FC<ReceiptCaptureProps> = ({
   attachments,
@@ -185,14 +226,9 @@ const ReceiptCapture: React.FC<ReceiptCaptureProps> = ({
         </Button>
       )}
 
-      {/* Scanning indicator */}
+      {/* Scanning indicator — prominent card with elapsed timer */}
       {scanning && (
-        <View style={styles.progressContainer}>
-          <Text variant="bodySmall" style={{color: theme.colors.primary}}>
-            {t('ocr.scanning', 'Scanning...')}
-          </Text>
-          <ProgressBar indeterminate style={styles.progressBar} />
-        </View>
+        <ScanningCard />
       )}
 
       {/* OCR result display */}
@@ -334,6 +370,18 @@ const styles = StyleSheet.create({
   },
   scanButton: {
     marginBottom: 12,
+  },
+  scanningCard: {
+    marginBottom: 12,
+    elevation: 2,
+  },
+  scanningRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  scanningTextCol: {
+    flex: 1,
   },
   alertCard: {
     marginBottom: 12,

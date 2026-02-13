@@ -163,6 +163,8 @@
     "pagesProcessed": "{{count}} Seiten",
     "confidence": "Vertrauen: {{pct}}%",
     "someUploadsFailed": "Einige Dateien konnten nicht hochgeladen werden. Sie können es erneut versuchen oder mit den hochgeladenen fortfahren.",
-    "multiPageHint": "Laden Sie mehrere Seiten derselben Quittung hoch für bessere Genauigkeit"
+    "multiPageHint": "Laden Sie mehrere Seiten derselben Quittung hoch für bessere Genauigkeit",
+    "scanningReceipt": "Quittung wird mit OCR gelesen...",
+    "scanningHint": "Dies kann 10-30 Sekunden dauern"
   }
 }

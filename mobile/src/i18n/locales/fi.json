@@ -163,6 +163,8 @@
     "pagesProcessed": "{{count}} sivua",
     "confidence": "Luottamus: {{pct}}%",
     "someUploadsFailed": "Joidenkin tiedostojen lataus epäonnistui. Voit yrittää uudelleen tai jatkaa ladatuilla.",
-    "multiPageHint": "Lataa useita sivuja samasta kuitista paremman tarkkuuden saavuttamiseksi"
+    "multiPageHint": "Lataa useita sivuja samasta kuitista paremman tarkkuuden saavuttamiseksi",
+    "scanningReceipt": "Luetaan kuittia OCR:llä...",
+    "scanningHint": "Tämä voi kestää 10-30 sekuntia"
   }
 }

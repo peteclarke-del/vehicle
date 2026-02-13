@@ -163,6 +163,8 @@
     "pagesProcessed": "{{count}} sidor",
     "confidence": "Säkerhet: {{pct}}%",
     "someUploadsFailed": "Vissa filer kunde inte laddas upp. Du kan försöka igen eller fortsätta med de uppladdade.",
-    "multiPageHint": "Ladda upp flera sidor av samma kvitto för bättre noggrannhet"
+    "multiPageHint": "Ladda upp flera sidor av samma kvitto för bättre noggrannhet",
+    "scanningReceipt": "Läser kvitto med OCR...",
+    "scanningHint": "Detta kan ta 10-30 sekunder"
   }
 }

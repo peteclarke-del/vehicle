@@ -163,6 +163,8 @@
     "pagesProcessed": "{{count}} pages",
     "confidence": "Confiance : {{pct}}%",
     "someUploadsFailed": "Certains fichiers n'ont pas pu être téléchargés. Vous pouvez réessayer ou continuer avec les fichiers téléchargés.",
-    "multiPageHint": "Téléchargez plusieurs pages du même reçu pour une meilleure précision"
+    "multiPageHint": "Téléchargez plusieurs pages du même reçu pour une meilleure précision",
+    "scanningReceipt": "Lecture du reçu par OCR...",
+    "scanningHint": "Cela peut prendre 10 à 30 secondes"
   }
 }

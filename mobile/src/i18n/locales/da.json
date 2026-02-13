@@ -163,6 +163,8 @@
     "pagesProcessed": "{{count}} sider",
     "confidence": "Sikkerhed: {{pct}}%",
     "someUploadsFailed": "Nogle filer kunne ikke uploades. Du kan prøve igen eller fortsætte med de uploadede.",
-    "multiPageHint": "Upload flere sider af samme kvittering for bedre nøjagtighed"
+    "multiPageHint": "Upload flere sider af samme kvittering for bedre nøjagtighed",
+    "scanningReceipt": "Læser kvittering med OCR...",
+    "scanningHint": "Dette kan tage 10-30 sekunder"
   }
 }

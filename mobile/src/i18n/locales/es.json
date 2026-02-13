@@ -163,6 +163,8 @@
     "pagesProcessed": "{{count}} páginas",
     "confidence": "Confianza: {{pct}}%",
     "someUploadsFailed": "Algunos archivos no se pudieron subir. Puedes intentarlo de nuevo o continuar con los subidos.",
-    "multiPageHint": "Sube múltiples páginas del mismo recibo para mayor precisión"
+    "multiPageHint": "Sube múltiples páginas del mismo recibo para mayor precisión",
+    "scanningReceipt": "Leyendo recibo con OCR...",
+    "scanningHint": "Esto puede tardar 10-30 segundos"
   }
 }

@@ -163,6 +163,8 @@
     "pagesProcessed": "{{count}} sider",
     "confidence": "Pålitelighet: {{pct}}%",
     "someUploadsFailed": "Noen filer kunne ikke lastes opp. Du kan prøve igjen eller fortsette med de opplastede.",
-    "multiPageHint": "Last opp flere sider av samme kvittering for bedre nøyaktighet"
+    "multiPageHint": "Last opp flere sider av samme kvittering for bedre nøyaktighet",
+    "scanningReceipt": "Leser kvittering med OCR...",
+    "scanningHint": "Dette kan ta 10-30 sekunder"
   }
 }

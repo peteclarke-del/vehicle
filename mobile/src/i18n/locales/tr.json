@@ -163,6 +163,8 @@
     "pagesProcessed": "{{count}} sayfa",
     "confidence": "Güvenilirlik: {{pct}}%",
     "someUploadsFailed": "Bazı dosyalar yüklenemedi. Tekrar deneyebilir veya yüklenenlerle devam edebilirsiniz.",
-    "multiPageHint": "Daha iyi doğruluk için aynı makbuzun birden fazla sayfasını yükleyin"
+    "multiPageHint": "Daha iyi doğruluk için aynı makbuzun birden fazla sayfasını yükleyin",
+    "scanningReceipt": "Makbuz OCR ile okunuyor...",
+    "scanningHint": "Bu 10-30 saniye sürebilir"
   }
 }

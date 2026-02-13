@@ -163,6 +163,8 @@
     "pagesProcessed": "{{count}} stránek",
     "confidence": "Spolehlivost: {{pct}}%",
     "someUploadsFailed": "Některé soubory se nepodařilo nahrát. Můžete to zkusit znovu nebo pokračovat s nahranými.",
-    "multiPageHint": "Nahrajte více stránek stejné účtenky pro lepší přesnost"
+    "multiPageHint": "Nahrajte více stránek stejné účtenky pro lepší přesnost",
+    "scanningReceipt": "Čtení účtenky pomocí OCR...",
+    "scanningHint": "Může to trvat 10-30 sekund"
   }
 }

@@ -120,6 +120,19 @@ class ReceiptTemplateService
             default => $this->extractGenericFields($text, $template),
         };
 
+        // Log each extracted field for debugging
+        $fieldLog = [];
+        foreach ($result as $key => $value) {
+            if ($key === '_meta') {
+                continue;
+            }
+            $filled = $value !== null
+                && $value !== ''
+                && $value !== [];
+            $fieldLog[$key] = $filled ? $value : '(empty)';
+        }
+        $this->logger->info('Extracted fields', $fieldLog);
+
         // Add metadata
         $result['_meta'] = [
             'vendor' => $vendor,
@@ -326,6 +339,8 @@ class ReceiptTemplateService
             '/(?:date|dated|invoice date|order date|transaction date)[:\s]*(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})/i',
             // "13 Feb 2026" / "13 February 2026" standalone
             '/(\d{1,2}\s+(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s+\d{4})/i',
+            // "2026 Feb 10" / "2026 February 10" (YYYY Mon DD)
+            '/(\d{4}\s+(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s+\d{1,2})/i',
             // dd/mm/yyyy or dd-mm-yyyy
             '/(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})/',
         ];
@@ -368,17 +383,25 @@ class ReceiptTemplateService
         $labelPattern = implode('|', $labels);
 
         // Try labeled amounts first
-        if (preg_match('/(?:' . $labelPattern . ')[:\s]*[£$€]?\s*([\d,]+\.?\d{0,2})/i', $text, $matches)) {
+        if (preg_match('/(?:' . $labelPattern . ')[:\s]*[£$€]?\s*([\d,]+\.?\d{0,2})\s*(?:GBP|EUR|USD)?/i', $text, $matches)) {
             return $this->cleanAmount($matches[1]);
         }
 
         // Currency-prefixed standalone amounts (last resort for 'total' type)
         if (in_array('total', $labels, true) || in_array('price', $labels, true)) {
-            // Find all currency amounts, prefer the largest (likely total)
-            if (preg_match_all('/[£$€]\s*([\d,]+\.\d{2})/', $text, $allMatches)) {
-                $amounts = array_map(fn($a) => (float)str_replace(',', '', $a), $allMatches[1]);
-                $maxAmount = max($amounts);
-                return number_format($maxAmount, 2, '.', '');
+            // Find all currency amounts (prefix or suffix), prefer the largest (likely total)
+            if (preg_match_all('/(?:[£$€]\s*([\d,]+\.\d{2})|([\d,]+\.\d{2})\s*(?:GBP|EUR|USD))/i', $text, $allMatches)) {
+                $amounts = [];
+                foreach ($allMatches[1] as $i => $prefixed) {
+                    $val = $prefixed ?: ($allMatches[2][$i] ?? '');
+                    if ($val) {
+                        $amounts[] = (float)str_replace(',', '', $val);
+                    }
+                }
+                if (!empty($amounts)) {
+                    $maxAmount = max($amounts);
+                    return number_format($maxAmount, 2, '.', '');
+                }
             }
         }
 
@@ -492,14 +515,38 @@ class ReceiptTemplateService
             }
         }
 
-        // Fall back: first substantive line that looks like a product name
+        // Look for lines containing known manufacturer names (strong signal for item description)
+        $mfrKeywords = [
+            'Kawasaki', 'Honda', 'Yamaha', 'Suzuki', 'Ducati', 'BMW', 'KTM', 'Triumph',
+            'Harley', 'Aprilia', 'Piaggio', 'Vespa', 'Royal Enfield', 'Indian',
+            'Bosch', 'Denso', 'NGK', 'Brembo', 'EBC', 'Castrol', 'Mobil',
+        ];
         $lines = explode("\n", $text);
         foreach ($lines as $line) {
             $line = trim($line);
-            if (strlen($line) > 10 && strlen($line) < 150
-                && !preg_match('/^(receipt|invoice|order|date|total|subtotal|tax|vat|qty|payment|thank|delivery|dispatch|post|ship)/i', $line)
+            if (strlen($line) < 15 || strlen($line) > 200) continue;
+            foreach ($mfrKeywords as $kw) {
+                if (stripos($line, $kw) !== false && !preg_match('/^(total|subtotal|tax|vat|postage|shipping)/i', $line)) {
+                    // Clean up common OCR artifacts
+                    $cleaned = preg_replace('/^[\d\s\/,]+/', '', $line);
+                    $cleaned = trim($cleaned, ' .,;:/');
+                    if (strlen($cleaned) > 10) {
+                        return $cleaned;
+                    }
+                }
+            }
+        }
+
+        // Fall back: first substantive line that looks like a product name
+        foreach ($lines as $line) {
+            $line = trim($line);
+            if (strlen($line) > 15 && strlen($line) < 150
+                && !preg_match('/^[\'\"\(\)\-\=\—]/', $line)
+                && !preg_match('/^(receipt|invoice|order|date|total|subtotal|tax|vat|qty|payment|thank|delivery|dispatch|post|ship|billing|address|tracking|quantity|cost)/i', $line)
                 && !preg_match('/[£$€]/', $line)
                 && !preg_match('/^\d+[\/\-\.]/', $line)
+                && !preg_match('/^[A-Z]{2}\d/', $line) // skip postcodes
+                && !preg_match('/^\w+\s+(kingdom|street|road|lane|avenue|drive)/i', $line)
             ) {
                 return $line;
             }
@@ -525,7 +572,7 @@ class ReceiptTemplateService
             }
         }
 
-        // Generic part number patterns
+        // Generic labeled part number patterns
         $patterns = [
             '/(?:part\s*(?:no|number|#|num)?|item\s*(?:no|number|#)?|sku|p\/n|mpn|oem)[:\s#]*([A-Z0-9][\w\-\.]{3,30})/i',
             '/(?:catalogue|cat\.?\s*no)[:\s#]*([A-Z0-9][\w\-\.]{3,30})/i',
@@ -534,6 +581,16 @@ class ReceiptTemplateService
         foreach ($patterns as $pattern) {
             if (preg_match($pattern, $text, $matches)) {
                 return trim($matches[1]);
+            }
+        }
+
+        // Look for standalone 4-8 digit codes at the start of item lines
+        // (common in parts receipts: "46806 Indicator Complete Front Left...")
+        $lines = explode("\n", $text);
+        foreach ($lines as $line) {
+            $line = trim($line);
+            if (preg_match('/^(\d{4,8})\s*[\/,]?\s+[A-Za-z]/', $line, $matches)) {
+                return $matches[1];
             }
         }
 
@@ -580,8 +637,9 @@ class ReceiptTemplateService
             }
         }
 
-        // Common auto parts manufacturers
+        // Common auto/motorcycle parts manufacturers
         $manufacturers = [
+            // Car parts
             'Bosch', 'Denso', 'NGK', 'Mann', 'Mahle', 'Continental', 'Gates',
             'SKF', 'TRW', 'Brembo', 'Sachs', 'Valeo', 'Hella', 'Delphi',
             'Castrol', 'Mobil 1', 'Total', 'Shell', 'Liqui Moly', 'Comma',
@@ -589,6 +647,16 @@ class ReceiptTemplateService
             'KYB', 'Monroe', 'Bilstein', 'Meyle', 'Febi', 'Lemforder',
             'Dayco', 'INA', 'FAG', 'NTN', 'Timken', 'Corteco', 'Elring',
             'OEM', 'Genuine',
+            // Motorcycle manufacturers
+            'Kawasaki', 'Honda', 'Yamaha', 'Suzuki', 'Ducati', 'BMW Motorrad',
+            'KTM', 'Triumph', 'Harley-Davidson', 'Harley Davidson', 'Aprilia',
+            'Moto Guzzi', 'MV Agusta', 'Piaggio', 'Vespa', 'Royal Enfield',
+            'Indian', 'Norton', 'BSA', 'Husqvarna', 'Beta', 'GasGas',
+            'CF Moto', 'Benelli', 'SYM', 'Kymco', 'Lexmoto',
+            // Motorcycle parts brands
+            'Renthal', 'Hiflo', 'HiFlo Filtro', 'K&N', 'JT Sprockets',
+            'DID', 'RK', 'Sunstar', 'Akrapovic', 'Yoshimura', 'Arrow',
+            'Rizoma', 'R&G', 'Oxford', 'Datatool', 'Optimate',
         ];
 
         foreach ($manufacturers as $mfr) {
@@ -616,10 +684,19 @@ class ReceiptTemplateService
         }
 
         $suppliers = [
+            // Car parts
             'Halfords', 'Euro Car Parts', 'GSF Car Parts', 'Autodoc', 'CarParts4Less',
             'AutoZone', 'Advance Auto Parts', "O'Reilly", 'NAPA', 'Amazon',
             'eBay', 'Screwfix', 'Toolstation', 'Motor Parts Direct',
             'Parts Gateway', 'Andrew Page', 'LKQ Euro Car Parts',
+            // Motorcycle parts
+            'Wemoto', 'Fowlers', 'M&P Direct', 'Motorcycle Products',
+            'Bike Bandit', 'Revzilla', 'SportsBikeShop', 'J&P Cycles',
+            'Dennis Kirk', 'Rocky Mountain ATV', 'Motobins', 'David Silver',
+            'CMSNL', 'All Balls Racing', 'Parts2Clear', 'Pyramid Plastics',
+            'Hein Gericke', 'GetGeared', 'Demon Tweeks', 'Opie Oils',
+            // General online
+            'AliExpress', 'Wish', 'Banggood',
         ];
 
         foreach ($suppliers as $supplier) {
@@ -647,11 +724,25 @@ class ReceiptTemplateService
             }
         }
 
+        // Labeled quantity
         if (preg_match('/(?:qty|quantity|qnty)[:\s]*(\d+)/i', $text, $matches)) {
             return $matches[1];
         }
         if (preg_match('/(\d+)\s*(?:x|×|pcs|pieces|units|pack)/i', $text, $matches)) {
             return $matches[1];
+        }
+
+        // Count distinct item lines (lines starting with a part-number-like code followed by description)
+        $lines = explode("\n", $text);
+        $itemLineCount = 0;
+        foreach ($lines as $line) {
+            $line = trim($line);
+            if (preg_match('/^\d{4,8}\s*[\/,]?\s+[A-Za-z].{10,}/', $line)) {
+                $itemLineCount++;
+            }
+        }
+        if ($itemLineCount > 1) {
+            return (string)$itemLineCount;
         }
 
         return null;
@@ -887,7 +978,11 @@ class ReceiptTemplateService
         $date = \DateTime::createFromFormat('j M Y', $dateStr)
              ?: \DateTime::createFromFormat('j F Y', $dateStr)
              ?: \DateTime::createFromFormat('d M Y', $dateStr)
-             ?: \DateTime::createFromFormat('d F Y', $dateStr);
+             ?: \DateTime::createFromFormat('d F Y', $dateStr)
+             ?: \DateTime::createFromFormat('Y M j', $dateStr)
+             ?: \DateTime::createFromFormat('Y F j', $dateStr)
+             ?: \DateTime::createFromFormat('Y M d', $dateStr)
+             ?: \DateTime::createFromFormat('Y F d', $dateStr);
 
         if ($date) {
             return $date->format('Y-m-d');

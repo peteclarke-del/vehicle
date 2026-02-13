@@ -163,6 +163,8 @@
     "pagesProcessed": "{{count}} pagine",
     "confidence": "Affidabilità: {{pct}}%",
     "someUploadsFailed": "Alcuni file non sono stati caricati. Puoi riprovare o continuare con quelli caricati.",
-    "multiPageHint": "Carica più pagine della stessa ricevuta per una maggiore precisione"
+    "multiPageHint": "Carica più pagine della stessa ricevuta per una maggiore precisione",
+    "scanningReceipt": "Lettura ricevuta con OCR...",
+    "scanningHint": "Potrebbero volerci 10-30 secondi"
   }
 }

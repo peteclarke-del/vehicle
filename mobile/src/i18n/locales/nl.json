@@ -163,6 +163,8 @@
     "pagesProcessed": "{{count}} pagina's",
     "confidence": "Betrouwbaarheid: {{pct}}%",
     "someUploadsFailed": "Sommige bestanden konden niet worden geüpload. U kunt het opnieuw proberen of doorgaan met de geüploade bestanden.",
-    "multiPageHint": "Upload meerdere pagina's van dezelfde bon voor betere nauwkeurigheid"
+    "multiPageHint": "Upload meerdere pagina's van dezelfde bon voor betere nauwkeurigheid",
+    "scanningReceipt": "Bon lezen met OCR...",
+    "scanningHint": "Dit kan 10-30 seconden duren"
   }
 }
