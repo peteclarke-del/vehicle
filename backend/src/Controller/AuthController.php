@@ -65,6 +65,12 @@ class AuthController extends AbstractController
     #[Route('/register', name: 'api_register', methods: ['POST'])]
     public function register(Request $request): JsonResponse
     {
+        // Block registration entirely when running in demo mode
+        $demoMode = filter_var($_ENV['DEMO_MODE'] ?? 'false', FILTER_VALIDATE_BOOLEAN);
+        if ($demoMode) {
+            return $this->json(['error' => 'Registration is disabled in the demo'], 403);
+        }
+
         $validation = $this->validateJsonRequest($request);
         if ($validation['error']) {
             return $validation['error'];

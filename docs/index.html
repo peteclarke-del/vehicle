@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vehicle Manager - Documentation</title>
+  <meta name="description" content="Vehicle Manager: open-source vehicle management platform. Track fuel, services, MOT, insurance, parts - web & mobile. Self-hosted, free, private." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    /* ===== Reset & Base ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0b0f1a; --surface: #131825; --border: #1e2535;
+      --text: #e2e8f0; --text-muted: #94a3b8; --text-dim: #64748b;
+      --primary: #6366f1; --primary-light: #818cf8; --accent: #8b5cf6;
+      --green: #22c55e; --amber: #f59e0b; --red: #ef4444; --cyan: #06b6d4;
+      --radius: 12px; --max-w: 960px;
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg); color: var(--text); line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: var(--primary-light); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    code, pre { font-family: 'JetBrains Mono', monospace; }
+    code { background: var(--surface); padding: 2px 6px; border-radius: 4px; font-size: 0.88em; }
+
+    /* ===== Layout ===== */
+    .container { max-width: var(--max-w); margin: 0 auto; padding: 0 24px; }
+
+    /* ===== Nav ===== */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(11,15,26,0.85); backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border); padding: 14px 0;
+    }
+    .nav-inner { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+    .nav-brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1.05rem; color: var(--text); }
+    .nav-brand svg { flex-shrink: 0; }
+    .nav-links { display: flex; gap: 20px; flex-wrap: wrap; }
+    .nav-links a { color: var(--text-muted); font-size: 0.9rem; font-weight: 500; }
+    .nav-links a:hover { color: var(--text); text-decoration: none; }
+
+    /* ===== Hero ===== */
+    .hero { padding: 80px 0 60px; text-align: center; }
+    .hero h1 { font-size: clamp(2rem, 5vw, 3rem); font-weight: 800; letter-spacing: -0.02em; margin-bottom: 16px; }
+    .gradient-text { background: linear-gradient(135deg, var(--primary), var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .hero p { color: var(--text-muted); font-size: 1.1rem; max-width: 600px; margin: 0 auto 32px; }
+    .hero-buttons { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 0.95rem;
+      transition: transform 0.15s, box-shadow 0.15s; border: none; cursor: pointer;
+    }
+    .btn:hover { transform: translateY(-1px); text-decoration: none; }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { box-shadow: 0 4px 20px rgba(99,102,241,0.4); }
+    .btn-ghost { background: transparent; color: var(--text-muted); border: 1px solid var(--border); }
+    .btn-ghost:hover { border-color: var(--text-dim); color: var(--text); }
+
+    /* ===== Section ===== */
+    section { padding: 60px 0; }
+    .section-title {
+      font-size: 1.6rem; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.01em;
+    }
+    .section-sub { color: var(--text-muted); margin-bottom: 32px; }
+
+    /* ===== Stats row ===== */
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 20px; margin-bottom: 48px; }
+    .stat { text-align: center; padding: 24px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+    .stat-num { font-size: 2rem; font-weight: 800; color: var(--primary-light); }
+    .stat-label { font-size: 0.82rem; color: var(--text-muted); margin-top: 4px; }
+
+    /* ===== Features grid ===== */
+    .features { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+    .feature {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 24px; transition: border-color 0.2s;
+    }
+    .feature:hover { border-color: var(--primary); }
+    .feature-icon { font-size: 1.5rem; margin-bottom: 10px; }
+    .feature h3 { font-size: 1.05rem; font-weight: 600; margin-bottom: 6px; }
+    .feature p { color: var(--text-muted); font-size: 0.9rem; line-height: 1.6; }
+
+    /* ===== Tech pills ===== */
+    .tech-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; }
+    .tech-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+    .tech-layer { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--primary-light); margin-bottom: 12px; }
+    .tech-pills { display: flex; flex-wrap: wrap; gap: 8px; }
+    .pill {
+      background: rgba(99,102,241,0.1); color: var(--primary-light); border: 1px solid rgba(99,102,241,0.2);
+      padding: 4px 12px; border-radius: 20px; font-size: 0.82rem; font-weight: 500;
+    }
+
+    /* ===== Quick Start ===== */
+    .quickstart {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      overflow: hidden; margin-top: 20px;
+    }
+    .qs-header {
+      display: flex; align-items: center; gap: 8px; padding: 10px 16px;
+      background: rgba(0,0,0,0.3); border-bottom: 1px solid var(--border);
+    }
+    .qs-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .qs-dot.r { background: #ef4444; } .qs-dot.y { background: #f59e0b; } .qs-dot.g { background: #22c55e; }
+    .qs-title { font-size: 0.8rem; color: var(--text-dim); margin-left: 8px; }
+    .quickstart pre {
+      padding: 20px; margin: 0; overflow-x: auto;
+      font-size: 0.88rem; line-height: 1.8; color: var(--text-muted); background: transparent;
+    }
+    .quickstart .prompt { color: var(--green); }
+    .quickstart .comment { color: var(--text-dim); }
+
+    /* ===== Platforms ===== */
+    .platform-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+    .platform {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 24px;
+    }
+    .platform h3 { font-size: 1.1rem; margin-bottom: 8px; }
+    .platform ul { list-style: none; padding: 0; }
+    .platform li { color: var(--text-muted); font-size: 0.9rem; padding: 3px 0; }
+    .platform li::before { content: '✓ '; color: var(--green); font-weight: 700; }
+
+    /* ===== Integrations ===== */
+    .int-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; }
+    .int-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 20px; text-align: center;
+    }
+    .int-icon { font-size: 2rem; margin-bottom: 8px; }
+    .int-card h4 { font-size: 0.95rem; margin-bottom: 4px; }
+    .int-card p { color: var(--text-muted); font-size: 0.82rem; line-height: 1.5; }
+
+    /* ===== Languages ===== */
+    .lang-flags { font-size: 1.8rem; letter-spacing: 4px; text-align: center; margin: 16px 0 8px; line-height: 2; }
+    .lang-note { text-align: center; color: var(--text-dim); font-size: 0.85rem; }
+
+    /* ===== Footer ===== */
+    footer {
+      border-top: 1px solid var(--border); padding: 32px 0;
+      text-align: center; color: var(--text-dim); font-size: 0.85rem;
+    }
+    footer a { color: var(--text-muted); }
+
+    /* ===== Responsive ===== */
+    @media (max-width: 640px) {
+      .hero { padding: 48px 0 36px; }
+      section { padding: 40px 0; }
+      .stats { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+  <!-- NAV -->
+  <nav>
+    <div class="container nav-inner">
+      <a href="#" class="nav-brand">
+        <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
+          <rect width="32" height="32" rx="8" fill="url(#g)"/>
+          <path d="M8 20h16l-2-6H10L8 20z" fill="#fff" opacity="0.9"/>
+          <circle cx="11" cy="21" r="2" fill="#fff"/><circle cx="21" cy="21" r="2" fill="#fff"/>
+          <defs><linearGradient id="g" x1="0" y1="0" x2="32" y2="32"><stop stop-color="#6366f1"/><stop offset="1" stop-color="#8b5cf6"/></linearGradient></defs>
+        </svg>
+        Vehicle Manager
+      </a>
+      <div class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#tech">Tech Stack</a>
+        <a href="#quickstart">Quick Start</a>
+        <a href="https://github.com/peteclarke-del/vehicle" target="_blank" rel="noopener">GitHub</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="container">
+      <h1>Your Vehicles.<br/><span class="gradient-text">Completely Managed.</span></h1>
+      <p>An open-source, self-hosted platform for tracking fuel, services, MOT, insurance, parts, and more — across web and mobile.</p>
+      <div class="hero-buttons">
+        <a href="#quickstart" class="btn btn-primary">
+          <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"/></svg>
+          Get Started
+        </a>
+        <a href="https://github.com/peteclarke-del/vehicle" class="btn btn-ghost" target="_blank" rel="noopener">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+          View on GitHub
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- STATS -->
+  <section>
+    <div class="container">
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-num">21</div>
+          <div class="stat-label">Languages</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num">27</div>
+          <div class="stat-label">Entity Types</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num">165+</div>
+          <div class="stat-label">API Endpoints</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num">17</div>
+          <div class="stat-label">Currencies</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section id="features">
+    <div class="container">
+      <h2 class="section-title">Features</h2>
+      <p class="section-sub">Everything you need to manage your vehicles. Nothing you don't.</p>
+      <div class="features">
+        <div class="feature">
+          <div class="feature-icon">🚗</div>
+          <h3>Vehicle Profiles</h3>
+          <p>Complete profiles with make, model, year, specs, images, and registration lookup. Track depreciation over time.</p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">⛽</div>
+          <h3>Fuel Tracking</h3>
+          <p>Log every fill-up. See MPG, cost-per-mile, monthly trends, and spending breakdowns. Snap receipt photos.</p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">🔧</div>
+          <h3>Service History</h3>
+          <p>Detailed service records with line items, labour costs, parts used, and provider info.</p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">🛡️</div>
+          <h3>MOT Records</h3>
+          <p>Track test results, advisories, failures, and expiry dates. Import full DVSA history with one click.</p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">📋</div>
+          <h3>Insurance &amp; Tax</h3>
+          <p>Manage policies, premiums, cover levels, and renewal dates. Track road tax status and expiry notifications.</p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">📦</div>
+          <h3>Parts &amp; Consumables</h3>
+          <p>Inventory management for parts, fluids, filters. Track suppliers, warranties, and replacement intervals.</p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">🔔</div>
+          <h3>Smart Notifications</h3>
+          <p>Real-time SSE alerts for upcoming MOTs, expiring insurance, tax renewals, and overdue services.</p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">📊</div>
+          <h3>Reports</h3>
+          <p>Generate PDF and Excel reports — fuel analysis, cost breakdowns, vehicle overviews from built-in templates.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PLATFORMS -->
+  <section id="platforms">
+    <div class="container">
+      <h2 class="section-title">Platforms</h2>
+      <p class="section-sub">One account, all your data, on any device.</p>
+      <div class="platform-row">
+        <div class="platform">
+          <h3>🖥️ Web Application</h3>
+          <ul>
+            <li>React 18 with Material-UI 5</li>
+            <li>Interactive charts &amp; cost analysis</li>
+            <li>Custom PDF &amp; Excel reports</li>
+            <li>Drag-and-drop file uploads</li>
+            <li>Dark &amp; light themes</li>
+            <li>21 languages supported</li>
+            <li>Real-time SSE notifications</li>
+          </ul>
+        </div>
+        <div class="platform">
+          <h3>📱 Mobile App (Android)</h3>
+          <ul>
+            <li>React Native with Material Design 3</li>
+            <li>Offline-first with sync queue</li>
+            <li>Camera for receipt scanning</li>
+            <li>Standalone or server-connected mode</li>
+            <li>Quick fuel logging</li>
+            <li>20 languages supported</li>
+            <li>Background data sync</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- INTEGRATIONS -->
+  <section id="integrations">
+    <div class="container">
+      <h2 class="section-title">Integrations</h2>
+      <p class="section-sub">Pull in real data from government APIs and external services.</p>
+      <div class="int-grid">
+        <div class="int-card">
+          <div class="int-icon">🏛️</div>
+          <h4>DVLA Lookup</h4>
+          <p>Auto-populate vehicle details from a UK registration number.</p>
+        </div>
+        <div class="int-card">
+          <div class="int-icon">📋</div>
+          <h4>DVSA MOT History</h4>
+          <p>Import complete MOT history from government records.</p>
+        </div>
+        <div class="int-card">
+          <div class="int-icon">🔍</div>
+          <h4>VIN Decoder</h4>
+          <p>Decode VINs to auto-fill detailed specifications.</p>
+        </div>
+        <div class="int-card">
+          <div class="int-icon">🧾</div>
+          <h4>Receipt OCR</h4>
+          <p>Photograph receipts to extract amount, litres, and station.</p>
+        </div>
+        <div class="int-card">
+          <div class="int-icon">🌐</div>
+          <h4>URL Scraping</h4>
+          <p>Paste a parts URL to pull product name, price, supplier.</p>
+        </div>
+        <div class="int-card">
+          <div class="int-icon">📦</div>
+          <h4>Import / Export</h4>
+          <p>Full data portability including attachments.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LANGUAGES -->
+  <section>
+    <div class="container">
+      <h2 class="section-title" style="text-align:center">21 Languages</h2>
+      <div class="lang-flags">🇬🇧 🇩🇪 🇫🇷 🇪🇸 🇮🇹 🇵🇹 🇯🇵 🇨🇳 🇰🇷 🇷🇺 🇸🇦 🇵🇱 🇳🇱 🇩🇰 🇸🇪 🇳🇴 🇫🇮 🇹🇷 🇨🇿 🇮🇳 🏴‍☠️</div>
+      <p class="lang-note">Complete native translations across 873 keys per locale (web) and 129 keys per locale (mobile).</p>
+    </div>
+  </section>
+
+  <!-- TECH STACK -->
+  <section id="tech">
+    <div class="container">
+      <h2 class="section-title">Tech Stack</h2>
+      <p class="section-sub">Production-grade technologies. Battle-tested.</p>
+      <div class="tech-grid">
+        <div class="tech-card">
+          <div class="tech-layer">Backend</div>
+          <div class="tech-pills">
+            <span class="pill">Symfony 6.4</span>
+            <span class="pill">PHP 8.4</span>
+            <span class="pill">MySQL / PostgreSQL</span>
+            <span class="pill">Doctrine ORM</span>
+            <span class="pill">Redis 7</span>
+            <span class="pill">JWT Auth</span>
+          </div>
+        </div>
+        <div class="tech-card">
+          <div class="tech-layer">Frontend</div>
+          <div class="tech-pills">
+            <span class="pill">React 18</span>
+            <span class="pill">Material-UI 5</span>
+            <span class="pill">React Router 6</span>
+            <span class="pill">Axios</span>
+            <span class="pill">i18next</span>
+            <span class="pill">MUI X Charts</span>
+          </div>
+        </div>
+        <div class="tech-card">
+          <div class="tech-layer">Mobile</div>
+          <div class="tech-pills">
+            <span class="pill">React Native 0.73</span>
+            <span class="pill">TypeScript</span>
+            <span class="pill">React Native Paper</span>
+            <span class="pill">React Navigation</span>
+            <span class="pill">AsyncStorage</span>
+          </div>
+        </div>
+        <div class="tech-card">
+          <div class="tech-layer">Infrastructure</div>
+          <div class="tech-pills">
+            <span class="pill">Docker</span>
+            <span class="pill">Docker Compose</span>
+            <span class="pill">Nginx</span>
+            <span class="pill">PostgreSQL 16</span>
+            <span class="pill">PHPUnit</span>
+            <span class="pill">Jest</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- QUICK START -->
+  <section id="quickstart">
+    <div class="container">
+      <h2 class="section-title">Quick Start</h2>
+      <p class="section-sub">Up and running in under a minute.</p>
+      <div class="quickstart">
+        <div class="qs-header">
+          <span class="qs-dot r"></span><span class="qs-dot y"></span><span class="qs-dot g"></span>
+          <span class="qs-title">terminal</span>
+        </div>
+        <pre><span class="comment"># Clone the repository</span>
+<span class="prompt">$</span> git clone https://github.com/peteclarke-del/vehicle.git
+<span class="prompt">$</span> cd vehicle
+
+<span class="comment"># Copy and configure environment</span>
+<span class="prompt">$</span> cp .env.example .env
+
+<span class="comment"># Start everything</span>
+<span class="prompt">$</span> docker compose up -d
+
+<span class="comment"># 🚀 Open http://localhost:8081</span></pre>
+      </div>
+      <div style="margin-top:24px;text-align:center">
+        <p style="color:var(--text-muted);font-size:0.95rem;margin-bottom:16px">
+          The stack includes Nginx, PHP-FPM, PostgreSQL, and Redis — all pre-configured.
+          Register an account and start adding your vehicles.
+        </p>
+        <div class="hero-buttons">
+          <a href="https://github.com/peteclarke-del/vehicle" class="btn btn-primary" target="_blank" rel="noopener">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+            View on GitHub
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="container">
+      <p>&copy; 2026 Vehicle Manager. Open source under <a href="https://github.com/peteclarke-del/vehicle/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a>.</p>
+    </div>
+  </footer>
+</body>
+</html>

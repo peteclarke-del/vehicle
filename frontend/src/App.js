@@ -30,6 +30,8 @@ import { Box } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import KnightRiderLoader from './components/KnightRiderLoader';
 import ErrorBoundary from './components/ErrorBoundary';
+import DemoWatermark from './components/DemoWatermark';
+import DEMO_MODE from './utils/demoMode';
 import { preventDefaultDragDrop } from './hooks/useDragDrop';
 
 const PrivateRoute = ({ children }) => {
@@ -103,7 +105,7 @@ function AppRoutes() {
       <ErrorBoundary>
         <Routes>
           <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
+          <Route path="/register" element={DEMO_MODE ? <Navigate to="/login" replace /> : <Register />} />
           <Route
             path="/"
             element={
@@ -156,6 +158,7 @@ function App() {
             <PermissionsProvider>
               <VehiclesProvider>
                 <AppRoutes />
+                <DemoWatermark />
               </VehiclesProvider>
             </PermissionsProvider>
           </UserPreferencesProvider>
