@@ -989,5 +989,18 @@
   },
   "demo": {
     "actionBlocked": "Diese Aktion ist in der Demo deaktiviert"
+  },
+  "ocr": {
+    "uploadingImages": "Bilder werden hochgeladen...",
+    "addMoreImages": "Weitere Bilder hinzufügen",
+    "uploadReceiptImages": "Quittungsbild(er) hochladen",
+    "scanning": "Wird gescannt...",
+    "scanAll": "Alle scannen ({{count}})",
+    "vendorDetected": "Erkannt: {{vendor}}",
+    "genericReceipt": "Allgemeine Quittung",
+    "pagesProcessed": "{{count}} Seiten",
+    "confidence": "Vertrauen: {{pct}}%",
+    "someUploadsFailed": "Einige Dateien konnten nicht hochgeladen werden. Sie können es erneut versuchen oder mit den hochgeladenen fortfahren.",
+    "multiPageHint": "Laden Sie mehrere Seiten derselben Quittung hoch für bessere Genauigkeit"
   }
 }

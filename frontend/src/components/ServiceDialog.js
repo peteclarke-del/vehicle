@@ -416,6 +416,9 @@ const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose, unlinkedServic
     if (ocrData.serviceType) updates.serviceType = ocrData.serviceType;
     if (ocrData.laborCost) updates.laborCost = ocrData.laborCost;
     if (ocrData.partsCost) updates.partsCost = ocrData.partsCost;
+    if (ocrData.totalCost && !ocrData.laborCost && !ocrData.partsCost) {
+      updates.additionalCosts = ocrData.totalCost;
+    }
     if (ocrData.serviceProvider) updates.serviceProvider = ocrData.serviceProvider;
     if (ocrData.date) updates.serviceDate = ocrData.date;
     if (ocrData.mileage) updates.mileage = ocrData.mileage;

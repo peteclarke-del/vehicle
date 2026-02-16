@@ -58,7 +58,9 @@
     "ok": "OK",
     "error": "Error",
     "success": "Éxito",
-    "offline": "Actualmente está sin conexión"
+    "offline": "Actualmente está sin conexión",
+    "camera": "Cámara",
+    "gallery": "Galería"
   },
   "nav": {
     "dashboard": "Panel",
@@ -149,5 +151,20 @@
     "logout": "Cerrar sesión",
     "email": "Correo electrónico",
     "password": "Contraseña"
+  },
+  "ocr": {
+    "uploadingImages": "Subiendo imágenes...",
+    "addMoreImages": "Añadir más",
+    "uploadReceiptImages": "Recibo",
+    "scanning": "Escaneando...",
+    "scanAll": "Escanear todo ({{count}})",
+    "vendorDetected": "Detectado: {{vendor}}",
+    "genericReceipt": "Recibo genérico",
+    "pagesProcessed": "{{count}} páginas",
+    "confidence": "Confianza: {{pct}}%",
+    "someUploadsFailed": "Algunos archivos no se pudieron subir. Puedes intentarlo de nuevo o continuar con los subidos.",
+    "multiPageHint": "Sube múltiples páginas del mismo recibo para mayor precisión",
+    "scanningReceipt": "Leyendo recibo con OCR...",
+    "scanningHint": "Esto puede tardar 10-30 segundos"
   }
 }

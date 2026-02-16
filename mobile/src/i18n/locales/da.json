@@ -58,7 +58,9 @@
     "ok": "OK",
     "error": "Fejl",
     "success": "Succes",
-    "offline": "Du er i øjeblikket offline"
+    "offline": "Du er i øjeblikket offline",
+    "camera": "Kamera",
+    "gallery": "Galleri"
   },
   "nav": {
     "dashboard": "Oversigt",
@@ -149,5 +151,20 @@
     "logout": "Log ud",
     "email": "E-mail",
     "password": "Adgangskode"
+  },
+  "ocr": {
+    "uploadingImages": "Uploader billeder...",
+    "addMoreImages": "Tilføj flere",
+    "uploadReceiptImages": "Kvittering",
+    "scanning": "Scanner...",
+    "scanAll": "Scan alle ({{count}})",
+    "vendorDetected": "Registreret: {{vendor}}",
+    "genericReceipt": "Generisk kvittering",
+    "pagesProcessed": "{{count}} sider",
+    "confidence": "Sikkerhed: {{pct}}%",
+    "someUploadsFailed": "Nogle filer kunne ikke uploades. Du kan prøve igen eller fortsætte med de uploadede.",
+    "multiPageHint": "Upload flere sider af samme kvittering for bedre nøjagtighed",
+    "scanningReceipt": "Læser kvittering med OCR...",
+    "scanningHint": "Dette kan tage 10-30 sekunder"
   }
 }

@@ -989,5 +989,18 @@
   },
   "demo": {
     "actionBlocked": "Bu işlem demoda devre dışıdır"
+  },
+  "ocr": {
+    "uploadingImages": "Resimler yükleniyor...",
+    "addMoreImages": "Daha fazla resim ekle",
+    "uploadReceiptImages": "Makbuz resmi/resimleri yükle",
+    "scanning": "Taranıyor...",
+    "scanAll": "Tümünü tara ({{count}})",
+    "vendorDetected": "Tespit edildi: {{vendor}}",
+    "genericReceipt": "Genel makbuz",
+    "pagesProcessed": "{{count}} sayfa",
+    "confidence": "Güvenilirlik: {{pct}}%",
+    "someUploadsFailed": "Bazı dosyalar yüklenemedi. Tekrar deneyebilir veya yüklenenlerle devam edebilirsiniz.",
+    "multiPageHint": "Daha iyi doğruluk için aynı makbuzun birden fazla sayfasını yükleyin"
   }
 }

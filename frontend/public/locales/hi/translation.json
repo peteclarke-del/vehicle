@@ -989,5 +989,18 @@
   },
   "demo": {
     "actionBlocked": "यह क्रिया डेमो में अक्षम है"
+  },
+  "ocr": {
+    "uploadingImages": "चित्र अपलोड हो रहे हैं...",
+    "addMoreImages": "और चित्र जोड़ें",
+    "uploadReceiptImages": "रसीद चित्र अपलोड करें",
+    "scanning": "स्कैन हो रहा है...",
+    "scanAll": "सभी स्कैन करें ({{count}})",
+    "vendorDetected": "पता चला: {{vendor}}",
+    "genericReceipt": "सामान्य रसीद",
+    "pagesProcessed": "{{count}} पृष्ठ",
+    "confidence": "विश्वास: {{pct}}%",
+    "someUploadsFailed": "कुछ फ़ाइलें अपलोड नहीं हो सकीं। आप फिर से कोशिश कर सकते हैं या अपलोड किए गए फ़ाइलों के साथ जारी रख सकते हैं।",
+    "multiPageHint": "बेहतर सटीकता के लिए एक ही रसीद के कई पृष्ठ अपलोड करें"
   }
 }

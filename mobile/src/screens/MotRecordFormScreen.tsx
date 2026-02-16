@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useCallback} from 'react';
 import {
   View,
   StyleSheet,
@@ -22,6 +22,8 @@ import {useSync} from '../contexts/SyncContext';
 import {MainStackParamList} from '../navigation/MainNavigator';
 import VehicleSelector from '../components/VehicleSelector';
 import LoadingScreen from '../components/LoadingScreen';
+import ReceiptCapture from '../components/ReceiptCapture';
+import {useReceiptOcr, OcrResult} from '../hooks/useReceiptOcr';
 import {formStyles} from '../theme/sharedStyles';
 
 type NavigationProp = NativeStackNavigationProp<MainStackParamList>;
@@ -84,6 +86,50 @@ const MotRecordFormScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
+  const handleOcrComplete = useCallback(
+    (primaryId: number, ocrData: OcrResult) => {
+      console.log('[OCR] MOT auto-fill data:', ocrData);
+      const updates: Partial<FormData> = {};
+      if (ocrData.testDate) updates.testDate = ocrData.testDate;
+      if (ocrData.result) updates.result = ocrData.result;
+      if (ocrData.testCost) updates.testCost = ocrData.testCost.toString();
+      if (ocrData.mileage) updates.mileage = ocrData.mileage.toString();
+      if (ocrData.testCenter || ocrData.serviceProvider) {
+        updates.testCenter = ocrData.testCenter || ocrData.serviceProvider;
+      }
+      if (ocrData.expiryDate) updates.expiryDate = ocrData.expiryDate;
+      if (ocrData.motTestNumber) updates.motTestNumber = ocrData.motTestNumber;
+      if (ocrData.advisories) updates.advisories = ocrData.advisories;
+      if (ocrData.failures) updates.failures = ocrData.failures;
+      if (Object.keys(updates).length > 0) {
+        setFormData(prev => ({...prev, ...updates}));
+      }
+    },
+    [],
+  );
+
+  const {
+    attachments: receiptAttachments,
+    uploading: receiptUploading,
+    scanning: receiptScanning,
+    scanned: receiptScanned,
+    ocrResult,
+    receiptAttachmentId,
+    handleTakePhoto,
+    handleChooseFromGallery,
+    handleScanAll,
+    removeAttachment,
+    clearAll: clearReceipt,
+    setExistingReceipt,
+  } = useReceiptOcr({
+    api,
+    isOnline,
+    vehicleId: formData.vehicleId,
+    entityType: 'mot',
+    entityId: recordId || null,
+    onOcrComplete: handleOcrComplete,
+  });
+
   useEffect(() => {
     loadData();
   }, [recordId]);
@@ -114,6 +160,9 @@ const MotRecordFormScreen: React.FC = () => {
           notes: r.notes || '',
           testCostBundledInService: r.testCostBundledInService || false,
         });
+        if (r.receiptAttachmentId) {
+          setExistingReceipt(r.receiptAttachmentId);
+        }
       }
     } catch (error) {
       console.error('Error loading MOT form data:', error);
@@ -155,6 +204,7 @@ const MotRecordFormScreen: React.FC = () => {
         repairDetails: formData.repairDetails || null,
         notes: formData.notes || null,
         testCostBundledInService: formData.testCostBundledInService,
+        receiptAttachmentId: receiptAttachmentId,
       };
 
       if (isOnline) {
@@ -358,6 +408,20 @@ const MotRecordFormScreen: React.FC = () => {
             numberOfLines={3}
             mode="outlined"
             style={formStyles.input}
+          />
+
+          {/* Receipt / MOT Certificate with OCR */}
+          <ReceiptCapture
+            attachments={receiptAttachments}
+            uploading={receiptUploading}
+            scanning={receiptScanning}
+            scanned={receiptScanned}
+            ocrResult={ocrResult}
+            onTakePhoto={handleTakePhoto}
+            onChooseGallery={handleChooseFromGallery}
+            onScanAll={handleScanAll}
+            onRemoveAttachment={removeAttachment}
+            onClearAll={clearReceipt}
           />
 
           <Button

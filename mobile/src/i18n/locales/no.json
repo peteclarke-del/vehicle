@@ -58,7 +58,9 @@
     "ok": "OK",
     "error": "Feil",
     "success": "Vellykket",
-    "offline": "Du er for øyeblikket frakoblet"
+    "offline": "Du er for øyeblikket frakoblet",
+    "camera": "Kamera",
+    "gallery": "Galleri"
   },
   "nav": {
     "dashboard": "Oversikt",
@@ -149,5 +151,20 @@
     "logout": "Logg ut",
     "email": "E-post",
     "password": "Passord"
+  },
+  "ocr": {
+    "uploadingImages": "Laster opp bilder...",
+    "addMoreImages": "Legg til flere",
+    "uploadReceiptImages": "Kvittering",
+    "scanning": "Skanner...",
+    "scanAll": "Skann alle ({{count}})",
+    "vendorDetected": "Oppdaget: {{vendor}}",
+    "genericReceipt": "Generisk kvittering",
+    "pagesProcessed": "{{count}} sider",
+    "confidence": "Pålitelighet: {{pct}}%",
+    "someUploadsFailed": "Noen filer kunne ikke lastes opp. Du kan prøve igjen eller fortsette med de opplastede.",
+    "multiPageHint": "Last opp flere sider av samme kvittering for bedre nøyaktighet",
+    "scanningReceipt": "Leser kvittering med OCR...",
+    "scanningHint": "Dette kan ta 10-30 sekunder"
   }
 }

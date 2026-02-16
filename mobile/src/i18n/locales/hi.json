@@ -58,7 +58,9 @@
     "ok": "ठीक",
     "error": "त्रुटि",
     "success": "सफलता",
-    "offline": "आप वर्तमान में ऑफलाइन हैं"
+    "offline": "आप वर्तमान में ऑफलाइन हैं",
+    "camera": "कैमरा",
+    "gallery": "गैलरी"
   },
   "nav": {
     "dashboard": "डैशबोर्ड",
@@ -149,5 +151,20 @@
     "logout": "लॉग आउट",
     "email": "ईमेल",
     "password": "पासवर्ड"
+  },
+  "ocr": {
+    "uploadingImages": "चित्र अपलोड हो रहे हैं...",
+    "addMoreImages": "और जोड़ें",
+    "uploadReceiptImages": "रसीद",
+    "scanning": "स्कैन हो रहा है...",
+    "scanAll": "सभी स्कैन करें ({{count}})",
+    "vendorDetected": "पता चला: {{vendor}}",
+    "genericReceipt": "सामान्य रसीद",
+    "pagesProcessed": "{{count}} पृष्ठ",
+    "confidence": "विश्वास: {{pct}}%",
+    "someUploadsFailed": "कुछ फ़ाइलें अपलोड नहीं हो सकीं। आप फिर से कोशिश कर सकते हैं या अपलोड किए गए फ़ाइलों के साथ जारी रख सकते हैं।",
+    "multiPageHint": "बेहतर सटीकता के लिए एक ही रसीद के कई पृष्ठ अपलोड करें",
+    "scanningReceipt": "OCR से रसीद पढ़ रहे हैं...",
+    "scanningHint": "इसमें 10-30 सेकंड लग सकते हैं"
   }
 }

@@ -989,5 +989,18 @@
   },
   "demo": {
     "actionBlocked": "Cette action est désactivée dans la démonstration"
+  },
+  "ocr": {
+    "uploadingImages": "Téléchargement des images...",
+    "addMoreImages": "Ajouter plus d'images",
+    "uploadReceiptImages": "Télécharger image(s) de reçu",
+    "scanning": "Numérisation...",
+    "scanAll": "Tout numériser ({{count}})",
+    "vendorDetected": "Détecté : {{vendor}}",
+    "genericReceipt": "Reçu générique",
+    "pagesProcessed": "{{count}} pages",
+    "confidence": "Confiance : {{pct}}%",
+    "someUploadsFailed": "Certains fichiers n'ont pas pu être téléchargés. Vous pouvez réessayer ou continuer avec les fichiers téléchargés.",
+    "multiPageHint": "Téléchargez plusieurs pages du même reçu pour une meilleure précision"
   }
 }

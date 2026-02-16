@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useCallback} from 'react';
 import {
   View,
   ScrollView,
@@ -21,6 +21,8 @@ import {MainStackParamList} from '../navigation/MainNavigator';
 import VehicleSelector from '../components/VehicleSelector';
 import LoadingScreen from '../components/LoadingScreen';
 import OfflineBanner from '../components/OfflineBanner';
+import ReceiptCapture from '../components/ReceiptCapture';
+import {useReceiptOcr, OcrResult} from '../hooks/useReceiptOcr';
 import {formStyles} from '../theme/sharedStyles';
 
 type NavigationProp = NativeStackNavigationProp<MainStackParamList>;
@@ -77,6 +79,46 @@ const ConsumableFormScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
+  const handleOcrComplete = useCallback(
+    (primaryId: number, ocrData: OcrResult) => {
+      console.log('[OCR] Consumable auto-fill data:', ocrData);
+      const updates: Partial<FormData> = {};
+      if (ocrData.name) updates.description = ocrData.name;
+      if (ocrData.partNumber) updates.partNumber = ocrData.partNumber;
+      if (ocrData.price) updates.cost = ocrData.price.toString();
+      if (ocrData.supplier) updates.supplier = ocrData.supplier;
+      if (ocrData.quantity) updates.quantity = ocrData.quantity.toString();
+      if (ocrData.manufacturer) updates.brand = ocrData.manufacturer;
+      if (ocrData.date) updates.lastChanged = ocrData.date;
+      if (Object.keys(updates).length > 0) {
+        setFormData(prev => ({...prev, ...updates}));
+      }
+    },
+    [],
+  );
+
+  const {
+    attachments: receiptAttachments,
+    uploading: receiptUploading,
+    scanning: receiptScanning,
+    scanned: receiptScanned,
+    ocrResult,
+    receiptAttachmentId,
+    handleTakePhoto,
+    handleChooseFromGallery,
+    handleScanAll,
+    removeAttachment,
+    clearAll: clearReceipt,
+    setExistingReceipt,
+  } = useReceiptOcr({
+    api,
+    isOnline,
+    vehicleId: formData.vehicleId,
+    entityType: 'consumable',
+    entityId: consumableId || null,
+    onOcrComplete: handleOcrComplete,
+  });
+
   useEffect(() => {
     loadData();
   }, [consumableId]);
@@ -104,6 +146,9 @@ const ConsumableFormScreen: React.FC = () => {
           productUrl: c.productUrl || '',
           includedInServiceCost: c.includedInServiceCost || false,
         });
+        if (c.receiptAttachmentId) {
+          setExistingReceipt(c.receiptAttachmentId);
+        }
       }
     } catch (error) {
       console.error('Error loading data:', error);
@@ -137,6 +182,7 @@ const ConsumableFormScreen: React.FC = () => {
       notes: formData.notes.trim() || null,
       productUrl: formData.productUrl.trim() || null,
       includedInServiceCost: formData.includedInServiceCost,
+      receiptAttachmentId: receiptAttachmentId,
     };
 
     try {
@@ -348,6 +394,20 @@ const ConsumableFormScreen: React.FC = () => {
             onValueChange={v => updateField('includedInServiceCost', v)}
           />
         </View>
+
+        {/* Receipt Section with OCR */}
+        <ReceiptCapture
+          attachments={receiptAttachments}
+          uploading={receiptUploading}
+          scanning={receiptScanning}
+          scanned={receiptScanned}
+          ocrResult={ocrResult}
+          onTakePhoto={handleTakePhoto}
+          onChooseGallery={handleChooseFromGallery}
+          onScanAll={handleScanAll}
+          onRemoveAttachment={removeAttachment}
+          onClearAll={clearReceipt}
+        />
 
         <Button
           mode="contained"

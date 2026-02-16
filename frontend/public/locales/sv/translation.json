@@ -989,5 +989,18 @@
   },
   "demo": {
     "actionBlocked": "Denna åtgärd är inaktiverad i demon"
+  },
+  "ocr": {
+    "uploadingImages": "Laddar upp bilder...",
+    "addMoreImages": "Lägg till fler bilder",
+    "uploadReceiptImages": "Ladda upp kvittobild(er)",
+    "scanning": "Skannar...",
+    "scanAll": "Skanna alla ({{count}})",
+    "vendorDetected": "Identifierad: {{vendor}}",
+    "genericReceipt": "Allmänt kvitto",
+    "pagesProcessed": "{{count}} sidor",
+    "confidence": "Säkerhet: {{pct}}%",
+    "someUploadsFailed": "Vissa filer kunde inte laddas upp. Du kan försöka igen eller fortsätta med de uppladdade.",
+    "multiPageHint": "Ladda upp flera sidor av samma kvitto för bättre noggrannhet"
   }
 }

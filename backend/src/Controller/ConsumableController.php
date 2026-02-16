@@ -41,6 +41,8 @@ class ConsumableController extends AbstractController
      * @param UrlScraperService $scraperService
      * @param LoggerInterface $logger
      * @param RepairCostCalculator $repairCostCalculator
+     * @param EntitySerializerService $serializer
+     * @param AttachmentLinkingService $attachmentLinkingService
      *
      * @return void
      */
@@ -475,7 +477,10 @@ class ConsumableController extends AbstractController
                     }
                 } else {
                     $consumable->setServiceRecord(null);
-                    $consumable->setIncludedInServiceCost(false);
+                    // Only set includedInServiceCost to false for EXISTING consumables
+                    if ($consumable->getId() !== null) {
+                        $consumable->setIncludedInServiceCost(false);
+                    }
                     $this->logger->info('Consumable disassociated from Service (not found)', [
                         'consumableId' => $consumable->getId(),
                         'serviceId' => $svcId,
@@ -489,6 +494,7 @@ class ConsumableController extends AbstractController
      * function resolveConsumableType
      *
      * @param array $data
+     * @param Vehicle $vehicle
      *
      * @return ConsumableType
      */

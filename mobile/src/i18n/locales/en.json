@@ -58,7 +58,9 @@
     "ok": "OK",
     "error": "Error",
     "success": "Success",
-    "offline": "You are currently offline"
+    "offline": "You are currently offline",
+    "camera": "Camera",
+    "gallery": "Gallery"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -149,5 +151,20 @@
     "logout": "Logout",
     "email": "Email",
     "password": "Password"
+  },
+  "ocr": {
+    "uploadingImages": "Uploading images...",
+    "addMoreImages": "Add more",
+    "uploadReceiptImages": "Receipt",
+    "scanning": "Scanning...",
+    "scanAll": "Scan All ({{count}})",
+    "vendorDetected": "Detected: {{vendor}}",
+    "genericReceipt": "Generic receipt",
+    "pagesProcessed": "{{count}} pages",
+    "confidence": "Confidence: {{pct}}%",
+    "someUploadsFailed": "Some files failed to upload. You can try again or continue with the uploaded ones.",
+    "multiPageHint": "Upload multiple pages of the same receipt for better accuracy",
+    "scanningReceipt": "Reading receipt with OCR...",
+    "scanningHint": "This may take 10-30 seconds"
   }
 }

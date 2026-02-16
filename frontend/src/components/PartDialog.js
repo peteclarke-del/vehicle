@@ -255,8 +255,10 @@ export default function PartDialog({ open, onClose, part, vehicleId }) {
     if (ocrData.name) updates.description = ocrData.name;
     if (ocrData.price) updates.price = ocrData.price;
     if (ocrData.partNumber) updates.partNumber = ocrData.partNumber;
+    if (ocrData.sku) updates.sku = ocrData.sku;
     if (ocrData.manufacturer) updates.manufacturer = ocrData.manufacturer;
     if (ocrData.supplier) updates.supplier = ocrData.supplier;
+    if (ocrData.quantity) updates.quantity = ocrData.quantity;
     if (ocrData.date) updates.purchaseDate = ocrData.date;
     if (Object.keys(updates).length > 0) {
       setFormData(prev => ({ ...prev, ...updates }));

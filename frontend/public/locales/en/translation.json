@@ -989,5 +989,18 @@
   },
   "demo": {
     "actionBlocked": "This action is disabled in the demo"
+  },
+  "ocr": {
+    "uploadingImages": "Uploading images...",
+    "addMoreImages": "Add more images",
+    "uploadReceiptImages": "Upload receipt image(s)",
+    "scanning": "Scanning...",
+    "scanAll": "Scan All ({{count}})",
+    "vendorDetected": "Detected: {{vendor}}",
+    "genericReceipt": "Generic receipt",
+    "pagesProcessed": "{{count}} pages",
+    "confidence": "Confidence: {{pct}}%",
+    "someUploadsFailed": "Some files failed to upload. You can try again or continue with the uploaded ones.",
+    "multiPageHint": "Upload multiple pages of the same receipt for better accuracy"
   }
 }

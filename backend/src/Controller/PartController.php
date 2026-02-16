@@ -25,11 +25,28 @@ use App\Controller\Trait\UserSecurityTrait;
 use App\Controller\Trait\JsonValidationTrait;
 
 #[Route('/api/parts')]
+
+/**
+ * class PartController
+ */
 class PartController extends AbstractController
 {
     use UserSecurityTrait;
     use JsonValidationTrait;
 
+    /**
+     * function __construct
+     *
+     * @param EntityManagerInterface $entityManager
+     * @param ReceiptOcrService $ocrService
+     * @param UrlScraperService $scraperService
+     * @param LoggerInterface $logger
+     * @param RepairCostCalculator $repairCostCalculator
+     * @param EntitySerializerService $serializer
+     * @param AttachmentLinkingService $attachmentLinkingService
+     *
+     * @return void
+     */
     public function __construct(
         private EntityManagerInterface $entityManager,
         private ReceiptOcrService $ocrService,
@@ -42,6 +59,14 @@ class PartController extends AbstractController
     }
 
     #[Route('', name: 'api_parts_list', methods: ['GET'])]
+
+    /**
+     * function list
+     *
+     * @param Request $request
+     *
+     * @return JsonResponse
+     */
     public function list(Request $request): JsonResponse
     {
         $user = $this->getUser();
@@ -106,6 +131,14 @@ class PartController extends AbstractController
     }
 
     #[Route('/{id}', name: 'api_parts_get', methods: ['GET'])]
+
+    /**
+     * function get
+     *
+     * @param int $id
+     *
+     * @return JsonResponse
+     */
     public function get(int $id): JsonResponse
     {
         $user = $this->getUser();
@@ -123,6 +156,14 @@ class PartController extends AbstractController
     }
 
     #[Route('', name: 'api_parts_create', methods: ['POST'])]
+
+    /**
+     * function create
+     *
+     * @param Request $request
+     *
+     * @return JsonResponse
+     */
     public function create(Request $request): JsonResponse
     {
         $user = $this->getUser();
@@ -172,6 +213,15 @@ class PartController extends AbstractController
     }
 
     #[Route('/{id}', name: 'api_parts_update', methods: ['PUT'])]
+
+    /**
+     * function update
+     *
+     * @param int $id
+     * @param Request $request
+     *
+     * @return JsonResponse
+     */
     public function update(int $id, Request $request): JsonResponse
     {
         $user = $this->getUser();
@@ -239,6 +289,14 @@ class PartController extends AbstractController
     }
 
     #[Route('/{id}', name: 'api_parts_delete', methods: ['DELETE'])]
+
+    /**
+     * function delete
+     *
+     * @param int $id
+     *
+     * @return JsonResponse
+     */
     public function delete(int $id): JsonResponse
     {
         $user = $this->getUser();
@@ -271,6 +329,14 @@ class PartController extends AbstractController
         return $this->json(['message' => 'Part deleted successfully']);
     }
 
+    /**
+     * function updatePartFromData
+     *
+     * @param Part $part
+     * @param array $data
+     *
+     * @return void
+     */
     private function updatePartFromData(Part $part, array $data): void
     {
         if (isset($data['purchaseDate'])) {
@@ -409,7 +475,11 @@ class PartController extends AbstractController
             }
             if ($svcId === null || $svcId === '' || $svcId === 0 || $svcId === '0') {
                 $part->setServiceRecord(null);
-                $part->setIncludedInServiceCost(false);
+                // Only set includedInServiceCost to false for EXISTING parts being disassociated
+                // For new parts, the create() method already handles setting this correctly
+                if ($part->getId() !== null) {
+                    $part->setIncludedInServiceCost(false);
+                }
                 $this->logger->info('Part disassociated from Service (explicit)', ['partId' => $part->getId()]);
             } else {
                 $svcId = is_numeric($svcId) ? (int)$svcId : $svcId;
@@ -429,7 +499,10 @@ class PartController extends AbstractController
                     }
                 } else {
                     $part->setServiceRecord(null);
-                    $part->setIncludedInServiceCost(false);
+                    // Only set includedInServiceCost to false for EXISTING parts
+                    if ($part->getId() !== null) {
+                        $part->setIncludedInServiceCost(false);
+                    }
                     $this->logger->info('Part disassociated from Service (not found)', ['partId' => $part->getId(), 'serviceId' => $svcId]);
                 }
             }
@@ -455,6 +528,14 @@ class PartController extends AbstractController
     }
 
     #[Route('/scrape-url', name: 'api_parts_scrape_url', methods: ['POST'])]
+
+    /**
+     * function scrapeUrl
+     *
+     * @param Request $request
+     *
+     * @return JsonResponse
+     */
     public function scrapeUrl(Request $request): JsonResponse
     {
         $user = $this->getUser();

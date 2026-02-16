@@ -58,7 +58,9 @@
     "ok": "Tamam",
     "error": "Hata",
     "success": "Başarılı",
-    "offline": "Şu anda çevrimdışısınız"
+    "offline": "Şu anda çevrimdışısınız",
+    "camera": "Kamera",
+    "gallery": "Galeri"
   },
   "nav": {
     "dashboard": "Panel",
@@ -149,5 +151,20 @@
     "logout": "Çıkış yap",
     "email": "E-posta",
     "password": "Şifre"
+  },
+  "ocr": {
+    "uploadingImages": "Resimler yükleniyor...",
+    "addMoreImages": "Daha fazla ekle",
+    "uploadReceiptImages": "Makbuz",
+    "scanning": "Taranıyor...",
+    "scanAll": "Tümünü tara ({{count}})",
+    "vendorDetected": "Tespit edildi: {{vendor}}",
+    "genericReceipt": "Genel makbuz",
+    "pagesProcessed": "{{count}} sayfa",
+    "confidence": "Güvenilirlik: {{pct}}%",
+    "someUploadsFailed": "Bazı dosyalar yüklenemedi. Tekrar deneyebilir veya yüklenenlerle devam edebilirsiniz.",
+    "multiPageHint": "Daha iyi doğruluk için aynı makbuzun birden fazla sayfasını yükleyin",
+    "scanningReceipt": "Makbuz OCR ile okunuyor...",
+    "scanningHint": "Bu 10-30 saniye sürebilir"
   }
 }
