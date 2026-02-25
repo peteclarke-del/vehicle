@@ -75,6 +75,12 @@ services:
             $apiNinjasKey: '%env(API_NINJAS_KEY)%'
         tags: ['app.vehicle_spec_adapter']
 
+    App\Service\VehicleSpecAdapter\OpenApiVehicleAdapter:
+        arguments:
+            $openApiKey: '%env(OPENAPI_KEY)%'
+            $baseUrl: '%env(OPENAPI_BASE_URL)%'
+        tags: ['app.vehicle_spec_adapter']
+
     App\Service\VehicleSpecAdapter\DvlaAdapter:
         arguments:
             $dvlaService: '@App\Service\DvlaApiService'
@@ -84,6 +90,7 @@ services:
     App\Service\VehicleSpecificationScraperService:
         calls:
             - registerAdapter: ['@App\Service\VehicleSpecAdapter\DvlaAdapter']
+            - registerAdapter: ['@App\Service\VehicleSpecAdapter\OpenApiVehicleAdapter']
             - registerAdapter: ['@App\Service\VehicleSpecAdapter\ApiNinjasMotorcycleAdapter']
             - registerAdapter: ['@App\Service\VehicleSpecAdapter\ApiNinjasCarAdapter']
 

@@ -10,23 +10,44 @@ use Psr\Log\LoggerInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 /**
- * API Ninjas adapter for car specifications
+ * class ApiNinjasCarAdapter
  *
+ * API Ninjas adapter for car specifications
  * Fetches detailed car specifications from API Ninjas API
  * https://api-ninjas.com/api/cars
  */
 class ApiNinjasCarAdapter implements VehicleSpecAdapterInterface
 {
+    /**
+     * @var string
+     */
     private string $apiKey;
 
+    /**
+     * function __construct
+     *
+     * @param HttpClientInterface $httpClient
+     * @param LoggerInterface $logger
+     * @param string $apiNinjasKey
+     *
+     * @return void
+     */
     public function __construct(
         private HttpClientInterface $httpClient,
         private LoggerInterface $logger,
         string $apiNinjasKey = ''
     ) {
-        $this->apiKey = $apiNinjasKey ?: ($_ENV['API_NINJAS_KEY'] ?? '');
+        $this->apiKey = $apiNinjasKey;
     }
 
+    /**
+     * function supports
+     *
+     * @param string $vehicleType
+     * @param Vehicle $vehicle
+     *
+     * @return bool
+     */
     public function supports(string $vehicleType, Vehicle $vehicle): bool
     {
         // Supports most vehicle types except motorcycles/bikes
@@ -37,12 +58,24 @@ class ApiNinjasCarAdapter implements VehicleSpecAdapterInterface
         return !in_array($type, $motorcycleTypes);
     }
 
+    /**
+     * function getPriority
+     *
+     * @return int
+     */
     public function getPriority(): int
     {
         // High priority - API is reliable
         return 85;
     }
 
+    /**
+     * function fetchSpecifications
+     *
+     * @param Vehicle $vehicle
+     *
+     * @return Specification
+     */
     public function fetchSpecifications(Vehicle $vehicle): ?Specification
     {
         $make = $vehicle->getMake();
@@ -122,6 +155,13 @@ class ApiNinjasCarAdapter implements VehicleSpecAdapterInterface
         }
     }
 
+    /**
+     * function generateModelVariations
+     *
+     * @param string $model
+     *
+     * @return array
+     */
     private function generateModelVariations(string $model): array
     {
         $variations = [$model]; // Original
@@ -148,6 +188,14 @@ class ApiNinjasCarAdapter implements VehicleSpecAdapterInterface
         return array_unique($variations);
     }
 
+    /**
+     * function searchModels
+     *
+     * @param string $make
+     * @param string $model
+     *
+     * @return array
+     */
     public function searchModels(string $make, ?string $model = null): array
     {
         // API Ninjas Cars API doesn't have a separate models endpoint
@@ -155,6 +203,13 @@ class ApiNinjasCarAdapter implements VehicleSpecAdapterInterface
         return [];
     }
 
+    /**
+     * function parseApiData
+     *
+     * @param array $data
+     *
+     * @return Specification
+     */
     private function parseApiData(array $data): Specification
     {
         $spec = new Specification();
