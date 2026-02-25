@@ -420,6 +420,10 @@ EBAY_CLIENT_ID=your_client_id
 
 # API Ninjas
 API_NINJAS_KEY=your_api_key
+
+# OpenAPI (Open Vehicles API)
+OPENAPI_KEY=your_api_key
+OPENAPI_BASE_URL=https://api.openvehicles.com/v1
 ```
 
 ## Project Structure
