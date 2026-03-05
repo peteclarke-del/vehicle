@@ -28,12 +28,12 @@ type RouteProps = RouteProp<MainStackParamList, 'ServiceRecordForm'>;
 
 interface FormData {
   vehicleId: number | null;
-  date: string;
+  serviceDate: string;
   mileage: string;
   serviceType: string;
-  description: string;
-  cost: string;
-  garage: string;
+  workPerformed: string;
+  laborCost: string;
+  serviceProvider: string;
   nextServiceDate: string;
   nextServiceMileage: string;
   notes: string;
@@ -41,12 +41,12 @@ interface FormData {
 
 const initialFormData: FormData = {
   vehicleId: null,
-  date: new Date().toISOString().split('T')[0],
+  serviceDate: new Date().toISOString().split('T')[0],
   mileage: '',
   serviceType: '',
-  description: '',
-  cost: '',
-  garage: '',
+  workPerformed: '',
+  laborCost: '',
+  serviceProvider: '',
   nextServiceDate: '',
   nextServiceMileage: '',
   notes: '',
@@ -88,21 +88,21 @@ const ServiceRecordFormScreen: React.FC = () => {
     (primaryId: number, ocrData: OcrResult) => {
       console.log('[OCR] Service auto-fill data:', ocrData);
       const updates: Partial<FormData> = {};
-      if (ocrData.date && !formData.date) updates.date = ocrData.date;
+      if (ocrData.date && !formData.serviceDate) updates.serviceDate = ocrData.date;
       if (ocrData.serviceType) updates.serviceType = ocrData.serviceType;
-      if (ocrData.serviceProvider) updates.garage = ocrData.serviceProvider;
+      if (ocrData.serviceProvider) updates.serviceProvider = ocrData.serviceProvider;
       if (ocrData.mileage) updates.mileage = ocrData.mileage.toString();
       if (ocrData.totalCost) {
-        updates.cost = ocrData.totalCost.toString();
+        updates.laborCost = ocrData.totalCost.toString();
       } else if (ocrData.laborCost) {
-        updates.cost = ocrData.laborCost.toString();
+        updates.laborCost = ocrData.laborCost.toString();
       }
-      if (ocrData.workPerformed) updates.description = ocrData.workPerformed;
+      if (ocrData.workPerformed) updates.workPerformed = ocrData.workPerformed;
       if (Object.keys(updates).length > 0) {
         setFormData(prev => ({...prev, ...updates}));
       }
     },
-    [formData.date],
+    [formData.serviceDate],
   );
 
   const {
@@ -141,12 +141,12 @@ const ServiceRecordFormScreen: React.FC = () => {
         const record = recordRes.data;
         setFormData({
           vehicleId: record.vehicleId,
-          date: record.date || '',
+          serviceDate: record.serviceDate || '',
           mileage: record.mileage?.toString() || '',
           serviceType: record.serviceType || '',
-          description: record.description || '',
-          cost: record.cost?.toString() || '',
-          garage: record.garage || '',
+          workPerformed: record.workPerformed || '',
+          laborCost: record.laborCost?.toString() || record.totalCost?.toString() || '',
+          serviceProvider: record.serviceProvider || '',
           nextServiceDate: record.nextServiceDate || '',
           nextServiceMileage: record.nextServiceMileage?.toString() || '',
           notes: record.notes || '',
@@ -171,7 +171,7 @@ const ServiceRecordFormScreen: React.FC = () => {
       return;
     }
 
-    if (!formData.date) {
+    if (!formData.serviceDate) {
       Alert.alert('Validation Error', 'Date is required');
       return;
     }
@@ -180,12 +180,12 @@ const ServiceRecordFormScreen: React.FC = () => {
 
     const payload = {
       vehicleId: formData.vehicleId,
-      date: formData.date,
+      serviceDate: formData.serviceDate,
       mileage: formData.mileage ? parseInt(formData.mileage, 10) : null,
       serviceType: formData.serviceType.trim() || null,
-      description: formData.description.trim() || null,
-      cost: formData.cost ? parseFloat(formData.cost) : null,
-      garage: formData.garage.trim() || null,
+      workPerformed: formData.workPerformed.trim() || null,
+      laborCost: formData.laborCost ? parseFloat(formData.laborCost) : null,
+      serviceProvider: formData.serviceProvider.trim() || null,
       nextServiceDate: formData.nextServiceDate || null,
       nextServiceMileage: formData.nextServiceMileage ? parseInt(formData.nextServiceMileage, 10) : null,
       notes: formData.notes.trim() || null,
@@ -263,8 +263,8 @@ const ServiceRecordFormScreen: React.FC = () => {
 
         <TextInput
           label="Date *"
-          value={formData.date}
-          onChangeText={v => updateField('date', v)}
+          value={formData.serviceDate}
+          onChangeText={v => updateField('serviceDate', v)}
           mode="outlined"
           placeholder="YYYY-MM-DD"
           style={formStyles.input}
@@ -295,8 +295,8 @@ const ServiceRecordFormScreen: React.FC = () => {
 
         <TextInput
           label="Description"
-          value={formData.description}
-          onChangeText={v => updateField('description', v)}
+          value={formData.workPerformed}
+          onChangeText={v => updateField('workPerformed', v)}
           mode="outlined"
           multiline
           numberOfLines={2}
@@ -306,8 +306,8 @@ const ServiceRecordFormScreen: React.FC = () => {
         <View style={formStyles.row}>
           <TextInput
             label="Cost (£)"
-            value={formData.cost}
-            onChangeText={v => updateField('cost', v)}
+            value={formData.laborCost}
+            onChangeText={v => updateField('laborCost', v)}
             mode="outlined"
             keyboardType="decimal-pad"
             style={[formStyles.input, formStyles.halfInput]}
@@ -324,8 +324,8 @@ const ServiceRecordFormScreen: React.FC = () => {
 
         <TextInput
           label="Garage / Provider"
-          value={formData.garage}
-          onChangeText={v => updateField('garage', v)}
+          value={formData.serviceProvider}
+          onChangeText={v => updateField('serviceProvider', v)}
           mode="outlined"
           style={formStyles.input}
         />

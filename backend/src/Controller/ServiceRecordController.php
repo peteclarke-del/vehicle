@@ -997,6 +997,13 @@ class ServiceRecordController extends AbstractController
                 $item->setQuantity($data['quantity']);
             }
 
+            // Keep the ServiceRecord stored cost fields in sync so that vehicle-level
+            // aggregations in CostCalculator (which read the stored columns) remain accurate.
+            $service->setLaborCost($service->sumItemsByType('labour'));
+            $service->setPartsCost($service->sumItemsByType('part'));
+            $service->setConsumablesCost($service->sumItemsByType('consumable'));
+            $this->entityManager->persist($service);
+
             $this->entityManager->persist($item);
             $this->entityManager->flush();
 

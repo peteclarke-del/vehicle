@@ -459,8 +459,17 @@ class PartController extends AbstractController
                 $motId = is_numeric($motId) ? (int)$motId : $motId;
                 $mot = $this->entityManager->getRepository(\App\Entity\MotRecord::class)->find($motId);
                 if ($mot) {
+                    // Apply pre-bought logic for existing parts being linked to a MOT for the first time,
+                    // mirroring the same guard used for serviceRecordId linkage.
+                    $isExistingPart = $part->getId() !== null;
+                    $wasUnassociated = $part->getServiceRecord() === null && $part->getMotRecord() === null;
                     $part->setMotRecord($mot);
-                    $this->logger->info('Part associated with MOT', ['partId' => $part->getId(), 'motId' => $mot->getId()]);
+                    if ($isExistingPart && $wasUnassociated) {
+                        $part->setIncludedInServiceCost(false);
+                        $this->logger->info('Existing part linked to MOT (pre-bought)', ['partId' => $part->getId(), 'motId' => $mot->getId()]);
+                    } else {
+                        $this->logger->info('Part associated with MOT', ['partId' => $part->getId(), 'motId' => $mot->getId()]);
+                    }
                 } else {
                     $part->setMotRecord(null);
                     $this->logger->info('Part disassociated from MOT (not found)', ['partId' => $part->getId(), 'motId' => $motId]);
