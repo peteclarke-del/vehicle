@@ -56,58 +56,49 @@ export const useNotifications = () => {
 
   useEffect(() => {
     if (!api || !user?.id) return;
-    const token = SafeStorage.get('token');
-    const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:8081/api';
-    const streamUrl = `${baseUrl}/notifications/stream?token=${encodeURIComponent(token || '')}`;
-    let eventSource;
-    let stopped = false;
-    let retryCount = 0;
-    const maxRetryDelay = 60000; // Max 60 seconds
 
-    const openStream = () => {
-      if (stopped) return;
-      eventSource = new EventSource(streamUrl);
+    // Poll interval: 5 minutes. SSE was avoided because it holds a
+    // PHP-FPM worker open indefinitely (while(true)+sleep in PHP), which
+    // starves the worker pool. Polling is sufficient for notification data.
+    const POLL_INTERVAL_MS = 5 * 60 * 1000;
+    let timer = null;
+    let cancelled = false;
 
-      eventSource.addEventListener('notifications', (event) => {
-        try {
-          const payload = JSON.parse(event.data);
-          setRawNotifications(Array.isArray(payload) ? payload : []);
-          retryCount = 0; // Reset on successful message
-        } catch (e) {
-          // ignore malformed payload
+    const fetchNotifications = async () => {
+      try {
+        const resp = await api.get('/notifications');
+        if (!cancelled) {
+          setRawNotifications(Array.isArray(resp.data) ? resp.data : []);
         }
-      });
-
-      eventSource.onopen = () => {
-        retryCount = 0; // Reset on successful connection
-      };
-
-      eventSource.onerror = () => {
-        eventSource?.close();
-        // fallback to one-off fetch
-        (async () => {
-          try {
-            const resp = await api.get('/notifications');
-            const data = Array.isArray(resp.data) ? resp.data : [];
-            setRawNotifications(data);
-          } catch (e) {
-            // ignore
-          }
-        })();
-        // Exponential backoff: 1s, 2s, 4s, 8s... up to maxRetryDelay
-        const delay = Math.min(1000 * Math.pow(2, retryCount), maxRetryDelay);
-        retryCount++;
-        setTimeout(() => {
-          if (!stopped) openStream();
-        }, delay);
-      };
+      } catch (e) {
+        // ignore — stale data is fine for notifications
+      }
     };
 
-    openStream();
+    const scheduleNext = () => {
+      if (!cancelled) {
+        timer = setTimeout(async () => {
+          await fetchNotifications();
+          scheduleNext();
+        }, POLL_INTERVAL_MS);
+      }
+    };
+
+    // Refresh immediately when the tab becomes visible again
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchNotifications();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Initial fetch
+    fetchNotifications().then(scheduleNext);
 
     return () => {
-      stopped = true;
-      eventSource?.close();
+      cancelled = true;
+      clearTimeout(timer);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [api, user?.id]);
 

@@ -3,6 +3,7 @@ import logger from '../utils/logger';
 import { Box, Button, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, IconButton, Tooltip, TableSortLabel } from '@mui/material';
 import { Add, Edit, Delete } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
+import { useVehicles } from '../contexts/VehiclesContext';
 import { useTranslation } from 'react-i18next';
 import formatCurrency from '../utils/formatCurrency';
 import { fetchArrayData } from '../hooks/useApiData';
@@ -28,6 +29,7 @@ const Consumables = () => {
   const [openServiceDialog, setOpenServiceDialog] = useState(false);
   const [selectedServiceRecord, setSelectedServiceRecord] = useState(null);
   const { api } = useAuth();
+  const { notifyRecordChange } = useVehicles();
   const { t, i18n } = useTranslation();
   const { regFirst, regLast } = useRegistrationLabel();
   const { first: mileageFirst, last: mileageLast } = useSplitLabel('consumables.mileageAtChange', 'Mileage at', 'Change');
@@ -97,6 +99,7 @@ const Consumables = () => {
     setSelectedConsumable(null);
     if (reload) {
       loadConsumables();
+      notifyRecordChange();
     }
   };
 

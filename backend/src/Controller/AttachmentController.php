@@ -638,6 +638,8 @@ class AttachmentController extends AbstractController
         $entityType = $request->query->get('entityType');
         $entityId = $request->query->getInt('entityId');
         $category = $request->query->get('category');
+        $vehicleId = $request->query->getInt('vehicleId');
+        $unlinked = $request->query->getBoolean('unlinked', false);
 
         $qb = $this->entityManager->getRepository(Attachment::class)
             ->createQueryBuilder('a')
@@ -652,6 +654,19 @@ class AttachmentController extends AbstractController
         if ($entityId) {
             $qb->andWhere('a.entityId = :entityId')
                 ->setParameter('entityId', $entityId);
+        }
+
+        if ($vehicleId) {
+            $vehicle = $this->entityManager->getRepository(Vehicle::class)->find($vehicleId);
+            if ($vehicle) {
+                $qb->andWhere('a.vehicle = :vehicle')
+                    ->setParameter('vehicle', $vehicle);
+            }
+        }
+
+        if ($unlinked) {
+            $qb->andWhere('a.entityType IS NULL')
+                ->andWhere('a.entityId IS NULL');
         }
 
         if ($category !== null && $category !== '') {
@@ -794,10 +809,20 @@ class AttachmentController extends AbstractController
         // Handle entity linking - use AttachmentLinkingService for consistency
         if (array_key_exists('entityType', $data) || array_key_exists('entityId', $data)) {
             $entityType = $data['entityType'] ?? $attachment->getEntityType();
-            $entityId = $data['entityId'] ?? $attachment->getEntityId();
+            $entityId = isset($data['entityId']) ? (int) $data['entityId'] : $attachment->getEntityId();
 
             if ($entityType && $entityId) {
-                // Resolve the entity and link properly
+                // Unlink from old entity first to avoid stale receiptAttachment references
+                $oldEntityType = $attachment->getEntityType();
+                $oldEntityId   = $attachment->getEntityId();
+                if ($oldEntityType && $oldEntityId && ($oldEntityType !== $entityType || $oldEntityId !== $entityId)) {
+                    $oldEntity = $this->attachmentLinkingService->resolveEntityByTypeAndId($oldEntityType, $oldEntityId);
+                    if ($oldEntity) {
+                        $this->attachmentLinkingService->unlinkAttachment($attachment, $oldEntity);
+                    }
+                }
+
+                // Resolve the new entity and link properly
                 $entity = $this->attachmentLinkingService->resolveEntityByTypeAndId($entityType, $entityId);
                 if ($entity) {
                     $this->attachmentLinkingService->linkAttachmentToEntity(
@@ -813,8 +838,20 @@ class AttachmentController extends AbstractController
                 }
             } elseif (!$entityType && !$entityId) {
                 // Clear entity association
-                $attachment->setEntityType(null);
-                $attachment->setEntityId(null);
+                $oldEntityType = $attachment->getEntityType();
+                $oldEntityId   = $attachment->getEntityId();
+                if ($oldEntityType && $oldEntityId) {
+                    $oldEntity = $this->attachmentLinkingService->resolveEntityByTypeAndId($oldEntityType, $oldEntityId);
+                    if ($oldEntity) {
+                        $this->attachmentLinkingService->unlinkAttachment($attachment, $oldEntity);
+                    } else {
+                        $attachment->setEntityType(null);
+                        $attachment->setEntityId(null);
+                    }
+                } else {
+                    $attachment->setEntityType(null);
+                    $attachment->setEntityId(null);
+                }
             }
         }
 

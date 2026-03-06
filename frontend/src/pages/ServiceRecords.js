@@ -41,7 +41,7 @@ const ServiceRecords = () => {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingService, setEditingService] = useState(null);
-  const { vehicles, loading: vehiclesLoading, fetchVehicles } = useVehicles();
+  const { vehicles, loading: vehiclesLoading, fetchVehicles, notifyRecordChange } = useVehicles();
   const { api } = useAuth();
   const { t, i18n } = useTranslation();
   const { regFirst, regLast } = useRegistrationLabel();
@@ -136,6 +136,7 @@ const ServiceRecords = () => {
     setEditingService(null);
     if (reload) {
       loadServiceRecords();
+      notifyRecordChange();
     }
   };
 
@@ -363,12 +364,12 @@ const ServiceRecords = () => {
                   <TableCell align="center">
                     <ViewAttachmentIconButton record={service} />
                     <Tooltip title={t('common.edit')}>
-                      <IconButton size="small" onClick={() => handleEdit(service)}>
+                      <IconButton size="small" onClick={() => handleEdit(service)} aria-label={t('common.edit')}>
                         <EditIcon />
                       </IconButton>
                     </Tooltip>
                     <Tooltip title={t('common.delete')}>
-                      <IconButton size="small" onClick={() => handleDelete(service.id)}>
+                      <IconButton size="small" onClick={() => handleDelete(service.id)} aria-label={t('common.delete')}>
                         <DeleteIcon />
                       </IconButton>
                     </Tooltip>

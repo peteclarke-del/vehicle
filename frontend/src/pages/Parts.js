@@ -3,6 +3,7 @@ import logger from '../utils/logger';
 import { Box, Button, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, IconButton, Chip, Tooltip, TableSortLabel } from '@mui/material';
 import { Add, Edit, Delete } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
+import { useVehicles } from '../contexts/VehiclesContext';
 import VehicleSelector from '../components/VehicleSelector';
 import { useTranslation } from 'react-i18next';
 import formatCurrency from '../utils/formatCurrency';
@@ -28,6 +29,7 @@ const Parts = () => {
   const [openServiceDialog, setOpenServiceDialog] = useState(false);
   const [selectedServiceRecord, setSelectedServiceRecord] = useState(null);
   const { api } = useAuth();
+  const { notifyRecordChange } = useVehicles();
   const { t, i18n } = useTranslation();
   const { regFirst, regLast } = useRegistrationLabel();
   const { orderBy, order, handleRequestSort } = usePersistedSort('parts', 'description', 'asc');
@@ -93,6 +95,7 @@ const Parts = () => {
     setSelectedPart(null);
     if (reload) {
       loadParts();
+      notifyRecordChange();
     }
   };
 
@@ -297,12 +300,12 @@ const Parts = () => {
                   <TableCell>
                         <ViewAttachmentIconButton record={part} />
                         <Tooltip title={t('common.edit')}>
-                      <IconButton size="small" onClick={() => handleEdit(part)}>
+                      <IconButton size="small" onClick={() => handleEdit(part)} aria-label={t('common.edit')}>
                         <Edit />
                       </IconButton>
                     </Tooltip>
                         <Tooltip title={t('common.delete')}>
-                      <IconButton size="small" onClick={() => handleDelete(part.id)}>
+                      <IconButton size="small" onClick={() => handleDelete(part.id)} aria-label={t('common.delete')}>
                         <Delete />
                       </IconButton>
                     </Tooltip>

@@ -50,7 +50,7 @@ export default function ViewAttachmentIconButton({ attachments = [], record }) {
   return (
     <>
       <Tooltip title={t('attachment.view')}>
-        <IconButton size="small" onClick={handleClick}>
+        <IconButton size="small" onClick={handleClick} aria-label={t('attachment.view')}>
           <ViewIcon />
         </IconButton>
       </Tooltip>

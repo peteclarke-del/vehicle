@@ -3,6 +3,7 @@ import logger from '../utils/logger';
 import { Box, Button, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, IconButton, Tooltip, TableSortLabel } from '@mui/material';
 import { Add, Edit, Delete } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
+import { useVehicles } from '../contexts/VehiclesContext';
 import { useTranslation } from 'react-i18next';
 import formatCurrency from '../utils/formatCurrency';
 import { fetchArrayData } from '../hooks/useApiData';
@@ -27,6 +28,7 @@ const FuelRecords = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState(null);
   const { api } = useAuth();
+  const { notifyRecordChange } = useVehicles();
   const { t, i18n } = useTranslation();
   const { regFirst, regLast } = useRegistrationLabel();
   const { convert, format, getLabel } = useDistance();
@@ -119,6 +121,7 @@ const FuelRecords = () => {
     setSelectedRecord(null);
     if (reload) {
       loadRecords();
+      notifyRecordChange();
     }
   };
 
@@ -304,12 +307,12 @@ const FuelRecords = () => {
                 <TableCell>
                   <ViewAttachmentIconButton record={record} />
                   <Tooltip title={t('common.edit')}>
-                    <IconButton size="small" onClick={() => handleEdit(record)}>
+                    <IconButton size="small" onClick={() => handleEdit(record)} aria-label={t('common.edit')}>
                       <Edit fontSize="small" />
                     </IconButton>
                   </Tooltip>
                   <Tooltip title={t('common.delete')}>
-                    <IconButton size="small" onClick={() => handleDelete(record.id)}>
+                    <IconButton size="small" onClick={() => handleDelete(record.id)} aria-label={t('common.delete')}>
                       <Delete fontSize="small" />
                     </IconButton>
                   </Tooltip>

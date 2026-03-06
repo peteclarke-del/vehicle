@@ -16,6 +16,7 @@ export const VehiclesProvider = ({ children }) => {
   const { api, user } = useAuth();
   const [vehicles, setVehicles] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [recordsVersion, setRecordsVersion] = useState(0);
   const lastFetchRef = useRef(null);
   const hasFetchedRef = useRef(false);
 
@@ -63,6 +64,10 @@ export const VehiclesProvider = ({ children }) => {
   // Memoize refresh function
   const refreshVehicles = useCallback((silent = false) => fetchVehicles(true, silent), [fetchVehicles]);
 
+  // Call this after saving any record (fuel, part, service, etc.) so the
+  // Dashboard re-fetches its totals without requiring a full page reload.
+  const notifyRecordChange = useCallback(() => setRecordsVersion(v => v + 1), []);
+
   // Memoize context value to prevent re-renders
   const value = useMemo(
     () => ({
@@ -70,8 +75,10 @@ export const VehiclesProvider = ({ children }) => {
       loading,
       fetchVehicles,
       refreshVehicles,
+      recordsVersion,
+      notifyRecordChange,
     }),
-    [vehicles, loading, fetchVehicles, refreshVehicles]
+    [vehicles, loading, fetchVehicles, refreshVehicles, recordsVersion, notifyRecordChange]
   );
 
   return <VehiclesContext.Provider value={value}>{children}</VehiclesContext.Provider>;

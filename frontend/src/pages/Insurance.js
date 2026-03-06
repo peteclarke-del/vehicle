@@ -229,12 +229,12 @@ const Insurance = () => {
                     <TableCell>{vehicleDisplay}</TableCell>
                     <TableCell align="center">
                       <Tooltip title={t('common.edit')}>
-                        <IconButton size="small" onClick={() => handleEditPolicy(p)}>
+                        <IconButton size="small" onClick={() => handleEditPolicy(p)} aria-label={t('common.edit')}>
                           <EditIcon />
                         </IconButton>
                       </Tooltip>
                       <Tooltip title={t('common.delete')}>
-                        <IconButton size="small" onClick={() => handleDeletePolicy(p.id)}>
+                        <IconButton size="small" onClick={() => handleDeletePolicy(p.id)} aria-label={t('common.delete')}>
                           <DeleteIcon />
                         </IconButton>
                       </Tooltip>

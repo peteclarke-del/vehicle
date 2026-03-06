@@ -51,7 +51,7 @@ import {
 
 const Dashboard = () => {
   const { api } = useAuth();
-  const { vehicles, loading, refreshVehicles } = useVehicles();
+  const { vehicles, loading, refreshVehicles, recordsVersion } = useVehicles();
   const { convert, format } = useDistance();
   const [last12FuelTotal, setLast12FuelTotal] = useState(0);
   const [last12PartsTotal, setLast12PartsTotal] = useState(0);
@@ -278,11 +278,12 @@ const Dashboard = () => {
   }, [api]);
 
   useEffect(() => {
-    // Fetch both dashboard totals and road tax data in parallel
+    // Fetch both dashboard totals and road tax data in parallel.
+    // Re-runs whenever any record page saves (recordsVersion increments).
     fetchDashboardTotals(12);
     fetchRoadTaxData();
     fetchMonthlyCosts(chartPeriod);
-  }, [fetchDashboardTotals, fetchRoadTaxData, fetchMonthlyCosts, chartPeriod]);
+  }, [fetchDashboardTotals, fetchRoadTaxData, fetchMonthlyCosts, chartPeriod, recordsVersion]);
 
   // Apply sort order when vehicles are loaded or sortOrder changes
   useEffect(() => {
@@ -317,6 +318,9 @@ const Dashboard = () => {
     setDialogOpen(false);
     if (reload) {
       refreshVehicles();
+      fetchDashboardTotals(12);
+      fetchMonthlyCosts(chartPeriod);
+      fetchRoadTaxData();
     }
   };
 
@@ -337,6 +341,8 @@ const Dashboard = () => {
       if (notes) payload.statusChangeNotes = notes;
       await api.put(`/vehicles/${vehicleId}`, payload);
       await refreshVehicles();
+      fetchDashboardTotals(12);
+      fetchMonthlyCosts(chartPeriod);
     } catch (e) {
       logger.error('Error updating vehicle status with metadata', e);
     } finally {

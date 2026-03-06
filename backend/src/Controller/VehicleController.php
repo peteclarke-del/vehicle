@@ -181,17 +181,21 @@ class VehicleController extends AbstractController
             }
         }
 
-        // Batch query for latest MOT expiry dates by latest test date
+        // Batch query for latest MOT expiry dates by latest Pass/Advisory test date
+        // Excludes Fail records so that a DVSA-imported Fail after a Pass does not
+        // incorrectly override the valid expiry date.
         $latestMots = $this->entityManager->createQuery(
             'SELECT IDENTITY(mr.vehicle) AS vehicleId, mr.expiryDate, mr.testDate
              FROM App\Entity\MotRecord mr
              WHERE mr.vehicle IN (:ids)
+             AND (mr.result IS NULL OR mr.result IN (:passResults))
              AND mr.testDate = (
                  SELECT MAX(mr2.testDate)
                  FROM App\Entity\MotRecord mr2
                  WHERE mr2.vehicle = mr.vehicle
+                 AND (mr2.result IS NULL OR mr2.result IN (:passResults))
              )'
-        )->setParameter('ids', $vehicleIds)->getResult();
+        )->setParameter('ids', $vehicleIds)->setParameter('passResults', ['Pass', 'Advisory'])->getResult();
 
         foreach ($latestMots as $mot) {
             $vid = (int) $mot['vehicleId'];
@@ -239,7 +243,9 @@ class VehicleController extends AbstractController
         $latest = $this->entityManager->getRepository(\App\Entity\MotRecord::class)
         ->createQueryBuilder('mr')
         ->where('mr.vehicle = :vehicle')
+        ->andWhere('mr.result IS NULL OR mr.result IN (:passResults)')
         ->setParameter('vehicle', $vehicle)
+        ->setParameter('passResults', ['Pass', 'Advisory'])
         ->orderBy('mr.testDate', 'DESC')
         ->setMaxResults(1)
         ->getQuery()
@@ -1099,7 +1105,7 @@ class VehicleController extends AbstractController
             $vehicle->setDepreciationYears($data['depreciationYears']);
         }
         if (isset($data['depreciationRate'])) {
-            $vehicle->setDepreciationRate($data['depreciationRate']);
+            $vehicle->setDepreciationRate((string) $data['depreciationRate']);
         }
         // Allow an explicit override for road tax exemption
         if (array_key_exists('roadTaxExempt', $data)) {

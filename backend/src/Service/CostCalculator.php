@@ -192,8 +192,8 @@ class CostCalculator
             'costPerMile' => (
                 ($cpm = $this->calculateCostPerMile($vehicle)) !== null
             ) ? round($cpm, 2) : null,
-            'averageFuelConsumption' => $this->calculateAverageFuelConsumption($vehicle)
-                ? round($this->calculateAverageFuelConsumption($vehicle), 2)
+            'averageFuelConsumption' => (($avgFuel = $this->calculateAverageFuelConsumption($vehicle)) !== null)
+                ? round($avgFuel, 2)
                 : null,
             'currentMileage' => $vehicle->getCurrentMileage(),
             'milesSincePurchase' => $this->determineMilesSincePurchase($vehicle)
