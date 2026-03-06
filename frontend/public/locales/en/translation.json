@@ -662,7 +662,13 @@
     "title": "Attachments",
     "upload": "Upload Files",
     "noFiles": "No attachments yet",
-    "saveFirst": "Save the record first before uploading attachments"
+    "saveFirst": "Save the record first before uploading attachments",
+    "linkExisting": "Link existing attachment",
+    "linkExistingTitle": "Link Existing Attachment",
+    "unlinkedOnly": "Unlinked only",
+    "noUnlinked": "No unlinked attachments found",
+    "currentlyLinked": "Currently linked to: {{label}}",
+    "unlinkedTooltip": "Not linked to any record"
   },
   "stats": {
     "currentValue": "Current Value",
@@ -991,6 +997,7 @@
     "actionBlocked": "This action is disabled in the demo"
   },
   "ocr": {
+    "enableScanning": "Scan receipt for data",
     "uploadingImages": "Uploading images...",
     "addMoreImages": "Add more images",
     "uploadReceiptImages": "Upload receipt image(s)",

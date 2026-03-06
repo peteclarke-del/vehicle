@@ -42,7 +42,7 @@ const MotRecords = () => {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingMot, setEditingMot] = useState(null);
-  const { vehicles, loading: vehiclesLoading, fetchVehicles } = useVehicles();
+  const { vehicles, loading: vehiclesLoading, fetchVehicles, notifyRecordChange } = useVehicles();
   const { api } = useAuth();
   const { t, i18n } = useTranslation();
   const { regFirst, regLast } = useRegistrationLabel();
@@ -128,6 +128,7 @@ const MotRecords = () => {
     setEditingMot(null);
     if (reload) {
       loadMotRecords();
+      notifyRecordChange();
     }
   };
 
@@ -390,14 +391,14 @@ const MotRecords = () => {
                           <ViewAttachmentIconButton record={mot} />
                           <Tooltip title={t('common.edit')}>
                             <span>
-                              <IconButton size="small" onClick={() => handleEdit(mot)} disabled={disabled}>
+                              <IconButton size="small" onClick={() => handleEdit(mot)} disabled={disabled} aria-label={t('common.edit')}>
                                 <EditIcon />
                               </IconButton>
                             </span>
                           </Tooltip>
                           <Tooltip title={t('common.delete')}>
                             <span>
-                              <IconButton size="small" onClick={() => handleDelete(mot.id)} disabled={disabled}>
+                              <IconButton size="small" onClick={() => handleDelete(mot.id)} disabled={disabled} aria-label={t('common.delete')}>
                                 <DeleteIcon />
                               </IconButton>
                             </span>

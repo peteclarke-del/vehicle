@@ -8,6 +8,7 @@ import {
   ListItem,
   ListItemText,
   ListItemSecondaryAction,
+  Tooltip,
   Typography,
   TextField,
   Chip,
@@ -21,11 +22,13 @@ import {
   Image as ImageIcon,
   PictureAsPdf,
   Receipt as ReceiptIcon,
+  AddLink as AddLinkIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import KnightRiderLoader from './KnightRiderLoader';
 import AttachmentViewerDialog from './AttachmentViewerDialog';
+import AttachmentPickerDialog from './AttachmentPickerDialog';
 import { useDragDrop } from '../hooks/useDragDrop';
 import logger from '../utils/logger';
 
@@ -35,6 +38,7 @@ const AttachmentUpload = ({ entityType, entityId, vehicleId, onChange, compact =
   const [loading, setLoading] = useState(false);
   const [viewerOpen, setViewerOpen] = useState(false);
   const [selectedAttachment, setSelectedAttachment] = useState(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const { api } = useAuth();
   const { t } = useTranslation();
 
@@ -155,21 +159,34 @@ const AttachmentUpload = ({ entityType, entityId, vehicleId, onChange, compact =
       {!compact && (
         <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
           <Typography variant="subtitle1">{t('attachments.title')}</Typography>
-          <Button
-            variant="outlined"
-            component="label"
-            startIcon={uploading ? <KnightRiderLoader size={16} /> : <CloudUpload />}
-            disabled={uploading}
-          >
-            {t('attachments.upload')}
-            <input
-              type="file"
-              hidden
-              multiple
-              accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx"
-              onChange={handleFileSelect}
-            />
-          </Button>
+          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+            {entityId && (
+              <Tooltip title={t('attachments.linkExisting')}>
+                <IconButton
+                  size="small"
+                  onClick={() => setPickerOpen(true)}
+                  aria-label={t('attachments.linkExisting')}
+                >
+                  <AddLinkIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            )}
+            <Button
+              variant="outlined"
+              component="label"
+              startIcon={uploading ? <KnightRiderLoader size={16} /> : <CloudUpload />}
+              disabled={uploading}
+            >
+              {t('attachments.upload')}
+              <input
+                type="file"
+                hidden
+                multiple
+                accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx"
+                onChange={handleFileSelect}
+              />
+            </Button>
+          </Box>
         </Box>
       )}
 
@@ -247,13 +264,13 @@ const AttachmentUpload = ({ entityType, entityId, vehicleId, onChange, compact =
             >
               <ReceiptIcon color="primary" />
               <Typography variant="body2" sx={{ flex: 1 }}>{t('attachment.receiptAttached')}</Typography>
-              <IconButton size="small" onClick={() => handleView(att)}>
+              <IconButton size="small" onClick={() => handleView(att)} aria-label={t('common.view')}>
                 <ViewIcon />
               </IconButton>
-              <IconButton size="small" onClick={() => handleDownload(att)}>
+              <IconButton size="small" onClick={() => handleDownload(att)} aria-label={t('common.download')}>
                 <DownloadIcon />
               </IconButton>
-              <IconButton size="small" onClick={() => handleDelete(att.id)}>
+              <IconButton size="small" onClick={() => handleDelete(att.id)} aria-label={t('common.delete')}>
                 <DeleteIcon />
               </IconButton>
             </Box>
@@ -274,13 +291,13 @@ const AttachmentUpload = ({ entityType, entityId, vehicleId, onChange, compact =
                 sx={{ ml: 2 }}
               />
               <ListItemSecondaryAction>
-                <IconButton edge="end" onClick={() => handleDownload(attachment)} size="small">
+                <IconButton edge="end" onClick={() => handleDownload(attachment)} size="small" aria-label={t('common.download')}>
                   <DownloadIcon />
                 </IconButton>
-                <IconButton edge="end" onClick={() => handleView(attachment)} size="small">
+                <IconButton edge="end" onClick={() => handleView(attachment)} size="small" aria-label={t('common.view')}>
                   <ViewIcon />
                 </IconButton>
-                <IconButton edge="end" onClick={() => handleDelete(attachment.id)} size="small">
+                <IconButton edge="end" onClick={() => handleDelete(attachment.id)} size="small" aria-label={t('common.delete')}>
                   <DeleteIcon />
                 </IconButton>
               </ListItemSecondaryAction>
@@ -305,6 +322,15 @@ const AttachmentUpload = ({ entityType, entityId, vehicleId, onChange, compact =
         onDownload={
           selectedAttachment ? () => handleDownload(selectedAttachment) : undefined
         }
+      />
+
+      <AttachmentPickerDialog
+        open={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        vehicleId={vehicleId}
+        entityType={entityType}
+        entityId={entityId}
+        onAssigned={() => loadAttachments()}
       />
     </Box>
   );

@@ -426,6 +426,7 @@ class RecordController extends AbstractController
 | `ReportEngine` | Generate reports from JSON templates |
 | `DvlaApiService` | DVLA vehicle lookup |
 | `DvsaApiService` | DVSA MOT history |
+| `OpenApiVehicleAdapter` | OpenAPI vehicle specifications |
 | `VehicleExportService` | Export to JSON/ZIP |
 | `VehicleImportService` | Import from JSON/ZIP |
 | `ReceiptOcrService` | Extract data from receipt images |
@@ -638,6 +639,10 @@ DVLA_API_KEY=your_api_key
 
 # DVSA API (optional)
 DVSA_API_KEY=your_api_key
+
+# OpenAPI - Open Vehicles API (optional)
+OPENAPI_KEY=your_api_key
+OPENAPI_BASE_URL=https://api.openvehicles.com/v1
 
 # Frontend
 REACT_APP_API_URL=http://localhost:8081/api

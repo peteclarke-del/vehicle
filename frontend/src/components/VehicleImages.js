@@ -285,6 +285,7 @@ const VehicleImages = ({ vehicle }) => {
                           handleSetPrimary(image.id);
                         }}
                         size="small"
+                        aria-label={image.isPrimary ? t('vehicleImages.unsetPrimary', { defaultValue: 'Unset as primary image' }) : t('vehicleImages.setPrimary', { defaultValue: 'Set as primary image' })}
                       >
                         {image.isPrimary ? <StarIcon /> : <StarBorderIcon />}
                       </IconButton>
@@ -295,6 +296,7 @@ const VehicleImages = ({ vehicle }) => {
                           handleDelete(image.id);
                         }}
                         size="small"
+                        aria-label={t('common.delete')}
                       >
                         <DeleteIcon />
                       </IconButton>
@@ -323,6 +325,7 @@ const VehicleImages = ({ vehicle }) => {
           <DialogContent sx={{ position: 'relative', padding: 0, overflow: 'hidden' }}>
             <IconButton
               onClick={closeLightbox}
+              aria-label={t('common.close')}
               sx={{
                 position: 'absolute',
                 top: 10,
@@ -340,6 +343,7 @@ const VehicleImages = ({ vehicle }) => {
               <>
                 <IconButton
                   onClick={goToPrevious}
+                  aria-label={t('vehicleImages.previousImage', { defaultValue: 'Previous image' })}
                   sx={{
                     position: 'absolute',
                     left: 10,
@@ -356,6 +360,7 @@ const VehicleImages = ({ vehicle }) => {
 
                 <IconButton
                   onClick={goToNext}
+                  aria-label={t('vehicleImages.nextImage', { defaultValue: 'Next image' })}
                   sx={{
                     position: 'absolute',
                     right: 10,

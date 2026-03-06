@@ -8,18 +8,31 @@ use Doctrine\DBAL\Schema\Schema;
 use Doctrine\Migrations\AbstractMigration;
 
 /**
+ * class Version20260214194542
+ *
  * Auto-generated Migration: Please modify to your needs!
  */
 final class Version20260214194542 extends AbstractMigration
 {
+    /**
+     * function getDescription
+     *
+     * @return string
+     */
     public function getDescription(): string
     {
-        return '';
+        return 'Initial Database setup and configuration.';
     }
 
+    /**
+     * function up
+     *
+     * @param Schema $schema
+     *
+     * @return void
+     */
     public function up(Schema $schema): void
     {
-        // this up() migration is auto-generated, please modify it to your needs
         $this->addSql('CREATE TABLE attachments (id INT AUTO_INCREMENT NOT NULL, vehicle_id INT DEFAULT NULL, user_id INT NOT NULL, filename VARCHAR(255) NOT NULL, original_name VARCHAR(255) NOT NULL, mime_type VARCHAR(100) NOT NULL, file_size INT NOT NULL, uploaded_at DATETIME NOT NULL, entity_type VARCHAR(50) DEFAULT NULL, entity_id INT DEFAULT NULL, description LONGTEXT DEFAULT NULL, storage_path VARCHAR(255) DEFAULT NULL, category VARCHAR(50) DEFAULT NULL, INDEX IDX_47C4FAD6545317D1 (vehicle_id), INDEX IDX_47C4FAD6A76ED395 (user_id), PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB');
         $this->addSql('CREATE TABLE consumable_types (id INT AUTO_INCREMENT NOT NULL, vehicle_type_id INT NOT NULL, name VARCHAR(100) NOT NULL, unit VARCHAR(50) DEFAULT NULL, description LONGTEXT DEFAULT NULL, INDEX IDX_FDE5C7B3DA3FD1FC (vehicle_type_id), PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB');
         $this->addSql('CREATE TABLE consumables (id INT AUTO_INCREMENT NOT NULL, vehicle_id INT NOT NULL, consumable_type_id INT NOT NULL, service_record_id INT DEFAULT NULL, todo_id INT DEFAULT NULL, mot_record_id INT DEFAULT NULL, receipt_attachment_id INT DEFAULT NULL, description VARCHAR(200) DEFAULT NULL, brand VARCHAR(100) DEFAULT NULL, part_number VARCHAR(100) DEFAULT NULL, replacement_interval INT DEFAULT NULL, next_replacement INT DEFAULT NULL, quantity NUMERIC(8, 2) DEFAULT NULL, last_changed DATE DEFAULT NULL, mileage_at_change INT DEFAULT NULL, cost NUMERIC(10, 2) DEFAULT NULL, notes LONGTEXT DEFAULT NULL, created_at DATETIME NOT NULL, updated_at DATETIME NOT NULL, product_url VARCHAR(500) DEFAULT NULL, supplier VARCHAR(100) DEFAULT NULL, included_in_service_cost TINYINT(1) DEFAULT 0 NOT NULL, INDEX IDX_9B2FDD30545317D1 (vehicle_id), INDEX IDX_9B2FDD3044868F59 (consumable_type_id), INDEX IDX_9B2FDD30156C4F46 (service_record_id), INDEX IDX_9B2FDD30EA1EBC33 (todo_id), INDEX IDX_9B2FDD30B17D92CD (mot_record_id), INDEX IDX_9B2FDD3079F22B74 (receipt_attachment_id), PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB');
@@ -99,9 +112,15 @@ final class Version20260214194542 extends AbstractMigration
         $this->addSql('ALTER TABLE vehicles ADD CONSTRAINT FK_1FCE69FADA3FD1FC FOREIGN KEY (vehicle_type_id) REFERENCES vehicle_types (id)');
     }
 
+    /**
+     * function down
+     *
+     * @param Schema $schema
+     *
+     * @return void
+     */
     public function down(Schema $schema): void
     {
-        // this down() migration is auto-generated, please modify it to your needs
         $this->addSql('ALTER TABLE attachments DROP FOREIGN KEY FK_47C4FAD6545317D1');
         $this->addSql('ALTER TABLE attachments DROP FOREIGN KEY FK_47C4FAD6A76ED395');
         $this->addSql('ALTER TABLE consumable_types DROP FOREIGN KEY FK_FDE5C7B3DA3FD1FC');

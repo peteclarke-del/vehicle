@@ -64,6 +64,18 @@ RUN echo "upload_max_filesize = 200M" > /usr/local/etc/php/conf.d/uploads.ini \
     && echo "max_execution_time = 300" >> /usr/local/etc/php/conf.d/uploads.ini \
     && echo "memory_limit = 1024M" >> /usr/local/etc/php/conf.d/uploads.ini
 
+# Increase PHP-FPM pool size so slow OCR requests don't block all workers.
+# Default www.conf only has 5 children; this override raises it to 20 and sets
+# a terminate timeout matching PHP max_execution_time to prevent worker hangs.
+RUN echo "[www]" > /usr/local/etc/php-fpm.d/zz-pool-override.conf \
+    && echo "pm = dynamic" >> /usr/local/etc/php-fpm.d/zz-pool-override.conf \
+    && echo "pm.max_children = 20" >> /usr/local/etc/php-fpm.d/zz-pool-override.conf \
+    && echo "pm.start_servers = 5" >> /usr/local/etc/php-fpm.d/zz-pool-override.conf \
+    && echo "pm.min_spare_servers = 3" >> /usr/local/etc/php-fpm.d/zz-pool-override.conf \
+    && echo "pm.max_spare_servers = 10" >> /usr/local/etc/php-fpm.d/zz-pool-override.conf \
+    && echo "pm.max_requests = 200" >> /usr/local/etc/php-fpm.d/zz-pool-override.conf \
+    && echo "request_terminate_timeout = 300" >> /usr/local/etc/php-fpm.d/zz-pool-override.conf
+
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 

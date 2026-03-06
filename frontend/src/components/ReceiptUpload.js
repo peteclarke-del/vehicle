@@ -14,6 +14,8 @@ import {
   Alert,
   LinearProgress,
   Stack,
+  Checkbox,
+  FormControlLabel,
 } from '@mui/material';
 import {
   CloudUpload as UploadIcon,
@@ -63,6 +65,7 @@ export default function ReceiptUpload({
   const [scanned, setScanned] = useState(false);
   const [ocrResult, setOcrResult] = useState(null);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [ocrEnabled, setOcrEnabled] = useState(true);
 
   // Single attachment view state (when editing existing receipt)
   const [viewerOpen, setViewerOpen] = useState(false);
@@ -141,6 +144,9 @@ export default function ReceiptUpload({
 
   /**
    * Handle multiple file selection.
+   * Notifies parent immediately after upload (before OCR) so that
+   * receiptAttachmentId is set in the parent form even if the user
+   * submits before scanning completes.
    */
   const handleFilesSelected = useCallback(async (files) => {
     if (!files || files.length === 0) return;
@@ -151,14 +157,24 @@ export default function ReceiptUpload({
     setUploadProgress(0);
 
     const fileArray = Array.from(files);
+    const uploadedIds = [];
     for (let i = 0; i < fileArray.length; i++) {
-      await uploadFile(fileArray[i]);
+      const id = await uploadFile(fileArray[i]);
+      if (id !== null && id !== undefined) uploadedIds.push(id);
       setUploadProgress(((i + 1) / fileArray.length) * 100);
     }
 
     setUploading(false);
     setUploadProgress(0);
-  }, [uploadFile]);
+
+    // Immediately notify parent with the first attachment ID and no OCR data yet.
+    // This ensures receiptAttachmentId is set in the form before OCR completes,
+    // so submitting early doesn't leave the attachment unlinked.
+    // handleScanAll will call onReceiptUploaded again with real OCR data.
+    if (uploadedIds.length > 0) {
+      onReceiptUploaded(uploadedIds[0], {}, uploadedIds);
+    }
+  }, [uploadFile, onReceiptUploaded]);
 
   const handleFileSelect = (e) => {
     handleFilesSelected(e.target.files);
@@ -245,13 +261,13 @@ export default function ReceiptUpload({
    */
   useEffect(() => {
     const uploaded = attachments.filter(a => a.status === 'uploaded' && typeof a.id === 'number');
-    if (uploaded.length === 1 && !scanned && !scanning && !uploading) {
+    if (uploaded.length === 1 && !scanned && !scanning && !uploading && ocrEnabled) {
       // Auto-scan single uploads after a brief delay
       const timer = setTimeout(() => handleScanAll(), 500);
       return () => clearTimeout(timer);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [attachments, scanned, scanning, uploading]);
+  }, [attachments, scanned, scanning, uploading, ocrEnabled]);
 
   // ─── Existing attachment management (view/edit/delete) ────────────
 
@@ -499,26 +515,36 @@ export default function ReceiptUpload({
         </Alert>
       )}
 
-      {/* Scan / Add More buttons */}
-      {uploadedCount > 0 && !scanned && (
-        <Box sx={{ mt: 1, display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
-          {uploadedCount > 1 && (
-            <Button
-              variant="contained"
+      {/* OCR toggle and manual scan button */}
+      <Box sx={{ mt: 1, display: 'flex', gap: 1, justifyContent: 'space-between', alignItems: 'center' }}>
+        <FormControlLabel
+          sx={{ m: 0 }}
+          control={
+            <Checkbox
               size="small"
-              color="primary"
-              onClick={handleScanAll}
-              disabled={scanning || uploading}
-              startIcon={scanning ? <KnightRiderLoader size={14} /> : <ScanIcon />}
-            >
-              {scanning
-                ? t('ocr.scanning', 'Scanning...')
-                : t('ocr.scanAll', 'Scan All ({{count}})', { count: uploadedCount })
-              }
-            </Button>
-          )}
-        </Box>
-      )}
+              checked={ocrEnabled}
+              onChange={(e) => setOcrEnabled(e.target.checked)}
+              sx={{ p: 0.5 }}
+            />
+          }
+          label={<Typography variant="caption">{t('ocr.enableScanning', 'Scan receipt for data')}</Typography>}
+        />
+        {uploadedCount > 0 && !scanned && ocrEnabled && uploadedCount > 1 && (
+          <Button
+            variant="contained"
+            size="small"
+            color="primary"
+            onClick={handleScanAll}
+            disabled={scanning || uploading}
+            startIcon={scanning ? <KnightRiderLoader size={14} /> : <ScanIcon />}
+          >
+            {scanning
+              ? t('ocr.scanning', 'Scanning...')
+              : t('ocr.scanAll', 'Scan All ({{count}})', { count: uploadedCount })
+            }
+          </Button>
+        )}
+      </Box>
 
       {hasErrors && (
         <Alert severity="warning" sx={{ mt: 1, py: 0 }}>

@@ -11,6 +11,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 use Lexik\Bundle\JWTAuthenticationBundle\Encoder\JWTEncoderInterface;
 use App\Entity\RefreshToken;
+use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -29,7 +30,8 @@ class AuthController extends AbstractController
         private JWTTokenManagerInterface $jwtManager,
         private JWTEncoderInterface $jwtEncoder,
         private TagAwareCacheInterface $cache,
-        private FeatureFlagService $featureFlagService
+        private FeatureFlagService $featureFlagService,
+        private LoggerInterface $logger
     ) {
     }
 
@@ -49,7 +51,7 @@ class AuthController extends AbstractController
             $this->cache->invalidateTags(['user.' . $user->getId(), 'vehicles', 'dashboard']);
         } catch (\Throwable $e) {
             // Log but don't fail login if cache invalidation fails
-            error_log('Cache invalidation failed on login: ' . $e->getMessage());
+            $this->logger->warning('Cache invalidation failed on login: ' . $e->getMessage());
         }
 
         return $this->json([
@@ -117,25 +119,18 @@ class AuthController extends AbstractController
 
         // Create default user preferences for new users (language, distance unit, theme)
         $langValue = isset($data['preferredLanguage']) ? (string) $data['preferredLanguage'] : 'en';
-        $prefLang = new \App\Entity\UserPreference();
-        $prefLang->setUser($user);
-        $prefLang->setName('preferredLanguage');
-        $prefLang->setValue($langValue);
-        $this->entityManager->persist($prefLang);
-
-        $distanceValue = 'mi';
-        $prefDistance = new \App\Entity\UserPreference();
-        $prefDistance->setUser($user);
-        $prefDistance->setName('distanceUnit');
-        $prefDistance->setValue($distanceValue);
-        $this->entityManager->persist($prefDistance);
-
-        $themeValue = 'light';
-        $prefTheme = new \App\Entity\UserPreference();
-        $prefTheme->setUser($user);
-        $prefTheme->setName('theme');
-        $prefTheme->setValue($themeValue);
-        $this->entityManager->persist($prefTheme);
+        $defaultPreferences = [
+            'preferredLanguage' => $langValue,
+            'distanceUnit' => 'mi',
+            'theme' => 'light',
+        ];
+        foreach ($defaultPreferences as $name => $value) {
+            $pref = new \App\Entity\UserPreference();
+            $pref->setUser($user);
+            $pref->setName($name);
+            $pref->setValue($value);
+            $this->entityManager->persist($pref);
+        }
 
         $this->entityManager->flush();
 
@@ -176,7 +171,6 @@ class AuthController extends AbstractController
         }
 
         // read preferredLanguage, sessionTimeout and distanceUnit from user_preferences (fallback to user entity if available)
-        $repo = $this->entityManager->getRepository(\App\Entity\UserPreference::class);
         $prefLang = $repo->findOneBy(['user' => $user, 'name' => 'preferredLanguage']);
         $preferredLanguage = null;
         if ($prefLang) {
@@ -442,7 +436,7 @@ class AuthController extends AbstractController
             $this->cache->invalidateTags(['user.' . $user->getId(), 'vehicles', 'dashboard']);
         } catch (\Throwable $e) {
             // Log but don't fail logout if cache invalidation fails
-            error_log('Cache invalidation failed on logout: ' . $e->getMessage());
+            $this->logger->warning('Cache invalidation failed on logout: ' . $e->getMessage());
         }
 
         return $this->json(['message' => 'Refresh token(s) revoked']);

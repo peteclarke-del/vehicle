@@ -78,20 +78,24 @@ const FuelRecordDialog = ({ open, record, vehicleId, onClose }) => {
   };
 
   const handleReceiptUploaded = (attachmentId, ocrData) => {
-    const updates = { receiptAttachmentId: attachmentId };
-    
-    // Auto-fill form fields with OCR extracted data
-    if (ocrData.date) updates.date = ocrData.date;
-    if (ocrData.cost) updates.cost = ocrData.cost;
-    if (ocrData.litres) updates.litres = ocrData.litres;
-    if (ocrData.station) updates.station = ocrData.station;
-    if (ocrData.fuelType) updates.fuelType = ocrData.fuelType;
+    // Use functional update (prev =>) to avoid stale-closure overwriting
+    // user-entered values when OCR completes asynchronously.
+    setFormData(prev => {
+      const updates = { receiptAttachmentId: attachmentId };
 
-    setFormData({ ...formData, ...updates });
+      // Auto-fill form fields with OCR extracted data
+      if (ocrData.date) updates.date = ocrData.date;
+      if (ocrData.cost) updates.cost = ocrData.cost;
+      if (ocrData.litres) updates.litres = ocrData.litres;
+      if (ocrData.station) updates.station = ocrData.station;
+      if (ocrData.fuelType) updates.fuelType = ocrData.fuelType;
+
+      return { ...prev, ...updates };
+    });
   };
 
   const handleReceiptRemoved = () => {
-    setFormData({ ...formData, receiptAttachmentId: null });
+    setFormData(prev => ({ ...prev, receiptAttachmentId: null }));
   };
 
   const handleSubmit = async (e) => {

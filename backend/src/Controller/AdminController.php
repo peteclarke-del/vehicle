@@ -442,12 +442,11 @@ class AdminController extends AbstractController
 
         $admin = $this->getUser();
 
-        // Remove existing assignments
+        // Remove existing assignments — do not flush yet; new ones are added before the single flush below
         $existing = $this->entityManager->getRepository(VehicleAssignment::class)->findBy(['assignedTo' => $user]);
         foreach ($existing as $assignment) {
             $this->entityManager->remove($assignment);
         }
-        $this->entityManager->flush();
 
         // Create new assignments
         foreach ($data['assignments'] as $assignmentData) {

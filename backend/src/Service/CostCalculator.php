@@ -192,8 +192,8 @@ class CostCalculator
             'costPerMile' => (
                 ($cpm = $this->calculateCostPerMile($vehicle)) !== null
             ) ? round($cpm, 2) : null,
-            'averageFuelConsumption' => $this->calculateAverageFuelConsumption($vehicle)
-                ? round($this->calculateAverageFuelConsumption($vehicle), 2)
+            'averageFuelConsumption' => (($avgFuel = $this->calculateAverageFuelConsumption($vehicle)) !== null)
+                ? round($avgFuel, 2)
                 : null,
             'currentMileage' => $vehicle->getCurrentMileage(),
             'milesSincePurchase' => $this->determineMilesSincePurchase($vehicle)
@@ -202,8 +202,9 @@ class CostCalculator
 
     public function calculateTotalServiceCost(Vehicle $vehicle): float
     {
-        // Sum of service record costs
-        $serviceDql = 'SELECT COALESCE(SUM(sr.laborCost + sr.partsCost + sr.consumablesCost + sr.additionalCosts), 0) 
+        // Sum of service record costs — COALESCE nullable columns to 0 so a single NULL
+        // field does not silently zero out the entire row contribution in MySQL arithmetic.
+        $serviceDql = 'SELECT COALESCE(SUM(sr.laborCost + sr.partsCost + COALESCE(sr.consumablesCost, 0) + COALESCE(sr.additionalCosts, 0)), 0) 
                        FROM App\Entity\ServiceRecord sr 
                        WHERE sr.vehicle = :vehicle';
 

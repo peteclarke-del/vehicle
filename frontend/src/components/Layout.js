@@ -320,6 +320,7 @@ const Layout = () => {
               color="inherit"
               edge="start"
               onClick={handleDrawerToggle}
+              aria-label={t('nav.toggleNavigation', { defaultValue: 'Toggle navigation' })}
               sx={{ mr: 2 }}
             >
               <MenuIcon />
@@ -497,6 +498,7 @@ const Layout = () => {
             <Tooltip title={t('nav.navigation')} placement="right" arrow>
               <IconButton
                 onClick={handleDrawerToggle}
+                aria-label={t('nav.toggleNavigation', { defaultValue: 'Toggle navigation' })}
                 sx={{
                   color: 'text.secondary',
                   '&:hover': {

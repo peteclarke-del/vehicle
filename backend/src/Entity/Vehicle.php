@@ -404,21 +404,23 @@ class Vehicle
     }
 
     /**
-     * Compute road tax expiry. Currently no RoadTax entity exists, so
-     * return null until RoadTax records are modelled.
+     * Compute road tax expiry from the most recently *started* road tax record.
+     * Uses startDate (not expiryDate) to find the latest record so that a SORN
+     * or short-term record started after a longer one is correctly treated as
+     * the current status.
      */
     public function getComputedRoadTaxExpiryDate(): ?\DateTimeInterface
     {
-        $latest = null;
+        $latestRecord = null;
         foreach ($this->roadTaxRecords as $rt) {
-            $d = $rt->getExpiryDate();
+            $d = $rt->getStartDate();
             if ($d instanceof \DateTimeInterface) {
-                if ($latest === null || $d > $latest) {
-                    $latest = $d;
+                if ($latestRecord === null || $d > $latestRecord->getStartDate()) {
+                    $latestRecord = $rt;
                 }
             }
         }
-        return $latest;
+        return $latestRecord?->getExpiryDate();
     }
 
     public function getRoadTaxRecords(): Collection
@@ -470,52 +472,55 @@ class Vehicle
     }
 
     /**
-     * Compute MOT expiry from the latest MotRecord. Prefers the record's
-     * `expiryDate` when present, otherwise falls back to `testDate`. If no
-     * records exist returns the stored `motExpiryDate`.
+     * Compute MOT expiry from the latest passing MotRecord. Only considers
+     * records with result 'Pass' or 'Advisory' (or null for manually-entered
+     * records without a result). Fail records are intentionally skipped so
+     * that a DVSA-imported Fail entry after a valid Pass does not incorrectly
+     * report the MOT as expired.
      */
     public function getComputedMotExpiryDate(): ?\DateTimeInterface
     {
-        $latest = null;
+        $latestRecord = null;
         foreach ($this->motRecords as $mr) {
-            $d = $mr->getTestDate() ?? $mr->getExpiryDate();
+            $result = strtolower((string) $mr->getResult());
+            // Skip explicit fails; treat null result as a user-entered pass
+            if ($mr->getResult() !== null && $result !== 'pass' && $result !== 'advisory') {
+                continue;
+            }
+            $d = $mr->getTestDate();
             if ($d instanceof \DateTimeInterface) {
-                if ($latest === null || $d > $latest) {
-                    $latest = $d;
+                if ($latestRecord === null || $d > $latestRecord->getTestDate()) {
+                    $latestRecord = $mr;
                 }
             }
         }
 
-        if ($latest !== null) {
-            // If the latest mot record has an explicit expiry date prefer that
-            foreach ($this->motRecords as $mr) {
-                if ($mr->getTestDate() === $latest && $mr->getExpiryDate() !== null) {
-                    return $mr->getExpiryDate();
-                }
-            }
-            return $latest;
+        if ($latestRecord !== null) {
+            return $latestRecord->getExpiryDate() ?? $latestRecord->getTestDate();
         }
 
-        return $latest;
+        return null;
     }
 
     /**
-     * Compute insurance expiry from the latest InsurancePolicy expiry date. Falls back
-     * to the stored `insuranceExpiryDate` when no policies exist.
+     * Compute insurance expiry from the most recently *started* policy.
+     * Uses startDate to find the current active policy so that a newer
+     * short-term policy is not overridden by an older policy with a later
+     * expiry date.
      */
     public function getComputedInsuranceExpiryDate(): ?\DateTimeInterface
     {
-        $latest = null;
+        $latestPolicy = null;
         foreach ($this->insurancePolicies as $policy) {
-            $d = $policy->getExpiryDate();
+            $d = $policy->getStartDate();
             if ($d instanceof \DateTimeInterface) {
-                if ($latest === null || $d > $latest) {
-                    $latest = $d;
+                if ($latestPolicy === null || $d > $latestPolicy->getStartDate()) {
+                    $latestPolicy = $policy;
                 }
             }
         }
 
-        return $latest;
+        return $latestPolicy?->getExpiryDate();
     }
 
     public function getInsuranceExpiryDate(): ?\DateTimeInterface

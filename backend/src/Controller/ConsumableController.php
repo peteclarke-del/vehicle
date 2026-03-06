@@ -427,8 +427,17 @@ class ConsumableController extends AbstractController
                 $motId = is_numeric($motId) ? (int)$motId : $motId;
                 $mot = $this->entityManager->getRepository(\App\Entity\MotRecord::class)->find($motId);
                 if ($mot) {
+                    // Apply pre-bought logic for existing consumables being linked to a MOT for the first time,
+                    // mirroring the same guard used for serviceRecordId linkage.
+                    $isExistingConsumable = $consumable->getId() !== null;
+                    $wasUnassociated = $consumable->getServiceRecord() === null && $consumable->getMotRecord() === null;
                     $consumable->setMotRecord($mot);
-                    $this->logger->info('Consumable associated with MOT', ['consumableId' => $consumable->getId(), 'motId' => $mot->getId()]);
+                    if ($isExistingConsumable && $wasUnassociated) {
+                        $consumable->setIncludedInServiceCost(false);
+                        $this->logger->info('Existing consumable linked to MOT (pre-bought)', ['consumableId' => $consumable->getId(), 'motId' => $mot->getId()]);
+                    } else {
+                        $this->logger->info('Consumable associated with MOT', ['consumableId' => $consumable->getId(), 'motId' => $mot->getId()]);
+                    }
                 } else {
                     $consumable->setMotRecord(null);
                     $this->logger->info('Consumable disassociated from MOT (not found)', ['consumableId' => $consumable->getId(), 'motId' => $motId]);

@@ -25,6 +25,43 @@ class UrlScraperService
     }
 
     /**
+     * Validate that a URL is safe to fetch (SSRF protection).
+     * Only public http/https URLs are permitted; private and reserved addresses are blocked.
+     *
+     * @throws \RuntimeException if the URL scheme is invalid or the host resolves to a private address
+     */
+    private function assertPublicUrl(string $url): void
+    {
+        $parsed = parse_url($url);
+        $scheme = strtolower($parsed['scheme'] ?? '');
+
+        if (!in_array($scheme, ['http', 'https'], true)) {
+            throw new \RuntimeException('Only http and https URLs are supported.');
+        }
+
+        $host = $parsed['host'] ?? '';
+        if ($host === '') {
+            throw new \RuntimeException('Invalid URL: missing host.');
+        }
+
+        // Resolve hostname to IPv4 for range checks (note: does not cover all IPv6 cases)
+        $ip = gethostbyname($host);
+
+        // Block loopback, link-local (e.g. AWS IMDS 169.254.169.254) and RFC-1918 private ranges
+        $blockedPrefixes = ['127.', '0.0.0.0', '169.254.', '10.', '192.168.', '::1'];
+        foreach ($blockedPrefixes as $prefix) {
+            if (str_starts_with($ip, $prefix)) {
+                throw new \RuntimeException('URL resolves to a private or reserved address.');
+            }
+        }
+
+        // RFC-1918 Class B: 172.16.0.0 – 172.31.255.255
+        if (preg_match('/^172\.(1[6-9]|2\d|3[01])\./', $ip)) {
+            throw new \RuntimeException('URL resolves to a private or reserved address.');
+        }
+    }
+
+    /**
      * Scrape product details from a URL
      *
      * @param string $url The URL to scrape
@@ -35,6 +72,8 @@ class UrlScraperService
      */
     public function scrapeProductDetails(string $url): array
     {
+        $this->assertPublicUrl($url);
+
         $this->logger->info('Scraping URL', ['url' => $url]);
 
         /* ---------------------------

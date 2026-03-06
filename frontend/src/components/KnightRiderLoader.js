@@ -7,6 +7,7 @@ const KnightRiderLoader = ({
   sx,
   trackColor = '#2b0000',
   glowColor = '#ff2b2b',
+  label = 'Loading',
 }) => {
   const trackWidth = Math.max(60, length ?? size * 4);
   const trackHeight = Math.max(6, Math.round(size / 2));
@@ -17,6 +18,8 @@ const KnightRiderLoader = ({
   return (
     <Box
       component="span"
+      role="progressbar"
+      aria-label={label}
       sx={{
         display: 'inline-flex',
         alignItems: 'center',
