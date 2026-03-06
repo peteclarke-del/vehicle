@@ -197,7 +197,7 @@ function RecordsPage() {
 | `useVehicleSelection` | Vehicle filtering with default vehicle support |
 | `useTablePagination` | Pagination with user preference sync |
 | `useDistance` | Distance conversion based on preferences |
-| `useNotifications` | Real-time notifications via SSE |
+| `useNotifications` | Polling-based notifications (5-min REST poll + visibilitychange refresh) |
 | `useDragDrop` | File drag-and-drop handling |
 
 ### Utility Functions

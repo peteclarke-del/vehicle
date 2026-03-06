@@ -37,7 +37,7 @@ A comprehensive web application for managing personal or fleet vehicles, built w
 - **Distance Units**: Support for both miles and kilometres
 - **Volume Units**: Support for both litres and gallons
 - **Mobile Responsive**: Works on desktop, tablet, and mobile devices
-- **Real-time Notifications**: SSE-based notifications for MOT, insurance, and tax expiries
+- **Notifications**: Polling-based notifications for MOT, insurance, and tax expiries (refreshes every 5 minutes and on tab focus)
 
 ### Mobile Application (Android)
 - **Native Mobile Experience**: React Native app for Android devices
@@ -83,7 +83,7 @@ A comprehensive web application for managing personal or fleet vehicles, built w
 
 ### Backend
 - **Framework**: Symfony 6.4
-- **Language**: PHP 8.3+
+- **Language**: PHP 8.4+
 - **Database**: MySQL 8.0
 - **ORM**: Doctrine ORM
 - **Caching**: Redis 7

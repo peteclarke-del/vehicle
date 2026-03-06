@@ -1086,6 +1086,7 @@ List attachments.
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | vehicleId | integer | Filter by vehicle |
+| unlinked | boolean | When `true`, return only attachments not linked to any entity |
 
 **Response (200):**
 ```json
@@ -1132,6 +1133,27 @@ Upload an attachment.
 #### GET /api/attachments/{id}
 
 Get attachment details.
+
+---
+
+#### PUT /api/attachments/{id}
+
+Reassign (move) an attachment to a different entity. Unlinks from the current entity before linking to the new one.
+
+**Request Body:**
+```json
+{
+  "entityType": "FuelRecord",
+  "entityId": 42
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| entityType | string | Yes | Doctrine entity short name (e.g. `FuelRecord`, `Part`, `MotRecord`) |
+| entityId | integer | Yes | ID of the target entity |
+
+**Response (200):** Updated attachment object.
 
 ---
 
@@ -1360,6 +1382,8 @@ List notifications.
 ---
 
 #### GET /api/notifications/stream
+
+> **Deprecated for frontend use.** The web frontend now polls `GET /api/notifications` every 5 minutes instead of holding an SSE connection. This endpoint remains available for other clients but should not be used from a browser because it holds a PHP-FPM worker open for the lifetime of the connection.
 
 Server-Sent Events stream for real-time notifications.
 

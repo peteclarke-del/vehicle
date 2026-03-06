@@ -282,7 +282,7 @@ function MileageDisplay({ mileageKm }) {
 
 **File:** `useNotifications.js`
 
-Manages real-time notifications via Server-Sent Events (SSE). Handles connection management, reconnection logic, and notification state.
+Manages notifications via REST polling. Fetches from `GET /api/notifications` every 5 minutes and whenever the browser tab regains focus (`visibilitychange`). Replaces the previous SSE implementation to avoid holding PHP-FPM workers open indefinitely.
 
 #### Exports
 
@@ -290,7 +290,7 @@ Manages real-time notifications via Server-Sent Events (SSE). Handles connection
 
 Takes no parameters.
 
-**Returns:** `{ notifications: array, unreadCount: number, dismiss: function, snooze: function, loading: boolean }`
+**Returns:** `{ notifications: array, unreadCount: number, dismiss: function, snooze: function, loading: boolean, refresh: function }`
 
 | Property | Type | Description |
 |----------|------|-------------|
@@ -299,6 +299,7 @@ Takes no parameters.
 | `dismiss` | `function(id: number)` | Mark notification as read |
 | `snooze` | `function(id: number, days: number)` | Snooze notification |
 | `loading` | `boolean` | Initial loading state |
+| `refresh` | `function()` | Manually trigger a poll |
 
 **Notification Object Shape:**
 ```javascript
@@ -900,10 +901,12 @@ Hook to access vehicles context.
 **Returns:**
 ```javascript
 {
-  vehicles: array,          // Array of vehicle objects
+  vehicles: array,              // Array of vehicle objects
   loading: boolean,
   error: Error | null,
-  refreshVehicles: function, // Force refresh vehicle list
+  refreshVehicles: function,    // Force refresh vehicle list
+  recordsVersion: number,       // Increments whenever a record is saved
+  notifyRecordChange: function, // Call after saving any record to trigger dashboard refresh
 }
 ```
 
@@ -911,6 +914,11 @@ Hook to access vehicles context.
 - Vehicles are cached for 30 seconds
 - Calling `refreshVehicles()` bypasses the cache
 - Cache is invalidated on vehicle create/update/delete operations
+
+**Cross-page dashboard refresh:**
+Record pages (FuelRecords, Parts, Consumables, ServiceRecords, MotRecords) call
+`notifyRecordChange()` after a successful save. Dashboard includes `recordsVersion`
+in its `useEffect` dependency array so totals re-fetch automatically.
 
 **Example:**
 ```javascript
