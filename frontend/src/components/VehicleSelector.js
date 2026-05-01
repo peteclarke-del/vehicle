@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useId } from 'react';
 import { Box, Button, Typography, CircularProgress } from '@mui/material';
 import { Add as AddIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
@@ -23,6 +23,8 @@ const VehicleSelector = React.memo(({
 }) => {
   const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');
+  const uid = useId();
+  const selectId = `vehicle-selector-${uid}`;
 
   const currentValue = value != null ? String(value) : '';
 
@@ -75,7 +77,7 @@ const VehicleSelector = React.memo(({
     return (
       <Box display="flex" alignItems="center" gap={1}>
         <CircularProgress size={16} />
-        <Typography>{t('common.loading') || 'Loading...'}</Typography>
+        <Typography>{t('common.loading', 'Loading...')}</Typography>
       </Box>
     );
   }
@@ -85,7 +87,7 @@ const VehicleSelector = React.memo(({
   }
 
   if (vehicles.length === 0) {
-    return <Typography>{t('common.noVehicles') || 'No vehicles'}</Typography>;
+    return <Typography>{t('common.noVehicles', 'No vehicles')}</Typography>;
   }
 
   const renderOption = (v) => (
@@ -99,40 +101,40 @@ const VehicleSelector = React.memo(({
       <Box>
         {showCount && (
           <Typography variant="caption" display="block">
-            {vehicles.length} {t('vehicles.title') || 'vehicles'}
+            {vehicles.length} {t('vehicles.title', 'vehicles')}
           </Typography>
         )}
         {enableSearch && (
           <Box mb={1}>
             <input
-              placeholder={t('common.search') || 'Search...'}
+              placeholder={t('common.search', 'Search...')}
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
               style={{ padding: '4px 8px', border: '1px solid #ccc', borderRadius: 4 }}
             />
           </Box>
         )}
-        {label && <label htmlFor="vehicle-selector">{label}</label>}
+        {label && <label htmlFor={selectId}>{label}</label>}
         <select
-          id="vehicle-selector"
+          id={selectId}
+          aria-label={label || t('common.selectVehicle', 'Select a vehicle')}
           value={currentValue}
           onChange={handleChange}
           disabled={disabled}
           style={{ minWidth, padding: '8px', border: '1px solid #ccc', borderRadius: 4 }}
         >
           <option value="" disabled>
-            {t('common.selectVehicle') || 'Select a vehicle'}
+            {t('common.selectVehicle', 'Select a vehicle')}
           </option>
           {includeViewAll && (
-            <option value="__all__">{t('common.viewAll') || 'View All'}</option>
+            <option value="__all__">{t('common.viewAll', 'View All')}</option>
           )}
           {groupByMake && makeGroups
-            ? Object.entries(makeGroups).flatMap(([makeName, makeVehicles]) => [
-                <option key={`group-${makeName}`} disabled value={`group-${makeName}`}>
-                  {makeName}
-                </option>,
-                ...makeVehicles.map(renderOption),
-              ])
+            ? Object.entries(makeGroups).map(([makeName, makeVehicles]) => (
+                <optgroup key={`group-${makeName}`} label={makeName}>
+                  {makeVehicles.map(renderOption)}
+                </optgroup>
+              ))
             : filteredVehicles.map(renderOption)}
         </select>
         {showImages && (
@@ -145,7 +147,7 @@ const VehicleSelector = React.memo(({
       </Box>
       {showAddButton && (
         <Button variant="outlined" startIcon={<AddIcon />} onClick={onAddVehicle}>
-          {t('vehicles.addVehicle') || 'Add vehicle'}
+          {t('vehicles.addVehicle', 'Add vehicle')}
         </Button>
       )}
     </Box>

@@ -5,6 +5,12 @@ import AttachmentUpload from '../components/AttachmentUpload';
 jest.mock('../api/attachmentApi');
 const { uploadAttachment } = require('../api/attachmentApi');
 
+jest.mock('../contexts/AuthContext', () => ({
+  useAuth: () => ({
+    api: { get: jest.fn(), post: jest.fn(), put: jest.fn(), delete: jest.fn() },
+  }),
+}));
+
 describe('AttachmentUpload', () => {
   const mockOnUploadComplete = jest.fn();
   const mockOnError = jest.fn();
@@ -33,7 +39,7 @@ describe('AttachmentUpload', () => {
     fireEvent.change(input, { target: { files: [file] } });
 
     await waitFor(() => {
-      expect(uploadAttachment).toHaveBeenCalledWith(file);
+      expect(uploadAttachment).toHaveBeenCalledWith(file, expect.any(Object), expect.any(Object));
       expect(mockOnUploadComplete).toHaveBeenCalledWith({
         id: 1,
         filename: 'receipt.pdf',
@@ -223,7 +229,7 @@ describe('AttachmentUpload', () => {
     fireEvent.change(input, { target: { files: [file] } });
 
     await waitFor(() => {
-      expect(uploadAttachment).toHaveBeenCalledWith(file, { category: 'receipt' });
+      expect(uploadAttachment).toHaveBeenCalledWith(file, expect.objectContaining({ category: 'receipt' }), expect.any(Object));
     });
   });
 

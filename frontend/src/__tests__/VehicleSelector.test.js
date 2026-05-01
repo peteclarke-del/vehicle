@@ -148,10 +148,11 @@ describe('VehicleSelector Component', () => {
   });
 
   test('groups vehicles by make', () => {
-    render(<VehicleSelector vehicles={mockVehicles} groupByMake={true} />);
-    
-    expect(screen.getByText('Toyota')).toBeInTheDocument();
-    expect(screen.getByText('Honda')).toBeInTheDocument();
+    const { container } = render(<VehicleSelector vehicles={mockVehicles} groupByMake={true} />);
+
+    // groupByMake renders <optgroup label="Make"> elements
+    expect(container.querySelector('optgroup[label="Toyota"]')).toBeInTheDocument();
+    expect(container.querySelector('optgroup[label="Honda"]')).toBeInTheDocument();
   });
 
   test('displays vehicle images in dropdown', () => {

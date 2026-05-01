@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { uploadAttachment } from '../api/attachmentApi';
+import { useAuth } from '../contexts/AuthContext';
 
 const DEFAULT_MAX_SIZE = 10 * 1024 * 1024; // 10 MB
 
@@ -20,6 +21,7 @@ function formatDate(isoString) {
 }
 
 function AttachmentUpload({
+  // New-style callback API
   onUploadComplete,
   onError,
   onDelete,
@@ -29,7 +31,14 @@ function AttachmentUpload({
   existingAttachments = [],
   showCategory = false,
   showDescription = false,
+  // Backward-compatible props (original component API)
+  entityType,
+  entityId,
+  vehicleId,
+  compact = false,
+  onChange,     // (attachments: array) => void — called after each upload/delete
 }) {
+  const { api } = useAuth();
   const inputRef = useRef(null);
   const [uploading, setUploading] = useState(false);
   const [uploadedResults, setUploadedResults] = useState([]);
@@ -42,6 +51,8 @@ function AttachmentUpload({
     const accepted = accept.split(',').map((t) => t.trim());
     return accepted.some((type) => {
       if (type.startsWith('.')) return file.name.toLowerCase().endsWith(type.toLowerCase());
+      // Handle wildcard patterns like image/*, audio/*
+      if (type.endsWith('/*')) return file.type.startsWith(type.slice(0, -1));
       return file.type === type;
     });
   };
@@ -76,8 +87,14 @@ function AttachmentUpload({
       }
 
       try {
-        const opts = (category || description) ? { category: category || undefined, description: description || undefined } : null;
-        const result = opts ? await uploadAttachment(file, opts) : await uploadAttachment(file);
+        const opts = {
+          category: category || undefined,
+          description: description || undefined,
+          entityType: entityType || undefined,
+          entityId: entityId || undefined,
+          vehicleId: vehicleId || undefined,
+        };
+        const result = await uploadAttachment(file, opts, api);
 
         if (result?.virusScanStatus === 'infected') {
           onError?.('Virus detected in uploaded file');
@@ -85,7 +102,11 @@ function AttachmentUpload({
           return;
         }
 
-        setUploadedResults((prev) => [...prev, { ...result, _localName: file.name, _localType: file.type }]);
+        setUploadedResults((prev) => {
+          const next = [...prev, { ...result, _localName: file.name, _localType: file.type }];
+          onChange?.([...existingAttachments, ...next]);
+          return next;
+        });
         onUploadComplete?.(result);
       } catch (err) {
         onError?.(err?.message || 'Upload failed');
@@ -95,8 +116,16 @@ function AttachmentUpload({
     setUploading(false);
   };
 
-  const handleChange = (e) => {
-    if (e.target.files?.length) processFiles(e.target.files);
+  // Await processFiles so the input is only cleared after all uploads finish,
+  // and use finally so re-selecting the same file always triggers change events.
+  const handleChange = async (e) => {
+    const input = e.target;
+    if (!input.files?.length) return;
+    try {
+      await processFiles(input.files);
+    } finally {
+      input.value = '';
+    }
   };
 
   const allAttachments = [...existingAttachments, ...uploadedResults];
@@ -182,3 +211,4 @@ function AttachmentUpload({
 }
 
 export default AttachmentUpload;
+
