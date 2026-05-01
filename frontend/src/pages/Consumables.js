@@ -11,13 +11,14 @@ import { useDistance } from '../hooks/useDistance';
 import useTablePagination from '../hooks/useTablePagination';
 import usePersistedSort from '../hooks/usePersistedSort';
 import useVehicleSelection from '../hooks/useVehicleSelection';
+import useVehicleStatusFilter from '../hooks/useVehicleStatusFilter';
 import { useRegistrationLabel, useSplitLabel } from '../utils/splitLabel';
 import ConsumableDialog from '../components/ConsumableDialog';
 import ServiceDialog from '../components/ServiceDialog';
 import KnightRiderLoader from '../components/KnightRiderLoader';
 import ViewAttachmentIconButton from '../components/ViewAttachmentIconButton';
 import TablePaginationBar from '../components/TablePaginationBar';
-import VehicleSelector from '../components/VehicleSelector';
+import FilteredVehicleSelector from '../components/FilteredVehicleSelector';
 import { demoGuard } from '../utils/demoMode';
 
 const Consumables = () => {
@@ -36,7 +37,8 @@ const Consumables = () => {
   const mileageRest = mileageLast;
   const { convert, format, getLabel } = useDistance();
   const { orderBy, order, handleRequestSort } = usePersistedSort('consumables', 'description', 'asc');
-  const { selectedVehicle, handleVehicleChange } = useVehicleSelection(vehicles, { includeViewAll: true });
+  const { statusFilter, filteredVehicles, handleStatusFilterChange, STATUS_OPTIONS } = useVehicleStatusFilter(vehicles, 'consumablesStatusFilter');
+  const { selectedVehicle, handleVehicleChange } = useVehicleSelection(filteredVehicles, { includeViewAll: true });
 
   const loadVehicles = useCallback(async () => {
     const data = await fetchArrayData(api, '/vehicles');
@@ -167,10 +169,14 @@ const Consumables = () => {
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Typography variant="h4">{t('consumables.title')}</Typography>
         <Box display="flex" gap={2}>
-          <VehicleSelector
-            vehicles={vehicles}
-            value={selectedVehicle}
-            onChange={handleVehicleChange}
+          <FilteredVehicleSelector
+            statusFilter={statusFilter}
+            onStatusFilterChange={handleStatusFilterChange}
+            statusOptions={STATUS_OPTIONS}
+            vehicles={filteredVehicles}
+            selectedVehicle={selectedVehicle}
+            onVehicleChange={handleVehicleChange}
+            id="consumables"
             includeViewAll={true}
             minWidth={360}
           />
@@ -315,13 +321,14 @@ const Consumables = () => {
                   <TableCell>
                     <ViewAttachmentIconButton record={consumable} />
                     <Tooltip title={t('common.edit')}>
-                      <IconButton size="small" onClick={() => handleEdit(consumable)}>
+                      <IconButton size="small" onClick={() => handleEdit(consumable)} aria-label={t('common.edit')}>
                         <Edit />
                       </IconButton>
                     </Tooltip>
                     <Tooltip title={t('common.delete')}>
                       <IconButton
                         size="small"
+                        aria-label={t('common.delete')}
                         onClick={(e) => {
                           e.stopPropagation();
                           handleDelete(consumable.id);

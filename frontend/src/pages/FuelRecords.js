@@ -11,10 +11,11 @@ import { useDistance } from '../hooks/useDistance';
 import useTablePagination from '../hooks/useTablePagination';
 import usePersistedSort from '../hooks/usePersistedSort';
 import useVehicleSelection from '../hooks/useVehicleSelection';
+import useVehicleStatusFilter from '../hooks/useVehicleStatusFilter';
 import { useRegistrationLabel } from '../utils/splitLabel';
 import FuelRecordDialog from '../components/FuelRecordDialog';
 import TablePaginationBar from '../components/TablePaginationBar';
-import VehicleSelector from '../components/VehicleSelector';
+import FilteredVehicleSelector from '../components/FilteredVehicleSelector';
 import ViewAttachmentIconButton from '../components/ViewAttachmentIconButton';
 import KnightRiderLoader from '../components/KnightRiderLoader';
 import { demoGuard } from '../utils/demoMode';
@@ -33,7 +34,8 @@ const FuelRecords = () => {
   const { regFirst, regLast } = useRegistrationLabel();
   const { convert, format, getLabel } = useDistance();
   const { orderBy, order, handleRequestSort } = usePersistedSort('fuelRecords', 'date', 'desc');
-  const { selectedVehicle, handleVehicleChange } = useVehicleSelection(vehicles, { includeViewAll: true });
+  const { statusFilter, filteredVehicles, handleStatusFilterChange, STATUS_OPTIONS } = useVehicleStatusFilter(vehicles, 'fuelStatusFilter');
+  const { selectedVehicle, handleVehicleChange } = useVehicleSelection(filteredVehicles, { includeViewAll: true });
 
   // Send client-side logs to backend if endpoint exists, otherwise logger.warn/error
   const sendClientLog = useCallback(async (level, message, context = {}) => {
@@ -190,10 +192,14 @@ const FuelRecords = () => {
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Typography variant="h4">{headingText}</Typography>
         <Box display="flex" gap={2}>
-          <VehicleSelector
-            vehicles={vehicles}
-            value={selectedVehicle}
-            onChange={handleVehicleChange}
+          <FilteredVehicleSelector
+            statusFilter={statusFilter}
+            onStatusFilterChange={handleStatusFilterChange}
+            statusOptions={STATUS_OPTIONS}
+            vehicles={filteredVehicles}
+            selectedVehicle={selectedVehicle}
+            onVehicleChange={handleVehicleChange}
+            id="fuel"
             includeViewAll={true}
             minWidth={360}
           />

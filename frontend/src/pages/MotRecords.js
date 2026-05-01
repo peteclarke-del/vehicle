@@ -28,10 +28,11 @@ import { formatDateISO } from '../utils/formatDate';
 import useTablePagination from '../hooks/useTablePagination';
 import usePersistedSort from '../hooks/usePersistedSort';
 import useVehicleSelection from '../hooks/useVehicleSelection';
+import useVehicleStatusFilter from '../hooks/useVehicleStatusFilter';
 import { useRegistrationLabel } from '../utils/splitLabel';
 import MotDialog from '../components/MotDialog';
 import TablePaginationBar from '../components/TablePaginationBar';
-import VehicleSelector from '../components/VehicleSelector';
+import FilteredVehicleSelector from '../components/FilteredVehicleSelector';
 import ViewAttachmentIconButton from '../components/ViewAttachmentIconButton';
 import { demoGuard } from '../utils/demoMode';
 import KnightRiderLoader from '../components/KnightRiderLoader';
@@ -48,7 +49,8 @@ const MotRecords = () => {
   const { regFirst, regLast } = useRegistrationLabel();
   const { convert, format, getLabel } = useDistance();
   const { orderBy, order, handleRequestSort } = usePersistedSort('motRecords', 'testDate', 'desc');
-  const { selectedVehicle, setSelectedVehicle, hasManualSelection, handleVehicleChange } = useVehicleSelection(vehicles);
+  const { statusFilter, filteredVehicles, handleStatusFilterChange, STATUS_OPTIONS } = useVehicleStatusFilter(vehicles, 'motStatusFilter');
+  const { selectedVehicle, setSelectedVehicle, hasManualSelection, handleVehicleChange } = useVehicleSelection(filteredVehicles);
   const urlMotIdHandledRef = useRef(false);
 
   const loadMotRecords = useCallback(async (signal) => {
@@ -200,10 +202,14 @@ const MotRecords = () => {
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Typography variant="h4">{t('mot.title')}</Typography>
         <Box display="flex" gap={2}>
-          <VehicleSelector
-            vehicles={vehicles}
-            value={selectedVehicle}
-            onChange={handleVehicleChange}
+          <FilteredVehicleSelector
+            statusFilter={statusFilter}
+            onStatusFilterChange={handleStatusFilterChange}
+            statusOptions={STATUS_OPTIONS}
+            vehicles={filteredVehicles}
+            selectedVehicle={selectedVehicle}
+            onVehicleChange={handleVehicleChange}
+            id="mot"
             minWidth={360}
           />
           {(() => {

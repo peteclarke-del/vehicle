@@ -48,6 +48,19 @@ const useVehicleSelection = (vehicles, options = {}) => {
     }
   }, [defaultVehicleId, vehicles, hasManualSelection, selectedVehicle]);
 
+  // Re-select when the vehicles array changes and current selection is no longer present
+  // (e.g., when a status filter is applied after initialization)
+  useEffect(() => {
+    if (!initializedRef.current) return;
+    if (!selectedVehicle || selectedVehicle === '__all__') return;
+    if (!vehicles || vehicles.length === 0) return;
+    const found = vehicles.find((v) => String(v.id) === String(selectedVehicle));
+    if (!found) {
+      const fallback = includeViewAll ? '__all__' : vehicles[0].id;
+      setSelectedVehicle(fallback);
+    }
+  }, [vehicles, selectedVehicle, includeViewAll]);
+
   // Handler for manual vehicle changes - sets the flag and updates default
   const handleVehicleChange = useCallback((vehicleId) => {
     setHasManualSelection(true);

@@ -19,15 +19,19 @@ export const VehiclesProvider = ({ children }) => {
   const [recordsVersion, setRecordsVersion] = useState(0);
   const lastFetchRef = useRef(null);
   const hasFetchedRef = useRef(false);
+  // Keep a ref to the current vehicles array so fetchVehicles doesn't need
+  // `vehicles` as a dep (which would recreate the function on every fetch).
+  const vehiclesRef = useRef(vehicles);
+  useEffect(() => { vehiclesRef.current = vehicles; }, [vehicles]);
 
   const fetchVehicles = useCallback(async (force = false, silent = false) => {
     // Cache for 30 seconds to avoid repeated fetches
     const now = Date.now();
     if (!force && lastFetchRef.current && (now - lastFetchRef.current) < 30000) {
-      return vehicles;
+      return vehiclesRef.current;
     }
 
-    if (!silent && vehicles.length === 0) {
+    if (!silent && vehiclesRef.current.length === 0) {
       setLoading(true);
     }
     try {
@@ -44,7 +48,7 @@ export const VehiclesProvider = ({ children }) => {
         setLoading(false);
       }
     }
-  }, [api, vehicles]);
+  }, [api]);
 
   // Auto-fetch on mount if user is logged in
   useEffect(() => {
