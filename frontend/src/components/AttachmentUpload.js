@@ -35,8 +35,8 @@ function AttachmentUpload({
   entityType,
   entityId,
   vehicleId,
-  compact = false,
-  onChange,     // (attachments: array) => void — called after each upload/delete
+  compact: _compact = false,  // accepted for backward-compat; compact layout not yet implemented
+  onChange,     // (attachments: array) => void — called after each upload
 }) {
   const { api } = useAuth();
   const inputRef = useRef(null);
@@ -102,11 +102,11 @@ function AttachmentUpload({
           return;
         }
 
-        setUploadedResults((prev) => {
-          const next = [...prev, { ...result, _localName: file.name, _localType: file.type }];
-          onChange?.([...existingAttachments, ...next]);
-          return next;
-        });
+        // Compute next state outside the updater to keep the updater pure
+        // (React may call functional updaters more than once in concurrent/StrictMode).
+        const newEntry = { ...result, _localName: file.name, _localType: file.type };
+        setUploadedResults((prev) => [...prev, newEntry]);
+        onChange?.([...existingAttachments, ...uploadedResults, newEntry]);
         onUploadComplete?.(result);
       } catch (err) {
         onError?.(err?.message || 'Upload failed');
