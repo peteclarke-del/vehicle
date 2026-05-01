@@ -35,11 +35,14 @@ function AttachmentUpload({
   entityType,
   entityId,
   vehicleId,
-  compact = false,
-  onChange,     // (attachments: array) => void — called after each upload/delete
+  compact: _compact = false,  // accepted for backward-compat; compact layout not yet implemented
+  onChange,     // (attachments: array) => void — called after each upload
 }) {
   const { api } = useAuth();
   const inputRef = useRef(null);
+  // Ref mirrors uploadedResults synchronously so processFiles can always read the
+  // accumulated list without relying on the stale closure captured at render time.
+  const uploadAccRef = useRef([]);
   const [uploading, setUploading] = useState(false);
   const [uploadedResults, setUploadedResults] = useState([]);
   const [thumbnails, setThumbnails] = useState({});
@@ -102,11 +105,12 @@ function AttachmentUpload({
           return;
         }
 
-        setUploadedResults((prev) => {
-          const next = [...prev, { ...result, _localName: file.name, _localType: file.type }];
-          onChange?.([...existingAttachments, ...next]);
-          return next;
-        });
+        const newEntry = { ...result, _localName: file.name, _localType: file.type };
+        // Accumulate synchronously via ref so the next loop iteration and onChange
+        // both see the complete list, not the stale closure value.
+        uploadAccRef.current = [...uploadAccRef.current, newEntry];
+        setUploadedResults(uploadAccRef.current);
+        onChange?.([...existingAttachments, ...uploadAccRef.current]);
         onUploadComplete?.(result);
       } catch (err) {
         onError?.(err?.message || 'Upload failed');
