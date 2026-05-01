@@ -53,9 +53,9 @@ const Dashboard = () => {
   const { api } = useAuth();
   const { vehicles, loading, refreshVehicles, recordsVersion } = useVehicles();
   const { convert, format } = useDistance();
-  const [last12FuelTotal, setLast12FuelTotal] = useState(0);
-  const [last12PartsTotal, setLast12PartsTotal] = useState(0);
-  const [last12ConsumablesTotal, setLast12ConsumablesTotal] = useState(0);
+  const [periodFuelTotal, setPeriodFuelTotal] = useState(0);
+  const [periodPartsTotal, setPeriodPartsTotal] = useState(0);
+  const [periodConsumablesTotal, setPeriodConsumablesTotal] = useState(0);
   const [avgServiceCost, setAvgServiceCost] = useState(0);
   const [totalsLoading, setTotalsLoading] = useState(false);
   const [monthlyCosts, setMonthlyCosts] = useState(null);
@@ -223,9 +223,9 @@ const Dashboard = () => {
     setTotalsLoading(true);
     try {
       const resp = await api.get(`/vehicles/totals?period=${periodMonths}`);
-      setLast12FuelTotal(resp.data.fuel ?? 0);
-      setLast12PartsTotal(resp.data.parts ?? 0);
-      setLast12ConsumablesTotal(resp.data.consumables ?? 0);
+      setPeriodFuelTotal(resp.data.fuel ?? 0);
+      setPeriodPartsTotal(resp.data.parts ?? 0);
+      setPeriodConsumablesTotal(resp.data.consumables ?? 0);
       setAvgServiceCost(resp.data.averageServiceCost ?? 0);
     } catch (err) {
       logger.warn('Failed to load vehicle totals', err);
@@ -733,7 +733,7 @@ const Dashboard = () => {
                     <StatCard
                       isCircular={true}
                       title={`${t('dashboard.totalFuelCost')} (${chartPeriod}m)`}
-                      value={formatCurrency(last12FuelTotal, 'GBP', i18n.language)}
+                      value={formatCurrency(periodFuelTotal, 'GBP', i18n.language)}
                       loading={totalsLoading}
                       subtitle={t('dashboard.fuel')}
                     />
@@ -741,7 +741,7 @@ const Dashboard = () => {
                     <StatCard
                       isCircular={true}
                       title={`${t('dashboard.totalPartsCost')} (${chartPeriod}m)`}
-                      value={formatCurrency(last12PartsTotal, 'GBP', i18n.language)}
+                      value={formatCurrency(periodPartsTotal, 'GBP', i18n.language)}
                       loading={totalsLoading}
                       subtitle={t('dashboard.parts')}
                     />
@@ -749,7 +749,7 @@ const Dashboard = () => {
                     <StatCard
                       isCircular={true}
                       title={`${t('dashboard.totalConsumablesCost') || 'Total Consumables Cost'} (${chartPeriod}m)`}
-                      value={formatCurrency(last12ConsumablesTotal, 'GBP', i18n.language)}
+                      value={formatCurrency(periodConsumablesTotal, 'GBP', i18n.language)}
                       loading={totalsLoading}
                       subtitle={t('dashboard.consumables')}
                     />
