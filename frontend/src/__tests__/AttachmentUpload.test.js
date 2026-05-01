@@ -118,6 +118,36 @@ describe('AttachmentUpload', () => {
     });
   });
 
+  test('calls onChange with accumulated attachments after each upload', async () => {
+    const mockOnChange = jest.fn();
+    uploadAttachment
+      .mockResolvedValueOnce({ id: 1, filename: 'file1.pdf', url: 'https://example.com/file1.pdf' })
+      .mockResolvedValueOnce({ id: 2, filename: 'file2.pdf', url: 'https://example.com/file2.pdf' });
+
+    render(<AttachmentUpload multiple onChange={mockOnChange} />);
+
+    const files = [
+      new File(['content1'], 'file1.pdf', { type: 'application/pdf' }),
+      new File(['content2'], 'file2.pdf', { type: 'application/pdf' }),
+    ];
+    const input = screen.getByLabelText(/choose file/i);
+    fireEvent.change(input, { target: { files } });
+
+    await waitFor(() => {
+      expect(mockOnChange).toHaveBeenCalledTimes(2);
+    });
+
+    // First call: only the first uploaded file (no existingAttachments)
+    expect(mockOnChange).toHaveBeenNthCalledWith(1, [
+      expect.objectContaining({ id: 1, filename: 'file1.pdf' }),
+    ]);
+    // Second call: both files — accumulated list, not stale closure
+    expect(mockOnChange).toHaveBeenNthCalledWith(2, [
+      expect.objectContaining({ id: 1, filename: 'file1.pdf' }),
+      expect.objectContaining({ id: 2, filename: 'file2.pdf' }),
+    ]);
+  });
+
   test('displays list of uploaded files', async () => {
     render(<AttachmentUpload onUploadComplete={mockOnUploadComplete} />);
 

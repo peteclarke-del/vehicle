@@ -40,6 +40,9 @@ function AttachmentUpload({
 }) {
   const { api } = useAuth();
   const inputRef = useRef(null);
+  // Ref mirrors uploadedResults synchronously so processFiles can always read the
+  // accumulated list without relying on the stale closure captured at render time.
+  const uploadAccRef = useRef([]);
   const [uploading, setUploading] = useState(false);
   const [uploadedResults, setUploadedResults] = useState([]);
   const [thumbnails, setThumbnails] = useState({});
@@ -102,11 +105,12 @@ function AttachmentUpload({
           return;
         }
 
-        // Compute next state outside the updater to keep the updater pure
-        // (React may call functional updaters more than once in concurrent/StrictMode).
         const newEntry = { ...result, _localName: file.name, _localType: file.type };
-        setUploadedResults((prev) => [...prev, newEntry]);
-        onChange?.([...existingAttachments, ...uploadedResults, newEntry]);
+        // Accumulate synchronously via ref so the next loop iteration and onChange
+        // both see the complete list, not the stale closure value.
+        uploadAccRef.current = [...uploadAccRef.current, newEntry];
+        setUploadedResults(uploadAccRef.current);
+        onChange?.([...existingAttachments, ...uploadAccRef.current]);
         onUploadComplete?.(result);
       } catch (err) {
         onError?.(err?.message || 'Upload failed');
