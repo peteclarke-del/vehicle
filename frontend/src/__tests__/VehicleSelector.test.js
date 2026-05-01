@@ -50,14 +50,14 @@ describe('VehicleSelector Component', () => {
     const select = screen.getByRole('combobox');
     fireEvent.change(select, { target: { value: '2' } });
 
-    expect(mockOnChange).toHaveBeenCalledWith(mockVehicles[1]);
+    expect(mockOnChange).toHaveBeenCalledWith(2);
   });
 
   test('displays selected vehicle', () => {
     render(
       <VehicleSelector 
         vehicles={mockVehicles} 
-        selectedVehicle={mockVehicles[0]} 
+        value={mockVehicles[0].id} 
       />
     );
     
@@ -67,17 +67,20 @@ describe('VehicleSelector Component', () => {
 
   test('displays placeholder when no vehicle selected', () => {
     render(<VehicleSelector vehicles={mockVehicles} />);
-    expect(screen.getByText(/select a vehicle/i)).toBeInTheDocument();
+    // i18n mock returns the key; the option renders 'common.selectVehicle'
+    expect(screen.getByText('common.selectVehicle')).toBeInTheDocument();
   });
 
   test('displays empty state when no vehicles', () => {
     render(<VehicleSelector vehicles={[]} />);
-    expect(screen.getByText(/no vehicles/i)).toBeInTheDocument();
+    // i18n mock returns the key
+    expect(screen.getByText('common.noVehicles')).toBeInTheDocument();
   });
 
   test('displays add vehicle button', () => {
     render(<VehicleSelector vehicles={mockVehicles} showAddButton={true} />);
-    expect(screen.getByText(/add vehicle/i)).toBeInTheDocument();
+    // i18n mock returns the key
+    expect(screen.getByRole('button', { name: /vehicles\.addVehicle/i })).toBeInTheDocument();
   });
 
   test('calls onAddVehicle when add button clicked', () => {
@@ -90,8 +93,7 @@ describe('VehicleSelector Component', () => {
       />
     );
     
-    const addButton = screen.getByText(/add vehicle/i);
-    fireEvent.click(addButton);
+    fireEvent.click(screen.getByRole('button', { name: /vehicles\.addVehicle/i }));
 
     expect(mockOnAdd).toHaveBeenCalled();
   });
@@ -124,7 +126,8 @@ describe('VehicleSelector Component', () => {
 
   test('displays vehicle count', () => {
     render(<VehicleSelector vehicles={mockVehicles} showCount={true} />);
-    expect(screen.getByText(/2 vehicles/i)).toBeInTheDocument();
+    // i18n mock returns the key; rendered as '2 vehicles.title'
+    expect(screen.getByText(/^2 /)).toBeInTheDocument();
   });
 
   test('disables selector when disabled prop is true', () => {

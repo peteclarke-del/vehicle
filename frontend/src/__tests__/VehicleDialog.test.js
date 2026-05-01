@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import VehicleDialog from '../components/VehicleDialog';
-import { AuthContext } from '../context/AuthContext';
+import { AuthContext } from '../contexts/AuthContext';
 
 jest.mock('../hooks/useApiData', () => ({
   fetchArrayData: jest.fn(),

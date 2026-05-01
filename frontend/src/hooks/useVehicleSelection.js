@@ -53,7 +53,11 @@ const useVehicleSelection = (vehicles, options = {}) => {
   useEffect(() => {
     if (!initializedRef.current) return;
     if (!selectedVehicle || selectedVehicle === '__all__') return;
-    if (!vehicles || vehicles.length === 0) return;
+    if (!vehicles || vehicles.length === 0) {
+      // Empty list: clear the selection to avoid MUI out-of-range warnings and stale fetches
+      setSelectedVehicle(includeViewAll ? '__all__' : '');
+      return;
+    }
     const found = vehicles.find((v) => String(v.id) === String(selectedVehicle));
     if (!found) {
       const fallback = includeViewAll ? '__all__' : vehicles[0].id;

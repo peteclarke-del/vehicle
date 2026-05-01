@@ -72,8 +72,10 @@ describe('FilteredVehicleSelector', () => {
         statusFilter="Live"
       />
     );
-    // The status label input should be present (MUI Select renders as combobox)
-    expect(screen.getByRole('combobox', { name: /status/i })).toBeInTheDocument();
+    // Open the MUI Select dropdown, then click an option
+    fireEvent.mouseDown(screen.getByRole('combobox', { name: /status/i }));
+    fireEvent.click(screen.getByRole('option', { name: 'vehicle.status.sold' }));
+    expect(onStatusFilterChange).toHaveBeenCalled();
   });
 
   test('passes vehicles to VehicleSelector', () => {
