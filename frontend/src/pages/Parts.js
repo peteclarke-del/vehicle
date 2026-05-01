@@ -4,7 +4,7 @@ import { Box, Button, Typography, Table, TableBody, TableCell, TableContainer, T
 import { Add, Edit, Delete } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { useVehicles } from '../contexts/VehiclesContext';
-import VehicleSelector from '../components/VehicleSelector';
+import FilteredVehicleSelector from '../components/FilteredVehicleSelector';
 import { useTranslation } from 'react-i18next';
 import formatCurrency from '../utils/formatCurrency';
 import { fetchArrayData } from '../hooks/useApiData';
@@ -12,6 +12,7 @@ import { useDistance } from '../hooks/useDistance';
 import useTablePagination from '../hooks/useTablePagination';
 import usePersistedSort from '../hooks/usePersistedSort';
 import useVehicleSelection from '../hooks/useVehicleSelection';
+import useVehicleStatusFilter from '../hooks/useVehicleStatusFilter';
 import { useRegistrationLabel } from '../utils/splitLabel';
 import PartDialog from '../components/PartDialog';
 import ServiceDialog from '../components/ServiceDialog';
@@ -33,7 +34,8 @@ const Parts = () => {
   const { t, i18n } = useTranslation();
   const { regFirst, regLast } = useRegistrationLabel();
   const { orderBy, order, handleRequestSort } = usePersistedSort('parts', 'description', 'asc');
-  const { selectedVehicle, handleVehicleChange } = useVehicleSelection(vehicles, { includeViewAll: true });
+  const { statusFilter, filteredVehicles, handleStatusFilterChange, STATUS_OPTIONS } = useVehicleStatusFilter(vehicles, 'partsStatusFilter');
+  const { selectedVehicle, handleVehicleChange } = useVehicleSelection(filteredVehicles, { includeViewAll: true });
   const { convert, format, getLabel } = useDistance();
 
   const loadVehicles = useCallback(async () => {
@@ -159,10 +161,14 @@ const Parts = () => {
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Typography variant="h4">{t('parts.title')}</Typography>
         <Box display="flex" gap={2}>
-          <VehicleSelector
-            vehicles={vehicles}
-            value={selectedVehicle}
-            onChange={handleVehicleChange}
+          <FilteredVehicleSelector
+            statusFilter={statusFilter}
+            onStatusFilterChange={handleStatusFilterChange}
+            statusOptions={STATUS_OPTIONS}
+            vehicles={filteredVehicles}
+            selectedVehicle={selectedVehicle}
+            onVehicleChange={handleVehicleChange}
+            id="parts"
             includeViewAll={true}
             minWidth={360}
           />

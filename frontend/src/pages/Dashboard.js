@@ -280,7 +280,7 @@ const Dashboard = () => {
   useEffect(() => {
     // Fetch both dashboard totals and road tax data in parallel.
     // Re-runs whenever any record page saves (recordsVersion increments).
-    fetchDashboardTotals(12);
+    fetchDashboardTotals(chartPeriod);
     fetchRoadTaxData();
     fetchMonthlyCosts(chartPeriod);
   }, [fetchDashboardTotals, fetchRoadTaxData, fetchMonthlyCosts, chartPeriod, recordsVersion]);
@@ -318,7 +318,7 @@ const Dashboard = () => {
     setDialogOpen(false);
     if (reload) {
       refreshVehicles();
-      fetchDashboardTotals(12);
+      fetchDashboardTotals(chartPeriod);
       fetchMonthlyCosts(chartPeriod);
       fetchRoadTaxData();
     }
@@ -341,7 +341,7 @@ const Dashboard = () => {
       if (notes) payload.statusChangeNotes = notes;
       await api.put(`/vehicles/${vehicleId}`, payload);
       await refreshVehicles();
-      fetchDashboardTotals(12);
+      fetchDashboardTotals(chartPeriod);
       fetchMonthlyCosts(chartPeriod);
     } catch (e) {
       logger.error('Error updating vehicle status with metadata', e);
@@ -354,6 +354,10 @@ const Dashboard = () => {
     const newSort = event.target.value;
     setSortOrder(newSort);
     SafeStorage.set('vehicleSortOrder', newSort);
+  };
+
+  const handlePeriodChange = (e) => {
+    setChartPeriod(e.target.value);
   };
 
   const handleOpenMenu = (event, vehicleId) => {
@@ -495,7 +499,6 @@ const Dashboard = () => {
         label={chipLabel}
         color={chipColor}
         icon={icon}
-        sx={{ mb: 0.5, mr: 0.5 }}
       />
     );
   };
@@ -512,7 +515,6 @@ const Dashboard = () => {
               : t('dashboard.serviceDue')}
             color="error"
             icon={<WarningIcon />}
-            sx={{ mb: 0.5, mr: 0.5 }}
           />
         </Tooltip>
       );
@@ -523,7 +525,6 @@ const Dashboard = () => {
         label={`${t('dashboard.lastService')}: ${formatDateISO(vehicle.lastServiceDate)}`}
         color="success"
         icon={<CheckCircleIcon />}
-        sx={{ mb: 0.5, mr: 0.5 }}
       />
     );
   };
@@ -665,6 +666,16 @@ const Dashboard = () => {
     <Container maxWidth="xl">
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3} mt={2}>
         <Typography variant="h4">{t('dashboard.welcome')}</Typography>
+        <FormControl size="small" sx={{ minWidth: 140 }}>
+          <InputLabel>{t('dashboard.period')}</InputLabel>
+          <Select value={chartPeriod} label={t('dashboard.period')} onChange={handlePeriodChange}>
+            <MenuItem value={3}>3 {t('dashboard.months')}</MenuItem>
+            <MenuItem value={6}>6 {t('dashboard.months')}</MenuItem>
+            <MenuItem value={12}>12 {t('dashboard.months')}</MenuItem>
+            <MenuItem value={24}>24 {t('dashboard.months')}</MenuItem>
+            <MenuItem value={36}>36 {t('dashboard.months')}</MenuItem>
+          </Select>
+        </FormControl>
       </Box>
 
       {orderedVehicles.length === 0 ? (
@@ -721,7 +732,7 @@ const Dashboard = () => {
 
                     <StatCard
                       isCircular={true}
-                      title={`${t('dashboard.totalFuelCost')} (12m)`}
+                      title={`${t('dashboard.totalFuelCost')} (${chartPeriod}m)`}
                       value={formatCurrency(last12FuelTotal, 'GBP', i18n.language)}
                       loading={totalsLoading}
                       subtitle={t('dashboard.fuel')}
@@ -729,7 +740,7 @@ const Dashboard = () => {
 
                     <StatCard
                       isCircular={true}
-                      title={`${t('dashboard.totalPartsCost')} (12m)`}
+                      title={`${t('dashboard.totalPartsCost')} (${chartPeriod}m)`}
                       value={formatCurrency(last12PartsTotal, 'GBP', i18n.language)}
                       loading={totalsLoading}
                       subtitle={t('dashboard.parts')}
@@ -737,7 +748,7 @@ const Dashboard = () => {
 
                     <StatCard
                       isCircular={true}
-                      title={`${t('dashboard.totalConsumablesCost') || 'Total Consumables Cost'} (12m)`}
+                      title={`${t('dashboard.totalConsumablesCost') || 'Total Consumables Cost'} (${chartPeriod}m)`}
                       value={formatCurrency(last12ConsumablesTotal, 'GBP', i18n.language)}
                       loading={totalsLoading}
                       subtitle={t('dashboard.consumables')}
@@ -745,7 +756,7 @@ const Dashboard = () => {
 
                     <StatCard
                       isCircular={true}
-                      title={`${t('dashboard.averageServiceCost')} (12m)`}
+                      title={`${t('dashboard.averageServiceCost')} (${chartPeriod}m)`}
                       value={`£${avgServiceCost.toLocaleString('en-GB', { maximumFractionDigits: 2 })}`}
                       loading={totalsLoading}
                       subtitle={t('dashboard.averageServiceCostDesc')}
@@ -919,28 +930,11 @@ const Dashboard = () => {
             }));
 
             const chartHeight = 300;
-            const handlePeriodChange = (e) => {
-              const newPeriod = e.target.value;
-              setChartPeriod(newPeriod);
-            };
-
             const valueFormatter = (v) => formatCurrency(v, 'GBP', i18n.language);
 
             return (
               <Box sx={{ mb: 4 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                  <Typography variant="h6">{t('dashboard.monthlySpend')}</Typography>
-                  <FormControl size="small" sx={{ minWidth: 140 }}>
-                    <InputLabel>{t('dashboard.period')}</InputLabel>
-                    <Select value={chartPeriod} label={t('dashboard.period')} onChange={handlePeriodChange}>
-                      <MenuItem value={3}>3 {t('dashboard.months')}</MenuItem>
-                      <MenuItem value={6}>6 {t('dashboard.months')}</MenuItem>
-                      <MenuItem value={12}>12 {t('dashboard.months')}</MenuItem>
-                      <MenuItem value={24}>24 {t('dashboard.months')}</MenuItem>
-                      <MenuItem value={36}>36 {t('dashboard.months')}</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Box>
+                <Typography variant="h6" sx={{ mb: 2 }}>{t('dashboard.monthlySpend')}</Typography>
                 <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 3 }}>
                   {/* Fuel Spend */}
                   <Paper sx={{ p: 2, overflow: 'hidden' }}>
@@ -1128,16 +1122,14 @@ const Dashboard = () => {
                               borderRadius: 1,
                               p: 1.5,
                               backdropFilter: 'blur(10px)',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: 0.5,
                             }}
                           >
-                            <DateChip
-                              label={t('dashboard.mot')}
-                              date={vehicle.motExpiryDate}
-                            />
-                            <DateChip
-                              label={t('dashboard.roadTax')}
-                              date={vehicle.roadTaxExpiryDate}
-                            />
+                            <DateChip label={t('dashboard.mot')} date={vehicle.motExpiryDate} />
+                            <DateChip label={t('dashboard.insurance') || 'Insurance'} date={vehicle.insuranceExpiryDate} />
+                            <DateChip label={t('dashboard.roadTax')} date={vehicle.roadTaxExpiryDate} />
                             <ServiceChip vehicle={vehicle} />
                           </Box>
 

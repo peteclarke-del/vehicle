@@ -249,8 +249,8 @@ const Vehicles = () => {
   return (
     <Box>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Box display="flex" alignItems="center" gap={2}>
-          <Typography variant="h4">{(vehicles && vehicles.length > 0) ? t('vehicles.titleWithCount', { count: vehicles.filter(v => (v.status || 'Live') === 'Live').length }) : t('vehicle.title')}</Typography>
+        <Typography variant="h4">{(vehicles && vehicles.length > 0) ? t('vehicles.titleWithCount', { count: vehicles.filter(v => (v.status || 'Live') === 'Live').length }) : t('vehicle.title')}</Typography>
+        <Box display="flex" gap={2} alignItems="center">
           <FormControl size="small" sx={{ minWidth: 160 }}>
             <InputLabel id="vehicle-status-filter-label">{t('vehicles.filterByStatus') || 'Status'}</InputLabel>
             <Select
@@ -265,8 +265,6 @@ const Vehicles = () => {
               ))}
             </Select>
           </FormControl>
-        </Box>
-        <Box display="flex" gap={2} alignItems="center">
           <ToggleButtonGroup
             value={viewMode}
             exclusive
@@ -354,12 +352,12 @@ const Vehicles = () => {
                     </Box>
                     <Box>
                       <Tooltip title={t('common.edit')}>
-                        <IconButton size="small" onClick={(e) => { e.stopPropagation(); handleEdit(vehicle); }}>
+                        <IconButton size="small" onClick={(e) => { e.stopPropagation(); handleEdit(vehicle); }} aria-label={t('common.edit')}>
                           <Edit fontSize="small" />
                         </IconButton>
                       </Tooltip>
                       <Tooltip title={t('common.delete')}>
-                        <IconButton size="small" onClick={(e) => { e.stopPropagation(); handleDelete(vehicle.id); }}>
+                        <IconButton size="small" onClick={(e) => { e.stopPropagation(); handleDelete(vehicle.id); }} aria-label={t('common.delete')}>
                           <Delete fontSize="small" />
                         </IconButton>
                       </Tooltip>
@@ -541,6 +539,7 @@ const Vehicles = () => {
                     <Tooltip title={t('common.edit')}>
                       <IconButton 
                         size="small" 
+                        aria-label={t('common.edit')}
                         onClick={(e) => {
                           e.stopPropagation();
                           handleEdit(vehicle);
@@ -552,6 +551,7 @@ const Vehicles = () => {
                     <Tooltip title={t('common.delete')}>
                       <IconButton 
                         size="small" 
+                        aria-label={t('common.delete')}
                         onClick={(e) => {
                           e.stopPropagation();
                           handleDelete(vehicle.id);

@@ -49,8 +49,7 @@ const PrivateRoute = ({ children }) => {
 };
 
 function AppRoutes() {
-  const { user } = useAuth();
-  const { api } = useAuth();
+  const { user, api } = useAuth();
   const [showPasswordChange, setShowPasswordChange] = useState(false);
   const [systemStatus, setSystemStatus] = useState(null);
   const [checkingSystem, setCheckingSystem] = useState(true);

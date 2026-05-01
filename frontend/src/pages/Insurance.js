@@ -24,9 +24,10 @@ import { fetchArrayData } from '../hooks/useApiData';
 import useTablePagination from '../hooks/useTablePagination';
 import usePersistedSort from '../hooks/usePersistedSort';
 import useVehicleSelection from '../hooks/useVehicleSelection';
+import useVehicleStatusFilter from '../hooks/useVehicleStatusFilter';
 import PolicyDialog from '../components/PolicyDialog';
 import TablePaginationBar from '../components/TablePaginationBar';
-import VehicleSelector from '../components/VehicleSelector';
+import FilteredVehicleSelector from '../components/FilteredVehicleSelector';
 import KnightRiderLoader from '../components/KnightRiderLoader';
 import { demoGuard } from '../utils/demoMode';
 
@@ -41,7 +42,8 @@ const Insurance = () => {
   const [editingPolicy, setEditingPolicy] = useState(null);
   const { vehicles, loading: vehiclesLoading, fetchVehicles } = useVehicles();
   const { orderBy, order, handleRequestSort } = usePersistedSort('insurance', 'expiryDate', 'desc');
-  const { selectedVehicle, handleVehicleChange } = useVehicleSelection(vehicles);
+  const { statusFilter, filteredVehicles, handleStatusFilterChange, STATUS_OPTIONS } = useVehicleStatusFilter(vehicles, 'insuranceStatusFilter');
+  const { selectedVehicle, handleVehicleChange } = useVehicleSelection(filteredVehicles);
 
   const loadPolicies = useCallback(async (signal) => {
     setLoading(true);
@@ -55,6 +57,13 @@ const Insurance = () => {
   useEffect(() => {
     fetchVehicles();
   }, [fetchVehicles]);
+
+  // When vehicles finish loading and there are none, exit loading state
+  useEffect(() => {
+    if (!vehiclesLoading && vehicles.length === 0) {
+      setLoading(false);
+    }
+  }, [vehiclesLoading, vehicles.length]);
 
   useEffect(() => {
     if (!selectedVehicle) return;
@@ -132,10 +141,14 @@ const Insurance = () => {
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Typography variant="h4">{t('insurance.policies.title')}</Typography>
         <Box display="flex" gap={2}>
-          <VehicleSelector
-            vehicles={vehicles}
-            value={selectedVehicle}
-            onChange={handleVehicleChange}
+          <FilteredVehicleSelector
+            statusFilter={statusFilter}
+            onStatusFilterChange={handleStatusFilterChange}
+            statusOptions={STATUS_OPTIONS}
+            vehicles={filteredVehicles}
+            selectedVehicle={selectedVehicle}
+            onVehicleChange={handleVehicleChange}
+            id="insurance"
             minWidth={300}
           />
           <Button variant="contained" startIcon={<AddIcon />} onClick={handleAddPolicy}>

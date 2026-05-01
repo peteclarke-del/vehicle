@@ -23,10 +23,11 @@ import { fetchArrayData } from '../hooks/useApiData';
 import useTablePagination from '../hooks/useTablePagination';
 import usePersistedSort from '../hooks/usePersistedSort';
 import useVehicleSelection from '../hooks/useVehicleSelection';
+import useVehicleStatusFilter from '../hooks/useVehicleStatusFilter';
 import { useRegistrationLabel } from '../utils/splitLabel';
 import RoadTaxDialog from '../components/RoadTaxDialog';
 import TablePaginationBar from '../components/TablePaginationBar';
-import VehicleSelector from '../components/VehicleSelector';
+import FilteredVehicleSelector from '../components/FilteredVehicleSelector';
 import CenteredLoader from '../components/CenteredLoader';
 import { demoGuard } from '../utils/demoMode';
 
@@ -39,7 +40,8 @@ const RoadTax = () => {
   const { vehicles, loading: vehiclesLoading, fetchVehicles } = useVehicles();
   const { t } = useTranslation();
   const { regFirst, regLast } = useRegistrationLabel();
-  const { selectedVehicle, handleVehicleChange } = useVehicleSelection(vehicles);
+  const { statusFilter, filteredVehicles, handleStatusFilterChange, STATUS_OPTIONS } = useVehicleStatusFilter(vehicles, 'roadTaxStatusFilter');
+  const { selectedVehicle, handleVehicleChange } = useVehicleSelection(filteredVehicles);
   const { orderBy, order, handleRequestSort } = usePersistedSort('roadTax', 'expiryDate', 'desc');
 
   useEffect(() => {
@@ -160,10 +162,14 @@ const RoadTax = () => {
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Typography variant="h4">{t('roadTax.title')}</Typography>
         <Box display="flex" gap={2}>
-          <VehicleSelector
-            vehicles={vehicles}
-            value={selectedVehicle}
-            onChange={handleVehicleChange}
+          <FilteredVehicleSelector
+            statusFilter={statusFilter}
+            onStatusFilterChange={handleStatusFilterChange}
+            statusOptions={STATUS_OPTIONS}
+            vehicles={filteredVehicles}
+            selectedVehicle={selectedVehicle}
+            onVehicleChange={handleVehicleChange}
+            id="roadtax"
             minWidth={360}
           />
           <Button variant="contained" color="primary" startIcon={<AddIcon />} onClick={handleAdd}>

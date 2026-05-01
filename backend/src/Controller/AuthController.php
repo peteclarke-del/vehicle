@@ -83,6 +83,10 @@ class AuthController extends AbstractController
             return $this->json(['error' => 'Email and password required'], 400);
         }
 
+        if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
+            return $this->json(['error' => 'Invalid email address'], 400);
+        }
+
         // Validate password
         $passwordPolicy = $_ENV['REACT_APP_PASSWORD_POLICY'] ?? null;
         if ($passwordPolicy) {

@@ -28,10 +28,11 @@ import { formatDateISO } from '../utils/formatDate';
 import useTablePagination from '../hooks/useTablePagination';
 import usePersistedSort from '../hooks/usePersistedSort';
 import useVehicleSelection from '../hooks/useVehicleSelection';
+import useVehicleStatusFilter from '../hooks/useVehicleStatusFilter';
 import { useRegistrationLabel } from '../utils/splitLabel';
 import ServiceDialog from '../components/ServiceDialog';
 import TablePaginationBar from '../components/TablePaginationBar';
-import VehicleSelector from '../components/VehicleSelector';
+import FilteredVehicleSelector from '../components/FilteredVehicleSelector';
 import ViewAttachmentIconButton from '../components/ViewAttachmentIconButton';
 import { demoGuard } from '../utils/demoMode';
 import KnightRiderLoader from '../components/KnightRiderLoader';
@@ -46,7 +47,8 @@ const ServiceRecords = () => {
   const { t, i18n } = useTranslation();
   const { regFirst, regLast } = useRegistrationLabel();
   const { orderBy, order, handleRequestSort } = usePersistedSort('serviceRecords', 'serviceDate', 'desc');
-  const { selectedVehicle, handleVehicleChange } = useVehicleSelection(vehicles);
+  const { statusFilter, filteredVehicles, handleStatusFilterChange, STATUS_OPTIONS } = useVehicleStatusFilter(vehicles, 'serviceStatusFilter');
+  const { selectedVehicle, handleVehicleChange } = useVehicleSelection(filteredVehicles);
   const { convert, format, getLabel } = useDistance();
 
   const loadServiceRecords = useCallback(async (signal) => {
@@ -209,12 +211,16 @@ const ServiceRecords = () => {
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Typography variant="h4">{t('service.title')}</Typography>
         <Box display="flex" gap={2}>
-            <VehicleSelector
-              vehicles={vehicles}
-              value={selectedVehicle}
-              onChange={handleVehicleChange}
-              minWidth={360}
-            />
+          <FilteredVehicleSelector
+            statusFilter={statusFilter}
+            onStatusFilterChange={handleStatusFilterChange}
+            statusOptions={STATUS_OPTIONS}
+            vehicles={filteredVehicles}
+            selectedVehicle={selectedVehicle}
+            onVehicleChange={handleVehicleChange}
+            id="service"
+            minWidth={360}
+          />
           <Button variant="contained" color="primary" startIcon={<AddIcon />} onClick={handleAdd} disabled={!selectedVehicle || selectedVehicle === '__all__'}>
             {t('service.addService')}
           </Button>

@@ -5,7 +5,14 @@ import Insurance from '../pages/Insurance';
 jest.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k) => k }) }));
 
 jest.mock('../contexts/AuthContext', () => ({
-  useAuth: () => ({ api: { get: jest.fn().mockResolvedValue({ data: [] }), delete: jest.fn() } }),
+  useAuth: () => ({
+    api: {
+      get: jest.fn().mockResolvedValue({ data: [] }),
+      post: jest.fn().mockResolvedValue({ data: {} }),
+      put: jest.fn().mockResolvedValue({ data: {} }),
+      delete: jest.fn().mockResolvedValue({}),
+    },
+  }),
 }));
 
 describe('Insurance page (policies integration)', () => {
@@ -17,8 +24,8 @@ describe('Insurance page (policies integration)', () => {
 
   test('opens dialog on add', async () => {
     render(<Insurance />);
-    const btn = screen.getByText('insurance.policies.addPolicy');
+    const btn = screen.getByRole('button', { name: 'insurance.policies.addPolicy' });
     fireEvent.click(btn);
-    expect(await screen.findByText('insurance.policies.addPolicy')).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'insurance.policies.addPolicy' })).toBeInTheDocument();
   });
 });
