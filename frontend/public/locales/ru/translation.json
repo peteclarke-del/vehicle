@@ -326,6 +326,7 @@
     "fetchRegistration": "Найти по рег. номеру",
     "lookupFailed": "Не удалось найти данные транспортного средства",
     "registrationHelper": "Введите регистрационный номер для автозаполнения данных",
+    "suppressNotifications": "Отключить уведомления",
     "motExempt": "Освобождено от ТО",
     "purchaseMileage": "Пробег при покупке",
     "status": {

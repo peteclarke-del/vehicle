@@ -76,7 +76,9 @@ const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose, unlinkedServic
           workPerformed: serviceRecord.workPerformed || '',
           additionalCosts: serviceRecord.additionalCosts || '0.00',
           nextServiceDate: serviceRecord.nextServiceDate || '',
-          nextServiceMileage: serviceRecord.nextServiceMileage || '',
+          nextServiceMileage: serviceRecord.nextServiceMileage
+            ? (isBackendData ? Math.round(convert(serviceRecord.nextServiceMileage)) : serviceRecord.nextServiceMileage)
+            : '',
           notes: serviceRecord.notes || '',
         });
         setReceiptAttachmentId(serviceRecord.receiptAttachmentId || null);
@@ -152,7 +154,7 @@ const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose, unlinkedServic
         workPerformed: existingService.workPerformed || '',
         additionalCosts: existingService.additionalCosts || '0.00',
         nextServiceDate: existingService.nextServiceDate || '',
-        nextServiceMileage: existingService.nextServiceMileage || '',
+        nextServiceMileage: existingService.nextServiceMileage ? Math.round(convert(existingService.nextServiceMileage)) : '',
         notes: existingService.notes || '',
       });
       setReceiptAttachmentId(existingService.receiptAttachmentId || null);
@@ -925,7 +927,7 @@ const ServiceDialog = ({ open, serviceRecord, vehicleId, onClose, unlinkedServic
           <DialogContent>
             <TextField fullWidth name="description" label={t('common.description')} defaultValue={labourEditorIndex !== null ? ((formData.items || [])[labourEditorIndex] || {}).description : ''} />
             <TextField fullWidth name="cost" type="number" label={t('parts.cost') || 'Cost'} defaultValue={labourEditorIndex !== null ? ((formData.items || [])[labourEditorIndex] || {}).cost : ''} inputProps={{ step: '0.01', min: '0' }} />
-            <TextField fullWidth name="quantity" type="number" label={t('common.quantity') || 'Quantity'} defaultValue={labourEditorIndex !== null ? ((formData.items || [])[labourEditorIndex] || {}).quantity || 1 : 1} inputProps={{ step: '1', min: '1' }} />
+            <TextField fullWidth name="quantity" type="number" label={t('common.quantity') || 'Quantity'} defaultValue={labourEditorIndex !== null ? ((formData.items || [])[labourEditorIndex] || {}).quantity || 1 : 1} inputProps={{ step: '0.01', min: '0.01' }} />
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setLabourEditorIndex(null)}>{t('common.cancel')}</Button>

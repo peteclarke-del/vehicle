@@ -210,7 +210,7 @@ const AdminUserDetails = () => {
     <Box sx={{ p: { xs: 1, sm: 2, md: 3 } }}>
       {/* Header */}
       <Box display="flex" alignItems="center" gap={1} mb={2}>
-        <IconButton onClick={() => navigate('/admin/users')}>
+        <IconButton onClick={() => navigate('/admin/users')} aria-label={t('common.back', 'Back')}>
           <ArrowBack />
         </IconButton>
         {isTargetAdmin ? (

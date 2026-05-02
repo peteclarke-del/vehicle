@@ -39,6 +39,7 @@ const VehicleDialog = ({ open, vehicle, onClose }) => {
     purchaseMileage: '',
     motExempt: false,
     roadTaxExempt: false,
+    suppressNotifications: false,
     securityFeatures: [],
     vehicleColor: '',
     serviceIntervalMonths: 12,
@@ -186,11 +187,15 @@ const VehicleDialog = ({ open, vehicle, onClose }) => {
       loadVehicleTypes();
       if (vehicle) {
         setFormData({
-          ...vehicle,
+          ...initialForm,
+          ...Object.fromEntries(
+            Object.entries(vehicle).map(([k, v]) => [k, v ?? initialForm[k] ?? ''])
+          ),
           vehicleTypeId: vehicle.vehicleType?.id || '',
             purchaseMileage: vehicle.purchaseMileage ? convert(vehicle.purchaseMileage) : '',
           motExempt: vehicle.motExempt ?? vehicle.isMotExempt ?? false,
           roadTaxExempt: vehicle.roadTaxExempt ?? vehicle.isRoadTaxExempt ?? false,
+          suppressNotifications: vehicle.suppressNotifications ?? false,
           serviceIntervalMiles: vehicle.serviceIntervalMiles ? convert(vehicle.serviceIntervalMiles) : 4000,
           securityFeatures: typeof vehicle.securityFeatures === 'string' 
             ? vehicle.securityFeatures.split(',').map(s => s.trim()).filter(Boolean)
@@ -469,7 +474,7 @@ const VehicleDialog = ({ open, vehicle, onClose }) => {
             onConfirm={handleConfirmStatusChange}
           />
           <Grid container spacing={2}>
-            <Grid item xs={12} sm={9}>
+            <Grid item xs={12} sm={4}>
               <TextField
                 fullWidth
                 required
@@ -479,7 +484,7 @@ const VehicleDialog = ({ open, vehicle, onClose }) => {
                 onChange={handleChange}
               />
             </Grid>
-            <Grid item xs={12} sm={3}>
+            <Grid item xs={12} sm={4}>
               {vehicle ? (
                 <TextField
                   select
@@ -500,6 +505,18 @@ const VehicleDialog = ({ open, vehicle, onClose }) => {
                   ))}
                 </TextField>
               ) : null}
+            </Grid>
+            <Grid item xs={12} sm={4} sx={{ display: 'flex', alignItems: 'center' }}>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={!!formData.suppressNotifications}
+                    onChange={(e) => setFormData({ ...formData, suppressNotifications: e.target.checked })}
+                    name="suppressNotifications"
+                  />
+                }
+                label={t('vehicle.suppressNotifications')}
+              />
             </Grid>
             <Grid item xs={12} sm={6}>
               <Autocomplete

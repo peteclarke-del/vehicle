@@ -29,6 +29,12 @@ const ServerConfigScreen: React.FC = () => {
   const [testResult, setTestResult] = useState<{success: boolean; message: string} | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const describeNetworkError = (err: any): string => {
+    const code = err?.code ? ` (${err.code})` : '';
+    const msg = err?.message || 'Unknown network error';
+    return `${msg}${code}`;
+  };
+
   const normalizeUrl = (url: string): string => {
     let normalized = url.trim();
     if (!normalized) {
@@ -59,8 +65,18 @@ const ServerConfigScreen: React.FC = () => {
     setError(null);
 
     try {
-      await axios.get(url, {timeout: 10000});
-      setTestResult({success: true, message: 'Connection successful!'});
+      // Use a public endpoint that always returns JSON in this app.
+      const checkUrl = `${url}/system-check`;
+      const response = await axios.get(checkUrl, {timeout: 15000});
+
+      if (response.status >= 200 && response.status < 300) {
+        setTestResult({success: true, message: 'Connection successful!'});
+      } else {
+        setTestResult({
+          success: false,
+          message: `Server responded with HTTP ${response.status}`,
+        });
+      }
     } catch (err: any) {
       // A response status means the server is reachable (even 401/403/404)
       if (err.response?.status) {
@@ -71,7 +87,7 @@ const ServerConfigScreen: React.FC = () => {
       } else {
         setTestResult({
           success: false,
-          message: 'Could not connect to server. Check the URL and try again.',
+          message: `Could not connect to server. ${describeNetworkError(err)}`,
         });
       }
     } finally {

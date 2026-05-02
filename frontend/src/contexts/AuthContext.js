@@ -6,6 +6,8 @@ import SafeStorage from '../utils/SafeStorage';
 
 const AuthContext = createContext();
 
+export { AuthContext };
+
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
@@ -56,14 +58,70 @@ export const AuthProvider = ({ children }) => {
 
   // Add response interceptor to handle 401 errors
   useEffect(() => {
+    // Track in-flight refresh so we don't stack multiple refresh calls
+    let isRefreshing = false;
+    let pendingRequests = [];
+
     const interceptor = api.interceptors.response.use(
       (response) => response,
-      (error) => {
-        if (error.response?.status === 401) {
-          // Token expired or invalid - logout immediately
-          logout();
-          window.location.href = '/login';
+      async (error) => {
+        const originalRequest = error.config;
+
+        if (error.response?.status === 401 && !originalRequest._retry) {
+          // Avoid retrying the refresh endpoint itself to prevent infinite loops
+          if (originalRequest.url?.includes('/auth/refresh') || originalRequest.url?.includes('/login')) {
+            logout();
+            window.location.href = '/login';
+            return Promise.reject(error);
+          }
+
+          // Try to use the stored refresh token before giving up
+          const refreshToken = SafeStorage.get('refreshToken');
+          if (!refreshToken) {
+            logout();
+            window.location.href = '/login';
+            return Promise.reject(error);
+          }
+
+          if (isRefreshing) {
+            // Queue this request until the refresh completes
+            return new Promise((resolve, reject) => {
+              pendingRequests.push({ resolve, reject });
+            }).then(() => api(originalRequest)).catch(() => Promise.reject(error));
+          }
+
+          originalRequest._retry = true;
+          isRefreshing = true;
+
+          try {
+            const resp = await api.post('/auth/refresh', { refreshToken });
+            const newToken = resp?.data?.token;
+            if (!newToken) throw new Error('No token in refresh response');
+
+            SafeStorage.set('token', newToken);
+            setToken(newToken);
+
+            // Unblock queued requests
+            pendingRequests.forEach(({ resolve }) => resolve());
+            pendingRequests = [];
+            isRefreshing = false;
+
+            // Retry original request with new token
+            originalRequest.headers = {
+              ...originalRequest.headers,
+              Authorization: `Bearer ${newToken}`,
+            };
+            return api(originalRequest);
+          } catch (refreshError) {
+            pendingRequests.forEach(({ reject }) => reject(refreshError));
+            pendingRequests = [];
+            isRefreshing = false;
+            logout();
+            window.location.href = '/login';
+            return Promise.reject(refreshError);
+          }
         }
+
         return Promise.reject(error);
       }
     );

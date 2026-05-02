@@ -59,19 +59,23 @@ class ErrorBoundary extends React.Component {
               {this.state.error && this.state.error.toString()}
             </Typography>
             {process.env.NODE_ENV === 'development' && this.state.errorInfo && (
-              <Box
-                component="pre"
-                sx={{
-                  mt: 2,
-                  p: 2,
-                  bgcolor: 'grey.100',
-                  borderRadius: 1,
-                  textAlign: 'left',
-                  overflow: 'auto',
-                  fontSize: '0.875rem',
-                }}
-              >
-                {this.state.errorInfo.componentStack}
+              <Box sx={{ mt: 2 }}>
+                <Typography variant="subtitle2" gutterBottom>
+                  Stack Trace
+                </Typography>
+                <Box
+                  component="pre"
+                  sx={{
+                    p: 2,
+                    bgcolor: 'grey.100',
+                    borderRadius: 1,
+                    textAlign: 'left',
+                    overflow: 'auto',
+                    fontSize: '0.875rem',
+                  }}
+                >
+                  {this.state.errorInfo.componentStack}
+                </Box>
               </Box>
             )}
             <Button
@@ -80,7 +84,7 @@ class ErrorBoundary extends React.Component {
               onClick={this.handleReset}
               sx={{ mt: 3 }}
             >
-              Try Again
+              Reload
             </Button>
           </Paper>
         </Box>

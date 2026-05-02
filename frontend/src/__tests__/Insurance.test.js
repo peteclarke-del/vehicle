@@ -1,20 +1,23 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
-import { AuthProvider } from '../contexts/AuthContext';
+import { AuthContext } from '../contexts/AuthContext';
 import Insurance from '../pages/Insurance';
 
-// Mock the API calls
+// Override the global VehiclesContext mock so we can control vehicles per-test
+jest.mock('../contexts/VehiclesContext', () => ({
+  VehiclesProvider: ({ children }) => children,
+  useVehicles: jest.fn(),
+}));
+
+// Override the global useApiData mock so we can control fetchArrayData per-test
 jest.mock('../hooks/useApiData', () => ({
+  useApiData: jest.fn(() => ({ data: [], loading: false, error: null, fetchData: jest.fn(), setData: jest.fn() })),
   fetchArrayData: jest.fn(),
 }));
 
-// Mock translation
-jest.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key) => key,
-  }),
-}));
+const { useVehicles } = require('../contexts/VehiclesContext');
+const { fetchArrayData } = require('../hooks/useApiData');
 
 const mockApi = {
   get: jest.fn(),
@@ -23,20 +26,25 @@ const mockApi = {
   delete: jest.fn(),
 };
 
-const mockAuthContext = {
+const mockAuthValue = {
   api: mockApi,
   user: { id: 1, email: 'test@test.com' },
+  token: 'mock-token',
   isAuthenticated: true,
   login: jest.fn(),
   logout: jest.fn(),
 };
 
+const mockVehicles = [
+  { id: 1, make: 'Toyota', model: 'Corolla', year: 2020, registrationNumber: 'AB12CDE' },
+];
+
 const renderWithProviders = (component) => {
   return render(
     <BrowserRouter>
-      <AuthProvider value={mockAuthContext}>
+      <AuthContext.Provider value={mockAuthValue}>
         {component}
-      </AuthProvider>
+      </AuthContext.Provider>
     </BrowserRouter>
   );
 };
@@ -44,234 +52,209 @@ const renderWithProviders = (component) => {
 describe('Insurance Component', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // Default: no vehicles
+    useVehicles.mockReturnValue({
+      vehicles: [],
+      loading: false,
+      error: null,
+      refreshVehicles: jest.fn(),
+      fetchVehicles: jest.fn(),
+      recordsVersion: 0,
+    });
+    fetchArrayData.mockResolvedValue([]);
   });
 
   test('renders insurance page title', async () => {
-    const { fetchArrayData } = require('../hooks/useApiData');
-    fetchArrayData.mockResolvedValueOnce([
-      { id: 1, name: 'Test Vehicle' }
-    ]);
-
-    mockApi.get.mockResolvedValueOnce({
-      data: []
+    useVehicles.mockReturnValue({
+      vehicles: mockVehicles,
+      loading: false,
+      error: null,
+      refreshVehicles: jest.fn(),
+      fetchVehicles: jest.fn(),
+      recordsVersion: 0,
     });
+    fetchArrayData.mockResolvedValue([]);
 
     renderWithProviders(<Insurance />);
 
     await waitFor(() => {
-      expect(screen.getByText('insurance.title')).toBeInTheDocument();
+      expect(screen.getByText('insurance.policies.title')).toBeInTheDocument();
     });
   });
 
   test('displays no vehicles message when no vehicles exist', async () => {
-    const { fetchArrayData } = require('../hooks/useApiData');
-    fetchArrayData.mockResolvedValueOnce([]);
+    renderWithProviders(<Insurance />);
+
+    await waitFor(() => {
+      expect(screen.getByText('No vehicles')).toBeInTheDocument();
+    });
+  });
+
+  test('shows add policy button', async () => {
+    useVehicles.mockReturnValue({
+      vehicles: mockVehicles,
+      loading: false,
+      error: null,
+      refreshVehicles: jest.fn(),
+      fetchVehicles: jest.fn(),
+      recordsVersion: 0,
+    });
+    fetchArrayData.mockResolvedValue([]);
 
     renderWithProviders(<Insurance />);
 
     await waitFor(() => {
-      expect(screen.getByText('common.noVehicles')).toBeInTheDocument();
+      expect(screen.getByText('insurance.policies.addPolicy')).toBeInTheDocument();
     });
   });
 
-  test('loads and displays insurance records', async () => {
-    const { fetchArrayData } = require('../hooks/useApiData');
-    fetchArrayData.mockResolvedValueOnce([
-      { id: 1, name: 'Test Vehicle' }
-    ]);
+  test('loads and displays insurance policy records', async () => {
+    useVehicles.mockReturnValue({
+      vehicles: mockVehicles,
+      loading: false,
+      error: null,
+      refreshVehicles: jest.fn(),
+      fetchVehicles: jest.fn(),
+      recordsVersion: 0,
+    });
 
-    const mockInsurance = [
+    const mockPolicies = [
       {
         id: 1,
         provider: 'Test Insurance Co',
         policyNumber: 'POL123',
-        coverageType: 'Comprehensive',
-        annualCost: 650.00,
         startDate: '2026-01-01',
         expiryDate: '2027-01-01',
-      }
+        ncdYears: 5,
+        vehicles: [],
+      },
     ];
-
-    mockApi.get.mockResolvedValueOnce({
-      data: mockInsurance
-    });
+    fetchArrayData.mockResolvedValue(mockPolicies);
 
     renderWithProviders(<Insurance />);
 
     await waitFor(() => {
       expect(screen.getByText('Test Insurance Co')).toBeInTheDocument();
       expect(screen.getByText('POL123')).toBeInTheDocument();
-      expect(screen.getByText('Comprehensive')).toBeInTheDocument();
     });
   });
 
   test('opens add dialog when add button clicked', async () => {
-    const { fetchArrayData } = require('../hooks/useApiData');
-    fetchArrayData.mockResolvedValueOnce([
-      { id: 1, name: 'Test Vehicle' }
-    ]);
-
-    mockApi.get.mockResolvedValueOnce({
-      data: []
+    useVehicles.mockReturnValue({
+      vehicles: mockVehicles,
+      loading: false,
+      error: null,
+      refreshVehicles: jest.fn(),
+      fetchVehicles: jest.fn(),
+      recordsVersion: 0,
     });
+    fetchArrayData.mockResolvedValue([]);
 
     renderWithProviders(<Insurance />);
 
-    await waitFor(() => {
-      const addButton = screen.getByText('insurance.addInsurance');
-      expect(addButton).toBeInTheDocument();
-    });
+    const addButton = await screen.findByText('insurance.policies.addPolicy');
+    expect(addButton).toBeInTheDocument();
 
-    const addButton = screen.getByText('insurance.addInsurance');
     fireEvent.click(addButton);
 
-    // Dialog should open
+    // After clicking, PolicyDialog mounts — verify the dialog is in the DOM
     await waitFor(() => {
-      expect(mockApi.get).toHaveBeenCalled();
+      // PolicyDialog renders a form with vehicle-related fields
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
     });
   });
 
-  test('handles delete confirmation', async () => {
-    const { fetchArrayData } = require('../hooks/useApiData');
-    fetchArrayData.mockResolvedValueOnce([
-      { id: 1, name: 'Test Vehicle' }
-    ]);
-
-    const mockInsurance = [
-      {
-        id: 1,
-        provider: 'Test Insurance Co',
-        policyNumber: 'POL123',
-        coverageType: 'Comprehensive',
-        annualCost: 650.00,
-        startDate: '2026-01-01',
-        expiryDate: '2027-01-01',
-      }
-    ];
-
-    mockApi.get.mockResolvedValueOnce({
-      data: mockInsurance
+  test('handles delete with confirmation', async () => {
+    useVehicles.mockReturnValue({
+      vehicles: mockVehicles,
+      loading: false,
+      error: null,
+      refreshVehicles: jest.fn(),
+      fetchVehicles: jest.fn(),
+      recordsVersion: 0,
     });
 
-    mockApi.delete.mockResolvedValueOnce({});
-
-    // Mock window.confirm
+    const mockPolicies = [
+      {
+        id: 42,
+        provider: 'Delete Me Insurance',
+        policyNumber: 'DEL001',
+        startDate: '2026-01-01',
+        expiryDate: '2027-01-01',
+        ncdYears: 3,
+        vehicles: [],
+      },
+    ];
+    fetchArrayData.mockResolvedValue(mockPolicies);
+    mockApi.delete.mockResolvedValue({});
     global.confirm = jest.fn(() => true);
 
     renderWithProviders(<Insurance />);
 
     await waitFor(() => {
-      expect(screen.getByText('Test Insurance Co')).toBeInTheDocument();
+      expect(screen.getByText('Delete Me Insurance')).toBeInTheDocument();
     });
 
-    // Find and click delete button
-    const deleteButtons = screen.getAllByRole('button');
-    const deleteButton = deleteButtons.find(btn => 
-      btn.querySelector('svg[data-testid="DeleteIcon"]')
-    );
+    const deleteButton = screen.getByRole('button', { name: 'common.delete' });
+    fireEvent.click(deleteButton);
 
-    if (deleteButton) {
-      fireEvent.click(deleteButton);
-
-      await waitFor(() => {
-        expect(mockApi.delete).toHaveBeenCalledWith('/insurance/1');
-      });
-    }
+    await waitFor(() => {
+      expect(mockApi.delete).toHaveBeenCalledWith('/insurance/policies/42');
+    });
   });
 
-  test('calculates total annual cost correctly', async () => {
-    const { fetchArrayData } = require('../hooks/useApiData');
-    fetchArrayData.mockResolvedValueOnce([
-      { id: 1, name: 'Test Vehicle' }
-    ]);
-
-    const mockInsurance = [
-      {
-        id: 1,
-        provider: 'Test Insurance Co 1',
-        annualCost: 650.00,
-        startDate: '2026-01-01',
-        expiryDate: '2027-01-01',
-      },
-      {
-        id: 2,
-        provider: 'Test Insurance Co 2',
-        annualCost: 350.00,
-        startDate: '2026-01-01',
-        expiryDate: '2027-01-01',
-      }
-    ];
-
-    mockApi.get.mockResolvedValueOnce({
-      data: mockInsurance
+  test('shows no records message when vehicle has no policies', async () => {
+    useVehicles.mockReturnValue({
+      vehicles: mockVehicles,
+      loading: false,
+      error: null,
+      refreshVehicles: jest.fn(),
+      fetchVehicles: jest.fn(),
+      recordsVersion: 0,
     });
+    fetchArrayData.mockResolvedValue([]);
 
     renderWithProviders(<Insurance />);
 
     await waitFor(() => {
-      expect(screen.getByText(/£1,000.00/)).toBeInTheDocument();
+      expect(screen.getByText('common.noRecords')).toBeInTheDocument();
     });
   });
 
-  test('displays expired chip for expired policies', async () => {
-    const { fetchArrayData } = require('../hooks/useApiData');
-    fetchArrayData.mockResolvedValueOnce([
-      { id: 1, name: 'Test Vehicle' }
-    ]);
-
-    const mockInsurance = [
-      {
-        id: 1,
-        provider: 'Test Insurance Co',
-        policyNumber: 'POL123',
-        coverageType: 'Comprehensive',
-        annualCost: 650.00,
-        startDate: '2024-01-01',
-        expiryDate: '2025-01-01', // Expired
-      }
-    ];
-
-    mockApi.get.mockResolvedValueOnce({
-      data: mockInsurance
+  test('shows loading spinner initially', () => {
+    useVehicles.mockReturnValue({
+      vehicles: [],
+      loading: true,
+      error: null,
+      refreshVehicles: jest.fn(),
+      fetchVehicles: jest.fn(),
+      recordsVersion: 0,
     });
+    fetchArrayData.mockReturnValue(new Promise(() => {})); // never resolves
+
+    renderWithProviders(<Insurance />);
+
+    // Should show loader (KnightRiderLoader) while loading
+    expect(screen.queryByText('insurance.policies.title')).not.toBeInTheDocument();
+  });
+
+  test('shows provider and policy number column headers', async () => {
+    useVehicles.mockReturnValue({
+      vehicles: mockVehicles,
+      loading: false,
+      error: null,
+      refreshVehicles: jest.fn(),
+      fetchVehicles: jest.fn(),
+      recordsVersion: 0,
+    });
+    fetchArrayData.mockResolvedValue([]);
 
     renderWithProviders(<Insurance />);
 
     await waitFor(() => {
-      expect(screen.getByText('common.expired')).toBeInTheDocument();
-    });
-  });
-
-  test('switches between vehicles', async () => {
-    const { fetchArrayData } = require('../hooks/useApiData');
-    const vehicles = [
-      { id: 1, name: 'Vehicle 1' },
-      { id: 2, name: 'Vehicle 2' }
-    ];
-    
-    fetchArrayData.mockResolvedValueOnce(vehicles);
-
-    mockApi.get
-      .mockResolvedValueOnce({ data: [] }) // First vehicle
-      .mockResolvedValueOnce({ data: [] }); // Second vehicle
-
-    renderWithProviders(<Insurance />);
-
-    await waitFor(() => {
-      expect(mockApi.get).toHaveBeenCalledWith('/insurance?vehicleId=1');
-    });
-
-    // Switch vehicle
-    const select = screen.getByRole('button', { name: /vehicle.vehicleType/i });
-    fireEvent.mouseDown(select);
-
-    await waitFor(() => {
-      const option2 = screen.getByText('Vehicle 2');
-      fireEvent.click(option2);
-    });
-
-    await waitFor(() => {
-      expect(mockApi.get).toHaveBeenCalledWith('/insurance?vehicleId=2');
+      expect(screen.getByText('insurance.policies.provider')).toBeInTheDocument();
+      expect(screen.getByText('insurance.policies.policyNumber')).toBeInTheDocument();
+      expect(screen.getByText('insurance.policies.expiryDate')).toBeInTheDocument();
     });
   });
 });

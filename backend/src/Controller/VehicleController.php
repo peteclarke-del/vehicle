@@ -978,6 +978,7 @@ class VehicleController extends AbstractController
         'insuranceExpiryDate' => $vehicle->getComputedInsuranceExpiryDate()?->format('Y-m-d'),
         'isRoadTaxExempt' => $vehicle->isRoadTaxExempt(),
         'isMotExempt' => $vehicle->isMotExempt(),
+        'suppressNotifications' => $vehicle->isSuppressNotifications(),
         'roadTaxAnnualCost' => $vehicle->getComputedRoadTaxAnnualCost(),
         'securityFeatures' => $vehicle->getSecurityFeatures(),
         'vehicleColor' => $vehicle->getVehicleColor(),
@@ -1114,6 +1115,10 @@ class VehicleController extends AbstractController
         // Allow an explicit override for MOT exemption
         if (array_key_exists('motExempt', $data)) {
             $vehicle->setMotExempt($data['motExempt'] !== null ? (bool) $data['motExempt'] : null);
+        }
+        // Allow suppressing all notifications for this vehicle
+        if (array_key_exists('suppressNotifications', $data)) {
+            $vehicle->setSuppressNotifications((bool) $data['suppressNotifications']);
         }
         // Allow updating vehicle status (Live, Sold, Scrapped, Exported)
         if (isset($data['status'])) {

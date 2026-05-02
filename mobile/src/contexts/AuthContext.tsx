@@ -66,6 +66,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
   const [loading, setLoading] = useState(true);
 
   const tokenRef = useRef<string | null>(null);
+  // A ref to the logout function so the response interceptor can call it without
+  // being included in the useMemo dependency array (which would create a cycle).
+  const logoutRef = useRef<() => Promise<void>>(async () => {});
 
   const api = useMemo<ApiClient>(() => {
     if (isStandalone) {
@@ -87,6 +90,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
         return config;
       },
       error => Promise.reject(error),
+    );
+
+    // Response interceptor: on 401 call logout via the ref so we don't
+    // need logout in the useMemo dependency array (that would create a cycle).
+    instance.interceptors.response.use(
+      response => response,
+      async (error: any) => {
+        if (error.response?.status === 401) {
+          await logoutRef.current();
+        }
+        return Promise.reject(error);
+      },
     );
 
     return instance;
@@ -171,7 +186,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
       setUser(userData);
     } catch (error: any) {
       tokenRef.current = null;
-      const message = error.response?.data?.detail || error.response?.data?.message || 'Login failed';
+      const message =
+        error.response?.data?.detail ||
+        error.response?.data?.message ||
+        error.message ||
+        (error.code ? `Login failed (${error.code})` : 'Login failed');
       throw new Error(message);
     }
   }, [isStandalone, api, apiUrl]);
@@ -200,6 +219,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
     setToken(null);
     setUser(null);
   }, [isStandalone, resetConfig]);
+
+  // Keep the ref up-to-date so the response interceptor always calls the latest version
+  useEffect(() => {
+    logoutRef.current = logout;
+  }, [logout]);
 
   const register = useCallback(async (data: RegisterData) => {
     if (isStandalone) {

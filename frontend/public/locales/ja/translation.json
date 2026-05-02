@@ -326,6 +326,7 @@
     "fetchRegistration": "登録番号を検索",
     "lookupFailed": "車両情報の検索に失敗しました",
     "registrationHelper": "登録番号を入力すると車両情報が自動入力されます",
+    "suppressNotifications": "通知を無効にする",
     "motExempt": "車検免除",
     "purchaseMileage": "購入時走行距離",
     "status": {

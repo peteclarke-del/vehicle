@@ -326,6 +326,7 @@
     "fetchRegistration": "Hae rekisterinumerolla",
     "lookupFailed": "Ajoneuvon tietojen haku epäonnistui",
     "registrationHelper": "Syötä rekisterinumero täyttääksesi ajoneuvon tiedot automaattisesti",
+    "suppressNotifications": "Poista ilmoitukset käytöstä",
     "motExempt": "Vapautettu katsastuksesta",
     "purchaseMileage": "Mittarilukema ostohetkellä",
     "status": {

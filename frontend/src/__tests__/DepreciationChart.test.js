@@ -1,16 +1,25 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import DepreciationChart from '../components/DepreciationChart';
 import '@testing-library/jest-dom';
 
 // Mock recharts
 jest.mock('recharts', () => {
-  const OriginalModule = jest.requireActual('recharts');
+  const React = require('react');
   return {
-    ...OriginalModule,
-    ResponsiveContainer: ({ children }) => (
-      <div data-testid="responsive-container">{children}</div>
-    ),
+    ResponsiveContainer: ({ children }) => React.createElement('div', { 'data-testid': 'responsive-container' }, children),
+    LineChart: ({ children }) => React.createElement('div', { 'data-testid': 'line-chart' }, children),
+    AreaChart: ({ children }) => React.createElement('div', { 'data-testid': 'area-chart' }, children),
+    BarChart: ({ children }) => React.createElement('div', { 'data-testid': 'bar-chart' }, children),
+    Line: () => null,
+    Area: () => null,
+    Bar: () => null,
+    XAxis: () => null,
+    YAxis: () => null,
+    CartesianGrid: () => null,
+    Tooltip: () => null,
+    Legend: () => null,
+    ReferenceLine: () => null,
   };
 });
 

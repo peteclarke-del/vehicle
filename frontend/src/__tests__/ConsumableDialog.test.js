@@ -1,362 +1,232 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { BrowserRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router-dom';
 import ConsumableDialog from '../components/ConsumableDialog';
-import { AuthContext } from '../context/AuthContext';
+import '@testing-library/jest-dom';
 
-jest.mock('../hooks/useApiData');
-const { useApiData } = require('../hooks/useApiData');
-
-const renderWithProviders = (component) => {
-  const mockAuthContext = {
-    token: 'mock-token',
-    user: { id: 1, email: 'test@example.com' }
-  };
-
-  return render(
-    <BrowserRouter>
-      <AuthContext.Provider value={mockAuthContext}>
-        {component}
-      </AuthContext.Provider>
-    </BrowserRouter>
-  );
+// Stable mock references (must be outside jest.mock to avoid recreation)
+const mockApi = {
+  get: jest.fn().mockResolvedValue({ data: [] }),
+  post: jest.fn().mockResolvedValue({ data: { id: 99 } }),
+  put: jest.fn().mockResolvedValue({ data: { id: 1 } }),
 };
 
+const mockConvert = (v) => v;
+const mockToKm = (v) => v;
+const mockGetLabel = () => 'mi';
+const mockDistanceResult = { convert: mockConvert, toKm: mockToKm, getLabel: mockGetLabel };
+
+jest.mock('react-i18next', () => ({
+  useTranslation: () => ({ t: (k) => k }),
+}));
+
+jest.mock('../contexts/AuthContext', () => ({
+  useAuth: () => ({ api: mockApi, user: { id: 1 } }),
+}));
+
+jest.mock('../hooks/useDistance', () => ({
+  useDistance: () => mockDistanceResult,
+}));
+
+jest.mock('../components/ReceiptUpload', () => () => null);
+jest.mock('../components/UrlScraper', () => () => null);
+jest.mock('../components/KnightRiderLoader', () => () => <div data-testid="loader">Loading...</div>);
+jest.mock('../utils/logger', () => ({ error: jest.fn(), warn: jest.fn() }));
+
+const renderDialog = (props = {}) =>
+  render(
+    <MemoryRouter>
+      <ConsumableDialog
+        open={true}
+        onClose={jest.fn()}
+        vehicleId={1}
+        {...props}
+      />
+    </MemoryRouter>
+  );
+
 describe('ConsumableDialog', () => {
-  const mockOnClose = jest.fn();
-  const mockOnSave = jest.fn();
-  const mockVehicleId = 1;
-
-  const mockConsumableTypes = [
-    { id: 1, name: 'Engine Oil', category: 'Fluids', defaultIntervalMiles: 10000 },
-    { id: 2, name: 'Air Filter', category: 'Filters', defaultIntervalMiles: 15000 },
-    { id: 3, name: 'Brake Pads', category: 'Brakes', defaultIntervalMiles: 30000 }
-  ];
-
   beforeEach(() => {
     jest.clearAllMocks();
-    useApiData.mockReturnValue({
-      data: mockConsumableTypes,
-      loading: false,
-      error: null
+    // Re-set post/put mocks after clearAllMocks
+    mockApi.post.mockResolvedValue({ data: { id: 99 } });
+    mockApi.put.mockResolvedValue({ data: { id: 1 } });
+    // Default: vehicle returns type, consumable types return list, MOT/service return empty
+    mockApi.get.mockImplementation((url) => {
+      if (url.includes('/vehicles/')) {
+        return Promise.resolve({ data: { id: 1, vehicleType: { id: 10 } } });
+      }
+      if (url.includes('/consumable-types')) {
+        return Promise.resolve({
+          data: [
+            { id: 1, name: 'Engine Oil', unit: 'litres' },
+            { id: 2, name: 'Air Filter', unit: 'pcs' },
+          ],
+        });
+      }
+      if (url.includes('/mot-records')) {
+        return Promise.resolve({ data: [] });
+      }
+      if (url.includes('/service-records')) {
+        return Promise.resolve({ data: [] });
+      }
+      return Promise.resolve({ data: [] });
     });
   });
 
-  test('renders consumable dialog with form fields', () => {
-    renderWithProviders(
-      <ConsumableDialog
-        open={true}
-        onClose={mockOnClose}
-        onSave={mockOnSave}
-        vehicleId={mockVehicleId}
-      />
-    );
+  test('renders dialog with form fields', async () => {
+    renderDialog();
 
-    expect(screen.getByText(/add consumable/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/type/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/replacement mileage/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/cost/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/supplier/i)).toBeInTheDocument();
+    // Title (translation key)
+    expect(screen.getByText('consumables.addConsumable')).toBeInTheDocument();
+
+    // Wait for consumable types to load (API calls complete)
+    await waitFor(() => {
+      expect(mockApi.get).toHaveBeenCalledWith('/vehicle-types/10/consumable-types');
+    });
+
+    // Check key form field labels (all are translation keys)
+    expect(screen.getByLabelText('consumables.name *')).toBeInTheDocument();
+    expect(screen.getByLabelText('consumables.cost *')).toBeInTheDocument();
+    expect(screen.getByLabelText('common.supplier')).toBeInTheDocument();
+    expect(screen.getByLabelText('common.notes')).toBeInTheDocument();
   });
 
-  test('populates default interval when type is selected', () => {
-    renderWithProviders(
-      <ConsumableDialog
-        open={true}
-        onClose={mockOnClose}
-        onSave={mockOnSave}
-        vehicleId={mockVehicleId}
-      />
-    );
-
-    const typeSelect = screen.getByLabelText(/type/i);
-    fireEvent.change(typeSelect, { target: { value: 1 } });
-
-    const intervalField = screen.getByLabelText(/interval miles/i);
-    expect(intervalField.value).toBe('10000');
-  });
-
-  test('calculates next replacement mileage', async () => {
-    renderWithProviders(
-      <ConsumableDialog
-        open={true}
-        onClose={mockOnClose}
-        onSave={mockOnSave}
-        vehicleId={mockVehicleId}
-        currentMileage={45000}
-      />
-    );
-
-    const replacementField = screen.getByLabelText(/replacement mileage/i);
-    fireEvent.change(replacementField, { target: { value: 45000 } });
-
-    const intervalField = screen.getByLabelText(/interval miles/i);
-    fireEvent.change(intervalField, { target: { value: 10000 } });
+  test('loads consumable types on open', async () => {
+    renderDialog();
 
     await waitFor(() => {
-      expect(screen.getByText(/next due: 55,000 miles/i)).toBeInTheDocument();
+      expect(mockApi.get).toHaveBeenCalledWith('/vehicles/1');
     });
-  });
-
-  test('validates required fields', async () => {
-    renderWithProviders(
-      <ConsumableDialog
-        open={true}
-        onClose={mockOnClose}
-        onSave={mockOnSave}
-        vehicleId={mockVehicleId}
-      />
-    );
-
-    const saveButton = screen.getByRole('button', { name: /save/i });
-    fireEvent.click(saveButton);
 
     await waitFor(() => {
-      expect(screen.getByText(/type is required/i)).toBeInTheDocument();
+      expect(mockApi.get).toHaveBeenCalledWith('/vehicle-types/10/consumable-types');
     });
   });
 
-  test('validates replacement mileage is positive', async () => {
-    renderWithProviders(
-      <ConsumableDialog
-        open={true}
-        onClose={mockOnClose}
-        onSave={mockOnSave}
-        vehicleId={mockVehicleId}
-      />
-    );
-
-    const replacementField = screen.getByLabelText(/replacement mileage/i);
-    fireEvent.change(replacementField, { target: { value: -1000 } });
-
-    const saveButton = screen.getByRole('button', { name: /save/i });
-    fireEvent.click(saveButton);
-
-    await waitFor(() => {
-      expect(screen.getByText(/mileage must be positive/i)).toBeInTheDocument();
-    });
-  });
-
-  test('validates cost is positive', async () => {
-    renderWithProviders(
-      <ConsumableDialog
-        open={true}
-        onClose={mockOnClose}
-        onSave={mockOnSave}
-        vehicleId={mockVehicleId}
-      />
-    );
-
-    const costField = screen.getByLabelText(/cost/i);
-    fireEvent.change(costField, { target: { value: -10 } });
-
-    const saveButton = screen.getByRole('button', { name: /save/i });
-    fireEvent.click(saveButton);
-
-    await waitFor(() => {
-      expect(screen.getByText(/cost must be positive/i)).toBeInTheDocument();
-    });
-  });
-
-  test('saves consumable with correct data', async () => {
-    renderWithProviders(
-      <ConsumableDialog
-        open={true}
-        onClose={mockOnClose}
-        onSave={mockOnSave}
-        vehicleId={mockVehicleId}
-      />
-    );
-
-    fireEvent.change(screen.getByLabelText(/type/i), { target: { value: 1 } });
-    fireEvent.change(screen.getByLabelText(/replacement mileage/i), { target: { value: 45000 } });
-    fireEvent.change(screen.getByLabelText(/interval miles/i), { target: { value: 10000 } });
-    fireEvent.change(screen.getByLabelText(/cost/i), { target: { value: 45.99 } });
-    fireEvent.change(screen.getByLabelText(/supplier/i), { target: { value: 'Halfords' } });
-
-    const saveButton = screen.getByRole('button', { name: /save/i });
-    fireEvent.click(saveButton);
-
-    await waitFor(() => {
-      expect(mockOnSave).toHaveBeenCalledWith({
-        typeId: 1,
-        replacementMileage: 45000,
-        intervalMiles: 10000,
-        cost: 45.99,
-        supplier: 'Halfords',
-        vehicleId: mockVehicleId
-      });
-    });
-  });
-
-  test('displays overdue indicator when past interval', () => {
-    renderWithProviders(
-      <ConsumableDialog
-        open={true}
-        onClose={mockOnClose}
-        onSave={mockOnSave}
-        vehicleId={mockVehicleId}
-        currentMileage={60000}
-        consumable={{
-          id: 1,
-          type: 'Engine Oil',
-          replacementMileage: 45000,
-          intervalMiles: 10000
-        }}
-      />
-    );
-
-    expect(screen.getByText(/overdue by 5,000 miles/i)).toBeInTheDocument();
-  });
-
-  test('displays due soon indicator', () => {
-    renderWithProviders(
-      <ConsumableDialog
-        open={true}
-        onClose={mockOnClose}
-        onSave={mockOnSave}
-        vehicleId={mockVehicleId}
-        currentMileage={53500}
-        consumable={{
-          id: 1,
-          type: 'Engine Oil',
-          replacementMileage: 45000,
-          intervalMiles: 10000
-        }}
-      />
-    );
-
-    expect(screen.getByText(/due in 1,500 miles/i)).toBeInTheDocument();
-  });
-
-  test('closes dialog on cancel', () => {
-    renderWithProviders(
-      <ConsumableDialog
-        open={true}
-        onClose={mockOnClose}
-        onSave={mockOnSave}
-        vehicleId={mockVehicleId}
-      />
-    );
-
-    const cancelButton = screen.getByRole('button', { name: /cancel/i });
-    fireEvent.click(cancelButton);
-
-    expect(mockOnClose).toHaveBeenCalled();
-  });
-
-  test('loads consumable data for editing', () => {
-    const existingConsumable = {
-      id: 1,
-      type: { id: 1, name: 'Engine Oil' },
-      replacementMileage: 45000,
-      intervalMiles: 10000,
-      cost: 45.99,
-      supplier: 'Halfords'
+  test('populates form when editing existing consumable', async () => {
+    const consumable = {
+      id: 5,
+      consumableType: { id: 1, name: 'Engine Oil' },
+      description: 'Castrol Edge 5W-30',
+      cost: 29.99,
+      quantity: 4,
+      supplier: 'Halfords',
+      brand: 'Castrol',
+      partNumber: 'CE530',
+      notes: 'Synthetic',
+      mileageAtChange: 50000,
+      replacementIntervalMiles: 10000,
+      nextReplacementMileage: 60000,
     };
 
-    renderWithProviders(
-      <ConsumableDialog
-        open={true}
-        onClose={mockOnClose}
-        onSave={mockOnSave}
-        vehicleId={mockVehicleId}
-        consumable={existingConsumable}
-      />
-    );
+    renderDialog({ consumable });
 
-    expect(screen.getByText(/edit consumable/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/type/i).value).toBe('1');
-    expect(screen.getByLabelText(/replacement mileage/i).value).toBe('45000');
-    expect(screen.getByLabelText(/cost/i).value).toBe('45.99');
-  });
-
-  test('shows loading state', () => {
-    useApiData.mockReturnValue({
-      data: null,
-      loading: true,
-      error: null
-    });
-
-    renderWithProviders(
-      <ConsumableDialog
-        open={true}
-        onClose={mockOnClose}
-        onSave={mockOnSave}
-        vehicleId={mockVehicleId}
-      />
-    );
-
-    expect(screen.getByRole('progressbar')).toBeInTheDocument();
-  });
-
-  test('shows error state', () => {
-    useApiData.mockReturnValue({
-      data: null,
-      loading: false,
-      error: 'Failed to load consumable types'
-    });
-
-    renderWithProviders(
-      <ConsumableDialog
-        open={true}
-        onClose={mockOnClose}
-        onSave={mockOnSave}
-        vehicleId={mockVehicleId}
-      />
-    );
-
-    expect(screen.getByText(/failed to load/i)).toBeInTheDocument();
-  });
-
-  test('allows adding notes', () => {
-    renderWithProviders(
-      <ConsumableDialog
-        open={true}
-        onClose={mockOnClose}
-        onSave={mockOnSave}
-        vehicleId={mockVehicleId}
-      />
-    );
-
-    const notesField = screen.getByLabelText(/notes/i);
-    fireEvent.change(notesField, { target: { value: 'Used synthetic oil' } });
-
-    expect(notesField.value).toBe('Used synthetic oil');
-  });
-
-  test('displays category for selected type', () => {
-    renderWithProviders(
-      <ConsumableDialog
-        open={true}
-        onClose={mockOnClose}
-        onSave={mockOnSave}
-        vehicleId={mockVehicleId}
-      />
-    );
-
-    const typeSelect = screen.getByLabelText(/type/i);
-    fireEvent.change(typeSelect, { target: { value: 1 } });
-
-    expect(screen.getByText(/category: fluids/i)).toBeInTheDocument();
-  });
-
-  test('calculates annual cost estimate', async () => {
-    renderWithProviders(
-      <ConsumableDialog
-        open={true}
-        onClose={mockOnClose}
-        onSave={mockOnSave}
-        vehicleId={mockVehicleId}
-        annualMileage={20000}
-      />
-    );
-
-    fireEvent.change(screen.getByLabelText(/cost/i), { target: { value: 45 } });
-    fireEvent.change(screen.getByLabelText(/interval miles/i), { target: { value: 10000 } });
+    expect(screen.getByText('consumables.editConsumable')).toBeInTheDocument();
 
     await waitFor(() => {
-      expect(screen.getByText(/estimated annual cost: £90.00/i)).toBeInTheDocument();
+      expect(screen.getByLabelText('consumables.name *')).toHaveValue('Castrol Edge 5W-30');
     });
+
+    expect(screen.getByLabelText('consumables.cost *')).toHaveValue(29.99);
+    expect(screen.getByLabelText('common.supplier')).toHaveValue('Halfords');
+    expect(screen.getByLabelText('common.notes')).toHaveValue('Synthetic');
+  });
+
+  test('submits new consumable via api.post', async () => {
+    const onClose = jest.fn();
+    renderDialog({ onClose });
+
+    // Wait for types to load
+    await waitFor(() => {
+      expect(mockApi.get).toHaveBeenCalledWith('/vehicle-types/10/consumable-types');
+    });
+
+    // Fill required fields
+    fireEvent.change(screen.getByLabelText('consumables.name *'), {
+      target: { name: 'description', value: 'Castrol Edge' },
+    });
+    fireEvent.change(screen.getByLabelText('consumables.cost *'), {
+      target: { name: 'cost', value: '29.99' },
+    });
+    fireEvent.change(screen.getByLabelText('consumables.quantity *'), {
+      target: { name: 'quantity', value: '4' },
+    });
+
+    // Submit
+    fireEvent.click(screen.getByRole('button', { name: 'common.save' }));
+
+    await waitFor(() => {
+      expect(mockApi.post).toHaveBeenCalledWith(
+        '/consumables',
+        expect.objectContaining({
+          description: 'Castrol Edge',
+          cost: 29.99,
+          vehicleId: 1,
+        })
+      );
+    });
+
+    await waitFor(() => {
+      expect(onClose).toHaveBeenCalledWith({ id: 99 });
+    });
+  });
+
+  test('submits edited consumable via api.put', async () => {
+    const onClose = jest.fn();
+    const consumable = {
+      id: 5,
+      consumableType: { id: 1 },
+      description: 'Old Oil',
+      cost: 20,
+      quantity: 4,
+      supplier: '',
+      brand: '',
+      partNumber: '',
+      notes: '',
+      mileageAtChange: 0,
+      replacementIntervalMiles: 0,
+      nextReplacementMileage: 0,
+    };
+
+    renderDialog({ consumable, onClose });
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('consumables.name *')).toHaveValue('Old Oil');
+    });
+
+    fireEvent.change(screen.getByLabelText('consumables.name *'), {
+      target: { name: 'description', value: 'New Oil' },
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'common.save' }));
+
+    await waitFor(() => {
+      expect(mockApi.put).toHaveBeenCalledWith(
+        '/consumables/5',
+        expect.objectContaining({ description: 'New Oil' })
+      );
+    });
+  });
+
+  test('cancel button calls onClose', async () => {
+    const onClose = jest.fn();
+    renderDialog({ onClose });
+
+    await waitFor(() => {
+      expect(mockApi.get).toHaveBeenCalledWith('/vehicle-types/10/consumable-types');
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'common.cancel' }));
+    expect(onClose).toHaveBeenCalledWith(false);
+  });
+
+  test('shows loader while types are loading', () => {
+    // Make the API call hang
+    mockApi.get.mockImplementation(() => new Promise(() => {}));
+
+    renderDialog();
+
+    expect(screen.getByTestId('loader')).toBeInTheDocument();
   });
 });

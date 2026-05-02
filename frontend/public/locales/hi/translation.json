@@ -326,6 +326,7 @@
     "fetchRegistration": "पंजीकरण खोजें",
     "lookupFailed": "वाहन विवरण खोजने में विफल",
     "registrationHelper": "वाहन विवरण स्वतः भरने के लिए पंजीकरण दर्ज करें",
+    "suppressNotifications": "सूचनाएं बंद करें",
     "motExempt": "तकनीकी निरीक्षण छूट",
     "purchaseMileage": "खरीद माइलेज",
     "status": {

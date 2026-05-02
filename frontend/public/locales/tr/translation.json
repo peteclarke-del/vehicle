@@ -326,6 +326,7 @@
     "fetchRegistration": "Plaka sorgula",
     "lookupFailed": "Araç bilgileri sorgulanamadı",
     "registrationHelper": "Araç bilgilerini otomatik doldurmak için plaka girin",
+    "suppressNotifications": "Bildirimleri Bastır",
     "motExempt": "Muayene Muaf",
     "purchaseMileage": "Satın Alma Kilometresi",
     "status": {

@@ -326,6 +326,7 @@
     "fetchRegistration": "Sprawdź rejestrację",
     "lookupFailed": "Nie udało się wyszukać danych pojazdu",
     "registrationHelper": "Wpisz numer rejestracyjny, aby automatycznie uzupełnić dane pojazdu",
+    "suppressNotifications": "Wycisz powiadomienia",
     "motExempt": "Zwolniony z przeglądu technicznego",
     "purchaseMileage": "Przebieg przy zakupie",
     "status": {

@@ -326,6 +326,7 @@
     "fetchRegistration": "Kenteken opzoeken",
     "lookupFailed": "Opzoeken van voertuiggegevens mislukt",
     "registrationHelper": "Voer het kenteken in om voertuiggegevens automatisch in te vullen",
+    "suppressNotifications": "Meldingen onderdrukken",
     "motExempt": "APK-vrijgesteld",
     "purchaseMileage": "Kilometerstand bij aankoop",
     "status": {

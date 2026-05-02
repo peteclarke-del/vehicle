@@ -326,6 +326,7 @@
     "fetchRegistration": "Rechercher l'immatriculation",
     "lookupFailed": "Échec de la recherche des détails du véhicule",
     "registrationHelper": "Saisissez l'immatriculation pour remplir automatiquement les détails du véhicule",
+    "suppressNotifications": "Désactiver les notifications",
     "motExempt": "Exempté de CT",
     "purchaseMileage": "Kilométrage à l'achat",
     "status": {
