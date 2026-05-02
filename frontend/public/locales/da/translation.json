@@ -326,6 +326,7 @@
     "fetchRegistration": "Slå registrering op",
     "lookupFailed": "Kunne ikke slå køretøjsoplysninger op",
     "registrationHelper": "Indtast registrering for at autoudfylde køretøjsoplysninger",
+    "suppressNotifications": "Undertryk notifikationer",
     "motExempt": "Fritaget for syn",
     "purchaseMileage": "Kilometerstand ved køb",
     "status": {

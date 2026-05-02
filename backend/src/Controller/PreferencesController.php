@@ -13,6 +13,43 @@ use Symfony\Component\Routing\Annotation\Route;
 
 class PreferencesController extends AbstractController
 {
+    private const DEFAULTS = [
+        'preferredLanguage' => 'en',
+        'distanceUnit' => 'miles',
+        'sessionTimeout' => 3600,
+        'theme' => 'light',
+    ];
+
+    /**
+     * Decode a stored preference value, unwrapping JSON if applicable.
+     */
+    private function decodeValue(?string $raw): mixed
+    {
+        if ($raw === null) {
+            return null;
+        }
+        $decoded = json_decode($raw, true);
+        return json_last_error() === JSON_ERROR_NONE ? $decoded : $raw;
+    }
+
+    /**
+     * Resolve a single preference: stored value → user entity getter → default.
+     */
+    private function resolvePreference(array $prefsByName, object $user, string $name): mixed
+    {
+        if (isset($prefsByName[$name])) {
+            $val = $this->decodeValue($prefsByName[$name]->getValue());
+            if ($val !== null) {
+                return $val;
+            }
+        }
+        $method = 'get' . ucfirst($name);
+        if (method_exists($user, $method)) {
+            return $user->{$method}();
+        }
+        return self::DEFAULTS[$name] ?? null;
+    }
+
     #[Route('', name: 'user_preferences_get', methods: ['GET'])]
     #[Route('/api/user/preferences', name: 'api_user_preferences_get', methods: ['GET'])]
     public function get(Request $request, EntityManagerInterface $em): JsonResponse
@@ -24,138 +61,33 @@ class PreferencesController extends AbstractController
 
         $key = $request->query->get('key');
         if (!$key) {
-            // return a minimal set of user preferences
-            $data = [
-                // preferredLanguage, sessionTimeout and distanceUnit are stored in user_preferences
-                'preferredLanguage' => (function () use ($em, $user) {
-                    $repo = $em->getRepository(UserPreference::class);
-                    $pref = $repo->findOneBy(['user' => $user, 'name' => 'preferredLanguage']);
-                    if ($pref) {
-                        $val = $pref->getValue();
-                        $decoded = null;
-                        if ($val !== null) {
-                            $decoded = json_decode($val, true);
-                            if (json_last_error() === JSON_ERROR_NONE) {
-                                $val = $decoded;
-                            }
-                        }
-                        return $val;
-                    }
-                    return method_exists($user, 'getPreferredLanguage') ? $user->getPreferredLanguage() : 'en';
-                })(),
-                'distanceUnit' => (function () use ($em, $user) {
-                    $repo = $em->getRepository(UserPreference::class);
-                    $pref = $repo->findOneBy(['user' => $user, 'name' => 'distanceUnit']);
-                    if ($pref) {
-                        $val = $pref->getValue();
-                        $decoded = null;
-                        if ($val !== null) {
-                            $decoded = json_decode($val, true);
-                            if (json_last_error() === JSON_ERROR_NONE) {
-                                $val = $decoded;
-                            }
-                        }
-                        return $val;
-                    }
-                    return method_exists($user, 'getDistanceUnit') ? $user->getDistanceUnit() : 'miles';
-                })(),
-                'sessionTimeout' => (function () use ($em, $user) {
-                    $repo = $em->getRepository(UserPreference::class);
-                    $pref = $repo->findOneBy(['user' => $user, 'name' => 'sessionTimeout']);
-                    if ($pref) {
-                        $val = $pref->getValue();
-                        $decoded = null;
-                        if ($val !== null) {
-                            $decoded = json_decode($val, true);
-                            if (json_last_error() === JSON_ERROR_NONE) {
-                                $val = $decoded;
-                            }
-                        }
-                        return $val;
-                    }
-                    return method_exists($user, 'getSessionTimeout') ? $user->getSessionTimeout() : 3600;
-                })(),
-                // theme is now stored in user_preferences table
-                'theme' => (function () use ($em, $user) {
-                    $repo = $em->getRepository(UserPreference::class);
-                    $pref = $repo->findOneBy(['user' => $user, 'name' => 'theme']);
-                    if (!$pref) {
-                        return 'light';
-                    }
-                    $val = $pref->getValue();
-                    $decoded = null;
-                    if ($val !== null) {
-                        $decoded = json_decode($val, true);
-                        if (json_last_error() === JSON_ERROR_NONE) {
-                            $val = $decoded;
-                        }
-                    }
-                    return $val;
-                })(),
-            ];
+            // Load all preferences in a single query
+            $allPrefs = $em->getRepository(UserPreference::class)->findBy(['user' => $user]);
+            $prefsByName = [];
+            foreach ($allPrefs as $p) {
+                $prefsByName[$p->getName()] = $p;
+            }
+
+            $data = [];
+            foreach (array_keys(self::DEFAULTS) as $name) {
+                $data[$name] = $this->resolvePreference($prefsByName, $user, $name);
+            }
+
             return new JsonResponse(['data' => $data]);
         }
 
         // well-known keys - read from user_preferences first, fallback to user entity methods if present
-        if (in_array($key, ['distanceUnit','sessionTimeout','preferredLanguage'])) {
-            $repo = $em->getRepository(UserPreference::class);
-            $pref = $repo->findOneBy(['user' => $user, 'name' => $key]);
-            if ($pref) {
-                $val = $pref->getValue();
-                $decoded = null;
-                if ($val !== null) {
-                    $decoded = json_decode($val, true);
-                    if (json_last_error() === JSON_ERROR_NONE) {
-                        $val = $decoded;
-                    }
-                }
-
-                // If the stored value is null (or JSON 'null'), fall back to the
-                // user entity getter or a sensible default for well-known keys.
-                if ($val === null) {
-                    $method = 'get' . ucfirst($key);
-                    if (method_exists($user, $method)) {
-                        return new JsonResponse(['key' => $key, 'value' => $user->{$method}()]);
-                    }
-                    // sensible defaults when no user getter exists
-                    switch ($key) {
-                        case 'sessionTimeout':
-                            return new JsonResponse(['key' => $key, 'value' => 3600]);
-                        case 'distanceUnit':
-                            return new JsonResponse(['key' => $key, 'value' => 'miles']);
-                        case 'preferredLanguage':
-                            return new JsonResponse(['key' => $key, 'value' => 'en']);
-                        default:
-                            return new JsonResponse(['key' => $key, 'value' => null]);
-                    }
-                }
-
-                return new JsonResponse(['key' => $key, 'value' => $val]);
-            }
-            // fallback to user property if available
-            $method = 'get' . ucfirst($key);
-            if (method_exists($user, $method)) {
-                return new JsonResponse(['key' => $key, 'value' => $user->{$method}()]);
-            }
-            return new JsonResponse(['key' => $key, 'value' => null]);
-        }
-
+        // Single-key lookup: well-known keys get fallback chain, others are raw
         $repo = $em->getRepository(UserPreference::class);
         $pref = $repo->findOneBy(['user' => $user, 'name' => $key]);
-        if (!$pref) {
-            return new JsonResponse(['key' => $key, 'value' => null]);
+
+        if (array_key_exists($key, self::DEFAULTS)) {
+            $prefsByName = $pref ? [$key => $pref] : [];
+            $val = $this->resolvePreference($prefsByName, $user, $key);
+            return new JsonResponse(['key' => $key, 'value' => $val]);
         }
 
-        $val = $pref->getValue();
-        // try json decode
-        $decoded = null;
-        if ($val !== null) {
-            $decoded = json_decode($val, true);
-            if (json_last_error() === JSON_ERROR_NONE) {
-                $val = $decoded;
-            }
-        }
-
+        $val = $pref ? $this->decodeValue($pref->getValue()) : null;
         return new JsonResponse(['key' => $key, 'value' => $val]);
     }
 

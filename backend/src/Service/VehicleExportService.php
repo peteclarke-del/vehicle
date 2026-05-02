@@ -268,6 +268,7 @@ class VehicleExportService
             'statusHistory' => $this->exportStatusHistory($vehicle),
             'roadTaxExempt' => $vehicle->getRoadTaxExempt() ?? false,
             'motExempt' => $vehicle->getMotExempt() ?? false,
+            'suppressNotifications' => $vehicle->isSuppressNotifications(),
             'securityFeatures' => $this->trimString($vehicle->getSecurityFeatures()),
             'vehicleColor' => $this->trimString($vehicle->getVehicleColor()),
             'serviceIntervalMonths' => $vehicle->getServiceIntervalMonths(),

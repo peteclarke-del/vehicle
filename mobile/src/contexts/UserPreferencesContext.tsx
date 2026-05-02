@@ -52,8 +52,9 @@ export const UserPreferencesProvider: React.FC<UserPreferencesProviderProps> = (
     try {
       // First try to load from local storage
       const stored = await AsyncStorage.getItem('userPreferences');
+      const storedPrefs: Partial<Preferences> = stored ? JSON.parse(stored) : {};
       if (stored) {
-        setPreferences({...defaultPreferences, ...JSON.parse(stored)});
+        setPreferences({...defaultPreferences, ...storedPrefs});
       }
 
       // Then fetch from server if authenticated
@@ -61,12 +62,20 @@ export const UserPreferencesProvider: React.FC<UserPreferencesProviderProps> = (
         const response = await api.get('/user/preferences');
         // API returns {data: {preferredLanguage, distanceUnit, ...}} - unwrap the envelope
         const serverPrefs = response.data?.data || response.data || {};
-        
-        const merged = {
+
+        // Normalise distanceUnit: server may return 'miles' but our type uses 'mi'
+        if (serverPrefs.distanceUnit === 'miles') {
+          serverPrefs.distanceUnit = 'mi';
+        }
+
+        // Merge order: defaults → stored local → server (server is authoritative for
+        // values it knows about, but local-only prefs like defaultRowsPerPage are preserved)
+        const merged: Preferences = {
           ...defaultPreferences,
+          ...storedPrefs,
           ...serverPrefs,
         };
-        
+
         setPreferences(merged);
         await AsyncStorage.setItem('userPreferences', JSON.stringify(merged));
       }

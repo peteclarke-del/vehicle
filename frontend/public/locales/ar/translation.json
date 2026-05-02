@@ -326,6 +326,7 @@
     "fetchRegistration": "البحث عن التسجيل",
     "lookupFailed": "فشل البحث عن تفاصيل المركبة",
     "registrationHelper": "أدخل رقم التسجيل لملء تفاصيل المركبة تلقائياً",
+    "suppressNotifications": "إيقاف الإشعارات",
     "motExempt": "معفاة من الفحص الفني",
     "purchaseMileage": "عداد المسافات عند الشراء",
     "status": {

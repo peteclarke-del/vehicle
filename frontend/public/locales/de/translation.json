@@ -326,6 +326,7 @@
     "fetchRegistration": "Kennzeichen abfragen",
     "lookupFailed": "Fahrzeugdaten konnten nicht abgerufen werden",
     "registrationHelper": "Kennzeichen eingeben, um Fahrzeugdaten automatisch auszufüllen",
+    "suppressNotifications": "Benachrichtigungen unterdrücken",
     "motExempt": "HU-befreit",
     "purchaseMileage": "Kilometerstand beim Kauf",
     "status": {

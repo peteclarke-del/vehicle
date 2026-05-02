@@ -326,6 +326,7 @@
     "fetchRegistration": "Slå opp registrering",
     "lookupFailed": "Kunne ikke slå opp kjøretøydetaljer",
     "registrationHelper": "Skriv inn registreringsnummer for å fylle ut kjøretøydetaljer automatisk",
+    "suppressNotifications": "Undertrykk varsler",
     "motExempt": "Fritatt for EU-kontroll",
     "purchaseMileage": "Kilometerstand ved kjøp",
     "status": {

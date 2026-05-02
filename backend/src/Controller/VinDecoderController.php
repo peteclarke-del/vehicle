@@ -68,7 +68,12 @@ class VinDecoderController extends AbstractController
         if (!$this->vinDecoderService->isValidVinFormat($vin)) {
             return $this->json([
                 'error' => 'Invalid VIN format',
-                'message' => 'VIN must be exactly 17 characters and cannot contain I, O, or Q.'
+                'vin' => $vin,
+                'message' => sprintf(
+                    'The stored VIN "%s" (%d characters) is not a valid 17-character VIN. VINs must be exactly 17 characters and cannot contain I, O, or Q. Please update the vehicle\'s VIN field with a valid VIN.',
+                    $vin,
+                    strlen($vin)
+                )
             ], 400);
         }
 

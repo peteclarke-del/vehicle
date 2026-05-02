@@ -29,6 +29,7 @@ interface VehicleData {
   serviceIntervalMonths: number | null;
   isMotExempt: boolean;
   isRoadTaxExempt: boolean;
+  suppressNotifications: boolean;
 }
 
 let notifee: any = null;
@@ -151,6 +152,9 @@ export const calculateVehicleNotifications = (
   for (const vehicle of vehicles) {
     // Only check live vehicles
     if (vehicle.status !== 'Live') continue;
+
+    // Skip vehicles with notifications suppressed
+    if (vehicle.suppressNotifications) continue;
 
     const name = vehicle.name || vehicle.registration;
 

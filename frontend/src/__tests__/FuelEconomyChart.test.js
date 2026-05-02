@@ -5,12 +5,19 @@ import '@testing-library/jest-dom';
 
 // Mock recharts
 jest.mock('recharts', () => {
-  const OriginalModule = jest.requireActual('recharts');
+  const React = require('react');
   return {
-    ...OriginalModule,
-    ResponsiveContainer: ({ children }) => (
-      <div data-testid="responsive-container">{children}</div>
-    ),
+    ResponsiveContainer: ({ children }) => React.createElement('div', { 'data-testid': 'responsive-container' }, children),
+    LineChart: ({ children }) => React.createElement('div', { 'data-testid': 'line-chart' }, children),
+    AreaChart: ({ children }) => React.createElement('div', { 'data-testid': 'area-chart' }, children),
+    Line: () => null,
+    Area: () => null,
+    XAxis: () => null,
+    YAxis: () => null,
+    CartesianGrid: () => null,
+    Tooltip: () => null,
+    Legend: () => null,
+    ReferenceLine: () => null,
   };
 });
 
@@ -91,10 +98,10 @@ describe('FuelEconomyChart Component', () => {
 
   test('switches between MPG and L/100km', () => {
     const { rerender } = render(<FuelEconomyChart data={mockFuelData} unit="mpg" />);
-    expect(screen.getByText(/mpg/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/mpg/i).length).toBeGreaterThan(0);
 
     rerender(<FuelEconomyChart data={mockFuelData} unit="l100km" />);
-    expect(screen.getByText(/L\/100km/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/L\/100km/i).length).toBeGreaterThan(0);
   });
 
   test('displays cost per mile', () => {

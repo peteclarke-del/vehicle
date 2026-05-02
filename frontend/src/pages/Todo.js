@@ -238,10 +238,10 @@ const Todo = () => {
                       />
                     </Tooltip>
                     <Tooltip title={t('common.edit')}>
-                      <IconButton size="small" onClick={() => handleEdit(todo)}><Edit /></IconButton>
+                      <IconButton size="small" onClick={() => handleEdit(todo)} aria-label={t('common.edit')}><Edit /></IconButton>
                     </Tooltip>
                     <Tooltip title={t('common.delete')}>
-                      <IconButton size="small" onClick={() => handleDelete(todo.id)}><Delete /></IconButton>
+                      <IconButton size="small" onClick={() => handleDelete(todo.id)} aria-label={t('common.delete')}><Delete /></IconButton>
                     </Tooltip>
                   </TableCell>
                 </TableRow>

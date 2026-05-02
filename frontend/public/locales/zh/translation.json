@@ -326,6 +326,7 @@
     "fetchRegistration": "查询车牌号",
     "lookupFailed": "查询车辆信息失败",
     "registrationHelper": "输入车牌号以自动填充车辆信息",
+    "suppressNotifications": "禁用通知",
     "motExempt": "免车检",
     "purchaseMileage": "购买时里程",
     "status": {

@@ -326,6 +326,7 @@
     "fetchRegistration": "Cerca targa",
     "lookupFailed": "Ricerca dettagli veicolo fallita",
     "registrationHelper": "Inserisca la targa per compilare automaticamente i dettagli del veicolo",
+    "suppressNotifications": "Sopprimi notifiche",
     "motExempt": "Esente da revisione",
     "purchaseMileage": "Chilometraggio all'acquisto",
     "status": {

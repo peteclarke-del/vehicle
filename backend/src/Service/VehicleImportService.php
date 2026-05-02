@@ -607,6 +607,9 @@ class VehicleImportService
         if (isset($data['motExempt'])) {
             $vehicle->setMotExempt($this->extractBoolean($data, 'motExempt'));
         }
+        if (isset($data['suppressNotifications'])) {
+            $vehicle->setSuppressNotifications($this->extractBoolean($data, 'suppressNotifications') ?? false);
+        }
 
         // JSON data
         if (!empty($data['vinDecodedData'])) {

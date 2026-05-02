@@ -326,6 +326,7 @@
     "fetchRegistration": "Consultar matrícula",
     "lookupFailed": "Error al consultar los datos del vehículo",
     "registrationHelper": "Introduzca la matrícula para autocompletar los datos del vehículo",
+    "suppressNotifications": "Suprimir notificaciones",
     "motExempt": "Exento de ITV",
     "purchaseMileage": "Kilometraje de compra",
     "status": {

@@ -326,6 +326,7 @@
     "fetchRegistration": "Consultar matrícula",
     "lookupFailed": "Falha ao consultar os dados do veículo",
     "registrationHelper": "Introduza a matrícula para preencher automaticamente os dados do veículo",
+    "suppressNotifications": "Suprimir notificações",
     "motExempt": "Isento de IPO",
     "purchaseMileage": "Quilometragem na compra",
     "status": {

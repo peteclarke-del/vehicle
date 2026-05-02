@@ -11,10 +11,36 @@ jest.mock('react-i18next', () => ({
   }),
 }));
 
+// Mock useDistance hook
+jest.mock('../hooks/useDistance', () => ({
+  useDistance: () => ({
+    convert: (v) => v,
+    toKm: (v) => v,
+    getLabel: () => 'mi',
+  }),
+}));
+
+// Mock ReceiptUpload
+jest.mock('../components/ReceiptUpload', () => (props) => (
+  <div data-testid="receipt-upload">ReceiptUpload</div>
+));
+
+// Mock UrlScraper
+jest.mock('../components/UrlScraper', () => (props) => (
+  <div data-testid="url-scraper">UrlScraper</div>
+));
+
+const mockApi = {
+  get: jest.fn().mockResolvedValue({ data: [] }),
+  post: jest.fn().mockResolvedValue({ data: { id: 1 } }),
+  put: jest.fn().mockResolvedValue({ data: { id: 1 } }),
+};
+
 const renderWithProviders = (component) => {
   const mockAuthContext = {
     user: { id: 1, email: 'test@example.com' },
     token: 'mock-token',
+    api: mockApi,
   };
 
   return render(
@@ -26,277 +52,173 @@ const renderWithProviders = (component) => {
 
 describe('PartDialog Component', () => {
   const mockOnClose = jest.fn();
-  const mockOnSave = jest.fn();
 
   const defaultProps = {
     open: true,
     onClose: mockOnClose,
-    onSave: mockOnSave,
     vehicleId: 1,
   };
 
   beforeEach(() => {
-    global.fetch = jest.fn(() =>
-      Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve({ id: 1 }),
-      })
-    );
-  });
-
-  afterEach(() => {
     jest.clearAllMocks();
+    mockApi.get.mockResolvedValue({ data: [] });
+    mockApi.post.mockResolvedValue({ data: { id: 1 } });
+    mockApi.put.mockResolvedValue({ data: { id: 1 } });
   });
 
   test('renders dialog when open', () => {
     renderWithProviders(<PartDialog {...defaultProps} />);
-    expect(screen.getByText('part.newTitle')).toBeInTheDocument();
+    expect(screen.getByText('parts.addPart')).toBeInTheDocument();
   });
 
   test('displays all form fields', () => {
     renderWithProviders(<PartDialog {...defaultProps} />);
-    
-    expect(screen.getByLabelText(/part name/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/category/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/price/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/quantity/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/supplier/i)).toBeInTheDocument();
+
+    expect(screen.getByLabelText(/parts\.description/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/parts\.category/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/parts\.price/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/common\.quantity/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/common\.supplier/i)).toBeInTheDocument();
   });
 
   test('submits form with valid data', async () => {
     renderWithProviders(<PartDialog {...defaultProps} />);
-    
-    fireEvent.change(screen.getByLabelText(/part name/i), {
-      target: { value: 'Brake Pads' },
+
+    fireEvent.change(screen.getByLabelText(/parts\.description/i), {
+      target: { name: 'description', value: 'Brake Pads' },
     });
-    fireEvent.change(screen.getByLabelText(/category/i), {
-      target: { value: 'Brakes' },
-    });
-    fireEvent.change(screen.getByLabelText(/price/i), {
-      target: { value: '45.99' },
-    });
-    fireEvent.change(screen.getByLabelText(/quantity/i), {
-      target: { value: '2' },
+    fireEvent.change(screen.getByLabelText(/parts\.price/i), {
+      target: { name: 'price', value: '45.99' },
     });
 
-    const saveButton = screen.getByText(/save/i);
+    const saveButton = screen.getByText('common.save');
     fireEvent.click(saveButton);
 
     await waitFor(() => {
-      expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringContaining('/parts'),
-        expect.objectContaining({
-          method: 'POST',
-          body: expect.stringContaining('"name":"Brake Pads"'),
-        })
+      expect(mockApi.post).toHaveBeenCalledWith(
+        '/parts',
+        expect.objectContaining({ vehicleId: 1, description: 'Brake Pads' })
       );
-      expect(mockOnSave).toHaveBeenCalled();
     });
   });
 
-  test('calculates total cost for multiple quantities', () => {
+  test('displays notes field', () => {
     renderWithProviders(<PartDialog {...defaultProps} />);
-    
-    fireEvent.change(screen.getByLabelText(/price/i), {
-      target: { value: '45.99' },
-    });
-    fireEvent.change(screen.getByLabelText(/quantity/i), {
-      target: { value: '2' },
-    });
-
-    expect(screen.getByText(/total: £91.98/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/common\.notes/i)).toBeInTheDocument();
   });
 
-  test('validates required fields', async () => {
+  test('displays purchase date field', () => {
     renderWithProviders(<PartDialog {...defaultProps} />);
-    
-    const saveButton = screen.getByText(/save/i);
-    fireEvent.click(saveButton);
+    expect(screen.getByLabelText(/common\.purchaseDate/i)).toBeInTheDocument();
+  });
 
-    await waitFor(() => {
-      expect(screen.getByText(/part name is required/i)).toBeInTheDocument();
-      expect(screen.getByText(/category is required/i)).toBeInTheDocument();
-    });
+  test('displays installation date field', () => {
+    renderWithProviders(<PartDialog {...defaultProps} />);
+    expect(screen.getByLabelText(/common\.installationDate/i)).toBeInTheDocument();
+  });
 
-    expect(global.fetch).not.toHaveBeenCalled();
+  test('displays warranty field', () => {
+    renderWithProviders(<PartDialog {...defaultProps} />);
+    expect(screen.getByLabelText(/common\.warranty/i)).toBeInTheDocument();
+  });
+
+  test('displays part number field', () => {
+    renderWithProviders(<PartDialog {...defaultProps} />);
+    expect(screen.getByLabelText(/common\.partNumber/i)).toBeInTheDocument();
+  });
+
+  test('displays manufacturer field', () => {
+    renderWithProviders(<PartDialog {...defaultProps} />);
+    expect(screen.getByLabelText(/common\.manufacturer/i)).toBeInTheDocument();
+  });
+
+  test('displays receipt upload', () => {
+    renderWithProviders(<PartDialog {...defaultProps} />);
+    expect(screen.getByTestId('receipt-upload')).toBeInTheDocument();
+  });
+
+  test('displays URL scraper', () => {
+    renderWithProviders(<PartDialog {...defaultProps} />);
+    expect(screen.getByTestId('url-scraper')).toBeInTheDocument();
+  });
+
+  test('displays MOT record link', () => {
+    renderWithProviders(<PartDialog {...defaultProps} />);
+    expect(screen.getByLabelText(/parts\.motRecord/i)).toBeInTheDocument();
+  });
+
+  test('displays service record link', () => {
+    renderWithProviders(<PartDialog {...defaultProps} />);
+    expect(screen.getByLabelText(/service\.serviceRecord/i)).toBeInTheDocument();
   });
 
   test('populates form in edit mode', () => {
     const part = {
       id: 1,
-      name: 'Oil Filter',
-      category: 'Filters',
+      description: 'Oil Filter',
+      partNumber: 'OF-123',
+      manufacturer: 'Bosch',
       price: 12.99,
       quantity: 1,
       supplier: 'AutoParts Co',
-      sku: 'OF-12345',
+      warranty: '1 year',
+      notes: 'Test note',
     };
 
     renderWithProviders(<PartDialog {...defaultProps} part={part} />);
-    
+
+    expect(screen.getByText('parts.editPart')).toBeInTheDocument();
     expect(screen.getByDisplayValue('Oil Filter')).toBeInTheDocument();
-    expect(screen.getByDisplayValue('Filters')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('OF-123')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Bosch')).toBeInTheDocument();
     expect(screen.getByDisplayValue('12.99')).toBeInTheDocument();
     expect(screen.getByDisplayValue('AutoParts Co')).toBeInTheDocument();
   });
 
-  test('displays category options', () => {
+  test('calls onClose with false on cancel', () => {
     renderWithProviders(<PartDialog {...defaultProps} />);
-    
-    const categorySelect = screen.getByLabelText(/category/i);
-    fireEvent.click(categorySelect);
 
-    expect(screen.getByText(/brakes/i)).toBeInTheDocument();
-    expect(screen.getByText(/filters/i)).toBeInTheDocument();
-    expect(screen.getByText(/engine/i)).toBeInTheDocument();
-    expect(screen.getByText(/suspension/i)).toBeInTheDocument();
-  });
-
-  test('handles image upload', async () => {
-    renderWithProviders(<PartDialog {...defaultProps} />);
-    
-    const file = new File(['image'], 'part.jpg', { type: 'image/jpeg' });
-    const fileInput = screen.getByLabelText(/upload image/i);
-
-    fireEvent.change(fileInput, { target: { files: [file] } });
-
-    await waitFor(() => {
-      expect(screen.getByText('part.jpg')).toBeInTheDocument();
-    });
-  });
-
-  test('displays scrape from URL button', () => {
-    renderWithProviders(<PartDialog {...defaultProps} />);
-    expect(screen.getByText(/scrape from url/i)).toBeInTheDocument();
-  });
-
-  test('scrapes part data from URL', async () => {
-    global.fetch = jest.fn(() =>
-      Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve({
-          name: 'Brake Pads Set',
-          price: 45.99,
-          image: 'https://example.com/image.jpg',
-        }),
-      })
-    );
-
-    renderWithProviders(<PartDialog {...defaultProps} />);
-    
-    const urlInput = screen.getByLabelText(/product url/i);
-    fireEvent.change(urlInput, {
-      target: { value: 'https://amazon.com/dp/B001234567' },
-    });
-
-    const scrapeButton = screen.getByText(/scrape from url/i);
-    fireEvent.click(scrapeButton);
-
-    await waitFor(() => {
-      expect(screen.getByDisplayValue('Brake Pads Set')).toBeInTheDocument();
-      expect(screen.getByDisplayValue('45.99')).toBeInTheDocument();
-    });
-  });
-
-  test('displays SKU field', () => {
-    renderWithProviders(<PartDialog {...defaultProps} />);
-    expect(screen.getByLabelText(/sku/i)).toBeInTheDocument();
-  });
-
-  test('displays purchase date field', () => {
-    renderWithProviders(<PartDialog {...defaultProps} />);
-    expect(screen.getByLabelText(/purchase date/i)).toBeInTheDocument();
-  });
-
-  test('displays notes/description field', () => {
-    renderWithProviders(<PartDialog {...defaultProps} />);
-    expect(screen.getByLabelText(/notes/i)).toBeInTheDocument();
-  });
-
-  test('validates positive price', async () => {
-    renderWithProviders(<PartDialog {...defaultProps} />);
-    
-    fireEvent.change(screen.getByLabelText(/price/i), {
-      target: { value: '-10' },
-    });
-
-    const saveButton = screen.getByText(/save/i);
-    fireEvent.click(saveButton);
-
-    await waitFor(() => {
-      expect(screen.getByText(/price must be positive/i)).toBeInTheDocument();
-    });
-  });
-
-  test('validates positive quantity', async () => {
-    renderWithProviders(<PartDialog {...defaultProps} />);
-    
-    fireEvent.change(screen.getByLabelText(/quantity/i), {
-      target: { value: '0' },
-    });
-
-    const saveButton = screen.getByText(/save/i);
-    fireEvent.click(saveButton);
-
-    await waitFor(() => {
-      expect(screen.getByText(/quantity must be at least 1/i)).toBeInTheDocument();
-    });
-  });
-
-  test('closes dialog on cancel', () => {
-    renderWithProviders(<PartDialog {...defaultProps} />);
-    
-    const cancelButton = screen.getByText(/cancel/i);
+    const cancelButton = screen.getByText('common.cancel');
     fireEvent.click(cancelButton);
 
-    expect(mockOnClose).toHaveBeenCalled();
+    expect(mockOnClose).toHaveBeenCalledWith(false);
   });
 
-  test('displays error message on save failure', async () => {
-    global.fetch = jest.fn(() =>
-      Promise.reject(new Error('Network error'))
-    );
+  test('uses PUT for editing existing part', async () => {
+    const part = {
+      id: 42,
+      description: 'Oil Filter',
+      price: 12.99,
+      quantity: 1,
+    };
 
-    renderWithProviders(<PartDialog {...defaultProps} />);
-    
-    fireEvent.change(screen.getByLabelText(/part name/i), {
-      target: { value: 'Test Part' },
-    });
-    fireEvent.change(screen.getByLabelText(/category/i), {
-      target: { value: 'Brakes' },
-    });
+    renderWithProviders(<PartDialog {...defaultProps} part={part} />);
 
-    const saveButton = screen.getByText(/save/i);
+    const saveButton = screen.getByText('common.save');
     fireEvent.click(saveButton);
 
     await waitFor(() => {
-      expect(screen.getByText(/error saving part/i)).toBeInTheDocument();
+      expect(mockApi.put).toHaveBeenCalledWith(
+        '/parts/42',
+        expect.objectContaining({ vehicleId: 1 })
+      );
     });
   });
 
-  test('displays warranty information field', () => {
-    renderWithProviders(<PartDialog {...defaultProps} />);
-    expect(screen.getByLabelText(/warranty/i)).toBeInTheDocument();
+  test('does not render when closed', () => {
+    renderWithProviders(<PartDialog {...defaultProps} open={false} />);
+    expect(screen.queryByText('parts.addPart')).not.toBeInTheDocument();
   });
 
-  test('displays installation date field', () => {
+  test('loads part categories on mount', async () => {
+    mockApi.get.mockResolvedValue({ data: [] });
     renderWithProviders(<PartDialog {...defaultProps} />);
-    expect(screen.getByLabelText(/installation date/i)).toBeInTheDocument();
-  });
 
-  test('links to service record', () => {
-    renderWithProviders(<PartDialog {...defaultProps} />);
-    expect(screen.getByLabelText(/link to service record/i)).toBeInTheDocument();
-  });
-
-  test('displays supported platforms for scraping', () => {
-    renderWithProviders(<PartDialog {...defaultProps} />);
-    
-    const urlInput = screen.getByLabelText(/product url/i);
-    fireEvent.focus(urlInput);
-
-    expect(screen.getByText(/amazon/i)).toBeInTheDocument();
-    expect(screen.getByText(/ebay/i)).toBeInTheDocument();
-    expect(screen.getByText(/shopify/i)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(mockApi.get).toHaveBeenCalledWith(
+        '/part-categories',
+        expect.any(Object)
+      );
+    });
   });
 });

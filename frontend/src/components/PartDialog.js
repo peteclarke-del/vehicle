@@ -431,7 +431,7 @@ export default function PartDialog({ open, onClose, part, vehicleId }) {
                     label={t('common.quantity') || 'Quantity'}
                     value={formData.quantity}
                     onChange={handleChange}
-                    inputProps={{ step: '1', min: '0' }}
+                    inputProps={{ step: '0.01', min: '0' }}
                   />
                 </Grid>
               </Grid>

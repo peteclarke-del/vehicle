@@ -57,6 +57,35 @@ const ImportExport = () => {
   // Helper: build full URL (apiBase + path) with provided params object.
   const buildUrl = (path, params) => helpersBuildUrl(apiBase, path, params);
 
+  // Extract useful API error details even when the server/proxy returns HTML/text.
+  const getApiErrorMessage = async (resp, fallbackMessage) => {
+    const status = [resp.status, resp.statusText].filter(Boolean).join(' ').trim();
+
+    try {
+      const errorData = await resp.clone().json();
+      const fromJson = errorData?.error || errorData?.message;
+      if (fromJson) {
+        return fromJson;
+      }
+    } catch (e) {
+      // Not JSON, continue to text extraction.
+    }
+
+    try {
+      const text = (await resp.text()).trim();
+      if (text) {
+        const compact = text.replace(/\s+/g, ' ').slice(0, 220);
+        return status
+          ? `${fallbackMessage} (${status}): ${compact}`
+          : `${fallbackMessage}: ${compact}`;
+      }
+    } catch (e) {
+      // Ignore text parse errors.
+    }
+
+    return status ? `${fallbackMessage} (${status})` : fallbackMessage;
+  };
+
   useEffect(() => {
     let mounted = true;
     (async () => {
@@ -223,8 +252,8 @@ const ImportExport = () => {
       const resp = await fetch(url, { method: 'POST', headers: { ...auth(), 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
       
       if (!resp.ok) {
-        const errorData = await resp.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Import failed');
+        const errorMessage = await getApiErrorMessage(resp, 'Import failed');
+        throw new Error(errorMessage);
       }
       
       setImportProgress(80);
@@ -281,8 +310,8 @@ const ImportExport = () => {
       const resp = await fetch(url, { method: 'POST', headers: auth(), body: fd });
       
       if (!resp.ok) {
-        const errorData = await resp.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Zip import failed');
+        const errorMessage = await getApiErrorMessage(resp, 'Zip import failed');
+        throw new Error(errorMessage);
       }
       
       setImportProgress(60);

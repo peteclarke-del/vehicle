@@ -5,12 +5,21 @@ import '@testing-library/jest-dom';
 
 // Mock recharts
 jest.mock('recharts', () => {
-  const OriginalModule = jest.requireActual('recharts');
+  const React = require('react');
   return {
-    ...OriginalModule,
-    ResponsiveContainer: ({ children }) => (
-      <div data-testid="responsive-container">{children}</div>
-    ),
+    ResponsiveContainer: ({ children }) => React.createElement('div', { 'data-testid': 'responsive-container' }, children),
+    PieChart: ({ children }) => React.createElement('div', { 'data-testid': 'pie-chart' }, children),
+    BarChart: ({ children }) => React.createElement('div', { 'data-testid': 'bar-chart' }, children),
+    LineChart: ({ children }) => React.createElement('div', { 'data-testid': 'line-chart' }, children),
+    Pie: () => null,
+    Bar: () => null,
+    Line: () => null,
+    Cell: () => null,
+    XAxis: () => null,
+    YAxis: () => null,
+    CartesianGrid: () => null,
+    Tooltip: () => null,
+    Legend: () => null,
   };
 });
 
@@ -100,7 +109,7 @@ describe('CostChart Component', () => {
 
   test('formats currency correctly', () => {
     render(<CostChart data={mockCostData} />);
-    expect(screen.getByText(/£1,000.00/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/£1,000.00/i).length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText(/£1,500.00/i)).toBeInTheDocument();
   });
 
@@ -124,7 +133,7 @@ describe('CostChart Component', () => {
     const insuranceSection = screen.getByText('Insurance');
     fireEvent.mouseEnter(insuranceSection);
 
-    expect(screen.getByText(/£1,000.00/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/£1,000.00/i).length).toBeGreaterThanOrEqual(1);
   });
 
   test('displays cost comparison', () => {
@@ -134,8 +143,8 @@ describe('CostChart Component', () => {
     ];
 
     render(<CostChart data={comparisonData} showComparison={true} />);
-    expect(screen.getByText(/+5.3%/i)).toBeInTheDocument(); // Insurance increase
-    expect(screen.getByText(/+7.1%/i)).toBeInTheDocument(); // Service increase
+    expect(screen.getByText(/\+5\.3%/i)).toBeInTheDocument(); // Insurance increase
+    expect(screen.getByText(/\+7\.1%/i)).toBeInTheDocument(); // Service increase
   });
 
   test('exports chart as image', () => {

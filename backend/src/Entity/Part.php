@@ -44,8 +44,8 @@ class Part
     #[ORM\Column(type: 'string', length: 100, nullable: true)]
     private ?string $supplier = null;
 
-    #[ORM\Column(type: 'integer', options: ['default' => 1])]
-    private int $quantity = 1;
+    #[ORM\Column(type: 'decimal', precision: 8, scale: 2, options: ['default' => '1.00'])]
+    private string $quantity = '1.00';
 
     #[ORM\Column(type: 'integer', nullable: true)]
     private ?int $warrantyMonths = null;
@@ -329,14 +329,14 @@ class Part
         return $this;
     }
 
-    public function getQuantity(): int
+    public function getQuantity(): string
     {
         return $this->quantity;
     }
 
-    public function setQuantity(int $quantity): self
+    public function setQuantity($quantity): self
     {
-        $this->quantity = $quantity;
+        $this->quantity = $quantity !== null ? (string) $quantity : '1.00';
         return $this;
     }
 

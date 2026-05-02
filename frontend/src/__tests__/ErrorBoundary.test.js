@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import ErrorBoundary from '../components/ErrorBoundary';
 
 const ThrowError = ({ shouldThrow }) => {
@@ -60,22 +60,27 @@ describe('ErrorBoundary', () => {
   });
 
   test('resets error on reload button click', () => {
-    const { rerender } = render(
+    // Use a mutable ref to control throwing behavior
+    let shouldThrow = true;
+    const Thrower = () => {
+      if (shouldThrow) throw new Error('Test error');
+      return <div>Recovered</div>;
+    };
+
+    render(
       <ErrorBoundary>
-        <ThrowError shouldThrow={true} />
+        <Thrower />
       </ErrorBoundary>
     );
 
     expect(screen.getByText(/something went wrong/i)).toBeInTheDocument();
 
-    // In a real scenario, clicking reload would reset the error state
-    rerender(
-      <ErrorBoundary>
-        <ThrowError shouldThrow={false} />
-      </ErrorBoundary>
-    );
+    // Stop throwing before clicking reload
+    shouldThrow = false;
+    fireEvent.click(screen.getByRole('button', { name: /reload/i }));
 
     expect(screen.queryByText(/something went wrong/i)).not.toBeInTheDocument();
+    expect(screen.getByText('Recovered')).toBeInTheDocument();
   });
 
   test('logs error to console', () => {

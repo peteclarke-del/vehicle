@@ -189,12 +189,11 @@ class ConsumableController extends AbstractController
         $consumable->setVehicle($vehicle);
         $consumable->setConsumableType($consumableType);
         
-        // Auto-detect if this consumable is being created as part of a service/MOT
-        // If serviceRecordId or motRecordId is present, mark as included in service cost
-        $createdInServiceContext = !empty($data['serviceRecordId']) || !empty($data['motRecordId']);
-        if ($createdInServiceContext) {
-            $consumable->setIncludedInServiceCost(true);
-        }
+        // New consumables are always included in service cost by default.
+        // Only consumables that were pre-existing (purchased separately) and later linked
+        // to a service should have includedInServiceCost=false. That is handled by the
+        // pre-bought logic in updateConsumableFromData for the update/link path.
+        $consumable->setIncludedInServiceCost(true);
         
         // Ensure description is set. Accept legacy `name` too.
         $desc = $data['description'] ?? $data['name'] ?? $consumableType->getName() ?? null;
@@ -458,7 +457,11 @@ class ConsumableController extends AbstractController
 
             if ($svcId === null || $svcId === '' || $svcId === 0 || $svcId === '0') {
                 $consumable->setServiceRecord(null);
-                $consumable->setIncludedInServiceCost(false);
+                // Only mark as pre-bought when an EXISTING consumable is being explicitly
+                // disassociated. New consumables (no ID yet) should keep their default of true.
+                if ($consumable->getId() !== null) {
+                    $consumable->setIncludedInServiceCost(false);
+                }
                 $this->logger->info('Consumable disassociated from Service (explicit)', [
                     'consumableId' => $consumable->getId(),
                 ]);

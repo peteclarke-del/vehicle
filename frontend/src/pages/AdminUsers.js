@@ -244,13 +244,14 @@ const AdminUsers = () => {
                             color={u.passwordChangeRequired ? 'warning' : 'default'}
                             onClick={(e) => { e.stopPropagation(); forcePasswordChange(u.id); }}
                             disabled={u.passwordChangeRequired}
+                            aria-label={t('admin.forcePasswordChange', 'Force password change')}
                           >
                             <LockReset fontSize="small" />
                           </IconButton>
                         </span>
                       </Tooltip>
                       <Tooltip title={t('admin.manageUser', 'Manage User')}>
-                        <IconButton size="small" onClick={(e) => { e.stopPropagation(); navigate(`/admin/users/${u.id}`); }}>
+                        <IconButton size="small" onClick={(e) => { e.stopPropagation(); navigate(`/admin/users/${u.id}`); }} aria-label={t('admin.manageUser', 'Manage User')}>
                           <EditIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>

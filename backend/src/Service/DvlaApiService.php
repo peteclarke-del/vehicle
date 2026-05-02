@@ -142,7 +142,7 @@ class DvlaApiService
                 [
                     'method' => 'POST',
                     'url' => $url,
-                    'headers' => $headers,
+                    'headers' => array_diff_key($headers, array_flip(['Authorization', 'x-api-key'])),
                     'body' => ['registrationNumber' => $normalized],
                 ]
             );

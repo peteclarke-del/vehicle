@@ -9,7 +9,12 @@ import { useEffect, useState, useCallback } from 'react';
  */
 export const useDistance = () => {
   const { api } = useAuth();
-  const [userUnit, setUserUnit] = useState('km');
+  // Start with the locale-appropriate default so the initial render is already correct
+  // for most users (no km flash while waiting for the server response).
+  const [userUnit, setUserUnit] = useState(() => {
+    const locale = getUserDefaultDistanceUnit();
+    return locale === 'mi' || locale === 'miles' ? 'miles' : 'km';
+  });
 
   // Load distance unit preference from server; fall back to locale default
   useEffect(() => {
@@ -19,8 +24,10 @@ export const useDistance = () => {
         if (api) {
           const resp = await api.get('/user/preferences?key=distanceUnit');
           const raw = resp?.data?.value;
-          const unit = raw ? (raw === 'mi' ? 'miles' : 'km') : getUserDefaultDistanceUnit();
-          if (mounted) setUserUnit(unit === 'miles' ? 'miles' : 'km');
+          // Server may return 'mi', 'miles', 'km', or 'kilometres' – normalise all variants
+          const rawOrLocale = raw || getUserDefaultDistanceUnit();
+          const unit = (rawOrLocale === 'mi' || rawOrLocale === 'miles') ? 'miles' : 'km';
+          if (mounted) setUserUnit(unit);
           return;
         }
       } catch (e) {
@@ -29,7 +36,7 @@ export const useDistance = () => {
 
       // fallback to locale-based default
       const fallback = getUserDefaultDistanceUnit();
-      if (mounted) setUserUnit(fallback === 'mi' ? 'miles' : 'km');
+      if (mounted) setUserUnit(fallback === 'mi' || fallback === 'miles' ? 'miles' : 'km');
     })();
 
     return () => { mounted = false; };

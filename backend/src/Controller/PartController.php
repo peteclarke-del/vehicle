@@ -362,7 +362,7 @@ class PartController extends AbstractController
             $part->setPrice($data['price']);
         }
         if (isset($data['quantity'])) {
-            $part->setQuantity((int)$data['quantity']);
+            $part->setQuantity($data['quantity']);
         }
         if (isset($data['cost'])) {
             // Ensure entity expects a string - cast numeric values to string
@@ -372,9 +372,9 @@ class PartController extends AbstractController
         // If price/quantity provided (or both exist on entity), compute cost
         if (array_key_exists('price', $data) || array_key_exists('quantity', $data)) {
             $p = $data['price'] ?? $part->getPrice();
-            $q = array_key_exists('quantity', $data) ? (int)$data['quantity'] : $part->getQuantity();
+            $q = array_key_exists('quantity', $data) ? (float)$data['quantity'] : (float)$part->getQuantity();
             if ($p !== null && $q !== null) {
-                $computed = number_format(((float)$p) * ((int)$q), 2, '.', '');
+                $computed = number_format(((float)$p) * $q, 2, '.', '');
                 $part->setCost((string)$computed);
             }
         }

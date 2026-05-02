@@ -326,6 +326,7 @@
     "fetchRegistration": "Sök registreringsnummer",
     "lookupFailed": "Misslyckades att söka fordonsuppgifter",
     "registrationHelper": "Ange registreringsnummer för att automatiskt fylla i fordonsuppgifter",
+    "suppressNotifications": "Undertrycka aviseringar",
     "motExempt": "Befriad från besiktning",
     "purchaseMileage": "Mätarställning vid inköp",
     "status": {

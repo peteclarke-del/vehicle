@@ -206,7 +206,6 @@ class UrlScraperService
             'User-Agent' => $userAgents[array_rand($userAgents)],
             'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
             'Accept-Language' => 'en-GB,en;q=0.9,en-US;q=0.8',
-            'Accept-Encoding' => 'gzip, deflate, br',
             'Cache-Control' => 'no-cache',
             'Pragma' => 'no-cache',
             'Sec-Ch-Ua' => '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',

@@ -6,10 +6,11 @@ namespace App\Entity;
 
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
+use App\Repository\VehicleRepository;
 use Doctrine\ORM\Mapping as ORM;
 use App\Entity\InsurancePolicy;
 
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: VehicleRepository::class)]
 #[ORM\Table(name: 'vehicles')]
 class Vehicle
 {
@@ -113,6 +114,9 @@ class Vehicle
 
     #[ORM\Column(type: 'boolean', nullable: true)]
     private ?bool $motExempt = null;
+
+    #[ORM\Column(type: 'boolean', options: ['default' => false])]
+    private bool $suppressNotifications = false;
 
     #[ORM\OneToMany(mappedBy: 'vehicle', targetEntity: FuelRecord::class, cascade: ['remove'])]
     private Collection $fuelRecords;
@@ -260,7 +264,7 @@ class Vehicle
 
     public function setVin(?string $vin): self
     {
-        $this->vin = $vin;
+        $this->vin = ($vin !== null && trim($vin) === '') ? null : $vin;
         return $this;
     }
 
@@ -855,6 +859,17 @@ class Vehicle
     public function setMotExempt(?bool $motExempt): self
     {
         $this->motExempt = $motExempt;
+        return $this;
+    }
+
+    public function isSuppressNotifications(): bool
+    {
+        return $this->suppressNotifications;
+    }
+
+    public function setSuppressNotifications(bool $suppressNotifications): self
+    {
+        $this->suppressNotifications = $suppressNotifications;
         return $this;
     }
 

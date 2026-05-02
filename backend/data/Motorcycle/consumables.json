@@ -382,5 +382,11 @@
     "name": "Valve Shim",
     "unit": "unit",
     "description": "Hardened steel disc used to adjust valve clearance in shim-under-bucket or shim-over-bucket valve trains. Measured in precise thickness increments (e.g., 0.05mm steps)."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Tyre/Tire Valve Stem",
+    "unit": "unit",
+    "description": "Valve stem."
   }
 ]

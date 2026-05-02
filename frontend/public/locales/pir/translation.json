@@ -222,6 +222,7 @@
     "fetchRegistration": "Lookup registration",
     "lookupFailed": "Failed to lookup vehicle details",
     "registrationHelper": "Enter registration to auto-fill vehicle details",
+    "suppressNotifications": "Suppress Notifications",
     "motExempt": "MOT Exempt",
     "purchaseMileage": "Purchase Mileage",
     "status": {

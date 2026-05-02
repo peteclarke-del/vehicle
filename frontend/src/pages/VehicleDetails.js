@@ -505,7 +505,7 @@ const VehicleDetails = () => {
                     </Tooltip>
                     <Typography variant="h5">
                       {stats.stats.costPerMile !== null && stats.stats.costPerMile !== undefined
-                        ? formatCurrency((stats.stats.costPerMile * (userUnit === 'mi' ? 1.60934 : 1)), 'GBP', i18n.language)
+                        ? formatCurrency((stats.stats.costPerMile * (userUnit === 'miles' ? 1.60934 : 1)), 'GBP', i18n.language)
                         : t('na')}
                     </Typography>
                   </CardContent>

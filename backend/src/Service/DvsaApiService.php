@@ -72,9 +72,10 @@ class DvsaApiService
                 $headers['x-api-key'] = $this->apiKey;
             }
 
-            // Log headers and URL we're about to call for diagnostics
+            // Log request URL for diagnostics (redact sensitive headers)
             $this->logger->info('DVSA request url: ' . $apiUrl);
-            $this->logger->info('DVSA request headers: ' . json_encode($headers));
+            $safeHeaders = array_diff_key($headers, array_flip(['Authorization', 'x-api-key']));
+            $this->logger->info('DVSA request headers: ' . json_encode($safeHeaders));
 
             $response = $this->httpClient->request('GET', $apiUrl, [
                 'headers' => $headers,

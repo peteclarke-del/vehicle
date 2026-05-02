@@ -261,6 +261,7 @@ class NotificationController extends AbstractController
         $vehicles = array_values(array_filter(
             $vehicles,
             static fn (Vehicle $vehicle): bool => strtolower((string) $vehicle->getStatus()) === 'live'
+                && !$vehicle->isSuppressNotifications()
         ));
 
         if (empty($vehicles)) {

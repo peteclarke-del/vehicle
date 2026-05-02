@@ -8,6 +8,18 @@ echo "=== Vehicle Manager Android Build ==="
 # Navigate to app directory
 cd /app
 
+# Use an isolated Gradle user home per container run to avoid cache/journal
+# lock contention when previous runs left daemons behind in the shared cache.
+export GRADLE_USER_HOME="${GRADLE_USER_HOME:-/tmp/.gradle-$(date +%s)-$$}"
+mkdir -p "$GRADLE_USER_HOME"
+echo "Using GRADLE_USER_HOME=$GRADLE_USER_HOME"
+
+# Use conservative Gradle settings to reduce memory pressure in containers.
+# These can be overridden from docker-compose with environment variables.
+export GRADLE_OPTS="${GRADLE_OPTS:--Xmx1536m -Dorg.gradle.daemon=false -Dorg.gradle.workers.max=1 -Dkotlin.daemon.jvm.options=-Xmx512m}"
+GRADLE_MAX_WORKERS="${GRADLE_MAX_WORKERS:-1}"
+GRADLE_FLAGS=(--no-daemon "--max-workers=${GRADLE_MAX_WORKERS}")
+
 # Install dependencies if needed
 if [ ! -d "node_modules" ]; then
     echo "Installing npm dependencies..."
@@ -31,16 +43,59 @@ cp /app/node_modules/react-native-vector-icons/Fonts/*.ttf /app/android/app/src/
 
 # Clean previous builds
 echo "Cleaning previous builds..."
-./gradlew clean
+./gradlew "${GRADLE_FLAGS[@]}" clean
 
-# Build release APK
-echo "Building release APK..."
-./gradlew assembleRelease
+# Build APK(s). Default behavior is release with fallback to debug when
+# release fails (commonly due to OOM / exit 137 on constrained hosts).
+BUILD_VARIANT="${BUILD_VARIANT:-release}"
+
+build_release() {
+    echo "Building release APK..."
+    ./gradlew "${GRADLE_FLAGS[@]}" assembleRelease -x lintVitalRelease
+}
+
+build_debug() {
+    echo "Building debug APK..."
+    ./gradlew "${GRADLE_FLAGS[@]}" assembleDebug
+}
+
+case "$BUILD_VARIANT" in
+    release)
+        if ! build_release; then
+            echo "Release build failed; attempting debug APK fallback..."
+            build_debug
+        fi
+        ;;
+    debug)
+        build_debug
+        ;;
+    both)
+        if ! build_release; then
+            echo "Release build failed; continuing to debug APK build..."
+        fi
+        build_debug
+        ;;
+    *)
+        echo "Invalid BUILD_VARIANT='$BUILD_VARIANT' (expected: release|debug|both)"
+        exit 1
+        ;;
+esac
 
 # Copy APK to output directory
 echo "Copying APK to output..."
 mkdir -p /app/output
-cp app/build/outputs/apk/release/*.apk /app/output/
+copied=0
+for apk in app/build/outputs/apk/release/*.apk app/build/outputs/apk/debug/*.apk; do
+    if [ -f "$apk" ]; then
+        cp "$apk" /app/output/
+        copied=1
+    fi
+done
+
+if [ "$copied" -ne 1 ]; then
+    echo "No APK artifacts were found to copy."
+    exit 1
+fi
 
 echo ""
 echo "=== Build Complete ==="

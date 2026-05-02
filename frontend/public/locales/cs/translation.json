@@ -326,6 +326,7 @@
     "fetchRegistration": "Vyhledat registrační značku",
     "lookupFailed": "Vyhledání údajů o vozidle se nezdařilo",
     "registrationHelper": "Zadejte registrační značku pro automatické vyplnění údajů o vozidle",
+    "suppressNotifications": "Potlačit oznámení",
     "motExempt": "Osvobozeno od STK",
     "purchaseMileage": "Nájezd při koupi",
     "status": {

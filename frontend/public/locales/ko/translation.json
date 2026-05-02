@@ -326,6 +326,7 @@
     "fetchRegistration": "등록 번호 조회",
     "lookupFailed": "차량 정보 조회에 실패했습니다",
     "registrationHelper": "등록 번호를 입력하면 차량 정보가 자동으로 입력됩니다",
+    "suppressNotifications": "알림 비활성화",
     "motExempt": "차량 검사 면제",
     "purchaseMileage": "구매 시 주행 거리",
     "status": {
