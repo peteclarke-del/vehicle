@@ -29,9 +29,11 @@ import BuildIcon from '@mui/icons-material/Build';
 import OpacityIcon from '@mui/icons-material/Opacity';
 import MiscellaneousServicesIcon from '@mui/icons-material/MiscellaneousServices';
 import LinkIcon from '@mui/icons-material/Link';
+import { sortVehiclesByTypeAndName } from '../utils/sortUtils';
 import logger from '../utils/logger';
 
 const MotDialog = ({ open, motRecord, vehicleId, vehicles, onClose }) => {
+  const sortedVehicles = sortVehiclesByTypeAndName(vehicles || []);
   const [formData, setFormData] = useState({
     vehicleId: vehicleId || '',
     testDate: new Date().toISOString().split('T')[0],
@@ -361,7 +363,7 @@ const MotDialog = ({ open, motRecord, vehicleId, vehicles, onClose }) => {
                     onChange={handleChange}
                     label={t('common.vehicle')}
                   >
-                    {vehicles.map((v) => (
+                    {sortedVehicles.map((v) => (
                       <MenuItem key={v.id} value={v.id}>
                         {v.registrationNumber} - {v.name}
                       </MenuItem>

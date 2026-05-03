@@ -17,12 +17,28 @@ const FilteredVehicleSelector = ({
   includeViewAll = false,
   minWidth = 360,
   id = 'vehicle',
+  compact = false,
 }) => {
   const { t } = useTranslation();
 
   return (
     <>
-      <FormControl size="small" sx={{ minWidth: 160 }}>
+      <FormControl
+        size="small"
+        sx={{
+          minWidth: compact ? 120 : 160,
+          '& .MuiInputLabel-root': {
+            fontSize: compact ? '0.8rem' : undefined,
+          },
+          '& .MuiSelect-select': {
+            fontSize: compact ? '0.85rem' : undefined,
+            py: compact ? 0.75 : undefined,
+          },
+          '& .MuiMenuItem-root': {
+            fontSize: compact ? '0.85rem' : undefined,
+          },
+        }}
+      >
         <InputLabel id={`${id}-status-filter-label`}>
           {t('vehicles.filterByStatus') || 'Status'}
         </InputLabel>
@@ -46,6 +62,7 @@ const FilteredVehicleSelector = ({
         onChange={onVehicleChange}
         includeViewAll={includeViewAll}
         minWidth={minWidth}
+        compact={compact}
       />
     </>
   );

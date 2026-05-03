@@ -242,6 +242,14 @@ class PartController extends AbstractController
         $data = $validation['data'];
         $this->logger->info('Part update payload', ['id' => $id, 'data' => $data]);
 
+        if (array_key_exists('vehicleId', $data) && !empty($data['vehicleId'])) {
+            $vehicle = $this->entityManager->getRepository(Vehicle::class)->find((int) $data['vehicleId']);
+            if (!$vehicle || (!$this->isAdminForUser($user) && $vehicle->getOwner()->getId() !== $user->getId())) {
+                return $this->json(['error' => 'Vehicle not found'], 404);
+            }
+            $part->setVehicle($vehicle);
+        }
+
         $prevMotId = $part->getMotRecord()?->getId();
         $this->updatePartFromData($part, $data);
 

@@ -15,15 +15,19 @@ import {
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
+import { useUserPreferences } from '../contexts/UserPreferencesContext';
 import { useDistance } from '../hooks/useDistance';
+import useVehicleStatusFilter from '../hooks/useVehicleStatusFilter';
 import ReceiptUpload from './ReceiptUpload';
 import UrlScraper from './UrlScraper';
 import KnightRiderLoader from './KnightRiderLoader';
+import FilteredVehicleSelector from './FilteredVehicleSelector';
 import logger from '../utils/logger';
 
-export default function ConsumableDialog({ open, onClose, consumable, vehicleId }) {
+export default function ConsumableDialog({ open, onClose, consumable, vehicleId, onVehicleMoved }) {
   const { t } = useTranslation();
   const { api } = useAuth();
+  const { setDefaultVehicle } = useUserPreferences();
   const { convert, toKm, getLabel } = useDistance();
   const [formData, setFormData] = useState({
     consumableTypeId: '',
@@ -52,9 +56,17 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
   const [existingConsumables, setExistingConsumables] = useState([]);
   const [selectedExistingConsumableId, setSelectedExistingConsumableId] = useState('');
   const [isLinkingExisting, setIsLinkingExisting] = useState(false);
+  const [dialogVehicleId, setDialogVehicleId] = useState(consumable?.vehicleId || vehicleId || '');
+  const [moveVehicles, setMoveVehicles] = useState([]);
+  const [movingVehicle, setMovingVehicle] = useState(false);
 
-  // Determine the actual vehicle ID - use consumable's vehicleId if available, otherwise use prop
-  const actualVehicleId = consumable?.vehicleId || vehicleId;
+  const actualVehicleId = dialogVehicleId;
+  const {
+    statusFilter: moveStatusFilter,
+    filteredVehicles: filteredMoveVehicles,
+    handleStatusFilterChange: handleMoveStatusFilterChange,
+    STATUS_OPTIONS: MOVE_STATUS_OPTIONS,
+  } = useVehicleStatusFilter(moveVehicles, 'consumableMoveStatusFilter');
 
   // Determine if we're in MOT/Service context
   // Only show link dropdown when creating NEW consumable from service/MOT, not when editing existing
@@ -160,6 +172,7 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
 
   useEffect(() => {
     if (consumable) {
+      setDialogVehicleId(consumable.vehicleId || vehicleId || '');
       setSelectedExistingConsumableId('');
       setIsLinkingExisting(false);
       // Only convert mileage if this is backend data (has id), prefill data is already in display units
@@ -190,6 +203,7 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
       setMotRecordId(consumable.motRecordId || null);
       setServiceRecordId(consumable.serviceRecordId || null);
     } else {
+      setDialogVehicleId(vehicleId || '');
       setSelectedExistingConsumableId('');
       setIsLinkingExisting(false);
       setFormData({
@@ -212,7 +226,23 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
       setMotRecordId(null);
       setServiceRecordId(null);
     }
-  }, [consumable, open, convert]);
+  }, [consumable, open, convert, vehicleId]);
+
+  useEffect(() => {
+    const loadVehicles = async () => {
+      try {
+        const resp = await api.get('/vehicles');
+        setMoveVehicles(Array.isArray(resp.data) ? resp.data : []);
+      } catch (e) {
+        logger.error('Failed to load vehicles for consumable move', e);
+        setMoveVehicles([]);
+      }
+    };
+
+    if (open && consumable?.id) {
+      loadVehicles();
+    }
+  }, [open, consumable?.id, api]);
 
   useEffect(() => {
     const load = async () => {
@@ -270,6 +300,30 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
     }
   };
 
+  const handleMoveVehicleChange = async (newVehicleId) => {
+    if (!consumable?.id || !newVehicleId || String(newVehicleId) === String(actualVehicleId)) {
+      return;
+    }
+
+    setMovingVehicle(true);
+    try {
+      await api.put(`/consumables/${consumable.id}`, {
+        vehicleId: newVehicleId,
+        motRecordId: null,
+        serviceRecordId: null,
+      });
+      setDialogVehicleId(newVehicleId);
+      setMotRecordId(null);
+      setServiceRecordId(null);
+      setDefaultVehicle(newVehicleId);
+      onVehicleMoved?.(newVehicleId);
+    } catch (error) {
+      logger.error('Error moving consumable to vehicle:', error);
+    } finally {
+      setMovingVehicle(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -320,6 +374,23 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
           <Box sx={{ flexShrink: 0 }}>
             {consumable ? t('consumables.editConsumable') : t('consumables.addConsumable')}
           </Box>
+          {consumable?.id && (
+            <Box sx={{ ml: 'auto', minWidth: 400, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 0.75, flexWrap: 'wrap' }}>
+              <Box sx={{ minWidth: 118, fontSize: '0.85rem', lineHeight: 1.2 }}>{t('consumables.moveConsumableTo', 'Move consumable to:')}</Box>
+              <FilteredVehicleSelector
+                id="move-consumable"
+                statusFilter={moveStatusFilter}
+                onStatusFilterChange={handleMoveStatusFilterChange}
+                statusOptions={MOVE_STATUS_OPTIONS}
+                vehicles={filteredMoveVehicles}
+                selectedVehicle={actualVehicleId}
+                onVehicleChange={handleMoveVehicleChange}
+                includeViewAll={false}
+                minWidth={220}
+                compact={true}
+              />
+            </Box>
+          )}
           {isFromMotOrService && existingConsumables.length > 0 && (
             <Box sx={{ flexGrow: 1, minWidth: 300 }}>
               <FormControl size="small" fullWidth>
@@ -552,10 +623,10 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId 
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => onClose(false)} disabled={loading}>
+          <Button onClick={() => onClose(false)} disabled={loading || movingVehicle}>
             {t('common.cancel')}
           </Button>
-          <Button type="submit" variant="contained" disabled={loading || loadingTypes}>
+          <Button type="submit" variant="contained" disabled={loading || loadingTypes || movingVehicle}>
             {loading ? t('common.loading') : t('common.save')}
           </Button>
         </DialogActions>
