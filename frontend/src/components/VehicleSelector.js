@@ -2,6 +2,7 @@ import React, { useState, useMemo, useId } from 'react';
 import { Box, Button, Typography, CircularProgress } from '@mui/material';
 import { Add as AddIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { sortVehiclesByTypeAndName } from '../utils/sortUtils';
 
 const VehicleSelector = React.memo(({
   vehicles = [],
@@ -20,6 +21,7 @@ const VehicleSelector = React.memo(({
   error = null,
   groupByMake = false,
   showImages = false,
+  compact = false,
 }) => {
   const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');
@@ -35,11 +37,12 @@ const VehicleSelector = React.memo(({
   };
 
   const formatFn = formatVehicle || defaultFormat;
+  const sortedVehicles = useMemo(() => sortVehiclesByTypeAndName(vehicles), [vehicles]);
 
   const filteredVehicles = useMemo(() => {
-    if (!searchTerm) return vehicles;
+    if (!searchTerm) return sortedVehicles;
     const lower = searchTerm.toLowerCase();
-    return vehicles.filter(v => {
+    return sortedVehicles.filter(v => {
       const makeName = v.make?.name || v.make || '';
       const modelName = v.model?.name || v.model || '';
       return (
@@ -50,7 +53,7 @@ const VehicleSelector = React.memo(({
         String(v.year || '').includes(lower)
       );
     });
-  }, [vehicles, searchTerm]);
+  }, [sortedVehicles, searchTerm]);
 
   const handleChange = React.useCallback((e) => {
     const rawValue = e.target.value;
@@ -96,8 +99,12 @@ const VehicleSelector = React.memo(({
     </option>
   );
 
+  const selectPadding = compact ? '5px 8px' : '8px';
+  const selectFontSize = compact ? '0.85rem' : '1rem';
+  const labelFontSize = compact ? '0.8rem' : '1rem';
+
   return (
-    <Box display="flex" gap={2} alignItems="center">
+    <Box display="flex" gap={compact ? 1 : 2} alignItems="center">
       <Box>
         {showCount && (
           <Typography variant="caption" display="block">
@@ -114,14 +121,14 @@ const VehicleSelector = React.memo(({
             />
           </Box>
         )}
-        {label && <label htmlFor={selectId}>{label}</label>}
+        {label && <label htmlFor={selectId} style={{ fontSize: labelFontSize }}>{label}</label>}
         <select
           id={selectId}
           aria-label={label || t('common.selectVehicle', 'Select a vehicle')}
           value={currentValue}
           onChange={handleChange}
           disabled={disabled}
-          style={{ minWidth, padding: '8px', border: '1px solid #ccc', borderRadius: 4 }}
+          style={{ minWidth, padding: selectPadding, border: '1px solid #ccc', borderRadius: 4, fontSize: selectFontSize }}
         >
           <option value="" disabled>
             {t('common.selectVehicle', 'Select a vehicle')}

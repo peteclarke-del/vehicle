@@ -1128,7 +1128,7 @@ const Dashboard = () => {
                             }}
                           >
                             <DateChip label={t('dashboard.mot')} date={vehicle.motExpiryDate} />
-                            <DateChip label={t('dashboard.insurance') || 'Insurance'} date={vehicle.insuranceExpiryDate} />
+                            <DateChip label={t('dashboard.insuranceDue', 'Insurance Due')} date={vehicle.insuranceExpiryDate} />
                             <DateChip label={t('dashboard.roadTax')} date={vehicle.roadTaxExpiryDate} />
                             <ServiceChip vehicle={vehicle} />
                           </Box>

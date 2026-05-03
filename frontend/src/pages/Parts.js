@@ -336,6 +336,7 @@ const Parts = () => {
         onClose={handleDialogClose}
         part={selectedPart}
         vehicleId={selectedVehicle}
+        onVehicleMoved={handleVehicleChange}
       />
       <ServiceDialog
         open={openServiceDialog}

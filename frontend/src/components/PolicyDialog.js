@@ -21,9 +21,11 @@ import { useTranslation } from 'react-i18next';
 import ReceiptUpload from './ReceiptUpload';
 import AttachmentUpload from './AttachmentUpload';
 import KnightRiderLoader from './KnightRiderLoader';
+import { sortVehiclesByTypeAndName } from '../utils/sortUtils';
 import logger from '../utils/logger';
 
 const PolicyDialog = ({ open, policy, vehicles, selectedVehicleId, existingPolicies, onClose }) => {
+  const sortedVehicles = sortVehiclesByTypeAndName(vehicles || []);
   const [formData, setFormData] = useState({
     provider: '',
     policyNumber: '',
@@ -220,12 +222,12 @@ const PolicyDialog = ({ open, policy, vehicles, selectedVehicleId, existingPolic
             <Grid item xs={12}>
               <Autocomplete
                 multiple
-                options={vehicles}
+                options={sortedVehicles}
                 getOptionLabel={(v) => {
                   const makeModel = v.make ? `${v.make}${v.model ? ' ' + v.model : ''}` : v.name;
                   return `${makeModel} (${v.registrationNumber || ''})`;
                 }}
-                value={vehicles.filter(v => formData.vehicleIds.includes(v.id))}
+                value={sortedVehicles.filter(v => formData.vehicleIds.includes(v.id))}
                 onChange={(e, newVal) => setFormData(prev => ({ ...prev, vehicleIds: newVal.map(v => v.id) }))}
                 renderTags={(value, getTagProps) => value.map((option, index) => (
                   <Chip label={`${option.make ? option.make + (option.model ? ' ' + option.model : '') : option.name} (${option.registrationNumber || ''})`} {...getTagProps({ index })} />

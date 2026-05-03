@@ -245,6 +245,14 @@ class ConsumableController extends AbstractController
         $data = $validation['data'];
         $this->logger->info('Consumable update payload', ['id' => $id, 'data' => $data]);
 
+        if (array_key_exists('vehicleId', $data) && !empty($data['vehicleId'])) {
+            $vehicle = $this->entityManager->getRepository(Vehicle::class)->find((int) $data['vehicleId']);
+            if (!$vehicle || (!$this->isAdminForUser($user) && $vehicle->getOwner()->getId() !== $user->getId())) {
+                return $this->json(['error' => 'Vehicle not found'], 404);
+            }
+            $consumable->setVehicle($vehicle);
+        }
+
         $prevMotId = $consumable->getMotRecord()?->getId();
         $this->updateConsumableFromData($consumable, $data);
         $consumable->setUpdatedAt(new \DateTime());

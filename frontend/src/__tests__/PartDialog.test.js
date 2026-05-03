@@ -4,6 +4,8 @@ import PartDialog from '../components/PartDialog';
 import { AuthContext } from '../context/AuthContext';
 import '@testing-library/jest-dom';
 
+const mockSetDefaultVehicle = jest.fn();
+
 // Mock i18next
 jest.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -19,6 +21,18 @@ jest.mock('../hooks/useDistance', () => ({
     getLabel: () => 'mi',
   }),
 }));
+
+jest.mock('../contexts/UserPreferencesContext', () => ({
+  useUserPreferences: () => ({
+    setDefaultVehicle: mockSetDefaultVehicle,
+  }),
+}));
+
+jest.mock('../components/FilteredVehicleSelector', () => (props) => (
+  <button type="button" onClick={() => props.onVehicleChange(2)}>
+    move-selector
+  </button>
+));
 
 // Mock ReceiptUpload
 jest.mock('../components/ReceiptUpload', () => (props) => (
@@ -61,6 +75,7 @@ describe('PartDialog Component', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockSetDefaultVehicle.mockReset();
     mockApi.get.mockResolvedValue({ data: [] });
     mockApi.post.mockResolvedValue({ data: { id: 1 } });
     mockApi.put.mockResolvedValue({ data: { id: 1 } });
@@ -203,6 +218,38 @@ describe('PartDialog Component', () => {
         expect.objectContaining({ vehicleId: 1 })
       );
     });
+  });
+
+  test('moves edited part to another vehicle and updates default selection', async () => {
+    const onVehicleMoved = jest.fn();
+    const part = {
+      id: 42,
+      vehicleId: 1,
+      description: 'Oil Filter',
+      price: 12.99,
+      quantity: 1,
+    };
+
+    renderWithProviders(
+      <PartDialog
+        {...defaultProps}
+        part={part}
+        onVehicleMoved={onVehicleMoved}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'move-selector' }));
+
+    await waitFor(() => {
+      expect(mockApi.put).toHaveBeenCalledWith('/parts/42', {
+        vehicleId: 2,
+        motRecordId: null,
+        serviceRecordId: null,
+      });
+    });
+
+    expect(mockSetDefaultVehicle).toHaveBeenCalledWith(2);
+    expect(onVehicleMoved).toHaveBeenCalledWith(2);
   });
 
   test('does not render when closed', () => {

@@ -15,14 +15,18 @@ import {
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
+import { useUserPreferences } from '../contexts/UserPreferencesContext';
 import { useDistance } from '../hooks/useDistance';
+import useVehicleStatusFilter from '../hooks/useVehicleStatusFilter';
+import FilteredVehicleSelector from './FilteredVehicleSelector';
 import ReceiptUpload from './ReceiptUpload';
 import UrlScraper from './UrlScraper';
 import logger from '../utils/logger';
 
-export default function PartDialog({ open, onClose, part, vehicleId }) {
+export default function PartDialog({ open, onClose, part, vehicleId, onVehicleMoved }) {
   const { t } = useTranslation();
   const { api } = useAuth();
+  const { setDefaultVehicle } = useUserPreferences();
   const { convert, toKm, getLabel } = useDistance();
   const [formData, setFormData] = useState({
     description: '',
@@ -48,10 +52,18 @@ export default function PartDialog({ open, onClose, part, vehicleId }) {
   const [existingParts, setExistingParts] = useState([]);
   const [selectedExistingPartId, setSelectedExistingPartId] = useState('');
   const [isLinkingExisting, setIsLinkingExisting] = useState(false);
+  const [dialogVehicleId, setDialogVehicleId] = useState(part?.vehicleId || vehicleId || '');
+  const [moveVehicles, setMoveVehicles] = useState([]);
+  const [movingVehicle, setMovingVehicle] = useState(false);
   const initKeyRef = useRef(null);
 
-  // Determine the actual vehicle ID - use part's vehicleId if available, otherwise use prop
-  const actualVehicleId = part?.vehicleId || vehicleId;
+  const actualVehicleId = dialogVehicleId;
+  const {
+    statusFilter: moveStatusFilter,
+    filteredVehicles: filteredMoveVehicles,
+    handleStatusFilterChange: handleMoveStatusFilterChange,
+    STATUS_OPTIONS: MOVE_STATUS_OPTIONS,
+  } = useVehicleStatusFilter(moveVehicles, 'partMoveStatusFilter');
 
   // Determine if we're in MOT/Service context (pre-filled IDs)
   // Only show link dropdown when creating NEW part from service/MOT, not when editing existing
@@ -136,6 +148,7 @@ export default function PartDialog({ open, onClose, part, vehicleId }) {
     initKeyRef.current = key;
 
     if (part) {
+      setDialogVehicleId(part.vehicleId || vehicleId || '');
       setSelectedExistingPartId('');
       setIsLinkingExisting(false);
       // Only convert mileage if this is backend data (has id), prefill data is already in display units
@@ -161,6 +174,7 @@ export default function PartDialog({ open, onClose, part, vehicleId }) {
       setMotRecordId(part.motRecordId || null);
       setServiceRecordId(part.serviceRecordId || null);
     } else {
+      setDialogVehicleId(vehicleId || '');
       setSelectedExistingPartId('');
       setIsLinkingExisting(false);
       setFormData({
@@ -182,7 +196,23 @@ export default function PartDialog({ open, onClose, part, vehicleId }) {
       setMotRecordId(null);
       setServiceRecordId(null);
     }
-  }, [part, open, convert]);
+  }, [part, open, convert, vehicleId]);
+
+  useEffect(() => {
+    const loadVehicles = async () => {
+      try {
+        const resp = await api.get('/vehicles');
+        setMoveVehicles(Array.isArray(resp.data) ? resp.data : []);
+      } catch (e) {
+        logger.error('Failed to load vehicles for part move', e);
+        setMoveVehicles([]);
+      }
+    };
+
+    if (open && part?.id) {
+      loadVehicles();
+    }
+  }, [open, part?.id, api]);
 
   const [partCategories, setPartCategories] = useState([]);
   const [vehicleTypeId, setVehicleTypeId] = useState(null);
@@ -278,6 +308,30 @@ export default function PartDialog({ open, onClose, part, vehicleId }) {
     }
   };
 
+  const handleMoveVehicleChange = async (newVehicleId) => {
+    if (!part?.id || !newVehicleId || String(newVehicleId) === String(actualVehicleId)) {
+      return;
+    }
+
+    setMovingVehicle(true);
+    try {
+      await api.put(`/parts/${part.id}`, {
+        vehicleId: newVehicleId,
+        motRecordId: null,
+        serviceRecordId: null,
+      });
+      setDialogVehicleId(newVehicleId);
+      setMotRecordId(null);
+      setServiceRecordId(null);
+      setDefaultVehicle(newVehicleId);
+      onVehicleMoved?.(newVehicleId);
+    } catch (error) {
+      logger.error('Error moving part to vehicle:', error);
+    } finally {
+      setMovingVehicle(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -332,6 +386,23 @@ export default function PartDialog({ open, onClose, part, vehicleId }) {
           <Box sx={{ flexShrink: 0 }}>
             {part ? t('parts.editPart') : t('parts.addPart')}
           </Box>
+          {part?.id && (
+            <Box sx={{ ml: 'auto', minWidth: 380, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 0.75, flexWrap: 'wrap' }}>
+              <Box sx={{ minWidth: 78, fontSize: '0.85rem', lineHeight: 1.2 }}>{t('parts.movePartTo', 'Move part to:')}</Box>
+              <FilteredVehicleSelector
+                id="move-part"
+                statusFilter={moveStatusFilter}
+                onStatusFilterChange={handleMoveStatusFilterChange}
+                statusOptions={MOVE_STATUS_OPTIONS}
+                vehicles={filteredMoveVehicles}
+                selectedVehicle={actualVehicleId}
+                onVehicleChange={handleMoveVehicleChange}
+                includeViewAll={false}
+                minWidth={220}
+                compact={true}
+              />
+            </Box>
+          )}
           {isFromMotOrService && existingParts.length > 0 && (
             <Box sx={{ flexGrow: 1, minWidth: 300 }}>
               <FormControl size="small" fullWidth>
@@ -541,10 +612,10 @@ export default function PartDialog({ open, onClose, part, vehicleId }) {
           </Grid>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => onClose(false)} disabled={loading}>
+          <Button onClick={() => onClose(false)} disabled={loading || movingVehicle}>
             {t('common.cancel')}
           </Button>
-          <Button type="submit" variant="contained" disabled={loading}>
+          <Button type="submit" variant="contained" disabled={loading || movingVehicle}>
             {loading ? t('common.loading') : t('common.save')}
           </Button>
         </DialogActions>

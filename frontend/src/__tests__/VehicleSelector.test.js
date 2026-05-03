@@ -166,4 +166,28 @@ describe('VehicleSelector Component', () => {
     const images = screen.getAllByRole('img');
     expect(images).toHaveLength(2);
   });
+
+  test('sorts vehicles by vehicle type then year then make/model ascending', () => {
+    const unsortedVehicles = [
+      { id: 1, name: 'Transit', registrationNumber: 'ZZZ999', vehicleType: { name: 'Van' }, year: 2020, make: { name: 'Ford' }, model: { name: 'Transit' } },
+      { id: 2, name: 'Civic', registrationNumber: 'AAA111', vehicleType: { name: 'Car' }, year: 2022, make: { name: 'Honda' }, model: { name: 'Civic' } },
+      { id: 3, name: 'Corolla', registrationNumber: 'BBB222', vehicleType: { name: 'Car' }, year: 2020, make: { name: 'Toyota' }, model: { name: 'Corolla' } },
+      { id: 4, name: 'Civic', registrationNumber: 'AAA222', vehicleType: { name: 'Car' }, year: 2020, make: { name: 'Honda' }, model: { name: 'Civic' } },
+    ];
+
+    render(
+      <VehicleSelector
+        vehicles={unsortedVehicles}
+        formatVehicle={(vehicle) => `${vehicle.vehicleType.name} - ${vehicle.year} ${vehicle.make.name} ${vehicle.model.name}`}
+      />
+    );
+
+    const options = Array.from(screen.getByRole('combobox').querySelectorAll('option')).map((option) => option.textContent);
+    expect(options.slice(1)).toEqual([
+      'Car - 2020 Honda Civic',
+      'Car - 2020 Toyota Corolla',
+      'Car - 2022 Honda Civic',
+      'Van - 2020 Ford Transit',
+    ]);
+  });
 });

@@ -357,6 +357,7 @@ const Consumables = () => {
         onClose={handleDialogClose}
         consumable={selectedConsumable}
         vehicleId={selectedVehicle}
+        onVehicleMoved={handleVehicleChange}
       />
       <ServiceDialog
         open={openServiceDialog}

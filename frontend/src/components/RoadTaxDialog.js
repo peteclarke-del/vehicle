@@ -17,9 +17,11 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import KnightRiderLoader from './KnightRiderLoader';
+import { sortVehiclesByTypeAndName } from '../utils/sortUtils';
 import logger from '../utils/logger';
 
 const RoadTaxDialog = ({ open, roadTaxRecord, vehicleId, vehicles, onClose }) => {
+  const sortedVehicles = sortVehiclesByTypeAndName(vehicles || []);
   const [formData, setFormData] = useState({
     vehicleId: vehicleId || '',
     startDate: new Date().toISOString().split('T')[0],
@@ -99,7 +101,7 @@ const RoadTaxDialog = ({ open, roadTaxRecord, vehicleId, vehicles, onClose }) =>
                     onChange={handleChange}
                     label={t('common.vehicle')}
                   >
-                    {vehicles.map((v) => (
+                    {sortedVehicles.map((v) => (
                       <MenuItem key={v.id} value={v.id}>
                         {v.registrationNumber} - {v.name}
                       </MenuItem>

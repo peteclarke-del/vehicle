@@ -84,4 +84,62 @@ export const commonFieldConfigs = {
   sorn: { type: 'boolean' },
 };
 
+const getVehicleTypeName = (vehicle) => `${vehicle?.vehicleType?.name || vehicle?.vehicleType || ''}`.trim();
+
+const getVehicleMake = (vehicle) => `${vehicle?.make?.name || vehicle?.make || ''}`.trim();
+
+const getVehicleModel = (vehicle) => `${vehicle?.model?.name || vehicle?.model || ''}`.trim();
+
+const getVehicleMakeModel = (vehicle) => {
+  const make = getVehicleMake(vehicle);
+  const model = getVehicleModel(vehicle);
+  const makeModel = `${make} ${model}`.trim();
+  if (makeModel) {
+    return makeModel;
+  }
+  return `${vehicle?.name || vehicle?.registrationNumber || vehicle?.registration || ''}`.trim();
+};
+
+const getVehicleYear = (vehicle) => {
+  const parsed = Number.parseInt(vehicle?.year, 10);
+  return Number.isFinite(parsed) ? parsed : Number.MAX_SAFE_INTEGER;
+};
+
+const getVehicleSortName = (vehicle) => `${vehicle?.name || vehicle?.registrationNumber || vehicle?.registration || ''}`.trim();
+
+const getVehicleRegistration = (vehicle) => `${vehicle?.registrationNumber || vehicle?.registration || ''}`.trim();
+
+export const sortVehiclesByTypeAndName = (vehicles = []) =>
+  [...vehicles].sort((left, right) => {
+    const typeCompare = getVehicleTypeName(left).localeCompare(getVehicleTypeName(right), undefined, {
+      sensitivity: 'base',
+    });
+    if (typeCompare !== 0) {
+      return typeCompare;
+    }
+
+    const yearCompare = getVehicleYear(left) - getVehicleYear(right);
+    if (yearCompare !== 0) {
+      return yearCompare;
+    }
+
+    const makeModelCompare = getVehicleMakeModel(left).localeCompare(getVehicleMakeModel(right), undefined, {
+      sensitivity: 'base',
+    });
+    if (makeModelCompare !== 0) {
+      return makeModelCompare;
+    }
+
+    const nameCompare = getVehicleSortName(left).localeCompare(getVehicleSortName(right), undefined, {
+      sensitivity: 'base',
+    });
+    if (nameCompare !== 0) {
+      return nameCompare;
+    }
+
+    return getVehicleRegistration(left).localeCompare(getVehicleRegistration(right), undefined, {
+      sensitivity: 'base',
+    });
+  });
+
 export default createSortComparator;

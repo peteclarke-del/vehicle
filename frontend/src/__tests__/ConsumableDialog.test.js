@@ -4,6 +4,8 @@ import { MemoryRouter } from 'react-router-dom';
 import ConsumableDialog from '../components/ConsumableDialog';
 import '@testing-library/jest-dom';
 
+const mockSetDefaultVehicle = jest.fn();
+
 // Stable mock references (must be outside jest.mock to avoid recreation)
 const mockApi = {
   get: jest.fn().mockResolvedValue({ data: [] }),
@@ -28,6 +30,18 @@ jest.mock('../hooks/useDistance', () => ({
   useDistance: () => mockDistanceResult,
 }));
 
+jest.mock('../contexts/UserPreferencesContext', () => ({
+  useUserPreferences: () => ({
+    setDefaultVehicle: mockSetDefaultVehicle,
+  }),
+}));
+
+jest.mock('../components/FilteredVehicleSelector', () => (props) => (
+  <button type="button" onClick={() => props.onVehicleChange(2)}>
+    move-selector
+  </button>
+));
+
 jest.mock('../components/ReceiptUpload', () => () => null);
 jest.mock('../components/UrlScraper', () => () => null);
 jest.mock('../components/KnightRiderLoader', () => () => <div data-testid="loader">Loading...</div>);
@@ -48,6 +62,7 @@ const renderDialog = (props = {}) =>
 describe('ConsumableDialog', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockSetDefaultVehicle.mockReset();
     // Re-set post/put mocks after clearAllMocks
     mockApi.post.mockResolvedValue({ data: { id: 99 } });
     mockApi.put.mockResolvedValue({ data: { id: 1 } });
@@ -207,6 +222,45 @@ describe('ConsumableDialog', () => {
         expect.objectContaining({ description: 'New Oil' })
       );
     });
+  });
+
+  test('moves edited consumable to another vehicle and updates default selection', async () => {
+    const onClose = jest.fn();
+    const onVehicleMoved = jest.fn();
+    const consumable = {
+      id: 5,
+      vehicleId: 1,
+      consumableType: { id: 1 },
+      description: 'Old Oil',
+      cost: 20,
+      quantity: 4,
+      supplier: '',
+      brand: '',
+      partNumber: '',
+      notes: '',
+      mileageAtChange: 0,
+      replacementIntervalMiles: 0,
+      nextReplacementMileage: 0,
+    };
+
+    renderDialog({ consumable, onClose, onVehicleMoved });
+
+    await waitFor(() => {
+      expect(screen.getByText('consumables.editConsumable')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'move-selector' }));
+
+    await waitFor(() => {
+      expect(mockApi.put).toHaveBeenCalledWith('/consumables/5', {
+        vehicleId: 2,
+        motRecordId: null,
+        serviceRecordId: null,
+      });
+    });
+
+    expect(mockSetDefaultVehicle).toHaveBeenCalledWith(2);
+    expect(onVehicleMoved).toHaveBeenCalledWith(2);
   });
 
   test('cancel button calls onClose', async () => {
