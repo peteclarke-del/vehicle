@@ -906,22 +906,41 @@ class VehicleImportExportController extends AbstractController
         if (!$user) {
             return new JsonResponse(['error' => 'Unauthorized'], 401);
         }
-        $vehicles = $entityManager->getRepository(Vehicle::class)->findBy(['owner' => $user]);
 
-        $vehicleIds = array_map(fn($v) => $v->getId(), $vehicles);
+        $vehicleRows = $entityManager->createQueryBuilder()
+            ->select('v.id')
+            ->from(Vehicle::class, 'v')
+            ->where('v.owner = :owner')
+            ->setParameter('owner', $user)
+            ->getQuery()
+            ->getScalarResult();
+
+        $vehicleIds = array_map(static fn(array $row) => (int) ($row['id'] ?? 0), $vehicleRows);
+
         $count = count($vehicleIds);
 
-        // Remove vehicles (this will cascade to relations configured with cascade remove)
-        foreach ($vehicles as $vehicle) {
-            $entityManager->remove($vehicle);
+        if ($count === 0) {
+            return new JsonResponse([
+                'success' => true,
+                'deleted' => 0,
+                'deletedAttachments' => 0,
+                'message' => 'No vehicles found for this user',
+            ]);
         }
 
-        $entityManager->flush();
+        // Fast path: one bulk delete by owner. DB-level ON DELETE CASCADE
+        // handles child rows, avoiding expensive per-entity remove loops.
+        $entityManager->createQueryBuilder()
+            ->delete(Vehicle::class, 'v')
+            ->where('v.owner = :owner')
+            ->setParameter('owner', $user)
+            ->getQuery()
+            ->execute();
 
         // Additional cleanup when cascade=true: remove attachments that reference vehicles
         $cascade = filter_var($request->query->get('cascade'), FILTER_VALIDATE_BOOLEAN);
         $extraDeleted = 0;
-        if ($cascade && count($vehicleIds) > 0) {
+        if ($cascade && $count > 0) {
             // Delete attachments where entityType is 'vehicle' or 'vehicle_image' and entityId in vehicleIds
             try {
                 $qb = $entityManager->createQueryBuilder();
@@ -938,14 +957,12 @@ class VehicleImportExportController extends AbstractController
 
             // Remove orphaned insurance policies belonging to the user
             try {
-                $policies = $entityManager->getRepository(\App\Entity\InsurancePolicy::class)
-                    ->findBy(['holderId' => $user->getId()]);
-                foreach ($policies as $policy) {
-                    if ($policy->getVehicles()->isEmpty()) {
-                        $entityManager->remove($policy);
-                    }
-                }
-                $entityManager->flush();
+                $entityManager->getConnection()->executeStatement(
+                    'DELETE p FROM insurance_policies p
+                     LEFT JOIN insurance_policy_vehicles ipv ON ipv.insurance_policy_id = p.id
+                     WHERE p.holder_id = :holderId AND ipv.vehicle_id IS NULL',
+                    ['holderId' => $user->getId()]
+                );
             } catch (\Exception $e) {
                 // ignore policy cleanup failures
             }

@@ -112,7 +112,19 @@ const Reports = () => {
           }
         }
 
-        tpls.sort((a, b) => ((a.name || '') + '').localeCompare((b.name || '') + ''));
+        const isVehicleFullReport = (tpl) => {
+          const key = (tpl?.key || '').toString();
+          const filename = (tpl?.filename || '').toString();
+          return key === 'vehicle_reference_guide' || filename === 'vehicle_reference_guide.json';
+        };
+
+        tpls.sort((a, b) => {
+          const aPinned = isVehicleFullReport(a);
+          const bPinned = isVehicleFullReport(b);
+          if (aPinned && !bPinned) return -1;
+          if (!aPinned && bPinned) return 1;
+          return ((a.name || '') + '').localeCompare((b.name || '') + '');
+        });
         setTemplates(tpls);
         if (tpls.length > 0) {
           const first = tpls[0];

@@ -226,7 +226,7 @@ const Dashboard = () => {
       setPeriodFuelTotal(resp.data.fuel ?? 0);
       setPeriodPartsTotal(resp.data.parts ?? 0);
       setPeriodConsumablesTotal(resp.data.consumables ?? 0);
-      setAvgServiceCost(resp.data.averageServiceCost ?? 0);
+      setAvgServiceCost(resp.data.totalServiceCost ?? resp.data.averageServiceCost ?? 0);
     } catch (err) {
       logger.warn('Failed to load vehicle totals', err);
     } finally {
@@ -722,7 +722,7 @@ const Dashboard = () => {
                 {/* Left area: cards arranged into two rows (top: 5, bottom: 6) */}
                 <Box sx={{ gridColumn: { lg: '1 / 10' }, gridRow: { lg: '1 / 3' } }}>
                   <Box sx={{ display: 'grid', gridTemplateColumns: { lg: 'repeat(5, 1fr)' }, gap: 3, mb: 3, alignItems: 'stretch' }}>
-                    {/* Top row: Total Value, Total Fuel Cost, Total Parts Cost, Total Consumables Cost, Average Service Cost */}
+                    {/* Top row: Total Value, Total Fuel Cost, Total Parts Cost, Total Consumables Cost, Total Service Cost */}
                     <StatCard
                       isCircular={true}
                       title={t('dashboard.totalValue')}
@@ -759,7 +759,7 @@ const Dashboard = () => {
                       title={`${t('dashboard.averageServiceCost')} (${chartPeriod}m)`}
                       value={`£${avgServiceCost.toLocaleString('en-GB', { maximumFractionDigits: 2 })}`}
                       loading={totalsLoading}
-                      subtitle={t('dashboard.averageServiceCostDesc')}
+                      subtitle={`${t('common.total') || 'Total'} (${chartPeriod}m)`}
                     />
                   </Box>
 

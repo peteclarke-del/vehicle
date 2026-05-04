@@ -307,6 +307,9 @@ const Vehicles = () => {
           <DialogContentText>
             {t('deleteAll.message')}
           </DialogContentText>
+          <DialogContentText sx={{ mt: 1 }}>
+            {t('deleteAll.perUserScope') || 'This only deletes data in your account.'}
+          </DialogContentText>
 
           <Box sx={{ mt: 2 }}>
             <FormControl component="fieldset">

@@ -117,10 +117,15 @@ const TodoDialog = ({ open, onClose, vehicleId, todo }) => {
           <Autocomplete
             multiple
             options={availableConsumables}
-            getOptionLabel={(opt) => opt.name || opt.id}
+            getOptionLabel={(opt) => opt.description || opt.name || opt.partNumber || ''}
             value={selectedConsumables}
             onChange={(e, v) => setSelectedConsumables(v)}
-            renderTags={(value, getTagProps) => value.map((option, index) => (<Chip label={option.name} {...getTagProps({ index })} />))}
+            renderTags={(value, getTagProps) => value.map((option, index) => (
+              <Chip
+                label={option.description || option.name || option.partNumber || ''}
+                {...getTagProps({ index })}
+              />
+            ))}
             renderInput={(params) => <TextField {...params} label={t('todo.consumables') || 'Consumables'} />}
           />
 
