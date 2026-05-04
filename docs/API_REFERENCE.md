@@ -207,7 +207,7 @@ Get current authenticated user information.
 
 ---
 
-#### PUT /api/me
+#### PUT /api/profile
 
 Update current user profile.
 
@@ -231,7 +231,7 @@ Update current user profile.
 
 ---
 
-#### PUT /api/me/password
+#### POST /api/change-password
 
 Change current user's password.
 
@@ -255,8 +255,53 @@ Change current user's password.
 - 400: New password too weak
 
 ---
+#### POST /api/auth/issue-refresh
 
-### User Preferences
+Issue a long-lived refresh token for the authenticated user.
+
+**Response (200):**
+```json
+{
+  "refreshToken": "<opaque-token>"
+}
+```
+
+---
+
+#### POST /api/auth/refresh
+
+Obtain a new JWT access token using a refresh token.
+
+**Request Body:**
+```json
+{
+  "refreshToken": "<opaque-token>"
+}
+```
+
+**Response (200):**
+```json
+{
+  "token": "<new-jwt>"
+}
+```
+
+---
+
+#### POST /api/auth/revoke
+
+Revoke a refresh token.
+
+**Request Body:**
+```json
+{
+  "refreshToken": "<opaque-token>"
+}
+```
+
+**Response (200):** `{ "message": "Token revoked" }`
+
+---
 
 #### GET /api/user/preferences
 
@@ -508,6 +553,31 @@ Get vehicle statistics.
   "daysOwned": 1095,
   "milesPerDay": 18.26
 }
+```
+
+---
+
+#### GET /api/vehicles/monthly-costs
+
+Get monthly cost breakdown across all user vehicles.
+
+**Query Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| months | integer | Number of months to look back (default: 12) |
+
+**Response (200):**
+```json
+[
+  {
+    "month": "2024-03",
+    "fuelCost": 120.50,
+    "serviceCost": 0,
+    "partsCost": 45.00,
+    "consumablesCost": 0,
+    "totalCost": 165.50
+  }
+]
 ```
 
 ---
@@ -1275,11 +1345,21 @@ Generate a new report.
 | toDate | string | No | End date |
 | format | string | No | "xlsx" or "pdf" |
 
-**Report Types:**
-- `fuel_summary` - Fuel consumption summary
-- `service_history` - Service history report
-- `cost_analysis` - Cost breakdown analysis
-- `vehicle_overview` - Complete vehicle overview
+**Report Types** (JSON template keys from `frontend/src/reports/`):
+- `fuel_costs` — Fuel expenditure over a period
+- `service_costs` — Service cost history
+- `part_costs` — Parts cost breakdown
+- `consumables_total` — Consumables cost totals
+- `total_expenditure` — Overall cost summary
+- `vehicle_report` — Per-vehicle cost analysis
+- `vehicle_reference_guide` — Full vehicle reference including fuel history, MOT, service, specs
+- `service_due` — Vehicles with upcoming service
+- `consumables_due` — Consumables due for replacement
+- `road_tax_due` — Road tax renewal reminders
+- `insurance_due` — Insurance renewal reminders
+- `expired_mot` — Expired MOT records
+- `expired_road_tax` — Expired road tax records
+- `expired_insurance` — Expired insurance records
 
 ---
 
@@ -1532,6 +1612,52 @@ Delete all vehicles for the current user.
   "count": 5
 }
 ```
+
+---
+#### PUT /api/vehicles/{id}/specifications
+
+Create or update vehicle specifications.
+
+**Request Body:** Specification fields (oil grade, tyre sizes, fuel capacity, etc.)
+
+---
+
+#### DELETE /api/vehicles/{id}/specifications
+
+Delete vehicle specifications.
+
+---
+
+### Security Features
+
+#### GET /api/security-features
+
+List security features for all user vehicles.
+
+---
+
+### System (additional)
+
+#### POST /api/client-logs
+
+Accept frontend log entries (errors/warnings) for server-side logging. Used by the `logger` utility in production.
+
+**Request Body:**
+```json
+{
+  "level": "error",
+  "message": "Something failed",
+  "context": {}
+}
+```
+
+**Response (200):** `{ "ok": true }`
+
+---
+
+#### POST /api/ebay/webhook/account-deletion
+
+eBay GDPR account-deletion webhook endpoint. Verifies the challenge token or processes deletion requests.
 
 ---
 

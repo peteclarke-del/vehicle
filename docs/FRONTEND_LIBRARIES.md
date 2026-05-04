@@ -12,6 +12,7 @@ This document provides comprehensive documentation for the shared libraries, hoo
    - [useApiData](#useapidata)
    - [usePersistedSort](#usepersistedsort)
    - [useVehicleSelection](#usevehicleselection)
+   - [useVehicleStatusFilter](#usevehiclestatusfilter)
    - [useTablePagination](#usetablepagination)
    - [useDistance](#usedistance)
    - [useNotifications](#usenotifications)
@@ -25,11 +26,13 @@ This document provides comprehensive documentation for the shared libraries, hoo
    - [logger](#logger)
    - [sortUtils](#sortutils)
    - [countryUtils](#countryutils)
+   - [demoMode](#demomode)
 3. [Contexts](#contexts)
    - [AuthContext](#authcontext)
    - [UserPreferencesContext](#userpreferencescontext)
    - [VehiclesContext](#vehiclescontext)
    - [ThemeContext](#themecontext)
+   - [PermissionsContext](#permissionscontext)
 4. [Components](#components)
    - [CenteredLoader](#centeredloader)
    - [VehicleSelector](#vehicleselector)
@@ -187,6 +190,51 @@ function ServiceRecords() {
       onChange={setSelectedVehicleId}
       includeViewAll={true}
     />
+  );
+}
+```
+
+---
+
+### useVehicleStatusFilter
+
+**File:** `useVehicleStatusFilter.js`
+
+Manages vehicle list filtering by status (Live, Sold, Scrapped, Exported) with automatic persistence to localStorage. Defaults to `'Live'`.
+
+#### Exports
+
+**`useVehicleStatusFilter(vehicles, storageKey)`**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `vehicles` | `array` | Yes | Full vehicle list |
+| `storageKey` | `string` | Yes | localStorage key for persisting the selected status |
+
+**Returns:** `{ statusFilter, filteredVehicles, handleStatusFilterChange, STATUS_OPTIONS }`
+
+**`VEHICLE_STATUS_OPTIONS`** (named export)
+
+Array of `{ key, labelKey, fallback }` objects for the available status values.
+
+**Example:**
+```javascript
+import useVehicleStatusFilter, { VEHICLE_STATUS_OPTIONS } from '../hooks/useVehicleStatusFilter';
+
+function VehiclesPage() {
+  const { vehicles } = useVehicles();
+  const { statusFilter, filteredVehicles, handleStatusFilterChange } =
+    useVehicleStatusFilter(vehicles, 'vehicles_status_filter');
+
+  return (
+    <>
+      <Select value={statusFilter} onChange={handleStatusFilterChange}>
+        {VEHICLE_STATUS_OPTIONS.map(opt => (
+          <MenuItem key={opt.key} value={opt.key}>{opt.fallback}</MenuItem>
+        ))}
+      </Select>
+      {filteredVehicles.map(v => <VehicleCard key={v.id} vehicle={v} />)}
+    </>
   );
 }
 ```
@@ -767,6 +815,45 @@ Get the default currency for a country.
 
 ---
 
+### demoMode
+
+**File:** `demoMode.js`
+
+Demo mode detection and guard utilities. Demo mode is active when `REACT_APP_DEMO_MODE=true` at build time or the runtime hostname starts with `demo.`.
+
+#### Exports
+
+**`DEMO_MODE`** (default export)
+
+`boolean` — `true` when the app is running as the public demo instance.
+
+**`demoGuard(t)`**
+
+Guard for destructive actions. Call at the top of any handler that should be blocked in demo mode.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|--------------|
+| `t` | `function` | No | i18next `t` function for localised alert message |
+
+**Returns:** `boolean` — `true` if the action was blocked (caller should return early).
+
+**Example:**
+```javascript
+import { demoGuard } from '../utils/demoMode';
+import { useTranslation } from 'react-i18next';
+
+function DeleteButton({ onDelete }) {
+  const { t } = useTranslation();
+  const handleDelete = () => {
+    if (demoGuard(t)) return;
+    onDelete();
+  };
+  return <Button onClick={handleDelete}>Delete</Button>;
+}
+```
+
+---
+
 ## Contexts
 
 All contexts are located in `frontend/src/contexts/`.
@@ -976,6 +1063,62 @@ function ThemeToggle() {
     <IconButton onClick={toggleTheme}>
       {mode === 'light' ? <DarkModeIcon /> : <LightModeIcon />}
     </IconButton>
+  );
+}
+```
+
+---
+
+### PermissionsContext
+
+**File:** `PermissionsContext.js`
+
+Provides feature flag checks and vehicle assignment access checks derived from the authenticated user's `features` and `vehicleAssignments` properties returned at login.
+
+#### Exports
+
+**`PermissionsProvider`**
+
+Context provider component.
+
+**`usePermissions()`**
+
+Hook to access the permissions context.
+
+**Returns:**
+```javascript
+{
+  features: object,              // Map of featureKey -> boolean
+  vehicleAssignments: array,     // Vehicle assignments for this user
+  isAdmin: boolean,              // Whether the user has ROLE_ADMIN
+  can: function,                 // (featureKey: string) => boolean
+  canAccessVehicle: function,    // (vehicleId, ownerId) => boolean
+  canEditVehicle: function,      // (vehicleId, ownerId) => boolean
+  canDeleteVehicle: function,    // (vehicleId, ownerId) => boolean
+  canAddRecordsToVehicle: function, // (vehicleId, ownerId) => boolean
+}
+```
+
+**Behaviour:**
+- Admins always return `true` for all checks
+- If `features` is empty (no flags set), `can()` defaults to `true`
+- Vehicle assignment checks fall back to full access when no assignments exist
+
+**Example:**
+```javascript
+import { usePermissions } from '../contexts/PermissionsContext';
+
+function FuelRecordsPage() {
+  const { can, canAddRecordsToVehicle } = usePermissions();
+
+  if (!can('fuel_records.view')) return <AccessDenied />;
+
+  return (
+    <>
+      {canAddRecordsToVehicle(vehicle.id, vehicle.ownerId) && (
+        <Button>Add Record</Button>
+      )}
+    </>
   );
 }
 ```

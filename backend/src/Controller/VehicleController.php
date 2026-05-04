@@ -883,11 +883,11 @@ class VehicleController extends AbstractController
                 ->getSingleScalarResult() ?? 0);
             }
 
-            // Average service cost over the period (labor + parts + additional)
+            // Total service cost over the period (labor + parts + consumables + additional)
             if ($isAdmin) {
-                $dqlServiceAvg = 'SELECT AVG(COALESCE(sr.laborCost, 0) + COALESCE(sr.partsCost, 0) + COALESCE(sr.additionalCosts, 0))'
+                $dqlServiceTotal = 'SELECT SUM(COALESCE(sr.laborCost, 0) + COALESCE(sr.partsCost, 0) + COALESCE(sr.consumablesCost, 0) + COALESCE(sr.additionalCosts, 0))'
                 . ' FROM App\\Entity\\ServiceRecord sr WHERE sr.serviceDate >= :cutoff';
-                $serviceAvg = (float) ($this->entityManager->createQuery($dqlServiceAvg)
+                $serviceTotal = (float) ($this->entityManager->createQuery($dqlServiceTotal)
                 ->setParameter('cutoff', $cutoff)
                 ->getSingleScalarResult() ?? 0.0);
 
@@ -896,9 +896,9 @@ class VehicleController extends AbstractController
                     ->setParameter('cutoff', $cutoff)
                     ->getSingleScalarResult() ?? 0);
             } else {
-                $dqlServiceAvg = 'SELECT AVG(COALESCE(sr.laborCost, 0) + COALESCE(sr.partsCost, 0) + COALESCE(sr.additionalCosts, 0))'
+                $dqlServiceTotal = 'SELECT SUM(COALESCE(sr.laborCost, 0) + COALESCE(sr.partsCost, 0) + COALESCE(sr.consumablesCost, 0) + COALESCE(sr.additionalCosts, 0))'
                 . ' FROM App\\Entity\\ServiceRecord sr JOIN sr.vehicle v WHERE v.owner = :user AND sr.serviceDate >= :cutoff';
-                $serviceAvg = (float) ($this->entityManager->createQuery($dqlServiceAvg)
+                $serviceTotal = (float) ($this->entityManager->createQuery($dqlServiceTotal)
                 ->setParameter('user', $user)
                 ->setParameter('cutoff', $cutoff)
                 ->getSingleScalarResult() ?? 0.0);
@@ -931,7 +931,9 @@ class VehicleController extends AbstractController
             'fuel' => round($fuelTotal, 2),
             'parts' => round($partsTotal, 2),
             'consumables' => round($consumablesTotal, 2),
-            'averageServiceCost' => round($serviceAvg, 2),
+            // Keep averageServiceCost as a compatibility alias for older clients.
+            'averageServiceCost' => round($serviceTotal, 2),
+            'totalServiceCost' => round($serviceTotal, 2),
             ];
         });
 

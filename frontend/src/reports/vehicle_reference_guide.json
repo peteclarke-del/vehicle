@@ -1,0 +1,269 @@
+{
+  "key": "vehicle_reference_guide",
+  "name": "Vehicle Full Report",
+  "reportName": "{{vehicle.registrationNumber}} Vehicle Full Report",
+  "description": "Comprehensive all-in-one reference report for a vehicle, including profile, due dates, costs, and maintenance history.",
+  "filename": "{{vehicle.make}}_{{vehicle.model}}_{{vehicle.registrationNumber}}_Reference_Guide",
+  "outputs": [
+    { "mode": "screen" },
+    { "mode": "file", "fileType": "xlsx" },
+    { "mode": "file", "fileType": "pdf" }
+  ],
+  "periods": [
+    { "label": "All time", "months": null }
+  ],
+  "defaultPeriodIndex": 0,
+  "dataSources": {
+    "vehicle": {
+      "entity": "Vehicle",
+      "filter": { "id": "{{vehicle_id}}" },
+      "single": true
+    },
+    "fuelRecords": {
+      "entity": "FuelRecord",
+      "filter": { "vehicle": "{{vehicle_id}}" },
+      "sort": { "field": "date", "order": "asc" }
+    },
+    "parts": {
+      "entity": "Part",
+      "filter": { "vehicle": "{{vehicle_id}}" },
+      "sort": { "field": "date", "order": "desc" }
+    },
+    "consumables": {
+      "entity": "Consumable",
+      "filter": { "vehicle": "{{vehicle_id}}" },
+      "sort": { "field": "date", "order": "desc" }
+    },
+    "serviceRecords": {
+      "entity": "ServiceRecord",
+      "filter": { "vehicle": "{{vehicle_id}}" },
+      "sort": { "field": "date", "order": "desc" }
+    },
+    "motRecords": {
+      "entity": "MotRecord",
+      "filter": { "vehicle": "{{vehicle_id}}" },
+      "sort": { "field": "date", "order": "desc" }
+    },
+    "costTimeline": {
+      "merge": ["parts", "consumables", "serviceRecords"],
+      "sourceLabels": {
+        "parts": "Part",
+        "consumables": "Consumable",
+        "serviceRecords": "Service"
+      },
+      "sort": { "field": "date", "order": "desc" }
+    }
+  },
+  "calculations": {
+    "totalFuelCost": { "type": "sum", "source": "fuelRecords", "field": "cost" },
+    "totalPartsCost": { "type": "sum", "source": "parts", "field": "cost" },
+    "totalConsumablesCost": { "type": "sum", "source": "consumables", "field": "cost" },
+    "totalServiceCost": { "type": "sum", "source": "serviceRecords", "field": "cost" },
+    "totalMotCost": { "type": "sum", "source": "motRecords", "field": "cost" },
+    "totalOperatingCost": { "type": "sum", "source": "costTimeline", "field": "cost" },
+    "totalLitres": { "type": "sum", "source": "fuelRecords", "field": "litres" },
+    "averageEconomy": { "type": "avg", "source": "fuelRecords", "field": "mpg" },
+    "fuelEntries": { "type": "count", "source": "fuelRecords" },
+    "serviceEntries": { "type": "count", "source": "serviceRecords" },
+    "motEntries": { "type": "count", "source": "motRecords" },
+    "partEntries": { "type": "count", "source": "parts" },
+    "consumableEntries": { "type": "count", "source": "consumables" }
+  },
+  "sheets": [
+    {
+      "name": "Vehicle Summary",
+      "source": "vehicle",
+      "columns": [
+        { "key": "registrationNumber", "label": "Registration", "width": 16 },
+        { "key": "make", "label": "Make", "width": 16 },
+        { "key": "model", "label": "Model", "width": 18 },
+        { "key": "year", "label": "Year", "width": 8 },
+        { "key": "vehicleColor", "label": "Color", "width": 12 },
+        { "key": "vin", "label": "VIN", "width": 28 },
+        { "key": "engineNumber", "label": "Engine No.", "width": 20 },
+        { "key": "v5cReference", "label": "V5C Ref", "width": 16 },
+        { "key": "purchaseDate", "label": "Purchase Date", "width": 14 },
+        { "key": "purchaseCost", "label": "Purchase Cost", "width": 14, "format": "currency" },
+        { "key": "purchaseMileage", "label": "Purchase Mileage ({{distanceLabel}})", "width": 16, "format": "number" },
+        { "key": "currentMileage", "label": "Current Mileage ({{distanceLabel}})", "width": 16, "format": "number" },
+        { "key": "insuranceDue", "label": "Insurance Due", "width": 14 },
+        { "key": "motDue", "label": "MOT Due", "width": 12 },
+        { "key": "roadTaxDue", "label": "Road Tax Due", "width": 14 },
+        { "key": "lastService", "label": "Last Service", "width": 14 },
+        { "key": "frontTyreSize", "label": "Front Tyre Size", "width": 14 },
+        { "key": "frontTyrePressure", "label": "Front Tyre PSI", "width": 14 },
+        { "key": "rearTyreSize", "label": "Rear Tyre Size", "width": 14 },
+        { "key": "rearTyrePressure", "label": "Rear Tyre PSI", "width": 14 },
+        { "key": "oilCapacity", "label": "Oil Capacity", "width": 14 },
+        { "key": "oilType", "label": "Oil Type", "width": 14 },
+        { "key": "fuelCapacity", "label": "Fuel Capacity", "width": 14 }
+      ]
+    },
+    {
+      "name": "Cost Timeline",
+      "source": "costTimeline",
+      "fitToPage": true,
+      "targetWidth": 108,
+      "autoFitField": "_source",
+      "autoFitMinWidth": 12,
+      "autoFitMaxWidth": 20,
+      "columns": [
+        { "key": "date", "label": "Date", "width": 16, "sort": "desc" },
+        { "key": "_source", "label": "Category", "width": 18, "autoFitContent": true },
+        { "key": "item", "label": "Item", "width": 56 },
+        { "key": "cost", "label": "Cost", "width": 18, "format": "currency", "alignment": "right", "aggregate": "sum" }
+      ]
+    },
+    {
+      "name": "Fuel History",
+      "source": "fuelRecords",
+      "columns": [
+        { "key": "date", "label": "Date", "width": 12, "sort": "desc" },
+        { "key": "mileage", "label": "Mileage ({{distanceLabel}})", "width": 12, "format": "number", "alignment": "right" },
+        { "key": "litres", "label": "Litres", "width": 10, "format": "number", "alignment": "right", "aggregate": "sum" },
+        { "key": "cost", "label": "Cost", "width": 12, "format": "currency", "alignment": "right", "aggregate": "sum" },
+        { "key": "miles", "label": "Distance ({{distanceLabel}})", "width": 12, "format": "number", "alignment": "right" },
+        { "key": "mpg", "label": "Economy ({{economyLabel}})", "width": 10, "format": "number", "decimals": 2, "alignment": "right", "aggregate": "avg" },
+        { "key": "cumulativeLitres", "label": "Cum. Litres", "width": 12, "format": "number", "alignment": "right" },
+        { "key": "cumulativeMiles", "label": "Cum. Distance ({{distanceLabel}})", "width": 14, "format": "number", "alignment": "right" }
+      ]
+    },
+    {
+      "name": "Service Records",
+      "source": "serviceRecords",
+      "columns": [
+        { "key": "date", "label": "Date", "width": 12, "sort": "desc" },
+        { "key": "serviceType", "label": "Service Type", "width": 32 },
+        { "key": "item", "label": "Description", "width": 42 },
+        { "key": "cost", "label": "Cost", "width": 12, "format": "currency", "alignment": "right", "aggregate": "sum" }
+      ]
+    },
+    {
+      "name": "MOT Records",
+      "source": "motRecords",
+      "columns": [
+        { "key": "date", "label": "Date", "width": 12, "sort": "desc" },
+        { "key": "item", "label": "Result", "width": 52 },
+        { "key": "cost", "label": "Cost", "width": 12, "format": "currency", "alignment": "right", "aggregate": "sum" }
+      ]
+    },
+    {
+      "name": "Parts",
+      "source": "parts",
+      "columns": [
+        { "key": "date", "label": "Date", "width": 12, "sort": "desc" },
+        { "key": "item", "label": "Part", "width": 44 },
+        { "key": "quantity", "label": "Qty", "width": 10, "format": "number", "alignment": "right", "aggregate": "sum" },
+        { "key": "price", "label": "Unit Price", "width": 12, "format": "currency", "alignment": "right" },
+        { "key": "cost", "label": "Line Cost", "width": 12, "format": "currency", "alignment": "right", "aggregate": "sum" }
+      ]
+    },
+    {
+      "name": "Consumables",
+      "source": "consumables",
+      "columns": [
+        { "key": "date", "label": "Date", "width": 12, "sort": "desc" },
+        { "key": "item", "label": "Consumable", "width": 38 },
+        { "key": "quantity", "label": "Qty", "width": 10, "format": "number", "alignment": "right", "aggregate": "sum" },
+        { "key": "unitCost", "label": "Unit Cost", "width": 12, "format": "currency", "alignment": "right" },
+        { "key": "cost", "label": "Line Cost", "width": 12, "format": "currency", "alignment": "right", "aggregate": "sum" },
+        { "key": "nextReplacement", "label": "Next Replacement", "width": 16, "format": "number", "alignment": "right" }
+      ]
+    }
+  ],
+  "pdfLayout": [
+    {
+      "type": "title",
+      "text": "Vehicle Full Report - {{vehicle.make}} {{vehicle.model}} ({{vehicle.registrationNumber}})",
+      "fontSize": 12,
+      "spacing": 4
+    },
+    {
+      "type": "columns",
+      "gutter": 6,
+      "spacing": 4,
+      "columns": [
+        {
+          "width": 0.5,
+          "section": {
+            "type": "summary",
+            "title": "Quick Summary",
+            "items": [
+              { "label": "Registration", "value": "{{vehicle.registrationNumber}}" },
+              { "label": "Make / Model", "value": "{{vehicle.make}} {{vehicle.model}}" },
+              { "label": "Year", "value": "{{vehicle.year}}" },
+              { "label": "Current Mileage ({{distanceLabel}})", "value": "{{vehicle.currentMileage}}", "format": "number" },
+              { "label": "Insurance Due", "value": "{{vehicle.insuranceDue}}" },
+              { "label": "MOT Due", "value": "{{vehicle.motDue}}" },
+              { "label": "Road Tax Due", "value": "{{vehicle.roadTaxDue}}" },
+              { "label": "Last Service", "value": "{{vehicle.lastService}}" },
+              { "label": "Fuel Entries", "value": "{{fuelEntries}}", "format": "number" },
+              { "label": "Total {{fuelVolumeLabel}}", "value": "{{fuelVolumeTotal}}", "format": "number", "decimals": 2 },
+              { "label": "Average Economy ({{economyLabel}})", "value": "{{averageEconomy}}", "format": "number", "decimals": 2 }
+            ]
+          }
+        },
+        {
+          "width": 0.5,
+          "section": {
+            "type": "summary",
+            "title": "Total Operating Costs",
+            "items": [
+              { "label": "Total Operating Cost", "value": "{{totalOperatingCost}}", "format": "currency", "bold": true },
+              { "label": "Fuel Cost", "value": "{{totalFuelCost}}", "format": "currency" },
+              { "label": "Parts Cost", "value": "{{totalPartsCost}}", "format": "currency" },
+              { "label": "Consumables Cost", "value": "{{totalConsumablesCost}}", "format": "currency" },
+              { "label": "Service Cost", "value": "{{totalServiceCost}}", "format": "currency" },
+              { "label": "MOT Cost", "value": "{{totalMotCost}}", "format": "currency" }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "table",
+      "title": "Recent Cost Timeline",
+      "source": "costTimeline",
+      "fitToPage": true,
+      "autoFitField": "_source",
+      "autoFitMinWidth": 16,
+      "autoFitMaxWidth": 36,
+      "columns": [
+        { "field": "date", "label": "Date", "width": 20 },
+        { "field": "_source", "label": "Category", "width": 24, "autoFitContent": true },
+        { "field": "item", "label": "Item", "width": 168 },
+        { "field": "cost", "label": "Cost", "width": 30, "format": "currency", "alignment": "right" }
+      ],
+      "showTotal": true
+    },
+    { "type": "spacer", "height": 4 },
+    {
+      "type": "table",
+      "title": "Recent Fuel Records",
+      "source": "fuelRecords",
+      "totalField": "cost",
+      "columns": [
+        { "field": "date", "label": "Date", "width": 20 },
+        { "field": "mileage", "label": "Mileage ({{distanceLabel}})", "width": 44, "format": "number", "alignment": "right" },
+        { "field": "litres", "label": "Litres", "width": 34, "format": "number", "alignment": "right" },
+        { "field": "cost", "label": "Cost", "width": 30, "format": "currency", "alignment": "right" },
+        { "field": "miles", "label": "Distance ({{distanceLabel}})", "width": 58, "format": "number", "alignment": "right" },
+        { "field": "mpg", "label": "Economy ({{economyLabel}})", "width": 59, "format": "number", "decimals": 2, "alignment": "right" }
+      ],
+      "showTotal": true
+    },
+    { "type": "spacer", "height": 4 },
+    {
+      "type": "table",
+      "title": "MOT Records",
+      "source": "motRecords",
+      "columns": [
+        { "field": "date", "label": "Date", "width": 32 },
+        { "field": "item", "label": "Result", "width": 210 },
+        { "field": "cost", "label": "Cost", "width": 40, "format": "currency", "alignment": "right" }
+      ],
+      "showTotal": true,
+      "totalField": "cost"
+    }
+  ]
+}

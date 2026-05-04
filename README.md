@@ -38,6 +38,8 @@ A comprehensive web application for managing personal or fleet vehicles, built w
 - **Volume Units**: Support for both litres and gallons
 - **Mobile Responsive**: Works on desktop, tablet, and mobile devices
 - **Notifications**: Polling-based notifications for MOT, insurance, and tax expiries (refreshes every 5 minutes and on tab focus)
+- **Vehicle Status Tracking**: Track vehicle lifecycle (Live/Sold/Scrapped/Exported) with full status change history and per-page status filter
+- **Demo Mode**: Public demo instance support — destructive actions blocked, watermark shown; activated by build env var or `demo.` hostname prefix
 
 ### Mobile Application (Android)
 - **Native Mobile Experience**: React Native app for Android devices

@@ -201,8 +201,17 @@ class MotRecordController extends AbstractController
                 return new JsonResponse(['error' => 'Vehicle not found'], 404);
             }
 
-            $records = $this->entityManager->getRepository(MotRecord::class)
-                ->findBy(['vehicle' => $vehicle], ['testDate' => 'DESC']);
+            $records = $this->entityManager->createQueryBuilder()
+                ->select('m')
+                ->from(MotRecord::class, 'm')
+                ->where('m.vehicle = :vehicle')
+                ->setParameter('vehicle', $vehicle)
+                ->orderBy('m.testDate', 'DESC')
+                // For same-day tests, treat a pass/advisory as newer than a fail.
+                ->addOrderBy("CASE WHEN m.result IN ('Pass', 'Advisory') THEN 1 ELSE 0 END", 'DESC')
+                ->addOrderBy('m.id', 'DESC')
+                ->getQuery()
+                ->getResult();
         } else {
             $vehicleRepo = $this->entityManager->getRepository(Vehicle::class);
             $vehicles = $this->isAdminForUser($user) ? $vehicleRepo->findAll() : $vehicleRepo->findBy(['owner' => $user]);
@@ -215,7 +224,10 @@ class MotRecordController extends AbstractController
                 ->from(MotRecord::class, 'm')
                 ->where('m.vehicle IN (:vehicles)')
                 ->setParameter('vehicles', $vehicles)
-                ->orderBy('m.testDate', 'DESC');
+                ->orderBy('m.testDate', 'DESC')
+                // For same-day tests, treat a pass/advisory as newer than a fail.
+                ->addOrderBy("CASE WHEN m.result IN ('Pass', 'Advisory') THEN 1 ELSE 0 END", 'DESC')
+                ->addOrderBy('m.id', 'DESC');
 
             $records = $qb->getQuery()->getResult();
         }
@@ -282,6 +294,7 @@ class MotRecordController extends AbstractController
             $completedAt = new \DateTime($test['completedDate']);
             $dateKey = $completedAt->format('Y-m-d');
             $motTestNumber = !empty($test['motTestNumber']) ? (string)$test['motTestNumber'] : null;
+            $normalizedResult = $this->normalizeDvsaResult($test['testResult'] ?? null);
 
             // Attempt to find existing record by motTestNumber (preferred) or by vehicle+testDate
             $repo = $this->entityManager->getRepository(MotRecord::class);
@@ -293,7 +306,12 @@ class MotRecordController extends AbstractController
                 $candidates = $repo->findBy(['vehicle' => $vehicle]);
                 foreach ($candidates as $cand) {
                     $candDate = $cand->getTestDate()?->format('Y-m-d');
-                    if ($candDate === $dateKey) {
+                    $candResult = strtolower((string) $cand->getResult());
+                    $newResult = strtolower($normalizedResult);
+
+                    // Match same-day records by result as well so pass/fail pairs
+                    // are imported as distinct records instead of overwriting.
+                    if ($candDate === $dateKey && ($candResult === $newResult || $cand->getResult() === null)) {
                         $existing = $cand;
                         break;
                     }
@@ -303,14 +321,7 @@ class MotRecordController extends AbstractController
             // Build data array from DVSA test for applying to entity
             $newData = [];
             $newData['testDate'] = $completedAt->format('Y-m-d');
-            $rawResult = strtoupper((string)($test['testResult'] ?? ''));
-            if (str_contains($rawResult, 'PASS')) {
-                $newData['result'] = 'Pass';
-            } elseif (str_contains($rawResult, 'FAIL')) {
-                $newData['result'] = 'Fail';
-            } else {
-                $newData['result'] = 'Advisory';
-            }
+            $newData['result'] = $normalizedResult;
 
             if (!empty($test['expiryDate'])) {
                 $newData['expiryDate'] = $test['expiryDate'];
@@ -514,5 +525,19 @@ class MotRecordController extends AbstractController
         }
         $roles = $user->getRoles() ?: [];
         return in_array('ROLE_ADMIN', $roles, true);
+    }
+
+    private function normalizeDvsaResult(?string $rawResult): string
+    {
+        $normalized = strtoupper((string) $rawResult);
+
+        if (str_contains($normalized, 'PASS')) {
+            return 'Pass';
+        }
+        if (str_contains($normalized, 'FAIL')) {
+            return 'Fail';
+        }
+
+        return 'Advisory';
     }
 }

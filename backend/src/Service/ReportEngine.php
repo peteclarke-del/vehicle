@@ -42,6 +42,7 @@ class ReportEngine
     private array $dataCache = [];
     private array $calculatedValues = [];
     private string $pdfFontName = 'dejavusans';
+    private string $outputFormat = 'xlsx';
 
     public function __construct(EntityManagerInterface $em)
     {
@@ -80,6 +81,7 @@ class ReportEngine
         $this->params = $params;
         $this->dataCache = [];
         $this->calculatedValues = [];
+        $this->outputFormat = $format;
 
         // Set distance unit preference from params (uses trait)
         $this->setDistanceUnit($params['distanceUnit'] ?? 'miles');
@@ -136,7 +138,8 @@ class ReportEngine
                 $sourceConfig = $this->template['dataSources'][$sourceName] ?? ['entity' => $sourceName];
                 $sourceData = $this->fetchDataSource($sourceName, $sourceConfig);
                 foreach ($sourceData as $row) {
-                    $row['_source'] = $sourceName;
+                    $sourceLabels = $config['sourceLabels'] ?? [];
+                    $row['_source'] = $sourceLabels[$sourceName] ?? $this->humanizeSourceName($sourceName);
                     $merged[] = $row;
                 }
             }
@@ -164,6 +167,21 @@ class ReportEngine
         }
 
         return $rows;
+    }
+
+    /**
+     * Convert internal source names (e.g. serviceRecords) into user-facing labels.
+     */
+    private function humanizeSourceName(string $sourceName): string
+    {
+        return match ($sourceName) {
+            'consumables', 'consumable', 'Consumable' => 'Consumable',
+            'parts', 'part', 'Part' => 'Part',
+            'serviceRecords', 'serviceRecord', 'ServiceRecord' => 'Service',
+            'motRecords', 'motRecord', 'MotRecord' => 'MOT',
+            'fuelRecords', 'fuelRecord', 'FuelRecord' => 'Fuel',
+            default => ucfirst(preg_replace('/([a-z])([A-Z])/', '$1 $2', rtrim($sourceName, 's')) ?: $sourceName),
+        };
     }
 
     /**
@@ -369,7 +387,7 @@ class ReportEngine
             case 'motRecords':
             case 'MotRecord':
                 $qb = $this->em->createQueryBuilder()
-                    ->select('m.id, m.testDate, m.result, m.testCost, m.repairCost, IDENTITY(m.vehicle) as vehicle_id')
+                    ->select('m.id, m.testDate, m.result, m.advisories, m.failures, m.testCost, m.repairCost, IDENTITY(m.vehicle) as vehicle_id')
                     ->from(MotRecord::class, 'm');
                 if ($vehicleId) {
                     $qb->where('m.vehicle = :vid')->setParameter('vid', $vehicleId);
@@ -377,14 +395,14 @@ class ReportEngine
                 $results = $qb->getQuery()->getArrayResult();
                 foreach ($results as $row) {
                     $totalCost = ((float)($row['testCost'] ?? 0)) + ((float)($row['repairCost'] ?? 0));
-                    // Skip MOT records with no cost (historical records prior to ownership)
-                    if ($totalCost <= 0) {
-                        continue;
-                    }
                     $rows[] = [
                         'id' => $row['id'],
                         'date' => $row['testDate'] instanceof \DateTimeInterface ? $row['testDate']->format('Y-m-d') : ($row['testDate'] ?? ''),
-                        'item' => 'M.O.T. (' . ($row['result'] ?? '') . ')',
+                        'item' => $this->buildMotResultText(
+                            (string)($row['result'] ?? ''),
+                            $row['advisories'] ?? null,
+                            $row['failures'] ?? null
+                        ),
                         'cost' => $totalCost,
                         'vehicle_id' => $row['vehicle_id'],
                     ];
@@ -482,6 +500,10 @@ class ReportEngine
         $purchaseMileageKm = $v->getPurchaseMileage();
         $purchaseMileageDisplay = $purchaseMileageKm !== null 
             ? $this->convertDistance((float)$purchaseMileageKm) 
+            : null;
+        $currentMileageKm = $v->getMileage();
+        $currentMileageDisplay = $currentMileageKm !== null
+            ? $this->convertDistance((float)$currentMileageKm)
             : null;
         
         // Get the latest insurance policy expiry date
@@ -582,8 +604,8 @@ class ReportEngine
             'purchaseDate' => $v->getPurchaseDate() ? $v->getPurchaseDate()->format('Y-m-d') : '',
             'purchaseCost' => $v->getPurchaseCost(),
             'purchaseMileage' => $purchaseMileageDisplay,
-            'currentMileage' => $v->getMileage(),
-            'mileage' => $v->getMileage(),
+            'currentMileage' => $currentMileageDisplay,
+            'mileage' => $currentMileageDisplay,
             'name' => trim(($v->getMake() ?? '') . ' ' . ($v->getModel() ?? '')),
             'vehicleColor' => $v->getVehicleColor() ?? '',
             // Data from related entities
@@ -638,7 +660,7 @@ class ReportEngine
             if (is_numeric($av) && is_numeric($bv)) {
                 $cmp = (float)$av <=> (float)$bv;
             } else {
-                $cmp = strcmp((string)$av, (string)$bv);
+                $cmp = strcmp($this->stringifyValue($av), $this->stringifyValue($bv));
             }
 
             return $order === 'desc' ? -$cmp : $cmp;
@@ -654,13 +676,23 @@ class ReportEngine
     {
         $calculations = $this->template['calculations'] ?? [];
 
+        // Compute derived fields first so calculations (e.g. averageEconomy) use converted values.
+        if (isset($this->dataCache['fuelRecords'])) {
+            $this->dataCache['fuelRecords'] = $this->computeMpg($this->dataCache['fuelRecords']);
+        }
+
         foreach ($calculations as $name => $config) {
             $this->calculatedValues[$name] = $this->calculateValue($config);
         }
 
-        // Also compute derived fields for fuel records (MPG)
-        if (isset($this->dataCache['fuelRecords'])) {
-            $this->dataCache['fuelRecords'] = $this->computeMpg($this->dataCache['fuelRecords']);
+        // Unit-aware fuel volume summary: gallons for miles users, litres for km users.
+        $totalLitres = (float)($this->calculatedValues['totalLitres'] ?? 0);
+        if ($this->usesMiles()) {
+            $this->params['fuelVolumeLabel'] = 'Gallons';
+            $this->params['fuelVolumeTotal'] = $this->litresToGallons($totalLitres, 2);
+        } else {
+            $this->params['fuelVolumeLabel'] = 'Litres';
+            $this->params['fuelVolumeTotal'] = round($totalLitres, 2);
         }
     }
 
@@ -709,6 +741,193 @@ class ReportEngine
             default:
                 return null;
         }
+    }
+
+    /**
+     * Build a readable MOT result with advisories/failures.
+     */
+    private function buildMotResultText(string $result, mixed $advisories, mixed $failures): string
+    {
+        $lines = ['M.O.T. (' . strtoupper(trim($result) ?: 'UNKNOWN') . ')'];
+
+        $advisoryLines = $this->normalizeMotNotes($advisories);
+        if (!empty($advisoryLines)) {
+            $lines[] = 'Advisories:';
+            foreach ($advisoryLines as $line) {
+                $lines[] = '- ' . $line;
+            }
+        }
+
+        $failureLines = $this->normalizeMotNotes($failures);
+        if (!empty($failureLines)) {
+            if (!empty($advisoryLines) && $this->outputFormat === 'pdf') {
+                $lines[] = '----------------';
+            }
+            $lines[] = 'Failure reasons:';
+            foreach ($failureLines as $line) {
+                $lines[] = '- ' . $line;
+            }
+        }
+
+        return implode("\n", $lines);
+    }
+
+    /**
+     * Normalize MOT notes that may be JSON arrays, newline text, or delimited strings.
+     *
+     * @return array<int, string>
+     */
+    private function normalizeMotNotes(mixed $value): array
+    {
+        if ($value === null) {
+            return [];
+        }
+
+        if (is_array($value)) {
+            $items = array_is_list($value) ? $value : [$value];
+            return array_values(array_filter(array_map(
+                fn($v) => $this->sanitizeReportText(trim($this->motNoteToText($v))),
+                $items
+            ), fn($v) => $v !== ''));
+        }
+
+        $text = trim($this->stringifyValue($value));
+        if ($text === '') {
+            return [];
+        }
+
+        $decoded = json_decode($text, true);
+        if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+            $items = array_is_list($decoded) ? $decoded : [$decoded];
+            return array_values(array_filter(array_map(
+                fn($v) => $this->sanitizeReportText(trim($this->motNoteToText($v))),
+                $items
+            ), fn($v) => $v !== ''));
+        }
+
+        $parts = preg_split('/\r\n|\r|\n|\s*;\s*/', $text) ?: [];
+        return array_values(array_filter(array_map(
+            fn($v) => $this->sanitizeReportText(trim($this->motNoteToText($v))),
+            $parts
+        ), fn($v) => $v !== ''));
+    }
+
+    /**
+     * Convert a MOT advisory/failure item into readable text.
+     */
+    private function motNoteToText(mixed $item): string
+    {
+        if ($item === null) {
+            return '';
+        }
+
+        if (is_string($item) || is_int($item) || is_float($item) || is_bool($item)) {
+            return $this->stringifyValue($item);
+        }
+
+        if (is_object($item)) {
+            $decoded = json_decode(json_encode($item, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), true);
+            if (is_array($decoded)) {
+                return $this->motNoteToText($decoded);
+            }
+
+            return $this->stringifyValue($item);
+        }
+
+        if (!is_array($item)) {
+            return $this->stringifyValue($item);
+        }
+
+        if (array_is_list($item)) {
+            $parts = array_map(fn($v) => $this->motNoteToText($v), $item);
+            return implode('; ', array_values(array_filter($parts, fn($v) => $v !== '')));
+        }
+
+        $preferredKeys = ['text', 'comment', 'description', 'defectText', 'advisory', 'failure', 'reason', 'details', 'item'];
+        foreach ($preferredKeys as $key) {
+            if (array_key_exists($key, $item) && $item[$key] !== null && $item[$key] !== '') {
+                return $this->stringifyValue($item[$key]);
+            }
+        }
+
+        $scalarValues = [];
+        foreach ($item as $v) {
+            if (is_scalar($v) && $v !== '') {
+                $scalarValues[] = $this->stringifyValue($v);
+            }
+        }
+
+        if (!empty($scalarValues)) {
+            return implode(' - ', $scalarValues);
+        }
+
+        return $this->stringifyValue($item);
+    }
+
+    /**
+     * Convert mixed values into safe, readable text for report rendering.
+     */
+    private function stringifyValue(mixed $value): string
+    {
+        if ($value === null) {
+            return '';
+        }
+
+        if (is_string($value)) {
+            return $this->sanitizeReportText($value);
+        }
+
+        if (is_int($value) || is_float($value) || is_bool($value)) {
+            return (string)$value;
+        }
+
+        if ($value instanceof \DateTimeInterface) {
+            return $value->format('Y-m-d');
+        }
+
+        if (is_array($value)) {
+            $isList = array_is_list($value);
+            if ($isList) {
+                $parts = array_map(fn($v) => $this->stringifyValue($v), $value);
+                return $this->sanitizeReportText(trim(implode(', ', array_filter($parts, fn($v) => $v !== ''))));
+            }
+
+            $json = json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            return $this->sanitizeReportText($json === false ? '' : $json);
+        }
+
+        if (is_object($value) && method_exists($value, '__toString')) {
+            return $this->sanitizeReportText((string)$value);
+        }
+
+        if (is_object($value)) {
+            $json = json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            return $this->sanitizeReportText($json === false ? get_debug_type($value) : $json);
+        }
+
+        return '';
+    }
+
+    /**
+     * Sanitize free text for report outputs (XLSX/PDF-safe control characters).
+     */
+    private function sanitizeReportText(string $text): string
+    {
+        // Remove control chars except tab/newline/carriage return.
+        $clean = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $text) ?? $text;
+
+        // Ensure valid UTF-8; strip invalid sequences if present.
+        if (!mb_check_encoding($clean, 'UTF-8')) {
+            $converted = @iconv('UTF-8', 'UTF-8//IGNORE', $clean);
+            $clean = $converted === false ? '' : $converted;
+        }
+
+        // Guard against oversized cell content in spreadsheets.
+        if (mb_strlen($clean, 'UTF-8') > 32000) {
+            $clean = mb_substr($clean, 0, 32000, 'UTF-8');
+        }
+
+        return $clean;
     }
 
     /**
@@ -1025,16 +1244,17 @@ class ReportEngine
     private function writeCell($sheet, string $coord, mixed $value, array $colDef, array $styles): void
     {
         $format = $colDef['format'] ?? null;
+        $decimals = (int)($colDef['decimals'] ?? 0);
 
         if ($format === 'currency') {
             $num = is_numeric($value) ? (float)$value : 0;
             $sheet->setCellValue($coord, $num);
-            $sheet->getStyle($coord)->getNumberFormat()->setFormatCode('£#,##0.00');
+            $sheet->getStyle($coord)->getNumberFormat()->setFormatCode('£#,##0.' . str_repeat('0', max(2, $decimals)));
         } elseif ($format === 'number') {
-            $sheet->setCellValue($coord, is_numeric($value) ? round((float)$value) : 0);
-            $sheet->getStyle($coord)->getNumberFormat()->setFormatCode('#,##0');
+            $sheet->setCellValue($coord, is_numeric($value) ? round((float)$value, $decimals) : 0);
+            $sheet->getStyle($coord)->getNumberFormat()->setFormatCode('#,##0' . ($decimals > 0 ? '.' . str_repeat('0', $decimals) : ''));
         } else {
-            $sheet->setCellValue($coord, (string)$value);
+            $sheet->setCellValue($coord, $this->stringifyValue($value));
         }
 
         // Apply style
@@ -1137,8 +1357,8 @@ class ReportEngine
             $xlsSheet->setTitle(substr($title, 0, 31));
 
             $source = $sheetDef['source'] ?? '';
-            $columns = $sheetDef['columns'] ?? [];
             $data = $this->getData($source);
+            $columns = $this->prepareColumnsForXlsxTable($sheetDef, $data);
 
             // Apply sorting if defined
             if (isset($sheetDef['sort'])) {
@@ -1149,7 +1369,8 @@ class ReportEngine
             $colNum = 1;
             foreach ($columns as $col) {
                 $colLetter = Coordinate::stringFromColumnIndex($colNum);
-                $xlsSheet->setCellValue($colLetter . '1', $col['label'] ?? ($col['key'] ?? ''));
+                $headerLabel = $this->resolveString($col['label'] ?? ($col['key'] ?? ''));
+                $xlsSheet->setCellValue($colLetter . '1', $headerLabel);
                 if (isset($col['width'])) {
                     $xlsSheet->getColumnDimension($colLetter)->setWidth((float)$col['width']);
                 }
@@ -1195,8 +1416,21 @@ class ReportEngine
                         if (isset($aggregates[$ci])) {
                             $aggregates[$ci]['values'][] = $num;
                         }
+                    } elseif ($format === 'number') {
+                        $decimals = (int)($col['decimals'] ?? 0);
+                        $num = is_numeric($value) ? round((float)$value, $decimals) : 0;
+                        $xlsSheet->setCellValue($coord, $num);
+                        $xlsSheet->getStyle($coord)->getNumberFormat()->setFormatCode('#,##0' . ($decimals > 0 ? '.' . str_repeat('0', $decimals) : ''));
+                        if (isset($aggregates[$ci])) {
+                            $aggregates[$ci]['values'][] = $num;
+                        }
                     } else {
-                        $xlsSheet->setCellValue($coord, (string)$value);
+                        $textValue = $this->stringifyValue($value);
+                        $xlsSheet->setCellValue($coord, $textValue);
+                        if (str_contains($textValue, "\n")) {
+                            $xlsSheet->getStyle($coord)->getAlignment()->setWrapText(true);
+                            $xlsSheet->getStyle($coord)->getAlignment()->setVertical(Alignment::VERTICAL_TOP);
+                        }
                         if (isset($aggregates[$ci]) && is_numeric($value)) {
                             $aggregates[$ci]['values'][] = (float)$value;
                         }
@@ -1232,7 +1466,8 @@ class ReportEngine
                         if (($agg['format'] ?? null) === 'currency') {
                             $xlsSheet->getStyle($colLetter . $rowNum)->getNumberFormat()->setFormatCode('£#,##0.00');
                         } else {
-                            $xlsSheet->getStyle($colLetter . $rowNum)->getNumberFormat()->setFormatCode('#,##0');
+                            $aggDecimals = (int)($columns[$ci]['decimals'] ?? 0);
+                            $xlsSheet->getStyle($colLetter . $rowNum)->getNumberFormat()->setFormatCode('#,##0' . ($aggDecimals > 0 ? '.' . str_repeat('0', $aggDecimals) : ''));
                         }
                     }
                 }
@@ -1367,37 +1602,127 @@ class ReportEngine
     private function renderPdfSections(\TCPDF $pdf, array $sections): void
     {
         foreach ($sections as $section) {
-            $type = $section['type'] ?? 'table';
+            $this->renderPdfSection($pdf, $section);
+        }
+    }
 
-            switch ($type) {
-                case 'title':
-                    $pdf->SetFont($this->pdfFontName, 'B', $section['fontSize'] ?? 12);
-                    $text = $this->resolveString($section['text'] ?? '');
-                    $pdf->Cell(0, 8, $text, 0, 1);
-                    $pdf->Ln($section['spacing'] ?? 3);
-                    break;
+    /**
+     * Render a single PDF section.
+     */
+    private function renderPdfSection(\TCPDF $pdf, array $section): void
+    {
+        $type = $section['type'] ?? 'table';
 
-                case 'text':
-                    $pdf->SetFont($this->pdfFontName, '', $section['fontSize'] ?? 9);
-                    $text = $this->resolveString($section['text'] ?? '');
-                    $pdf->MultiCell(0, 6, $text);
-                    $pdf->Ln($section['spacing'] ?? 3);
-                    break;
+        switch ($type) {
+            case 'title':
+                $pdf->SetFont($this->pdfFontName, 'B', $section['fontSize'] ?? 12);
+                $text = $this->resolveString($section['text'] ?? '');
+                $pdf->Cell(0, 8, $text, 0, 1);
+                $pdf->Ln($section['spacing'] ?? 3);
+                break;
 
-                case 'table':
-                    $this->renderPdfTable($pdf, $section);
-                    $pdf->Ln($section['spacing'] ?? 5);
-                    break;
+            case 'text':
+                $pdf->SetFont($this->pdfFontName, '', $section['fontSize'] ?? 9);
+                $text = $this->resolveString($section['text'] ?? '');
+                $pdf->MultiCell(0, 6, $text);
+                $pdf->Ln($section['spacing'] ?? 3);
+                break;
 
-                case 'summary':
-                    $this->renderPdfSummary($pdf, $section);
-                    break;
+            case 'table':
+                $this->renderPdfTable($pdf, $section);
+                $pdf->Ln($section['spacing'] ?? 5);
+                break;
 
-                case 'spacer':
-                    $pdf->Ln($section['height'] ?? 5);
-                    break;
+            case 'summary':
+                $this->renderPdfSummary($pdf, $section);
+                break;
+
+            case 'columns':
+                $this->renderPdfColumns($pdf, $section);
+                break;
+
+            case 'spacer':
+                $pdf->Ln($section['height'] ?? 5);
+                break;
+        }
+    }
+
+    /**
+     * Render side-by-side PDF columns.
+     */
+    private function renderPdfColumns(\TCPDF $pdf, array $section): void
+    {
+        $columns = $section['columns'] ?? [];
+        if (empty($columns)) {
+            return;
+        }
+
+        $gutter = (float)($section['gutter'] ?? 6);
+        $spacing = (float)($section['spacing'] ?? 4);
+
+        $margins = $pdf->getMargins();
+        $startX = $pdf->GetX();
+        $startY = $pdf->GetY();
+
+        $defaultWidth = 1 / count($columns);
+        $rawWidths = array_map(function ($col) use ($defaultWidth) {
+            return (float)($col['width'] ?? $defaultWidth);
+        }, $columns);
+
+        $totalRawWidth = array_sum($rawWidths);
+        $availableWidth = (float)($pdf->getPageWidth() - $margins['left'] - $margins['right']);
+        $usableWidth = $availableWidth - (($gutter * (count($columns) - 1)));
+        $useRelative = $totalRawWidth > 0 && $totalRawWidth <= 1.0001;
+
+        $computedWidths = [];
+        if ($useRelative) {
+            foreach ($rawWidths as $w) {
+                $computedWidths[] = $usableWidth * $w;
+            }
+        } else {
+            if ($totalRawWidth <= 0) {
+                $evenWidth = $usableWidth / count($columns);
+                foreach ($columns as $_unused) {
+                    $computedWidths[] = $evenWidth;
+                }
+            } else {
+                $scale = $totalRawWidth > $usableWidth ? ($usableWidth / $totalRawWidth) : 1;
+                foreach ($rawWidths as $w) {
+                    $computedWidths[] = $w * $scale;
+                }
             }
         }
+
+        $maxY = $startY;
+        $currentX = $startX;
+
+        foreach ($columns as $index => $col) {
+            $columnWidth = max(10.0, (float)($computedWidths[$index] ?? 0));
+
+            $leftMargin = $currentX;
+            $rightMargin = $pdf->getPageWidth() - ($leftMargin + $columnWidth);
+
+            $pdf->SetMargins($leftMargin, $margins['top'], $rightMargin);
+            $pdf->SetXY($leftMargin, $startY);
+
+            if (isset($col['section']) && is_array($col['section'])) {
+                $this->renderPdfSection($pdf, $col['section']);
+            }
+
+            if (isset($col['sections']) && is_array($col['sections'])) {
+                foreach ($col['sections'] as $nestedSection) {
+                    if (is_array($nestedSection)) {
+                        $this->renderPdfSection($pdf, $nestedSection);
+                    }
+                }
+            }
+
+            $maxY = max($maxY, $pdf->GetY());
+            $currentX += $columnWidth + $gutter;
+        }
+
+        $pdf->SetMargins($margins['left'], $margins['top'], $margins['right']);
+        $pdf->SetXY($margins['left'], $maxY + $spacing);
     }
 
     /**
@@ -1407,7 +1732,7 @@ class ReportEngine
     {
         $source = $section['source'] ?? '';
         $data = $this->getData($source);
-        $columns = $section['columns'] ?? [];
+        $columns = $this->prepareColumnsForPdfTable($pdf, $section, $data);
         $maxRows = $section['maxRows'] ?? null; // null means no limit
         $title = $section['title'] ?? null;
 
@@ -1417,19 +1742,23 @@ class ReportEngine
             $pdf->Cell(0, 8, $titleText, 0, 1);
         }
 
-        // Header
-        $pdf->SetFont($this->pdfFontName, 'B', 8);
-        $pdf->SetFillColor(178, 178, 178);
+        $renderHeader = function () use ($pdf, $columns): void {
+            $pdf->SetFont($this->pdfFontName, 'B', 8);
+            $pdf->SetFillColor(178, 178, 178);
 
-        foreach ($columns as $col) {
-            $width = $col['width'] ?? 30;
-            $label = $col['label'] ?? '';
-            $pdf->Cell($width, 6, $label, 1, 0, 'C', true);
-        }
-        $pdf->Ln();
+            foreach ($columns as $col) {
+                $width = $col['width'] ?? 30;
+                $label = $this->resolveString((string)($col['label'] ?? ''));
+                $pdf->Cell($width, 6, $label, 1, 0, 'C', true);
+            }
+            $pdf->Ln();
+            $pdf->SetFont($this->pdfFontName, '', 8);
+        };
+
+        // Header
+        $renderHeader();
 
         // Data rows
-        $pdf->SetFont($this->pdfFontName, '', 8);
         $count = 0;
         $rowHeight = 5;
         
@@ -1445,15 +1774,16 @@ class ReportEngine
                 $width = $col['width'] ?? 30;
                 $field = $col['field'] ?? $col['key'] ?? '';
                 $rawValue = $row[$field] ?? '';
-                $value = (string)$rawValue;
+                $value = $this->stringifyValue($rawValue);
                 $format = $col['format'] ?? null;
+                $decimals = (int)($col['decimals'] ?? 0);
                 $align = $col['alignment'] ?? null;
                 
                 if ($format === 'currency' && is_numeric($rawValue)) {
                     $value = '£' . number_format((float)$rawValue, 2);
                     $align = 'R';
                 } elseif ($format === 'number' && is_numeric($rawValue)) {
-                    $value = number_format(round((float)$rawValue), 0);
+                    $value = number_format(round((float)$rawValue, $decimals), $decimals);
                     $align = 'R';
                 } elseif ($align === null) {
                     // Auto-detect alignment: right for numeric values, left for text
@@ -1473,7 +1803,7 @@ class ReportEngine
             // Check if we need a page break
             if ($pdf->GetY() + $maxRowHeight > $pdf->getPageHeight() - $pdf->getBreakMargin()) {
                 $pdf->AddPage();
-                $pdf->SetFont($this->pdfFontName, '', 8);
+                $renderHeader();
             }
 
             // Second pass: render all cells with uniform height
@@ -1522,20 +1852,41 @@ class ReportEngine
         // Aggregate row if defined
         if (isset($section['showTotal']) && $section['showTotal']) {
             $pdf->SetFont($this->pdfFontName, 'B', 9);
-            $totalWidth = 0;
-            foreach ($columns as $i => $col) {
-                $width = $col['width'] ?? 30;
-                if ($i < count($columns) - 1) {
-                    $totalWidth += $width;
+            $totalField = $section['totalField'] ?? null;
+            $totalColIndex = count($columns) - 1;
+            if ($totalField !== null) {
+                foreach ($columns as $i => $col) {
+                    $field = $col['field'] ?? $col['key'] ?? null;
+                    if ($field === $totalField) {
+                        $totalColIndex = $i;
+                        break;
+                    }
                 }
             }
 
-            $lastCol = $columns[count($columns) - 1] ?? [];
-            $field = $lastCol['field'] ?? $lastCol['key'] ?? 'cost';
+            $valueCol = $columns[$totalColIndex] ?? [];
+            $field = $valueCol['field'] ?? $valueCol['key'] ?? 'cost';
             $total = array_sum(array_map(fn($r) => (float)($r[$field] ?? 0), $data));
 
-            $pdf->Cell($totalWidth, 6, 'Total:', 1, 0, 'R', true);
-            $pdf->Cell($lastCol['width'] ?? 30, 6, '£' . number_format($total, 2), 1, 1, 'R', true);
+            $leadingWidth = 0;
+            $trailingWidth = 0;
+            foreach ($columns as $i => $col) {
+                $width = (float)($col['width'] ?? 30);
+                if ($i < $totalColIndex) {
+                    $leadingWidth += $width;
+                } elseif ($i > $totalColIndex) {
+                    $trailingWidth += $width;
+                }
+            }
+
+            if ($leadingWidth > 0) {
+                $pdf->Cell($leadingWidth, 6, 'Total:', 1, 0, 'R', true);
+            }
+            $pdf->Cell((float)($valueCol['width'] ?? 30), 6, '£' . number_format($total, 2), 1, 0, 'R', true);
+            if ($trailingWidth > 0) {
+                $pdf->Cell($trailingWidth, 6, '', 1, 0, 'R', true);
+            }
+            $pdf->Ln();
         }
     }
 
@@ -1545,35 +1896,41 @@ class ReportEngine
     private function renderPdfSummary(\TCPDF $pdf, array $section): void
     {
         $pdf->SetFont($this->pdfFontName, 'B', 11);
-        $titleText = $section['title'] ?? 'Summary';
+        $titleText = $this->resolveString((string)($section['title'] ?? 'Summary'));
         $pdf->Cell(0, 8, $titleText, 0, 1);
 
         $pdf->SetFont($this->pdfFontName, '', 9);
         $items = $section['items'] ?? [];
 
+        $margins = $pdf->getMargins();
+        $availableWidth = (float)($pdf->getPageWidth() - $margins['left'] - $margins['right']);
+        $labelWidth = (float)($section['labelWidth'] ?? min(60, $availableWidth * 0.58));
+        $valueWidth = (float)($section['valueWidth'] ?? max(20, $availableWidth - $labelWidth));
+
         foreach ($items as $item) {
-            $label = $item['label'] ?? '';
+            $label = $this->resolveString((string)($item['label'] ?? ''));
             $value = $item['value'] ?? '';
 
-            // Resolve calculation references
-            if (is_string($value) && str_starts_with($value, '{{')) {
-                $value = $this->resolveVariable($value);
+            // Resolve template placeholders (supports multiple placeholders in one string).
+            if (is_string($value)) {
+                $value = $this->resolveString($value);
             }
 
             $format = $item['format'] ?? null;
+            $decimals = (int)($item['decimals'] ?? 0);
             if ($format === 'currency' && is_numeric($value)) {
                 // TCPDF handles UTF-8 including £ symbol natively
                 $value = '£' . number_format((float)$value, 2);
             } elseif ($format === 'number' && is_numeric($value)) {
-                $value = number_format(round((float)$value), 0);
+                $value = number_format(round((float)$value, $decimals), $decimals);
             } else {
-                $value = (string)$value;
+                $value = $this->stringifyValue($value);
             }
 
             $bold = $item['bold'] ?? false;
             $pdf->SetFont($this->pdfFontName, $bold ? 'B' : '', 9);
-            $pdf->Cell(60, 6, $label, 0);
-            $pdf->Cell(40, 6, $value, 0, 1, 'R');
+            $pdf->Cell($labelWidth, 6, $label, 0);
+            $pdf->Cell($valueWidth, 6, $value, 0, 1, 'R');
         }
     }
 
@@ -1615,5 +1972,108 @@ class ReportEngine
 
             $pdf->Ln(5);
         }
+    }
+
+    /**
+     * Prepare table columns for PDF rendering (content fit + page-width scaling).
+     */
+    private function prepareColumnsForPdfTable(\TCPDF $pdf, array $section, array $data): array
+    {
+        $columns = array_map(function ($col) {
+            $copy = $col;
+            $copy['width'] = (float)($col['width'] ?? 30);
+            return $copy;
+        }, $section['columns'] ?? []);
+
+        if (empty($columns)) {
+            return [];
+        }
+
+        $categoryField = (string)($section['autoFitField'] ?? '_source');
+        $minWidth = (float)($section['autoFitMinWidth'] ?? 16);
+        $maxWidth = (float)($section['autoFitMaxWidth'] ?? 40);
+
+        foreach ($columns as $index => $col) {
+            $field = $col['field'] ?? $col['key'] ?? '';
+            if (($col['autoFitContent'] ?? false) || $field === $categoryField) {
+                $longestWord = (string)($col['label'] ?? '');
+                foreach ($data as $row) {
+                    $value = $this->stringifyValue($row[$field] ?? '');
+                    $parts = preg_split('/\s+/', trim($value)) ?: [$value];
+                    foreach ($parts as $part) {
+                        if ($pdf->GetStringWidth($part) > $pdf->GetStringWidth($longestWord)) {
+                            $longestWord = $part;
+                        }
+                    }
+                }
+
+                $fittedWidth = $pdf->GetStringWidth($longestWord) + 10;
+                $columns[$index]['width'] = max($minWidth, min($maxWidth, $fittedWidth));
+                break;
+            }
+        }
+
+        if ($section['fitToPage'] ?? false) {
+            $margins = $pdf->getMargins();
+            $availableWidth = (float)($pdf->getPageWidth() - $margins['left'] - $margins['right']);
+            $total = array_sum(array_map(fn($c) => (float)($c['width'] ?? 0), $columns));
+            if ($total > 0) {
+                $scale = $availableWidth / $total;
+                foreach ($columns as $i => $col) {
+                    $columns[$i]['width'] = max(8, (float)($col['width'] ?? 0) * $scale);
+                }
+            }
+        }
+
+        return $columns;
+    }
+
+    /**
+     * Prepare table columns for XLSX rendering (content fit + proportional scaling).
+     */
+    private function prepareColumnsForXlsxTable(array $sheetDef, array $data): array
+    {
+        $columns = array_map(function ($col) {
+            $copy = $col;
+            $copy['width'] = (float)($col['width'] ?? 14);
+            return $copy;
+        }, $sheetDef['columns'] ?? []);
+
+        if (empty($columns)) {
+            return [];
+        }
+
+        $categoryField = (string)($sheetDef['autoFitField'] ?? '_source');
+        $minWidth = (float)($sheetDef['autoFitMinWidth'] ?? 12);
+        $maxWidth = (float)($sheetDef['autoFitMaxWidth'] ?? 22);
+
+        foreach ($columns as $index => $col) {
+            $field = $col['key'] ?? $col['field'] ?? '';
+            if (($col['autoFitContent'] ?? false) || $field === $categoryField) {
+                $longestWordLength = strlen((string)($col['label'] ?? ''));
+                foreach ($data as $row) {
+                    $value = $this->stringifyValue($row[$field] ?? '');
+                    $parts = preg_split('/\s+/', trim($value)) ?: [$value];
+                    foreach ($parts as $part) {
+                        $longestWordLength = max($longestWordLength, strlen($part));
+                    }
+                }
+                $columns[$index]['width'] = max($minWidth, min($maxWidth, $longestWordLength + 2));
+                break;
+            }
+        }
+
+        if ($sheetDef['fitToPage'] ?? false) {
+            $targetWidth = (float)($sheetDef['targetWidth'] ?? 100);
+            $total = array_sum(array_map(fn($c) => (float)($c['width'] ?? 0), $columns));
+            if ($total > 0) {
+                $scale = $targetWidth / $total;
+                foreach ($columns as $i => $col) {
+                    $columns[$i]['width'] = max(8, (float)($col['width'] ?? 0) * $scale);
+                }
+            }
+        }
+
+        return $columns;
     }
 }

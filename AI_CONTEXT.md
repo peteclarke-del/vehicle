@@ -117,9 +117,24 @@ User
     │   └── Attachment (receipt, many-to-one)
     ├── InsurancePolicy[] (many-to-many)
     ├── RoadTax[] (one-to-many)
+    ├── SecurityFeature[] (one-to-many)
+    ├── VehicleStatusHistory[] (one-to-many)
+    ├── VehicleAssignment[] (one-to-many)
     ├── Todo[] (one-to-many)
     └── Attachment[] (one-to-many)
 ```
+
+### Vehicle Status
+
+Vehicles have a `status` field (default: `'Live'`) with values: `Live`, `Sold`, `Scrapped`, `Exported`. Status changes are recorded in `VehicleStatusHistory` with old/new status, change date, and notes. The frontend persists the status filter (default: `Live`) per page via `useVehicleStatusFilter`.
+
+### Demo Mode
+
+The application supports a public demo mode activated by:
+1. Build-time env var `REACT_APP_DEMO_MODE=true`, **or**
+2. Runtime hostname starting with `demo.`
+
+In demo mode, destructive actions (delete, export, import) are blocked via `demoGuard(t)` from `frontend/src/utils/demoMode.js`. A `DemoWatermark` component is rendered on every page.
 
 ### Distance Units
 
@@ -172,6 +187,7 @@ Parts and consumables can be linked to service records or MOT records. The `incl
 - `VehiclesContext` - Shared vehicle list with 30-second cache
 - `UserPreferencesContext` - User preferences (theme, language, defaults)
 - `ThemeContext` - Light/dark mode
+- `PermissionsContext` - Feature flag access (`can(featureKey)`), vehicle assignment checks, admin flag
 
 **Pattern for data pages:**
 ```javascript
@@ -195,6 +211,7 @@ function RecordsPage() {
 | `useApiData` | Fetch API data with array validation |
 | `usePersistedSort` | Table sorting with localStorage persistence |
 | `useVehicleSelection` | Vehicle filtering with default vehicle support |
+| `useVehicleStatusFilter` | Vehicle list filtering by status (Live/Sold/Scrapped/Exported) with persistence |
 | `useTablePagination` | Pagination with user preference sync |
 | `useDistance` | Distance conversion based on preferences |
 | `useNotifications` | Polling-based notifications (5-min REST poll + visibilitychange refresh) |
@@ -422,16 +439,20 @@ class RecordController extends AbstractController
 | `AttachmentLinkingService` | Manage attachment-entity relationships |
 | `EntitySerializerService` | Consistent entity serialization |
 | `CostCalculator` | Vehicle cost calculations |
+| `RepairCostCalculator` | Service/MOT repair cost calculations (parts + consumables) |
 | `DepreciationCalculator` | Vehicle depreciation |
 | `ReportEngine` | Generate reports from JSON templates |
 | `DvlaApiService` | DVLA vehicle lookup |
 | `DvsaApiService` | DVSA MOT history |
+| `FeatureFlagService` | Feature flag resolution per user |
 | `OpenApiVehicleAdapter` | OpenAPI vehicle specifications |
 | `VehicleExportService` | Export to JSON/ZIP |
 | `VehicleImportService` | Import from JSON/ZIP |
-| `ReceiptOcrService` | Extract data from receipt images |
+| `ReceiptOcrService` | Extract data from receipt images (delegates to ReceiptTemplateService) |
+| `ReceiptTemplateService` | OCR template matching for receipt parsing |
 | `UrlScraperService` | Scrape product information |
 | `VinDecoderService` | Decode VINs |
+| `EbayAccountDeletionService` | Handle eBay GDPR account-deletion webhook |
 
 ---
 
@@ -473,7 +494,32 @@ work_performed, notes, mot_record_id, receipt_attachment_id, created_at
 **mot_records**
 ```sql
 id, vehicle_id, test_date, expiry_date, result, mileage, test_number,
-test_centre, cost, advisories (JSON), failures (JSON), created_at
+test_centre, cost, advisories (TEXT, JSON-encoded), failures (TEXT, JSON-encoded), created_at
+```
+
+**vehicle_status_history**
+```sql
+id, vehicle_id, old_status, new_status, change_date, notes, created_at
+```
+
+**vehicle_assignments**
+```sql
+id, vehicle_id, user_id, can_view, can_edit, can_add_records, can_delete
+```
+
+**feature_flags**
+```sql
+id, name, key, category, default_enabled, description
+```
+
+**user_feature_overrides**
+```sql
+id, user_id, feature_key, enabled
+```
+
+**security_features**
+```sql
+id, vehicle_id, name, description, installed_date
 ```
 
 **parts**

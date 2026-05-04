@@ -23,8 +23,11 @@
       "columns": [
         {"key":"date","label":"Date","width":12},
         {"key":"vehicle","label":"Vehicle","width":20},
-        {"key":"litres","label":"Litres","width":10},
-        {"key":"cost","label":"Cost","width":12,"format":"currency","aggregate":"sum"}
+        {"key":"mileage","label":"Mileage ({{distanceLabel}})","width":14,"format":"number","alignment":"right"},
+        {"key":"miles","label":"Distance ({{distanceLabel}})","width":14,"format":"number","alignment":"right","aggregate":"sum"},
+        {"key":"litres","label":"Litres","width":10,"format":"number","decimals":2,"alignment":"right","aggregate":"sum"},
+        {"key":"cost","label":"Cost","width":12,"format":"currency","alignment":"right","aggregate":"sum"},
+        {"key":"mpg","label":"Economy ({{economyLabel}})","width":12,"format":"number","decimals":2,"alignment":"right","aggregate":"avg"}
       ]
     }
   ]

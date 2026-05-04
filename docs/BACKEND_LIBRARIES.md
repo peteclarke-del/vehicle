@@ -22,12 +22,15 @@ This document provides comprehensive documentation for the shared traits, servic
    - [ReportEngine](#reportengine)
    - [DvlaApiService](#dvlaapiservice)
    - [DvsaApiService](#dvsaapiservice)
+   - [FeatureFlagService](#featureflagservice)
    - [VehicleExportService](#vehicleexportservice)
    - [VehicleImportService](#vehicleimportservice)
    - [ReceiptOcrService](#receiptocrservice)
+   - [ReceiptTemplateService](#receipttemplateservice)
    - [UrlScraperService](#urlscraperservice)
    - [VinDecoderService](#vindecoderservice)
    - [RepairCostCalculator](#repaircostcalculator)
+   - [EbayAccountDeletionService](#ebayaccountdeletionservice)
 3. [Service Traits](#service-traits)
    - [UnitConversionTrait](#unitconversiontrait)
    - [EntityHydratorTrait](#entityhydratortrait)
@@ -704,6 +707,26 @@ Templates support the following structure:
 
 ---
 
+### FeatureFlagService
+
+**File:** `FeatureFlagService.php`
+
+Resolves the effective feature flags for a user, merging system defaults with per-user overrides. Admins bypass all flags.
+
+#### Methods
+
+**`getFlagsForUser(User $user): array`**
+
+Get a map of all feature flag keys to their effective boolean values for a user.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|--------------|
+| `$user` | `User` | Yes | User entity |
+
+**Returns:** `array` — `['flag.key' => bool, ...]`
+
+---
+
 ### DvlaApiService
 
 **File:** `DvlaApiService.php`
@@ -869,6 +892,14 @@ Extract fuel receipt data from an image.
 
 ---
 
+### ReceiptTemplateService
+
+**File:** `ReceiptTemplateService.php`
+
+Provides regex/template-based extraction patterns used by `ReceiptOcrService` to parse fuel receipt text. Supports multiple receipt formats from different petrol station chains.
+
+---
+
 ### UrlScraperService
 
 **File:** `UrlScraperService.php`
@@ -926,6 +957,14 @@ Calculate total cost for a service record including parts and consumables.
 | `$record` | `ServiceRecord` | Yes | Service record entity |
 
 **Returns:** `float` - Total cost
+
+---
+
+### EbayAccountDeletionService
+
+**File:** `EbayAccountDeletionService.php`
+
+Handles eBay marketplace account-deletion notifications required for eBay API compliance (GDPR). Called by the `EbayWebhookController` at `POST /api/ebay/webhook/account-deletion`.
 
 ---
 
@@ -1001,6 +1040,8 @@ All entities are located in `backend/src/Entity/`. Key entities include:
 | `VehicleMake` | Vehicle manufacturers |
 | `VehicleModel` | Vehicle models |
 | `VehicleImage` | Vehicle photos |
+| `VehicleAssignment` | Assigns a vehicle to a user with granular permissions |
+| `VehicleStatusHistory` | Audit log of vehicle status changes |
 | `FuelRecord` | Fuel purchase records |
 | `ServiceRecord` | Service history records |
 | `ServiceItem` | Individual items in a service |
@@ -1013,8 +1054,12 @@ All entities are located in `backend/src/Entity/`. Key entities include:
 | `RoadTax` | Road tax records |
 | `Attachment` | File attachments |
 | `Specification` | Vehicle specifications |
+| `SecurityFeature` | Vehicle security features |
 | `Todo` | Maintenance tasks |
 | `Report` | Generated reports |
+| `FeatureFlag` | System-wide feature flag definitions (49 flags, 13 categories) |
+| `UserFeatureOverride` | Per-user feature flag enable/disable overrides |
+| `RefreshToken` | JWT refresh tokens |
 
 ---
 

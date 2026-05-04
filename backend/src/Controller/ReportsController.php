@@ -305,6 +305,7 @@ class ReportsController extends AbstractController
 
             return $response;
         } catch (\Throwable $e) {
+            error_log(sprintf('[reports_download] id=%d format=%s error=%s', $r->getId() ?? 0, $format, $e->getMessage()));
             return new Response('Error generating report: ' . $e->getMessage(), 500);
         }
     }
