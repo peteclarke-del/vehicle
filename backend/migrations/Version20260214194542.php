@@ -186,7 +186,10 @@ final class Version20260214194542 extends AbstractMigration
         $sql = preg_replace('/\s+DEFAULT\s+CHARACTER\s+SET\s+[^\s]+/i', '', $sql) ?? $sql;
         $sql = preg_replace('/\s+ENGINE\s*=\s*[^\s]+/i', '', $sql) ?? $sql;
         $sql = preg_replace('/\bINT\s+AUTO_INCREMENT\b/i', 'SERIAL', $sql) ?? $sql;
-        $sql = preg_replace('/\bTINYINT\(1\)\b/i', 'SMALLINT', $sql) ?? $sql;
+        $sql = preg_replace('/\bTINYINT\(1\)\b/i', 'BOOLEAN', $sql) ?? $sql;
+        $sql = preg_replace_callback('/\bBOOLEAN\s+DEFAULT\s+(0|1)\b/i', static function (array $m): string {
+            return 'BOOLEAN DEFAULT ' . ($m[1] === '1' ? 'true' : 'false');
+        }, $sql) ?? $sql;
         $sql = preg_replace('/\bLONGTEXT\b/i', 'TEXT', $sql) ?? $sql;
         $sql = preg_replace('/\bDATETIME\b/i', 'TIMESTAMP(0) WITHOUT TIME ZONE', $sql) ?? $sql;
         $sql = preg_replace('/\s+COMMENT\s+\'\(DC2Type:[^\']+\)\'/i', '', $sql) ?? $sql;

@@ -308,7 +308,7 @@ const Vehicles = () => {
             {t('deleteAll.message')}
           </DialogContentText>
           <DialogContentText sx={{ mt: 1 }}>
-            {t('deleteAll.perUserScope') || 'This only deletes data in your account.'}
+            {t('deleteAll.perUserScope', { defaultValue: 'This only deletes data in your account.' })}
           </DialogContentText>
 
           <Box sx={{ mt: 2 }}>

@@ -15,6 +15,7 @@ use App\Entity\MotRecord;
 use App\Entity\UserPreference;
 use App\Service\ReportEngine;
 use Doctrine\ORM\EntityManagerInterface;
+use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -40,15 +41,22 @@ class ReportsController extends AbstractController
     private ReportEngine $reportEngine;
 
     /**
+     * @var LoggerInterface
+     */
+    private LoggerInterface $logger;
+
+    /**
      * function __construct
      *
      * @param ReportEngine $reportEngine
+     * @param LoggerInterface $logger
      *
      * @return void
      */
-    public function __construct(ReportEngine $reportEngine)
+    public function __construct(ReportEngine $reportEngine, LoggerInterface $logger)
     {
         $this->reportEngine = $reportEngine;
+        $this->logger = $logger;
     }
 
     /**
@@ -305,8 +313,12 @@ class ReportsController extends AbstractController
 
             return $response;
         } catch (\Throwable $e) {
-            error_log(sprintf('[reports_download] id=%d format=%s error=%s', $r->getId() ?? 0, $format, $e->getMessage()));
-            return new Response('Error generating report: ' . $e->getMessage(), 500);
+            $this->logger->error('Report generation failed', [
+                'report_id' => $r->getId() ?? 0,
+                'format'    => $format,
+                'exception' => $e->getMessage(),
+            ]);
+            return new Response('Error generating report.', 500);
         }
     }
 

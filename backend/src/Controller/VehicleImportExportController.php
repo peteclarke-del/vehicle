@@ -958,9 +958,12 @@ class VehicleImportExportController extends AbstractController
             // Remove orphaned insurance policies belonging to the user
             try {
                 $entityManager->getConnection()->executeStatement(
-                    'DELETE p FROM insurance_policies p
-                     LEFT JOIN insurance_policy_vehicles ipv ON ipv.insurance_policy_id = p.id
-                     WHERE p.holder_id = :holderId AND ipv.vehicle_id IS NULL',
+                    'DELETE FROM insurance_policies
+                     WHERE holder_id = :holderId
+                     AND NOT EXISTS (
+                         SELECT 1 FROM insurance_policy_vehicles ipv
+                         WHERE ipv.insurance_policy_id = insurance_policies.id
+                     )',
                     ['holderId' => $user->getId()]
                 );
             } catch (\Exception $e) {
