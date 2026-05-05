@@ -226,7 +226,7 @@ const Dashboard = () => {
       setPeriodFuelTotal(resp.data.fuel ?? 0);
       setPeriodPartsTotal(resp.data.parts ?? 0);
       setPeriodConsumablesTotal(resp.data.consumables ?? 0);
-      setAvgServiceCost(resp.data.totalServiceCost ?? resp.data.averageServiceCost ?? 0);
+      setAvgServiceCost(resp.data.averageServiceCost ?? resp.data.totalServiceCost ?? 0);
     } catch (err) {
       logger.warn('Failed to load vehicle totals', err);
     } finally {
@@ -759,7 +759,7 @@ const Dashboard = () => {
                       title={`${t('dashboard.averageServiceCost')} (${chartPeriod}m)`}
                       value={`£${avgServiceCost.toLocaleString('en-GB', { maximumFractionDigits: 2 })}`}
                       loading={totalsLoading}
-                      subtitle={`${t('common.total', { defaultValue: 'Total' })} (${chartPeriod}m)`}
+                      subtitle={`${t('common.average', { defaultValue: 'Average' })} (${chartPeriod}m)`}
                     />
                   </Box>
 

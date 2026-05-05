@@ -388,6 +388,52 @@ $vehicleData = [
     }
 
     /**
+     * Test /api/vehicles/totals returns both averageServiceCost and totalServiceCost
+     * with correct semantics: average = total / count, total = sum of all costs.
+     */
+    public function testVehicleTotalsReturnsBothServiceCostFields(): void
+    {
+        $client = $this->client;
+        $em = $this->getEntityManager();
+        $user = $em->getRepository(\App\Entity\User::class)->findOneBy(['email' => 'test@example.com']);
+
+        $vehicle = $this->createTestVehicle($user, 'TOT-TST-' . uniqid());
+
+        // Create two service records with different costs within the last 12 months.
+        $sr1 = new \App\Entity\ServiceRecord();
+        $sr1->setVehicle($vehicle);
+        $sr1->setServiceDate(new \DateTime('-10 days'));
+        $sr1->setServiceType('Full');
+        $sr1->setLaborCost('100.00');
+        $em->persist($sr1);
+
+        $sr2 = new \App\Entity\ServiceRecord();
+        $sr2->setVehicle($vehicle);
+        $sr2->setServiceDate(new \DateTime('-5 days'));
+        $sr2->setServiceType('Oil Change');
+        $sr2->setLaborCost('60.00');
+        $em->persist($sr2);
+
+        $em->flush();
+
+        $client->request('GET', '/api/vehicles/totals', [], [], [
+            'HTTP_X_TEST_MOCK_AUTH' => $this->getAuthToken(),
+        ]);
+
+        $this->assertResponseIsSuccessful();
+        $data = json_decode($client->getResponse()->getContent(), true);
+
+        $this->assertArrayHasKey('totalServiceCost', $data, 'Response must include totalServiceCost');
+        $this->assertArrayHasKey('averageServiceCost', $data, 'Response must include averageServiceCost');
+
+        // totalServiceCost must be >= the cost of our two records (other tests may add records too).
+        $this->assertGreaterThanOrEqual(160.0, $data['totalServiceCost'], 'totalServiceCost should be at least the sum of created records');
+
+        // averageServiceCost must be less than totalServiceCost when there are multiple records.
+        $this->assertLessThan($data['totalServiceCost'], $data['averageServiceCost'], 'averageServiceCost must be less than totalServiceCost when there are multiple service records');
+    }
+
+    /**
      * Test vehicle cost summary
      */
     public function testVehicleCostSummary(): void

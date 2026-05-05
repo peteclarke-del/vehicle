@@ -316,7 +316,7 @@ class ReportsController extends AbstractController
             $this->logger->error('Report generation failed', [
                 'report_id' => $r->getId() ?? 0,
                 'format'    => $format,
-                'exception' => $e->getMessage(),
+                'exception' => $e,
             ]);
             return new Response('Error generating report.', 500);
         }

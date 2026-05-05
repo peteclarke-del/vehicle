@@ -1159,7 +1159,7 @@ class ReportEngine
             $value = $this->resolveString($cell['value'] ?? '');
             $coord = $col . $row;
 
-            $sheet->setCellValue($coord, $value);
+            $sheet->setCellValueExplicit($coord, $value, DataType::TYPE_STRING);
 
             // Handle merge
             if (isset($cell['merge'])) {
@@ -1283,14 +1283,14 @@ class ReportEngine
 
             $label = $cell['label'] ?? null;
             if ($label) {
-                $sheet->setCellValue($coord, $label);
+                $sheet->setCellValueExplicit($coord, $this->stringifyValue($label), DataType::TYPE_STRING);
             } else {
                 $format = $cell['format'] ?? null;
                 if ($format === 'currency' && is_numeric($value)) {
                     $sheet->setCellValue($coord, (float)$value);
                     $sheet->getStyle($coord)->getNumberFormat()->setFormatCode('£#,##0.00');
                 } else {
-                    $sheet->setCellValue($coord, $value);
+                    $sheet->setCellValueExplicit($coord, $this->stringifyValue($value), DataType::TYPE_STRING);
                 }
             }
 
@@ -1329,8 +1329,8 @@ class ReportEngine
                 }
             }
 
-            $sheet->setCellValue($labelCol . $row, $label);
-            $sheet->setCellValue($valueCol . $row, $value);
+            $sheet->setCellValueExplicit($labelCol . $row, $this->stringifyValue($label), DataType::TYPE_STRING);
+            $sheet->setCellValueExplicit($valueCol . $row, $this->stringifyValue($value), DataType::TYPE_STRING);
 
             if ($style && isset($styles[$style])) {
                 $this->applyStyle($sheet, $labelCol . $row, $styles[$style]);
