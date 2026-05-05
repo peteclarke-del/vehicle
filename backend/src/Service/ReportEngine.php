@@ -17,6 +17,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
+use PhpOffice\PhpSpreadsheet\Cell\DataType;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
@@ -1254,7 +1255,7 @@ class ReportEngine
             $sheet->setCellValue($coord, is_numeric($value) ? round((float)$value, $decimals) : 0);
             $sheet->getStyle($coord)->getNumberFormat()->setFormatCode('#,##0' . ($decimals > 0 ? '.' . str_repeat('0', $decimals) : ''));
         } else {
-            $sheet->setCellValue($coord, $this->stringifyValue($value));
+            $sheet->setCellValueExplicit($coord, $this->stringifyValue($value), DataType::TYPE_STRING);
         }
 
         // Apply style
@@ -1426,7 +1427,7 @@ class ReportEngine
                         }
                     } else {
                         $textValue = $this->stringifyValue($value);
-                        $xlsSheet->setCellValue($coord, $textValue);
+                        $xlsSheet->setCellValueExplicit($coord, $textValue, DataType::TYPE_STRING);
                         if (str_contains($textValue, "\n")) {
                             $xlsSheet->getStyle($coord)->getAlignment()->setWrapText(true);
                             $xlsSheet->getStyle($coord)->getAlignment()->setVertical(Alignment::VERTICAL_TOP);
@@ -2050,12 +2051,12 @@ class ReportEngine
         foreach ($columns as $index => $col) {
             $field = $col['key'] ?? $col['field'] ?? '';
             if (($col['autoFitContent'] ?? false) || $field === $categoryField) {
-                $longestWordLength = strlen((string)($col['label'] ?? ''));
+                $longestWordLength = mb_strlen((string)($col['label'] ?? ''), 'UTF-8');
                 foreach ($data as $row) {
                     $value = $this->stringifyValue($row[$field] ?? '');
                     $parts = preg_split('/\s+/', trim($value)) ?: [$value];
                     foreach ($parts as $part) {
-                        $longestWordLength = max($longestWordLength, strlen($part));
+                        $longestWordLength = max($longestWordLength, mb_strlen($part, 'UTF-8'));
                     }
                 }
                 $columns[$index]['width'] = max($minWidth, min($maxWidth, $longestWordLength + 2));

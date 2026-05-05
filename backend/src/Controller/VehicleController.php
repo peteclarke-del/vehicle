@@ -931,8 +931,7 @@ class VehicleController extends AbstractController
             'fuel' => round($fuelTotal, 2),
             'parts' => round($partsTotal, 2),
             'consumables' => round($consumablesTotal, 2),
-            // Keep averageServiceCost as a compatibility alias for older clients.
-            'averageServiceCost' => round($serviceTotal, 2),
+            'averageServiceCost' => $serviceCount > 0 ? round($serviceTotal / $serviceCount, 2) : 0.0,
             'totalServiceCost' => round($serviceTotal, 2),
             ];
         });

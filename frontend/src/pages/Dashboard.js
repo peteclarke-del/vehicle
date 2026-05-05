@@ -759,7 +759,7 @@ const Dashboard = () => {
                       title={`${t('dashboard.averageServiceCost')} (${chartPeriod}m)`}
                       value={`£${avgServiceCost.toLocaleString('en-GB', { maximumFractionDigits: 2 })}`}
                       loading={totalsLoading}
-                      subtitle={`${t('common.total') || 'Total'} (${chartPeriod}m)`}
+                      subtitle={`${t('common.total', { defaultValue: 'Total' })} (${chartPeriod}m)`}
                     />
                   </Box>
 
