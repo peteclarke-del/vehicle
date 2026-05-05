@@ -1289,6 +1289,8 @@ class ReportEngine
                 if ($format === 'currency' && is_numeric($value)) {
                     $sheet->setCellValue($coord, (float)$value);
                     $sheet->getStyle($coord)->getNumberFormat()->setFormatCode('£#,##0.00');
+                } elseif (is_numeric($value)) {
+                    $sheet->setCellValue($coord, (float)$value);
                 } else {
                     $sheet->setCellValueExplicit($coord, $this->stringifyValue($value), DataType::TYPE_STRING);
                 }
@@ -1330,7 +1332,11 @@ class ReportEngine
             }
 
             $sheet->setCellValueExplicit($labelCol . $row, $this->stringifyValue($label), DataType::TYPE_STRING);
-            $sheet->setCellValueExplicit($valueCol . $row, $this->stringifyValue($value), DataType::TYPE_STRING);
+            if (is_numeric($value)) {
+                $sheet->setCellValue($valueCol . $row, (float)$value);
+            } else {
+                $sheet->setCellValueExplicit($valueCol . $row, $this->stringifyValue($value), DataType::TYPE_STRING);
+            }
 
             if ($style && isset($styles[$style])) {
                 $this->applyStyle($sheet, $labelCol . $row, $styles[$style]);
