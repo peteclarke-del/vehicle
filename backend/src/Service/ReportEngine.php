@@ -1283,7 +1283,7 @@ class ReportEngine
 
             $label = $cell['label'] ?? null;
             if ($label) {
-                $sheet->setCellValue($coord, $label);
+                $sheet->setCellValueExplicit($coord, $this->stringifyValue($label), DataType::TYPE_STRING);
             } else {
                 $format = $cell['format'] ?? null;
                 if ($format === 'currency' && is_numeric($value)) {
@@ -1329,7 +1329,7 @@ class ReportEngine
                 }
             }
 
-            $sheet->setCellValue($labelCol . $row, $label);
+            $sheet->setCellValueExplicit($labelCol . $row, $this->stringifyValue($label), DataType::TYPE_STRING);
             $sheet->setCellValueExplicit($valueCol . $row, $this->stringifyValue($value), DataType::TYPE_STRING);
 
             if ($style && isset($styles[$style])) {

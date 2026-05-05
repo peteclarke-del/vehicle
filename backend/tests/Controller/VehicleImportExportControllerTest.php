@@ -285,9 +285,23 @@ $vehiclesPayload = [
     {
         $client = $this->client;
         $em = $this->getEntityManager();
-        $user = $em->getRepository(\App\Entity\User::class)->findOneBy(['email' => 'test@example.com']);
+        $isolatedEmail = 'purge-isolated@example.com';
 
-        // Create a vehicle owned by the test user.
+        // Use a dedicated user so purge-all does not touch data owned by the
+        // shared seeded user, keeping test execution order-independent.
+        $user = $em->getRepository(\App\Entity\User::class)->findOneBy(['email' => $isolatedEmail]);
+        if (!$user) {
+            $user = new \App\Entity\User();
+            $user->setEmail($isolatedEmail);
+            $user->setPassword('$2y$13$hashed_password_for_testing');
+            $user->setRoles(['ROLE_USER']);
+            $user->setFirstName('Purge');
+            $user->setLastName('Isolated');
+            $em->persist($user);
+            $em->flush();
+        }
+
+        // Create a vehicle owned by the isolated test user.
         $vehicle = $this->createTestVehicle($user, 'PURGE-' . uniqid());
         $vehicleId = $vehicle->getId();
 
@@ -299,9 +313,9 @@ $vehiclesPayload = [
         $em->flush();
         $policyId = $policy->getId();
 
-        // Call purge-all with cascade=true.
+        // Call purge-all with cascade=true, authenticated as the isolated user.
         $client->request('DELETE', '/api/vehicles/purge-all?cascade=true', [], [], [
-            'HTTP_X_TEST_MOCK_AUTH' => $this->getAuthToken(),
+            'HTTP_X_TEST_MOCK_AUTH' => $isolatedEmail,
         ]);
 
         $this->assertResponseIsSuccessful();
