@@ -321,4 +321,43 @@ describe('Dashboard Component', () => {
       expect(screen.getByText('dashboard.welcome')).toBeInTheDocument();
     });
   });
+
+  test('service cost stat card displays averageServiceCost value from API', async () => {
+    // Verify the card reads averageServiceCost first (not totalServiceCost),
+    // so the "Average Service Cost" title matches the displayed figure.
+    mockApi.get.mockImplementation((url) => {
+      if (url.includes('/vehicles/totals')) {
+        return Promise.resolve({
+          data: {
+            fuel: 200,
+            parts: 50,
+            consumables: 30,
+            averageServiceCost: 75,
+            totalServiceCost: 150,
+          },
+        });
+      }
+      return Promise.resolve({ data: {} });
+    });
+    useVehicles.mockReturnValue({
+      vehicles: mockVehicles,
+      loading: false,
+      error: null,
+      refreshVehicles: jest.fn(),
+      recordsVersion: 0,
+    });
+    renderDashboard();
+
+    await waitFor(() => {
+      // The stat card title key should be 'dashboard.averageServiceCost'.
+      expect(screen.getByText(/dashboard\.averageServiceCost/)).toBeInTheDocument();
+    });
+
+    // The card should display the average (£75), not the total (£150).
+    // The i18n mock returns the key string, so the subtitle reads 'common.average'.
+    expect(screen.getByText(/common\.average/)).toBeInTheDocument();
+
+    // The formatted value should show £75, not £150.
+    expect(screen.getByText('£75')).toBeInTheDocument();
+  });
 });

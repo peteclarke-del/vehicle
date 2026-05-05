@@ -276,4 +276,46 @@ $vehiclesPayload = [
         $this->assertSame('P-001', $todo['parts'][0]['partNumber']);
         $this->assertSame('2024-02-01', $todo['parts'][0]['installationDate']);
     }
+
+    /**
+     * Test that purge-all with cascade=true removes the user's vehicles and cleans up
+     * orphaned insurance policies via the portable NOT EXISTS SQL statement.
+     */
+    public function testPurgeAllWithCascadeRemovesVehiclesAndOrphanedPolicies(): void
+    {
+        $client = $this->client;
+        $em = $this->getEntityManager();
+        $user = $em->getRepository(\App\Entity\User::class)->findOneBy(['email' => 'test@example.com']);
+
+        // Create a vehicle owned by the test user.
+        $vehicle = $this->createTestVehicle($user, 'PURGE-' . uniqid());
+        $vehicleId = $vehicle->getId();
+
+        // Create an orphaned insurance policy (belongs to this user but has no vehicle link).
+        $policy = new \App\Entity\InsurancePolicy();
+        $policy->setProvider('Test Insurer');
+        $policy->setHolderId($user->getId());
+        $em->persist($policy);
+        $em->flush();
+        $policyId = $policy->getId();
+
+        // Call purge-all with cascade=true.
+        $client->request('DELETE', '/api/vehicles/purge-all?cascade=true', [], [], [
+            'HTTP_X_TEST_MOCK_AUTH' => $this->getAuthToken(),
+        ]);
+
+        $this->assertResponseIsSuccessful();
+        $data = json_decode($client->getResponse()->getContent(), true);
+        $this->assertTrue($data['success'] ?? false, 'Purge-all must report success');
+        $this->assertGreaterThanOrEqual(1, $data['deleted'], 'At least one vehicle should have been deleted');
+
+        // Verify the vehicle no longer exists.
+        $em->clear();
+        $deletedVehicle = $em->getRepository(\App\Entity\Vehicle::class)->find($vehicleId);
+        $this->assertNull($deletedVehicle, 'Vehicle should have been deleted by purge-all');
+
+        // Verify the orphaned insurance policy was cleaned up by the NOT EXISTS clause.
+        $deletedPolicy = $em->getRepository(\App\Entity\InsurancePolicy::class)->find($policyId);
+        $this->assertNull($deletedPolicy, 'Orphaned insurance policy should have been cleaned up');
+    }
 }

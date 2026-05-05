@@ -208,4 +208,70 @@ class ReportsControllerTest extends BaseWebTestCase
         $this->assertEquals($report->getId(), $foundReport['id']);
         $this->assertEquals('Specific Report', $foundReport['name']);
     }
+
+    /**
+     * Test download returns 422 when the persisted report has no templateContent.
+     */
+    public function testDownloadReportMissingTemplateContentReturns422(): void
+    {
+        $token = $this->getAuthToken();
+        $em = $this->getEntityManager();
+
+        $user = $em->getRepository(User::class)->findOneBy(['email' => 'test@example.com']);
+
+        $report = new Report();
+        $report->setUser($user);
+        $report->setName('No Template Report');
+        $report->setTemplateKey('missing_template');
+        $report->setPayload(['someOtherKey' => 'data']);
+        $report->setGeneratedAt(new \DateTime());
+        $em->persist($report);
+        $em->flush();
+
+        $this->client->request('GET', '/api/reports/' . $report->getId() . '/download', [], [], [
+            'HTTP_AUTHORIZATION' => $token,
+        ]);
+
+        $this->assertResponseStatusCodeSame(422);
+    }
+
+    /**
+     * Test download returns a generic 500 with no exception detail when the engine throws.
+     * Verifies the fix: exception message must not leak to the HTTP response.
+     */
+    public function testDownloadReportReturnsGenericErrorWhenEngineThrows(): void
+    {
+        $em = $this->getEntityManager();
+        $user = $em->getRepository(User::class)->findOneBy(['email' => 'test@example.com']);
+
+        $report = new Report();
+        $report->setUser($user);
+        $report->setName('Failing Engine Report');
+        $report->setTemplateKey('fail_engine_test');
+        // Payload must contain 'layout' or 'dataSources' to trigger the ReportEngine path.
+        $report->setPayload([
+            'templateContent' => [
+                'layout' => ['sections' => []],
+                'dataSources' => [],
+            ],
+        ]);
+        $report->setGeneratedAt(new \DateTime());
+        $em->persist($report);
+        $em->flush();
+        $reportId = $report->getId();
+
+        // Replace the ReportEngine with a mock that always throws.
+        $mockEngine = $this->createMock(\App\Service\ReportEngine::class);
+        $mockEngine->method('generate')->willThrowException(new \RuntimeException('Simulated engine failure - must not appear in response'));
+        static::getContainer()->set(\App\Service\ReportEngine::class, $mockEngine);
+
+        $this->client->request('GET', '/api/reports/' . $reportId . '/download', [], [], [
+            'HTTP_AUTHORIZATION' => $this->getAuthToken(),
+        ]);
+
+        $this->assertResponseStatusCodeSame(500);
+        $content = $this->client->getResponse()->getContent();
+        $this->assertEquals('Error generating report.', $content, 'Response body must be the generic error message');
+        $this->assertStringNotContainsString('Simulated engine failure', $content, 'Exception detail must not leak to client');
+    }
 }
