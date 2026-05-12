@@ -4,6 +4,25 @@
 // learn more: https://github.com/testing-library/jest-dom
 import '@testing-library/jest-dom';
 
+const originalConsoleWarn = console.warn;
+
+beforeAll(() => {
+  jest.spyOn(console, 'warn').mockImplementation((...args) => {
+    const message = String(args[0] || '');
+    if (
+      message.includes('react-i18next:: You will need to pass in an i18next instance') ||
+      message.includes('React Router Future Flag Warning')
+    ) {
+      return;
+    }
+    originalConsoleWarn(...args);
+  });
+});
+
+afterAll(() => {
+  console.warn.mockRestore();
+});
+
 // Polyfill ResizeObserver for jsdom
 global.ResizeObserver = class ResizeObserver {
   constructor(cb) { this.cb = cb; }

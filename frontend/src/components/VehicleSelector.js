@@ -57,8 +57,9 @@ const VehicleSelector = React.memo(({
 
   const handleChange = React.useCallback((e) => {
     const rawValue = e.target.value;
-    if (rawValue === '__all__') {
-      onChange('__all__');
+    // Preserve virtual selector IDs (e.g. __all__, __stock__) as strings
+    if (rawValue.startsWith('__') && rawValue.endsWith('__')) {
+      onChange(rawValue);
       return;
     }
     const id = parseInt(rawValue, 10);

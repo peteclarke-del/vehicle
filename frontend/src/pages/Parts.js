@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import logger from '../utils/logger';
-import { Box, Button, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, IconButton, Chip, Tooltip, TableSortLabel } from '@mui/material';
+import { Box, Button, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, IconButton, Chip, Tooltip, TableSortLabel, TextField } from '@mui/material';
 import { Add, Edit, Delete } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { useVehicles } from '../contexts/VehiclesContext';
@@ -20,6 +20,7 @@ import KnightRiderLoader from '../components/KnightRiderLoader';
 import ViewAttachmentIconButton from '../components/ViewAttachmentIconButton';
 import TablePaginationBar from '../components/TablePaginationBar';
 import { demoGuard } from '../utils/demoMode';
+import { matchesFreeText } from '../utils/searchText';
 
 const Parts = () => {
   const [parts, setParts] = useState([]);
@@ -27,6 +28,7 @@ const Parts = () => {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedPart, setSelectedPart] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
   const [openServiceDialog, setOpenServiceDialog] = useState(false);
   const [selectedServiceRecord, setSelectedServiceRecord] = useState(null);
   const { api } = useAuth();
@@ -37,6 +39,10 @@ const Parts = () => {
   const { statusFilter, filteredVehicles, handleStatusFilterChange, STATUS_OPTIONS } = useVehicleStatusFilter(vehicles, 'partsStatusFilter');
   const { selectedVehicle, handleVehicleChange } = useVehicleSelection(filteredVehicles, { includeViewAll: true });
   const { convert, format, getLabel } = useDistance();
+  const registrationByVehicleId = React.useMemo(
+    () => Object.fromEntries((vehicles || []).map((v) => [String(v.id), v.registrationNumber || v.registration || ''])),
+    [vehicles]
+  );
 
   const loadVehicles = useCallback(async () => {
     const data = await fetchArrayData(api, '/vehicles');
@@ -45,10 +51,27 @@ const Parts = () => {
   }, [api]);
 
   const loadParts = useCallback(async (signal) => {
-    const url = (!selectedVehicle || selectedVehicle === '__all__') ? '/parts' : `/parts?vehicleId=${selectedVehicle}`;
-    const data = await fetchArrayData(api, url, signal ? { signal } : {});
-    setParts(data);
-    return data;
+    const options = signal ? { signal } : {};
+
+    if (!selectedVehicle || selectedVehicle === '__all__') {
+      const data = await fetchArrayData(api, '/parts', options);
+      const vehicleOnly = data.filter((p) => p.vehicleId != null);
+      setParts(vehicleOnly);
+      return vehicleOnly;
+    }
+
+    const selectedVehicleId = String(selectedVehicle);
+    let data = await fetchArrayData(api, `/parts?vehicleId=${selectedVehicle}`, options);
+
+    // Fallback for environments where the vehicle-filtered endpoint returns empty unexpectedly.
+    if (data.length === 0) {
+      const allParts = await fetchArrayData(api, '/parts', options);
+      data = allParts.filter((p) => String(p.vehicleId) === selectedVehicleId);
+    }
+
+    const vehicleOnly = data.filter((p) => String(p.vehicleId) === selectedVehicleId);
+    setParts(vehicleOnly);
+    return vehicleOnly;
   }, [api, selectedVehicle]);
 
   useEffect(() => {
@@ -104,8 +127,8 @@ const Parts = () => {
   const sortedParts = React.useMemo(() => {
     const comparator = (a, b) => {
       if (orderBy === 'registration') {
-        const aReg = vehicles.find(v => String(v.id) === String(a.vehicleId))?.registration || '';
-        const bReg = vehicles.find(v => String(v.id) === String(b.vehicleId))?.registration || '';
+        const aReg = registrationByVehicleId[String(a.vehicleId)] || '';
+        const bReg = registrationByVehicleId[String(b.vehicleId)] || '';
         if (aReg === bReg) return 0;
         return order === 'asc' ? (aReg > bReg ? 1 : -1) : (aReg < bReg ? 1 : -1);
       }
@@ -134,7 +157,14 @@ const Parts = () => {
     return [...parts].sort(comparator);
   }, [parts, order, orderBy]);
 
-  const { page, rowsPerPage, paginatedRows: paginatedParts, handleChangePage, handleChangeRowsPerPage } = useTablePagination(sortedParts);
+  const filteredParts = React.useMemo(() => {
+    return sortedParts.filter((part) => {
+      const registration = registrationByVehicleId[String(part.vehicleId)] || '';
+      return matchesFreeText(searchTerm, part, part.partCategory?.name, registration);
+    });
+  }, [sortedParts, searchTerm, registrationByVehicleId]);
+
+  const { page, rowsPerPage, paginatedRows: paginatedParts, handleChangePage, handleChangeRowsPerPage } = useTablePagination(filteredParts);
 
   const calculateTotalCost = () => {
     return parts.reduce((sum, part) => sum + (parseFloat(part.cost) || 0), 0);
@@ -172,6 +202,13 @@ const Parts = () => {
             includeViewAll={true}
             minWidth={360}
           />
+          <TextField
+            size="small"
+            placeholder={t('common.search', 'Search')}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            sx={{ minWidth: 220 }}
+          />
           <Button
             variant="contained"
             startIcon={<Add />}
@@ -194,7 +231,7 @@ const Parts = () => {
       <TablePaginationBar
         page={page}
         rowsPerPage={rowsPerPage}
-        count={sortedParts.length}
+        count={filteredParts.length}
         onPageChange={handleChangePage}
         onRowsPerPageChange={handleChangeRowsPerPage}
       />
@@ -273,7 +310,7 @@ const Parts = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {sortedParts.length === 0 ? (
+            {filteredParts.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={9} align="center">
                   <Typography color="textSecondary">{t('common.noRecords')}</Typography>
@@ -282,7 +319,7 @@ const Parts = () => {
             ) : (
               paginatedParts.map((part) => (
                 <TableRow key={part.id} sx={{ '&:nth-of-type(odd)': { backgroundColor: 'action.hover' } }}>
-                  <TableCell>{vehicles.find(v => String(v.id) === String(part.vehicleId))?.registrationNumber || '-'}</TableCell>
+                  <TableCell>{registrationByVehicleId[String(part.vehicleId)] || '-'}</TableCell>
                   <TableCell>{part.description}</TableCell>
                   <TableCell>{part.partNumber || '-'}</TableCell>
                   <TableCell>{part.partCategory?.name || '-'}</TableCell>
@@ -326,7 +363,7 @@ const Parts = () => {
         <TablePaginationBar
           page={page}
           rowsPerPage={rowsPerPage}
-          count={sortedParts.length}
+          count={filteredParts.length}
           onPageChange={handleChangePage}
           onRowsPerPageChange={handleChangeRowsPerPage}
         />

@@ -291,6 +291,25 @@ class VehicleImportExportController extends AbstractController
         return $attachment;
     }
 
+    #[Route('/export-stock', name: 'vehicles_export_stock', methods: ['GET'])]
+    public function exportStock(LoggerInterface $logger): JsonResponse
+    {
+        try {
+            $user = $this->getUserEntity();
+            if (!$user) {
+                return new JsonResponse(['error' => 'Unauthorized'], 401);
+            }
+
+            $isAdmin = $this->isAdminForUser($user);
+            $stockItems = $this->exportService->exportStockItems($user, $isAdmin);
+
+            return new JsonResponse(['stockItems' => $stockItems]);
+        } catch (\Exception $e) {
+            $logger->error('Stock export failed', ['exception' => $e->getMessage()]);
+            return new JsonResponse(['error' => 'Export failed: ' . $e->getMessage()], 500);
+        }
+    }
+
     #[Route('/export', name: 'vehicles_export', methods: ['GET'])]
 
     /**
@@ -332,10 +351,11 @@ class VehicleImportExportController extends AbstractController
             $data = $result->getData();
 
             if ($format === 'csv') {
+                $vehicles = $data['vehicles'] ?? [];
                 $columns = ['registration', 'make', 'model', 'year'];
                 $lines = [];
                 $lines[] = implode(',', $columns);
-                foreach ($data as $v) {
+                foreach ($vehicles as $v) {
                     $row = [];
                     $row[] = isset($v['registrationNumber']) ? str_replace(',', ' ', $v['registrationNumber']) : '';
                     $row[] = isset($v['make']) ? str_replace(',', ' ', $v['make']) : '';
@@ -360,7 +380,7 @@ class VehicleImportExportController extends AbstractController
             }
 
             // Default JSON export
-            return new JsonResponse(['vehicles' => $data]);
+            return new JsonResponse($data);
         } catch (\Exception $e) {
             $logger->error('Export failed with exception', [
                 'exception' => $e->getMessage(),
@@ -826,20 +846,6 @@ class VehicleImportExportController extends AbstractController
 
             if (!is_array($data)) {
                 return new JsonResponse(['error' => 'Invalid JSON format'], Response::HTTP_BAD_REQUEST);
-            }
-
-            // Support wrapped payloads where vehicles are provided under a top-level key
-            $isSequential = array_keys($data) === range(0, count($data) - 1);
-            if (!$isSequential) {
-                if (!empty($data['vehicles']) && is_array($data['vehicles'])) {
-                    $data = $data['vehicles'];
-                } elseif (!empty($data['data']) && is_array($data['data'])) {
-                    $data = $data['data'];
-                } elseif (!empty($data['parsed']) && is_array($data['parsed'])) {
-                    $data = $data['parsed'];
-                } elseif (!empty($data['results']) && is_array($data['results'])) {
-                    $data = $data['results'];
-                }
             }
 
             if (!is_array($data)) {

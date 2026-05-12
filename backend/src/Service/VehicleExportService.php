@@ -10,6 +10,7 @@ use App\Entity\User;
 use App\Entity\Vehicle;
 use App\Entity\Specification;
 use App\Entity\Attachment;
+use App\Entity\StockItem;
 use App\Exception\ExportException;
 use App\Service\Trait\EntityHydratorTrait;
 use Doctrine\ORM\EntityManagerInterface;
@@ -72,9 +73,11 @@ class VehicleExportService
                 $zipDir,
                 $startTime
             );
+            $stockItems = $this->exportStockItems($user, $isAdmin);
 
             $statistics = [
                 'vehicleCount' => count($result['vehicles']),
+                'stockItemCount' => count($stockItems),
                 'processingTimeSeconds' => round(microtime(true) - $startTime, 2),
                 'memoryPeakMB' => round(memory_get_peak_usage(true) / 1024 / 1024, 2),
             ];
@@ -82,7 +85,10 @@ class VehicleExportService
             $this->logger->info('[export] JSON completed', $statistics);
 
             return ExportResult::createSuccess(
-                $result['vehicles'],
+                [
+                    'vehicles' => $result['vehicles'],
+                    'stockItems' => $stockItems,
+                ],
                 $statistics,
                 'Export completed successfully'
             );
@@ -472,6 +478,36 @@ class VehicleExportService
             $consumables[] = $consumableData;
         }
         return $consumables;
+    }
+
+    /**
+     * Export stock items
+     */
+    public function exportStockItems(User $user, bool $isAdmin): array
+    {
+        $repo = $this->entityManager->getRepository(StockItem::class);
+        $items = $isAdmin
+            ? $repo->findBy([], ['updatedAt' => 'DESC'])
+            : $repo->findBy(['user' => $user], ['updatedAt' => 'DESC']);
+
+        return array_map(static function (StockItem $item): array {
+            return [
+                'id' => $item->getId(),
+                'itemType' => $item->getItemType(),
+                'category' => $item->getCategory(),
+                'quantity' => $item->getQuantity(),
+                'supplier' => $item->getSupplier(),
+                'description' => $item->getDescription(),
+                'price' => $item->getPrice(),
+                'notes' => $item->getNotes(),
+                'purchaseDate' => $item->getPurchaseDate()?->format('Y-m-d'),
+                'partNumber' => $item->getPartNumber(),
+                'manufacturer' => $item->getManufacturer(),
+                'warranty' => $item->getWarranty(),
+                'createdAt' => $item->getCreatedAt()?->format('c'),
+                'updatedAt' => $item->getUpdatedAt()?->format('c'),
+            ];
+        }, $items);
     }
 
     /**

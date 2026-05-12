@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Tests\Controller;
 
+use App\Entity\StockItem;
+use App\Entity\User;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use App\Tests\TestCase\BaseWebTestCase;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
@@ -348,5 +350,56 @@ class ConsumableControllerTest extends BaseWebTestCase
         );
 
         $this->assertResponseStatusCodeSame(403);
+    }
+
+    public function testCreateConsumableFromStockDecrementsStockQuantity(): void
+    {
+        $em = $this->getEntityManager();
+        $user = $em
+            ->getRepository(User::class)
+            ->findOneBy(['email' => 'test@example.com']);
+        self::assertInstanceOf(User::class, $user);
+
+        $stockItem = new StockItem();
+        $stockItem->setUser($user);
+        $stockItem->setItemType('consumable');
+        $stockItem->setCategory('Oil Filter');
+        $stockItem->setDescription('Mahle Oil Filter');
+        $stockItem->setPrice('8.50');
+        $stockItem->setQuantity('5.00');
+        $stockItem->setPurchaseDate(new \DateTime('2026-05-11'));
+        $em->persist($stockItem);
+        $em->flush();
+
+        $payload = [
+            'vehicleId' => 1,
+            'stockItemId' => $stockItem->getId(),
+            'quantity' => 2,
+            'consumableTypeName' => 'Oil Filter',
+            'unit' => 'pcs',
+        ];
+
+        $this->client->request(
+            'POST',
+            '/api/consumables',
+            [],
+            [],
+            [
+                'HTTP_AUTHORIZATION' => $this->getAuthToken(),
+                'CONTENT_TYPE' => 'application/json',
+            ],
+            json_encode($payload)
+        );
+
+        $this->assertResponseStatusCodeSame(201);
+        $data = json_decode($this->client->getResponse()->getContent(), true);
+        $this->assertSame('Mahle Oil Filter', $data['description']);
+
+        $em->clear();
+        $updatedStockItem = $em
+            ->getRepository(StockItem::class)
+            ->find($stockItem->getId());
+        self::assertInstanceOf(StockItem::class, $updatedStockItem);
+        $this->assertEquals(3.0, (float) $updatedStockItem->getQuantity());
     }
 }

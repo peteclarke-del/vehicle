@@ -43,11 +43,13 @@ import { usePermissions } from '../contexts/PermissionsContext';
 import { useTranslation } from 'react-i18next';
 import KnightRiderLoader from '../components/KnightRiderLoader';
 import { demoGuard } from '../utils/demoMode';
+import { matchesFreeText } from '../utils/searchText';
 
 const AdminUsers = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
   const { api, user: currentUser } = useAuth();
   const { isAdmin } = usePermissions();
   const navigate = useNavigate();
@@ -145,6 +147,10 @@ const AdminUsers = () => {
     }
   }, [isAdmin, loadUsers]);
 
+  const filteredUsers = React.useMemo(() => {
+    return users.filter((u) => matchesFreeText(searchTerm, u, u.roles));
+  }, [users, searchTerm]);
+
   if (!isAdmin) {
     return (
       <Box sx={{ p: 3 }}>
@@ -166,6 +172,13 @@ const AdminUsers = () => {
       <Box display="flex" alignItems="center" gap={1} mb={3}>
         <AdminPanelSettings color="primary" />
         <Typography variant="h5" sx={{ flex: 1 }}>{t('admin.userManagement', 'User Management')}</Typography>
+        <TextField
+          size="small"
+          placeholder={t('common.search', 'Search')}
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          sx={{ minWidth: 220 }}
+        />
         <Button variant="contained" size="small" startIcon={<PersonAdd />} onClick={() => setCreateOpen(true)}>
           {t('admin.createUser', 'Create User')}
         </Button>
@@ -186,7 +199,7 @@ const AdminUsers = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {users.map((u) => {
+            {filteredUsers.map((u) => {
               const isSelf = currentUser && u.id === currentUser.id;
               return (
                 <TableRow key={u.id} hover sx={{ cursor: 'pointer' }} onClick={() => navigate(`/admin/users/${u.id}`)}>
@@ -260,7 +273,7 @@ const AdminUsers = () => {
                 </TableRow>
               );
             })}
-            {users.length === 0 && (
+            {filteredUsers.length === 0 && (
               <TableRow>
                 <TableCell colSpan={6} align="center">
                   {t('admin.noUsers', 'No users found')}

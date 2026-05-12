@@ -59,8 +59,11 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId,
   const [dialogVehicleId, setDialogVehicleId] = useState(consumable?.vehicleId || vehicleId || '');
   const [moveVehicles, setMoveVehicles] = useState([]);
   const [movingVehicle, setMovingVehicle] = useState(false);
+  const [vehicleTypes, setVehicleTypes] = useState([]);
+  const [vehicleTypeId, setVehicleTypeId] = useState(null);
 
   const actualVehicleId = dialogVehicleId;
+  const isGeneralStock = !actualVehicleId;
   const {
     statusFilter: moveStatusFilter,
     filteredVehicles: filteredMoveVehicles,
@@ -72,26 +75,43 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId,
   // Only show link dropdown when creating NEW consumable from service/MOT, not when editing existing
   // Check if the consumable prop has the key (even if null) to detect context
   const isFromMotOrService = !consumable?.id && consumable && ('motRecordId' in consumable || 'serviceRecordId' in consumable);
+  const canLinkExisting = !consumable?.id && !!actualVehicleId;
 
-  // Load unassociated consumables when opened from MOT/Service context
+  // Load linkable consumables when creating a consumable for a vehicle.
   useEffect(() => {
     const loadUnassociated = async () => {
-      if (!open || !actualVehicleId || !isFromMotOrService) return;
+      if (!open || !canLinkExisting) return;
       try {
-        const resp = await api.get('/consumables', { params: { vehicleId: actualVehicleId, unassociated: 'true' } });
-        setExistingConsumables(resp.data || []);
+        // Normal add flow: stock ledger only.
+        // MOT/Service flow: current vehicle consumables + stock ledger.
+        const [vehicleResp, stockItemsResp] = await Promise.all([
+          actualVehicleId && isFromMotOrService
+            ? api.get('/consumables', { params: { vehicleId: actualVehicleId, unassociated: 'true' } })
+            : Promise.resolve({ data: [] }),
+          vehicleTypeId
+            ? api.get('/stock-items', { params: { itemType: 'consumable', vehicleTypeId, inStock: 'true' } })
+            : Promise.resolve({ data: [] }),
+        ]);
+        const vehicleConsumables = (vehicleResp.data || []).map(c => ({ ...c, _source: 'vehicle', _selectId: `consumable:${c.id}` }));
+        const stockItems = (stockItemsResp.data || []).map(s => ({
+          ...s,
+          _source: 'stockItem',
+          _selectId: `stock:${s.id}`,
+          lastChanged: s.purchaseDate,
+        }));
+        setExistingConsumables([...vehicleConsumables, ...stockItems]);
       } catch (e) {
         logger.error('Failed to load unassociated consumables', e);
         setExistingConsumables([]);
       }
     };
     loadUnassociated();
-  }, [open, actualVehicleId, isFromMotOrService, api]);
+  }, [open, actualVehicleId, canLinkExisting, api, vehicleTypeId, isFromMotOrService]);
 
   // Handle selection of existing consumable from dropdown
-  const handleExistingConsumableSelected = async (consumableId) => {
-    setSelectedExistingConsumableId(consumableId);
-    if (!consumableId) {
+  const handleExistingConsumableSelected = async (selectedId) => {
+    setSelectedExistingConsumableId(selectedId);
+    if (!selectedId) {
       // Clear form when "Create New" is selected
       setIsLinkingExisting(false);
       setFormData({
@@ -113,6 +133,40 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId,
       setProductUrl('');
       return;
     }
+
+    if (String(selectedId).startsWith('stock:')) {
+      const stockItemId = Number(String(selectedId).split(':')[1]);
+      const stockItem = existingConsumables.find(c => c._source === 'stockItem' && Number(c.id) === stockItemId);
+      if (!stockItem) {
+        return;
+      }
+
+      const matchedType = consumableTypes.find(
+        (ct) => (ct.name || '').toLowerCase() === (stockItem.category || '').toLowerCase()
+      );
+
+      setIsLinkingExisting(true);
+      setFormData({
+        consumableTypeId: matchedType?.id || '',
+        consumableTypeName: '',
+        description: stockItem.description || stockItem.category || '',
+        quantity: 1,
+        lastChanged: stockItem.purchaseDate || '',
+        mileageAtChange: '',
+        replacementIntervalMiles: '',
+        nextReplacementMileage: '',
+        cost: stockItem.price || '',
+        brand: stockItem.manufacturer || '',
+        partNumber: stockItem.partNumber || '',
+        supplier: stockItem.supplier || '',
+        notes: ''
+      });
+      setReceiptAttachmentId(null);
+      setProductUrl('');
+      return;
+    }
+
+    const consumableId = Number(String(selectedId).replace('consumable:', ''));
 
     try {
       const resp = await api.get(`/consumables/${consumableId}`);
@@ -143,18 +197,20 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId,
   const loadConsumableTypes = useCallback(async () => {
     setLoadingTypes(true);
     try {
-      // First get the vehicle to find its type
-      const vehicleResponse = await api.get(`/vehicles/${actualVehicleId}`);
-      const vehicleTypeId = vehicleResponse.data?.vehicleType?.id;
+      let resolvedVehicleTypeId = vehicleTypeId;
+      if (!resolvedVehicleTypeId && actualVehicleId) {
+        const vehicleResponse = await api.get(`/vehicles/${actualVehicleId}`);
+        resolvedVehicleTypeId = vehicleResponse.data?.vehicleType?.id;
+        setVehicleTypeId(resolvedVehicleTypeId || null);
+      }
       
-      if (!vehicleTypeId) {
-        logger.warn('Vehicle has no vehicleType, cannot load consumable types');
+      if (!resolvedVehicleTypeId) {
         setConsumableTypes([]);
         return;
       }
       
       // Then get consumable types for this vehicle type
-      const typesResponse = await api.get(`/vehicle-types/${vehicleTypeId}/consumable-types`);
+      const typesResponse = await api.get(`/vehicle-types/${resolvedVehicleTypeId}/consumable-types`);
       setConsumableTypes(Array.isArray(typesResponse.data) ? typesResponse.data : []);
     } catch (error) {
       logger.error('Error loading consumable types:', error);
@@ -162,17 +218,18 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId,
     } finally {
       setLoadingTypes(false);
     }
-  }, [api, actualVehicleId]);
+  }, [api, actualVehicleId, vehicleTypeId]);
 
   useEffect(() => {
-    if (open && actualVehicleId) {
+    if (open) {
       loadConsumableTypes();
     }
-  }, [open, actualVehicleId, loadConsumableTypes]);
+  }, [open, actualVehicleId, vehicleTypeId, loadConsumableTypes]);
 
   useEffect(() => {
     if (consumable) {
       setDialogVehicleId(consumable.vehicleId || vehicleId || '');
+      setVehicleTypeId(consumable.vehicleType?.id || consumable.vehicleTypeId || null);
       setSelectedExistingConsumableId('');
       setIsLinkingExisting(false);
       // Only convert mileage if this is backend data (has id), prefill data is already in display units
@@ -204,6 +261,7 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId,
       setServiceRecordId(consumable.serviceRecordId || null);
     } else {
       setDialogVehicleId(vehicleId || '');
+      setVehicleTypeId(null);
       setSelectedExistingConsumableId('');
       setIsLinkingExisting(false);
       setFormData({
@@ -229,20 +287,37 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId,
   }, [consumable, open, convert, vehicleId]);
 
   useEffect(() => {
+    const loadVehicleTypes = async () => {
+      try {
+        const resp = await api.get('/vehicle-types');
+        setVehicleTypes(Array.isArray(resp.data) ? resp.data : []);
+      } catch (e) {
+        logger.error('Failed to load vehicle types', e);
+        setVehicleTypes([]);
+      }
+    };
+    if (open) loadVehicleTypes();
+  }, [open, api]);
+
+  useEffect(() => {
     const loadVehicles = async () => {
       try {
         const resp = await api.get('/vehicles');
-        setMoveVehicles(Array.isArray(resp.data) ? resp.data : []);
+        const list = Array.isArray(resp.data) ? resp.data : [];
+        setMoveVehicles([
+          { id: '__stock__', registration: t('parts.generalStock', 'General Stock'), status: 'Live', alwaysVisible: true },
+          ...list,
+        ]);
       } catch (e) {
         logger.error('Failed to load vehicles for consumable move', e);
-        setMoveVehicles([]);
+        setMoveVehicles([{ id: '__stock__', registration: t('parts.generalStock', 'General Stock'), status: 'Live', alwaysVisible: true }]);
       }
     };
 
     if (open && consumable?.id) {
       loadVehicles();
     }
-  }, [open, consumable?.id, api]);
+  }, [open, consumable?.id, api, t]);
 
   useEffect(() => {
     const load = async () => {
@@ -307,21 +382,36 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId,
 
     setMovingVehicle(true);
     try {
+      const moveToStock = newVehicleId === '__stock__';
       await api.put(`/consumables/${consumable.id}`, {
-        vehicleId: newVehicleId,
+        vehicleId: moveToStock ? null : newVehicleId,
         motRecordId: null,
         serviceRecordId: null,
       });
-      setDialogVehicleId(newVehicleId);
+      setDialogVehicleId(moveToStock ? '' : newVehicleId);
       setMotRecordId(null);
       setServiceRecordId(null);
-      setDefaultVehicle(newVehicleId);
-      onVehicleMoved?.(newVehicleId);
+      if (!moveToStock) {
+        setDefaultVehicle(newVehicleId);
+      }
+      onVehicleMoved?.(moveToStock ? '__stock__' : newVehicleId);
     } catch (error) {
       logger.error('Error moving consumable to vehicle:', error);
     } finally {
       setMovingVehicle(false);
     }
+  };
+
+  const getExistingConsumableLabel = (item) => {
+    const prefix = item._source === 'stockItem'
+      ? `[${t('stock.title', 'Stock Ledger')}] `
+      : item._source === 'stock'
+        ? `[${t('parts.generalStock', 'General Stock')}] `
+        : `[${t('common.vehicle', 'Vehicle')}] `;
+
+    return `${prefix}${item.description || item.consumableType?.name || t('common.noName')}`
+      + `${item.brand ? ` (${item.brand})` : ''}`
+      + ` - ${item.lastChanged || t('common.noDate')}`;
   };
 
   const handleSubmit = async (e) => {
@@ -332,15 +422,17 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId,
       const data = {
         ...formData,
         vehicleId: actualVehicleId,
+        vehicleTypeId,
         cost: parseFloat(formData.cost) || 0,
         quantity: parseFloat(formData.quantity) || 0,
-        mileageAtChange: formData.mileageAtChange ? Math.round(toKm(parseFloat(formData.mileageAtChange))) : null,
-        replacementIntervalMiles: formData.replacementIntervalMiles ? Math.round(toKm(parseFloat(formData.replacementIntervalMiles))) : null,
-        nextReplacementMileage: formData.nextReplacementMileage ? Math.round(toKm(parseFloat(formData.nextReplacementMileage))) : null,
+        mileageAtChange: isGeneralStock ? null : (formData.mileageAtChange ? Math.round(toKm(parseFloat(formData.mileageAtChange))) : null),
+        replacementIntervalMiles: isGeneralStock ? null : (formData.replacementIntervalMiles ? Math.round(toKm(parseFloat(formData.replacementIntervalMiles))) : null),
+        nextReplacementMileage: isGeneralStock ? null : (formData.nextReplacementMileage ? Math.round(toKm(parseFloat(formData.nextReplacementMileage))) : null),
+        lastChanged: isGeneralStock ? null : formData.lastChanged,
         receiptAttachmentId,
         productUrl,
-        motRecordId,
-        serviceRecordId
+        motRecordId: isGeneralStock ? null : motRecordId,
+        serviceRecordId: isGeneralStock ? null : serviceRecordId
       };
 
       // The 'other' override is currently disabled (commented out)
@@ -352,8 +444,14 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId,
 
       let resp;
       if (isLinkingExisting && selectedExistingConsumableId) {
-        // Update existing consumable to link with MOT/Service
-        resp = await api.put(`/consumables/${selectedExistingConsumableId}`, data);
+        if (String(selectedExistingConsumableId).startsWith('stock:')) {
+          data.stockItemId = Number(String(selectedExistingConsumableId).split(':')[1]);
+          resp = await api.post('/consumables', data);
+        } else {
+          // Update existing consumable to link with MOT/Service
+          const existingId = Number(String(selectedExistingConsumableId).replace('consumable:', ''));
+          resp = await api.put(`/consumables/${existingId}`, data);
+        }
       } else if (consumable && consumable.id) {
         resp = await api.put(`/consumables/${consumable.id}`, data);
       } else {
@@ -383,7 +481,7 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId,
                 onStatusFilterChange={handleMoveStatusFilterChange}
                 statusOptions={MOVE_STATUS_OPTIONS}
                 vehicles={filteredMoveVehicles}
-                selectedVehicle={actualVehicleId}
+                selectedVehicle={actualVehicleId || '__stock__'}
                 onVehicleChange={handleMoveVehicleChange}
                 includeViewAll={false}
                 minWidth={220}
@@ -391,7 +489,7 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId,
               />
             </Box>
           )}
-          {isFromMotOrService && existingConsumables.length > 0 && (
+          {canLinkExisting && existingConsumables.length > 0 && (
             <Box sx={{ flexGrow: 1, minWidth: 300 }}>
               <FormControl size="small" fullWidth>
                 <InputLabel>{t('consumables.linkExisting')}</InputLabel>
@@ -402,8 +500,8 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId,
                 >
                   <MenuItem value="">{t('common.createNew')}</MenuItem>
                   {existingConsumables.map((c) => (
-                    <MenuItem key={c.id} value={c.id}>
-                      {c.description || c.consumableType?.name || t('common.noName')} {c.brand ? `(${c.brand})` : ''} - {c.lastChanged || t('common.noDate')}
+                    <MenuItem key={c._selectId || c.id} value={c._selectId || c.id}>
+                      {getExistingConsumableLabel(c)}
                     </MenuItem>
                   ))}
                 </Select>
@@ -477,6 +575,24 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId,
                     ))}
                 </TextField>
               </Grid>
+              {isGeneralStock && (
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    required
+                    select
+                    name="vehicleTypeId"
+                    label={t('common.vehicleType', 'Vehicle Type')}
+                    value={vehicleTypeId || ''}
+                    onChange={(e) => setVehicleTypeId(e.target.value)}
+                  >
+                    <MenuItem value="">{t('common.selectVehicleType', 'Select vehicle type')}</MenuItem>
+                    {vehicleTypes.map(vt => (
+                      <MenuItem key={vt.id} value={vt.id}>{vt.name}</MenuItem>
+                    ))}
+                  </TextField>
+                </Grid>
+              )}
               {/*
               {formData.consumableTypeId === 'other' && (
                 <Grid item xs={12} sm={6}>
@@ -526,78 +642,90 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId,
                 />
               </Grid>
 
-              <Grid item xs={12} sm={4}>
-                <TextField
-                  fullWidth
-                  type="date"
-                  name="lastChanged"
-                  label={t('consumables.lastChanged')}
-                  value={formData.lastChanged}
-                  onChange={handleChange}
-                  InputLabelProps={{ shrink: true }}
-                />
-              </Grid>
-              <Grid item xs={12} sm={4}>
-                <TextField
-                  fullWidth
-                  type="number"
-                  name="mileageAtChange"
-                  label={`${t('consumables.mileageAtChange')} (${getLabel()})`}
-                  value={formData.mileageAtChange}
-                  onChange={handleChange}
-                />
-              </Grid>
-              <Grid item xs={12} sm={4}>
-                <TextField
-                  fullWidth
-                  type="number"
-                  name="replacementIntervalMiles"
-                  label={`${t('consumables.replacementInterval')} (${getLabel()})`}
-                  value={formData.replacementIntervalMiles}
-                  onChange={handleChange}
-                />
-              </Grid>
-              <Grid item xs={12} sm={4}>
-                <TextField
-                  fullWidth
-                  type="number"
-                  name="nextReplacementMileage"
-                  label={`${t('consumables.nextReplacement')} (${getLabel()})`}
-                  value={formData.nextReplacementMileage}
-                  onChange={handleChange}
-                />
-              </Grid>
+              {!isGeneralStock && (
+                <Grid item xs={12} sm={4}>
+                  <TextField
+                    fullWidth
+                    type="date"
+                    name="lastChanged"
+                    label={t('consumables.lastChanged')}
+                    value={formData.lastChanged}
+                    onChange={handleChange}
+                    InputLabelProps={{ shrink: true }}
+                  />
+                </Grid>
+              )}
+              {!isGeneralStock && (
+                <Grid item xs={12} sm={4}>
+                  <TextField
+                    fullWidth
+                    type="number"
+                    name="mileageAtChange"
+                    label={`${t('consumables.mileageAtChange')} (${getLabel()})`}
+                    value={formData.mileageAtChange}
+                    onChange={handleChange}
+                  />
+                </Grid>
+              )}
+              {!isGeneralStock && (
+                <Grid item xs={12} sm={4}>
+                  <TextField
+                    fullWidth
+                    type="number"
+                    name="replacementIntervalMiles"
+                    label={`${t('consumables.replacementInterval')} (${getLabel()})`}
+                    value={formData.replacementIntervalMiles}
+                    onChange={handleChange}
+                  />
+                </Grid>
+              )}
+              {!isGeneralStock && (
+                <Grid item xs={12} sm={4}>
+                  <TextField
+                    fullWidth
+                    type="number"
+                    name="nextReplacementMileage"
+                    label={`${t('consumables.nextReplacement')} (${getLabel()})`}
+                    value={formData.nextReplacementMileage}
+                    onChange={handleChange}
+                  />
+                </Grid>
+              )}
 
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  select
-                  name="motRecordId"
-                  label={t('consumables.motRecord')}
-                  value={motRecordId || ''}
-                  onChange={(e) => setMotRecordId(e.target.value)}
-                >
-                  <MenuItem value="">{t('consumables.selectMot')}</MenuItem>
-                  {motRecords.map(m => (
-                    <MenuItem key={m.id} value={m.id}>{`${m.testDate || ''} ${m.motTestNumber ? '- ' + m.motTestNumber : ''}`}</MenuItem>
-                  ))}
-                </TextField>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  select
-                  name="serviceRecordId"
-                  label={t('consumables.serviceRecord')}
-                  value={serviceRecordId || ''}
-                  onChange={(e) => setServiceRecordId(e.target.value)}
-                >
-                  <MenuItem value="">{t('consumables.selectService')}</MenuItem>
-                  {serviceRecords.map(s => (
-                    <MenuItem key={s.id} value={s.id}>{`${s.serviceDate || ''} ${s.serviceProvider ? '- ' + s.serviceProvider : ''}`}</MenuItem>
-                  ))}
-                </TextField>
-              </Grid>
+              {!isGeneralStock && (
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    select
+                    name="motRecordId"
+                    label={t('consumables.motRecord')}
+                    value={motRecordId || ''}
+                    onChange={(e) => setMotRecordId(e.target.value)}
+                  >
+                    <MenuItem value="">{t('consumables.selectMot')}</MenuItem>
+                    {motRecords.map(m => (
+                      <MenuItem key={m.id} value={m.id}>{`${m.testDate || ''} ${m.motTestNumber ? '- ' + m.motTestNumber : ''}`}</MenuItem>
+                    ))}
+                  </TextField>
+                </Grid>
+              )}
+              {!isGeneralStock && (
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    select
+                    name="serviceRecordId"
+                    label={t('consumables.serviceRecord')}
+                    value={serviceRecordId || ''}
+                    onChange={(e) => setServiceRecordId(e.target.value)}
+                  >
+                    <MenuItem value="">{t('consumables.selectService')}</MenuItem>
+                    {serviceRecords.map(s => (
+                      <MenuItem key={s.id} value={s.id}>{`${s.serviceDate || ''} ${s.serviceProvider ? '- ' + s.serviceProvider : ''}`}</MenuItem>
+                    ))}
+                  </TextField>
+                </Grid>
+              )}
               <Grid item xs={12}>
                 <TextField
                   fullWidth

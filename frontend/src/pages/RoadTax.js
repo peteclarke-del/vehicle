@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   Typography,
   Button,
+  TextField,
   Table,
   TableBody,
   TableCell,
@@ -30,12 +31,14 @@ import TablePaginationBar from '../components/TablePaginationBar';
 import FilteredVehicleSelector from '../components/FilteredVehicleSelector';
 import CenteredLoader from '../components/CenteredLoader';
 import { demoGuard } from '../utils/demoMode';
+import { matchesFreeText } from '../utils/searchText';
 
 const RoadTax = () => {
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
   const { api } = useAuth();
   const { vehicles, loading: vehiclesLoading, fetchVehicles } = useVehicles();
   const { t } = useTranslation();
@@ -43,6 +46,10 @@ const RoadTax = () => {
   const { statusFilter, filteredVehicles, handleStatusFilterChange, STATUS_OPTIONS } = useVehicleStatusFilter(vehicles, 'roadTaxStatusFilter');
   const { selectedVehicle, handleVehicleChange } = useVehicleSelection(filteredVehicles);
   const { orderBy, order, handleRequestSort } = usePersistedSort('roadTax', 'expiryDate', 'desc');
+  const registrationByVehicleId = React.useMemo(
+    () => Object.fromEntries((vehicles || []).map((v) => [String(v.id), v.registrationNumber || v.registration || ''])),
+    [vehicles]
+  );
 
   useEffect(() => {
     fetchVehicles();
@@ -100,8 +107,8 @@ const RoadTax = () => {
   const sortedRecords = React.useMemo(() => {
     const comparator = (a, b) => {
       if (orderBy === 'registration') {
-        const aReg = vehicles.find(v => String(v.id) === String(a.vehicleId))?.registrationNumber || '';
-        const bReg = vehicles.find(v => String(v.id) === String(b.vehicleId))?.registrationNumber || '';
+        const aReg = registrationByVehicleId[String(a.vehicleId)] || '';
+        const bReg = registrationByVehicleId[String(b.vehicleId)] || '';
         if (aReg === bReg) return 0;
         return order === 'asc' ? (aReg > bReg ? 1 : -1) : (aReg < bReg ? 1 : -1);
       }
@@ -142,7 +149,14 @@ const RoadTax = () => {
     return [...records].sort(comparator);
   }, [records, order, orderBy]);
 
-  const { page, rowsPerPage, paginatedRows: paginatedRecords, handleChangePage, handleChangeRowsPerPage } = useTablePagination(sortedRecords);
+  const filteredRecords = React.useMemo(() => {
+    return sortedRecords.filter((record) => {
+      const registration = registrationByVehicleId[String(record.vehicleId)] || '';
+      return matchesFreeText(searchTerm, record, registration);
+    });
+  }, [sortedRecords, searchTerm, registrationByVehicleId]);
+
+  const { page, rowsPerPage, paginatedRows: paginatedRecords, handleChangePage, handleChangeRowsPerPage } = useTablePagination(filteredRecords);
 
   if (loading || vehiclesLoading) {
     return <CenteredLoader />;
@@ -172,6 +186,13 @@ const RoadTax = () => {
             id="roadtax"
             minWidth={360}
           />
+          <TextField
+            size="small"
+            placeholder={t('common.search', 'Search')}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            sx={{ minWidth: 220 }}
+          />
           <Button variant="contained" color="primary" startIcon={<AddIcon />} onClick={handleAdd}>
             {t('roadTax.add')}
           </Button>
@@ -181,7 +202,7 @@ const RoadTax = () => {
       <TablePaginationBar
         rowsPerPage={rowsPerPage}
         page={page}
-        count={sortedRecords.length}
+        count={filteredRecords.length}
         onPageChange={handleChangePage}
         onRowsPerPageChange={handleChangeRowsPerPage}
       />
@@ -250,7 +271,7 @@ const RoadTax = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {sortedRecords.length === 0 ? (
+            {filteredRecords.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} align="center">{t('common.noRecords')}</TableCell>
               </TableRow>
@@ -270,7 +291,7 @@ const RoadTax = () => {
                   ...(!showRed && { '&:nth-of-type(odd)': { backgroundColor: 'action.hover' } }),
                   ...(showRed && { backgroundColor: 'rgba(255, 0, 0, 0.08)' })
                 }}>
-                  <TableCell>{vehicles.find(v => String(v.id) === String(r.vehicleId))?.registrationNumber || '-'}</TableCell>
+                  <TableCell>{registrationByVehicleId[String(r.vehicleId)] || '-'}</TableCell>
                   <TableCell>{r.startDate || '-'}</TableCell>
                   <TableCell>{r.expiryDate || '-'}</TableCell>
                   <TableCell>{r.sorn ? 'Yes' : 'No'}</TableCell>
@@ -289,7 +310,7 @@ const RoadTax = () => {
       <TablePaginationBar
         rowsPerPage={rowsPerPage}
         page={page}
-        count={sortedRecords.length}
+        count={filteredRecords.length}
         onPageChange={handleChangePage}
         onRowsPerPageChange={handleChangeRowsPerPage}
       />

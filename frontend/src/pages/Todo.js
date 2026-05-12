@@ -3,6 +3,7 @@ import {
   Box,
   Button,
   Typography,
+  TextField,
   FormControl,
   InputLabel,
   Select,
@@ -32,6 +33,7 @@ import { useRegistrationLabel } from '../utils/splitLabel';
 import TablePaginationBar from '../components/TablePaginationBar';
 import { demoGuard } from '../utils/demoMode';
 import VehicleSelector from '../components/VehicleSelector';
+import { matchesFreeText } from '../utils/searchText';
 
 const Todo = () => {
   const { api } = useAuth();
@@ -40,16 +42,21 @@ const Todo = () => {
   const [vehicles, setVehicles] = useState([]);
   const [todos, setTodos] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const { orderBy, order, handleRequestSort } = usePersistedSort('todo', 'dueDate', 'desc');
   const { selectedVehicle, handleVehicleChange } = useVehicleSelection(vehicles, { includeViewAll: true });
+  const registrationByVehicleId = useMemo(
+    () => Object.fromEntries((vehicles || []).map((v) => [String(v.id), v.registrationNumber || v.registration || ''])),
+    [vehicles]
+  );
 
   const sortedTodos = useMemo(() => {
     const comparator = (a, b) => {
       if (orderBy === 'registration') {
-        const aReg = vehicles.find(v => String(v.id) === String(a.vehicleId))?.registrationNumber || '';
-        const bReg = vehicles.find(v => String(v.id) === String(b.vehicleId))?.registrationNumber || '';
+        const aReg = registrationByVehicleId[String(a.vehicleId)] || '';
+        const bReg = registrationByVehicleId[String(b.vehicleId)] || '';
         if (aReg === bReg) return 0;
         return order === 'asc' ? (aReg > bReg ? 1 : -1) : (aReg < bReg ? 1 : -1);
       }
@@ -76,7 +83,14 @@ const Todo = () => {
     return [...todos].sort(comparator);
   }, [todos, order, orderBy]);
 
-  const { page, rowsPerPage, paginatedRows: paginatedTodos, handleChangePage, handleChangeRowsPerPage } = useTablePagination(sortedTodos);
+  const filteredTodos = useMemo(() => {
+    return sortedTodos.filter((todo) => {
+      const registration = registrationByVehicleId[String(todo.vehicleId)] || '';
+      return matchesFreeText(searchTerm, todo, registration);
+    });
+  }, [sortedTodos, searchTerm, registrationByVehicleId]);
+
+  const { page, rowsPerPage, paginatedRows: paginatedTodos, handleChangePage, handleChangeRowsPerPage } = useTablePagination(filteredTodos);
 
   const fetchVehicles = useCallback(async () => {
     const data = await fetchArrayData(api, '/vehicles');
@@ -147,6 +161,13 @@ const Todo = () => {
               minWidth={300}
               includeViewAll={true}
             />
+            <TextField
+              size="small"
+              placeholder={t('common.search', 'Search')}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              sx={{ minWidth: 220 }}
+            />
             <Button variant="contained" startIcon={<Add />} onClick={handleAdd} disabled={!selectedVehicle || selectedVehicle === '__all__'}>
               {t('todo.add') || 'Add TODO'}
             </Button>
@@ -154,7 +175,7 @@ const Todo = () => {
       </Box>
 
       <TablePaginationBar
-        count={sortedTodos.length}
+        count={filteredTodos.length}
         page={page}
         rowsPerPage={rowsPerPage}
         onPageChange={handleChangePage}
@@ -216,14 +237,14 @@ const Todo = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {sortedTodos.length === 0 ? (
+            {filteredTodos.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} align="center">{t('common.noRecords')}</TableCell>
               </TableRow>
             ) : (
               paginatedTodos.map((todo) => (
                 <TableRow key={todo.id} sx={{ '&:nth-of-type(odd)': { backgroundColor: 'action.hover' } }}>
-                  <TableCell>{vehicles.find(v => String(v.id) === String(todo.vehicleId))?.registrationNumber || '-'}</TableCell>
+                  <TableCell>{registrationByVehicleId[String(todo.vehicleId)] || '-'}</TableCell>
                   <TableCell>{todo.title}</TableCell>
                   <TableCell>{(todo.parts?.length || 0) + (todo.consumables?.length || 0)}</TableCell>
                   <TableCell>{todo.dueDate ? new Date(todo.dueDate).toLocaleDateString() : '-'}</TableCell>
@@ -251,7 +272,7 @@ const Todo = () => {
         </Table>
       </TableContainer>
       <TablePaginationBar
-        count={sortedTodos.length}
+        count={filteredTodos.length}
         page={page}
         rowsPerPage={rowsPerPage}
         onPageChange={handleChangePage}

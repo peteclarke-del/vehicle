@@ -4,43 +4,60 @@ declare(strict_types=1);
 
 namespace App\Tests\Controller;
 
-use App\Controller\PartController;
 use App\Entity\Part;
-use App\Service\ReceiptOcrService;
-use App\Service\UrlScraperService;
-use Doctrine\ORM\EntityManagerInterface;
-use PHPUnit\Framework\TestCase;
+use App\Entity\StockItem;
+use App\Entity\User;
+use App\Tests\TestCase\BaseWebTestCase;
 
-class PartControllerTest extends TestCase
+class PartControllerTest extends BaseWebTestCase
 {
-    public function testSerializeIncludesSupplierAndWarranty(): void
+    public function testCreatePartFromStockDecrementsStockQuantity(): void
     {
-        $em = $this->createMock(EntityManagerInterface::class);
-        $ocr = $this->createMock(ReceiptOcrService::class);
-        $scraper = $this->createMock(UrlScraperService::class);
+        $em = $this->getEntityManager();
+        $user = $em
+            ->getRepository(User::class)
+            ->findOneBy(['email' => 'test@example.com']);
+        self::assertInstanceOf(User::class, $user);
 
-        $controller = new PartController($em, $ocr, $scraper);
+        $stockItem = new StockItem();
+        $stockItem->setUser($user);
+        $stockItem->setItemType('part');
+        $stockItem->setCategory('Oil Filter');
+        $stockItem->setDescription('Bosch Oil Filter');
+        $stockItem->setPartNumber('BOF-1');
+        $stockItem->setSupplier('Euro Car Parts');
+        $stockItem->setPrice('9.99');
+        $stockItem->setQuantity('3.00');
+        $em->persist($stockItem);
+        $em->flush();
 
-        $part = new Part();
-        $part->setDescription('Test part');
-        $part->setSupplier('ACME Supplies');
-        $part->setWarranty(12);
+        $payload = [
+            'vehicleId' => 1,
+            'stockItemId' => $stockItem->getId(),
+            'quantity' => 1,
+        ];
 
-        // Provide a minimal vehicle mock so serializePart can read vehicle id
-        $vehicle = $this->createMock(\App\Entity\Vehicle::class);
-        $vehicle->method('getId')->willReturn(1);
-        $part->setVehicle($vehicle);
+        $this->client->request(
+            'POST',
+            '/api/parts',
+            [],
+            [],
+            [
+                'HTTP_AUTHORIZATION' => $this->getAuthToken(),
+                'CONTENT_TYPE' => 'application/json',
+            ],
+            json_encode($payload)
+        );
 
-        $ref = new \ReflectionClass(PartController::class);
-        $method = $ref->getMethod('serializePart');
-        $method->setAccessible(true);
+        $this->assertResponseStatusCodeSame(201);
+        $data = json_decode($this->client->getResponse()->getContent(), true);
+        $this->assertSame('Bosch Oil Filter', $data['description']);
 
-        $result = $method->invoke($controller, $part);
-
-        $this->assertIsArray($result);
-        $this->assertArrayHasKey('supplier', $result);
-        $this->assertArrayHasKey('warranty', $result);
-        $this->assertSame('ACME Supplies', $result['supplier']);
-        $this->assertSame(12, $result['warranty']);
+        $em->clear();
+        $updatedStockItem = $em
+            ->getRepository(StockItem::class)
+            ->find($stockItem->getId());
+        self::assertInstanceOf(StockItem::class, $updatedStockItem);
+        $this->assertEquals(2.0, (float) $updatedStockItem->getQuantity());
     }
 }

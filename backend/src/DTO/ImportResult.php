@@ -45,6 +45,7 @@ class ImportResult
     public function getImportedCount(): int
     {
         $imported = (int)($this->statistics['vehiclesImported'] ?? 0);
+        $imported += (int)($this->statistics['stockItemsImported'] ?? 0);
         if ($imported === 0 && is_array($this->vehicleMap)) {
             return count($this->vehicleMap);
         }

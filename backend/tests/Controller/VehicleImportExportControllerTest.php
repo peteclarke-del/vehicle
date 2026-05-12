@@ -51,6 +51,36 @@ $client->request('GET', '/api/vehicles/export?format=json', [], [], [
         $this->assertIsArray($data['vehicles']);
     }
 
+    public function testExportStockReturnsStockItemsPayload(): void
+    {
+        $client = $this->client;
+        $client->request('GET', '/api/vehicles/export-stock', [], [], [
+            'HTTP_X_TEST_MOCK_AUTH' => $this->getAuthToken(),
+        ]);
+
+        $this->assertResponseIsSuccessful();
+        $this->assertResponseHeaderSame('Content-Type', 'application/json');
+
+        $data = json_decode($client->getResponse()->getContent(), true);
+        $this->assertArrayHasKey('stockItems', $data);
+        $this->assertIsArray($data['stockItems']);
+    }
+
+    public function testExportStockDoesNotIncludeMileageAtInstallationField(): void
+    {
+        $client = $this->client;
+        $client->request('GET', '/api/vehicles/export-stock', [], [], [
+            'HTTP_X_TEST_MOCK_AUTH' => $this->getAuthToken(),
+        ]);
+
+        $this->assertResponseIsSuccessful();
+        $data = json_decode($client->getResponse()->getContent(), true);
+
+        foreach ($data['stockItems'] ?? [] as $item) {
+            $this->assertArrayNotHasKey('mileageAtInstallation', $item);
+        }
+    }
+
     public function testExportVehiclesToExcel(): void
     {
         $client = $this->client;

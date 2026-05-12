@@ -25,6 +25,7 @@ import {
   Menu,
   ListItemIcon,
   ListItemText,
+  TextField,
 } from '@mui/material';
 import { Download as DownloadIcon, Delete as DeleteIcon, PictureAsPdf as PdfIcon, TableChart as XlsxIcon } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
@@ -37,6 +38,7 @@ import useTablePagination from '../hooks/useTablePagination';
 import usePersistedSort from '../hooks/usePersistedSort';
 import useVehicleSelection from '../hooks/useVehicleSelection';
 import TablePaginationBar from '../components/TablePaginationBar';
+import { matchesFreeText } from '../utils/searchText';
 
 const Reports = () => {
   const { api } = useAuth();
@@ -47,6 +49,7 @@ const Reports = () => {
   const [templates, setTemplates] = useState([]);
   const [selectedTemplateKey, setSelectedTemplateKey] = useState(null);
   const [selectedPeriodIndex, setSelectedPeriodIndex] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const { orderBy, order, handleRequestSort } = usePersistedSort('reports', 'generatedAt', 'desc');
@@ -161,7 +164,11 @@ const Reports = () => {
     return [...(reports || [])].sort(comparator);
   }, [reports, order, orderBy]);
 
-  const { page: reportsPage, rowsPerPage: reportsRowsPerPage, paginatedRows: paginatedReports, handleChangePage: handleReportsPageChange, handleChangeRowsPerPage: handleReportsRowsPerPageChange } = useTablePagination(sortedReports);
+  const filteredReports = useMemo(() => {
+    return sortedReports.filter((report) => matchesFreeText(searchTerm, report));
+  }, [sortedReports, searchTerm]);
+
+  const { page: reportsPage, rowsPerPage: reportsRowsPerPage, paginatedRows: paginatedReports, handleChangePage: handleReportsPageChange, handleChangeRowsPerPage: handleReportsRowsPerPageChange } = useTablePagination(filteredReports);
   const previewRows = useMemo(() => viewerPreview?.rows || [], [viewerPreview]);
   const { page: previewPage, rowsPerPage: previewRowsPerPage, paginatedRows: paginatedPreviewRows, handleChangePage: handlePreviewPageChange, handleChangeRowsPerPage: handlePreviewRowsPerPageChange } = useTablePagination(previewRows);
 
@@ -370,6 +377,13 @@ const Reports = () => {
           </FormControl>
 
           <VehicleSelector vehicles={vehicles} value={selectedVehicle} onChange={handleVehicleChange} includeViewAll={true} />
+          <TextField
+            size="small"
+            placeholder={t('common.search', 'Search')}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            sx={{ minWidth: 220 }}
+          />
           <Button variant="contained" onClick={handleGenerate} disabled={generating || !selectedTemplateKey} startIcon={generating ? <KnightRiderLoader size={12} /> : null}>
             {t('reports.generate') || 'Generate Report'}
           </Button>
@@ -377,7 +391,7 @@ const Reports = () => {
       </Box>
 
       <TablePaginationBar
-        count={sortedReports.length}
+        count={filteredReports.length}
         page={reportsPage}
         rowsPerPage={reportsRowsPerPage}
         onPageChange={handleReportsPageChange}
@@ -423,7 +437,7 @@ const Reports = () => {
               <TableRow>
                 <TableCell colSpan={5} align="center"><KnightRiderLoader size={24} /></TableCell>
               </TableRow>
-            ) : sortedReports.length === 0 ? (
+            ) : filteredReports.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} align="center">{t('common.noRecords')}</TableCell>
               </TableRow>
@@ -451,7 +465,7 @@ const Reports = () => {
         </Table>
       </TableContainer>
       <TablePaginationBar
-        count={sortedReports.length}
+        count={filteredReports.length}
         page={reportsPage}
         rowsPerPage={reportsRowsPerPage}
         onPageChange={handleReportsPageChange}

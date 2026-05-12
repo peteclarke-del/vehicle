@@ -55,9 +55,13 @@ export default function PartDialog({ open, onClose, part, vehicleId, onVehicleMo
   const [dialogVehicleId, setDialogVehicleId] = useState(part?.vehicleId || vehicleId || '');
   const [moveVehicles, setMoveVehicles] = useState([]);
   const [movingVehicle, setMovingVehicle] = useState(false);
+  const [vehicleTypes, setVehicleTypes] = useState([]);
+  const [partCategories, setPartCategories] = useState([]);
+  const [vehicleTypeId, setVehicleTypeId] = useState(null);
   const initKeyRef = useRef(null);
 
   const actualVehicleId = dialogVehicleId;
+  const isGeneralStock = !actualVehicleId;
   const {
     statusFilter: moveStatusFilter,
     filteredVehicles: filteredMoveVehicles,
@@ -69,26 +73,43 @@ export default function PartDialog({ open, onClose, part, vehicleId, onVehicleMo
   // Only show link dropdown when creating NEW part from service/MOT, not when editing existing
   // Check if the part prop has the key (even if null) to detect context
   const isFromMotOrService = !part?.id && part && ('motRecordId' in part || 'serviceRecordId' in part);
+  const canLinkExisting = !part?.id && !!actualVehicleId;
 
-  // Load unassociated parts when opened from MOT/Service context
+  // Load linkable parts when creating a part for a vehicle.
   useEffect(() => {
     const loadUnassociated = async () => {
-      if (!open || !actualVehicleId || !isFromMotOrService) return;
+      if (!open || !canLinkExisting) return;
       try {
-        const resp = await api.get('/parts', { params: { vehicleId: actualVehicleId, unassociated: 'true' } });
-        setExistingParts(resp.data || []);
+        // Normal add flow: stock ledger only.
+        // MOT/Service flow: current vehicle parts + stock ledger.
+        const [vehicleResp, stockItemsResp] = await Promise.all([
+          actualVehicleId && isFromMotOrService
+            ? api.get('/parts', { params: { vehicleId: actualVehicleId, unassociated: 'true' } })
+            : Promise.resolve({ data: [] }),
+          vehicleTypeId
+            ? api.get('/stock-items', { params: { itemType: 'part', vehicleTypeId, inStock: 'true' } })
+            : Promise.resolve({ data: [] }),
+        ]);
+        const vehicleParts = (vehicleResp.data || []).map(p => ({ ...p, _source: 'vehicle', _selectId: `part:${p.id}` }));
+        const stockItems = (stockItemsResp.data || []).map(s => ({
+          ...s,
+          _source: 'stockItem',
+          _selectId: `stock:${s.id}`,
+          name: s.description || s.category,
+        }));
+        setExistingParts([...vehicleParts, ...stockItems]);
       } catch (e) {
         logger.error('Failed to load unassociated parts', e);
         setExistingParts([]);
       }
     };
     loadUnassociated();
-  }, [open, actualVehicleId, isFromMotOrService, api]);
+  }, [open, actualVehicleId, canLinkExisting, api, vehicleTypeId, isFromMotOrService]);
 
   // Handle selection of existing part from dropdown
-  const handleExistingPartSelected = async (partId) => {
-    setSelectedExistingPartId(partId);
-    if (!partId) {
+  const handleExistingPartSelected = async (selectedId) => {
+    setSelectedExistingPartId(selectedId);
+    if (!selectedId) {
       // Clear form when "Create New" is selected
       setIsLinkingExisting(false);
       setFormData({
@@ -109,6 +130,39 @@ export default function PartDialog({ open, onClose, part, vehicleId, onVehicleMo
       setProductUrl('');
       return;
     }
+
+    if (String(selectedId).startsWith('stock:')) {
+      const stockItemId = Number(String(selectedId).split(':')[1]);
+      const stockItem = existingParts.find(p => p._source === 'stockItem' && Number(p.id) === stockItemId);
+      if (!stockItem) {
+        return;
+      }
+
+      const matchedCategory = partCategories.find(
+        (pc) => (pc.name || '').toLowerCase() === (stockItem.category || '').toLowerCase()
+      );
+
+      setIsLinkingExisting(true);
+      setFormData({
+        description: stockItem.description || stockItem.category || '',
+        partNumber: stockItem.partNumber || '',
+        manufacturer: stockItem.manufacturer || '',
+        partCategoryId: matchedCategory?.id ?? '',
+        price: stockItem.price ?? '',
+        quantity: 1,
+        purchaseDate: stockItem.purchaseDate || '',
+        installationDate: '',
+        mileageAtInstallation: '',
+        warranty: stockItem.warranty || '',
+        supplier: stockItem.supplier || '',
+        notes: ''
+      });
+      setReceiptAttachmentId(null);
+      setProductUrl('');
+      return;
+    }
+
+    const partId = Number(String(selectedId).replace('part:', ''));
 
     try {
       const resp = await api.get(`/parts/${partId}`);
@@ -149,6 +203,7 @@ export default function PartDialog({ open, onClose, part, vehicleId, onVehicleMo
 
     if (part) {
       setDialogVehicleId(part.vehicleId || vehicleId || '');
+      setVehicleTypeId(part.vehicleTypeId || null);
       setSelectedExistingPartId('');
       setIsLinkingExisting(false);
       // Only convert mileage if this is backend data (has id), prefill data is already in display units
@@ -175,6 +230,7 @@ export default function PartDialog({ open, onClose, part, vehicleId, onVehicleMo
       setServiceRecordId(part.serviceRecordId || null);
     } else {
       setDialogVehicleId(vehicleId || '');
+      setVehicleTypeId(null);
       setSelectedExistingPartId('');
       setIsLinkingExisting(false);
       setFormData({
@@ -202,34 +258,48 @@ export default function PartDialog({ open, onClose, part, vehicleId, onVehicleMo
     const loadVehicles = async () => {
       try {
         const resp = await api.get('/vehicles');
-        setMoveVehicles(Array.isArray(resp.data) ? resp.data : []);
+        const list = Array.isArray(resp.data) ? resp.data : [];
+        setMoveVehicles([
+          { id: '__stock__', registration: t('parts.generalStock', 'General Stock'), status: 'Live', alwaysVisible: true },
+          ...list,
+        ]);
       } catch (e) {
         logger.error('Failed to load vehicles for part move', e);
-        setMoveVehicles([]);
+        setMoveVehicles([{ id: '__stock__', registration: t('parts.generalStock', 'General Stock'), status: 'Live', alwaysVisible: true }]);
       }
     };
 
     if (open && part?.id) {
       loadVehicles();
     }
-  }, [open, part?.id, api]);
+  }, [open, part?.id, api, t]);
 
-  const [partCategories, setPartCategories] = useState([]);
-  const [vehicleTypeId, setVehicleTypeId] = useState(null);
-  
-  // Fetch vehicle to get vehicleTypeId
+  // Fetch vehicle to get vehicleTypeId (for vehicle-bound parts)
   useEffect(() => {
     const loadVehicle = async () => {
       if (!actualVehicleId) return;
       try {
         const resp = await api.get(`/vehicles/${actualVehicleId}`);
-        setVehicleTypeId(resp.data?.vehicleTypeId || null);
+        setVehicleTypeId(resp.data?.vehicleType?.id || null);
       } catch (e) {
         logger.error('Failed to load vehicle', e);
       }
     };
     if (open) loadVehicle();
   }, [open, actualVehicleId, api]);
+
+  useEffect(() => {
+    const loadVehicleTypes = async () => {
+      try {
+        const resp = await api.get('/vehicle-types');
+        setVehicleTypes(Array.isArray(resp.data) ? resp.data : []);
+      } catch (e) {
+        logger.error('Failed to load vehicle types', e);
+        setVehicleTypes([]);
+      }
+    };
+    if (open) loadVehicleTypes();
+  }, [open, api]);
 
   useEffect(() => {
     const loadCategories = async () => {
@@ -315,21 +385,36 @@ export default function PartDialog({ open, onClose, part, vehicleId, onVehicleMo
 
     setMovingVehicle(true);
     try {
+      const moveToStock = newVehicleId === '__stock__';
       await api.put(`/parts/${part.id}`, {
-        vehicleId: newVehicleId,
+        vehicleId: moveToStock ? null : newVehicleId,
         motRecordId: null,
         serviceRecordId: null,
       });
-      setDialogVehicleId(newVehicleId);
+      setDialogVehicleId(moveToStock ? '' : newVehicleId);
       setMotRecordId(null);
       setServiceRecordId(null);
-      setDefaultVehicle(newVehicleId);
-      onVehicleMoved?.(newVehicleId);
+      if (!moveToStock) {
+        setDefaultVehicle(newVehicleId);
+      }
+      onVehicleMoved?.(moveToStock ? '__stock__' : newVehicleId);
     } catch (error) {
       logger.error('Error moving part to vehicle:', error);
     } finally {
       setMovingVehicle(false);
     }
+  };
+
+  const getExistingPartLabel = (item) => {
+    const prefix = item._source === 'stockItem'
+      ? `[${t('stock.title', 'Stock Ledger')}] `
+      : item._source === 'stock'
+        ? `[${t('parts.generalStock', 'General Stock')}] `
+        : `[${t('common.vehicle', 'Vehicle')}] `;
+
+    return `${prefix}${item.description || item.name || t('common.noName')}`
+      + `${item.partNumber ? ` (${item.partNumber})` : ''}`
+      + ` - ${item.purchaseDate || t('common.noDate')}`;
   };
 
   const handleSubmit = async (e) => {
@@ -352,20 +437,28 @@ export default function PartDialog({ open, onClose, part, vehicleId, onVehicleMo
         ...formData,
         partCategoryId: normalizedCategoryId,
         vehicleId: actualVehicleId,
+        vehicleTypeId,
         price: price,
         quantity: quantity,
         cost: computedCost,
-        mileageAtInstallation: formData.mileageAtInstallation ? Math.round(toKm(parseFloat(formData.mileageAtInstallation))) : null,
         receiptAttachmentId,
         productUrl,
-        motRecordId,
-        serviceRecordId
+        motRecordId: isGeneralStock ? null : motRecordId,
+        serviceRecordId: isGeneralStock ? null : serviceRecordId,
+        installationDate: isGeneralStock ? null : formData.installationDate,
+        mileageAtInstallation: isGeneralStock ? null : (formData.mileageAtInstallation ? Math.round(toKm(parseFloat(formData.mileageAtInstallation))) : null)
       };
 
       let resp;
       if (isLinkingExisting && selectedExistingPartId) {
-        // Update existing part to link with MOT/Service
-        resp = await api.put(`/parts/${selectedExistingPartId}`, data);
+        if (String(selectedExistingPartId).startsWith('stock:')) {
+          data.stockItemId = Number(String(selectedExistingPartId).split(':')[1]);
+          resp = await api.post('/parts', data);
+        } else {
+          // Update existing part to link with MOT/Service
+          const existingId = Number(String(selectedExistingPartId).replace('part:', ''));
+          resp = await api.put(`/parts/${existingId}`, data);
+        }
       } else if (part && part.id) {
         resp = await api.put(`/parts/${part.id}`, data);
       } else {
@@ -395,7 +488,7 @@ export default function PartDialog({ open, onClose, part, vehicleId, onVehicleMo
                 onStatusFilterChange={handleMoveStatusFilterChange}
                 statusOptions={MOVE_STATUS_OPTIONS}
                 vehicles={filteredMoveVehicles}
-                selectedVehicle={actualVehicleId}
+                selectedVehicle={actualVehicleId || '__stock__'}
                 onVehicleChange={handleMoveVehicleChange}
                 includeViewAll={false}
                 minWidth={220}
@@ -403,7 +496,7 @@ export default function PartDialog({ open, onClose, part, vehicleId, onVehicleMo
               />
             </Box>
           )}
-          {isFromMotOrService && existingParts.length > 0 && (
+          {canLinkExisting && existingParts.length > 0 && (
             <Box sx={{ flexGrow: 1, minWidth: 300 }}>
               <FormControl size="small" fullWidth>
                 <InputLabel>{t('parts.linkExisting')}</InputLabel>
@@ -414,8 +507,8 @@ export default function PartDialog({ open, onClose, part, vehicleId, onVehicleMo
                 >
                   <MenuItem value="">{t('common.createNew')}</MenuItem>
                   {existingParts.map((p) => (
-                    <MenuItem key={p.id} value={p.id}>
-                      {p.description || p.name} {p.partNumber ? `(${p.partNumber})` : ''} - {p.purchaseDate || t('common.noDate')}
+                    <MenuItem key={p._selectId || p.id} value={p._selectId || p.id}>
+                      {getExistingPartLabel(p)}
                     </MenuItem>
                   ))}
                 </Select>
@@ -507,6 +600,24 @@ export default function PartDialog({ open, onClose, part, vehicleId, onVehicleMo
                 </Grid>
               </Grid>
             </Grid>
+            {isGeneralStock && (
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  required
+                  select
+                  name="vehicleTypeId"
+                  label={t('common.vehicleType', 'Vehicle Type')}
+                  value={vehicleTypeId || ''}
+                  onChange={(e) => setVehicleTypeId(e.target.value)}
+                >
+                  <MenuItem value="">{t('common.selectVehicleType', 'Select vehicle type')}</MenuItem>
+                  {vehicleTypes.map(vt => (
+                    <MenuItem key={vt.id} value={vt.id}>{vt.name}</MenuItem>
+                  ))}
+                </TextField>
+              </Grid>
+            )}
             <Grid item xs={12} sm={4}>
               <TextField
                 fullWidth
@@ -518,27 +629,31 @@ export default function PartDialog({ open, onClose, part, vehicleId, onVehicleMo
                 InputLabelProps={{ shrink: true }}
               />
             </Grid>
-            <Grid item xs={12} sm={4}>
-              <TextField
-                fullWidth
-                type="date"
-                name="installationDate"
-                label={t('common.installationDate')}
-                value={formData.installationDate}
-                onChange={handleChange}
-                InputLabelProps={{ shrink: true }}
-              />
-            </Grid>
-            <Grid item xs={12} sm={4}>
-              <TextField
-                fullWidth
-                type="number"
-                name="mileageAtInstallation"
-                label={`${t('parts.mileageAtInstallation')} (${getLabel()})`}
-                value={formData.mileageAtInstallation}
-                onChange={handleChange}
-              />
-            </Grid>
+            {!isGeneralStock && (
+              <Grid item xs={12} sm={4}>
+                <TextField
+                  fullWidth
+                  type="date"
+                  name="installationDate"
+                  label={t('common.installationDate')}
+                  value={formData.installationDate}
+                  onChange={handleChange}
+                  InputLabelProps={{ shrink: true }}
+                />
+              </Grid>
+            )}
+            {!isGeneralStock && (
+              <Grid item xs={12} sm={4}>
+                <TextField
+                  fullWidth
+                  type="number"
+                  name="mileageAtInstallation"
+                  label={`${t('parts.mileageAtInstallation')} (${getLabel()})`}
+                  value={formData.mileageAtInstallation}
+                  onChange={handleChange}
+                />
+              </Grid>
+            )}
             <Grid item xs={12} sm={6}>
               <TextField
                 fullWidth
@@ -558,36 +673,40 @@ export default function PartDialog({ open, onClose, part, vehicleId, onVehicleMo
                 onChange={handleChange}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                select
-                name="motRecordId"
-                label={t('parts.motRecord')}
-                value={motRecordId || ''}
-                onChange={(e) => setMotRecordId(e.target.value)}
-              >
-                <MenuItem value="">{t('parts.selectMot')}</MenuItem>
-                {motRecords.map(m => (
-                  <MenuItem key={m.id} value={m.id}>{`${m.testDate || ''} ${m.motTestNumber ? '- ' + m.motTestNumber : ''}`}</MenuItem>
-                ))}
-              </TextField>
-            </Grid>
-            <Grid item xs={12} sm={6}>
+            {!isGeneralStock && (
+              <Grid item xs={12} sm={6}>
                 <TextField
-                fullWidth
-                select
-                name="serviceRecordId"
-                label={t('service.serviceRecord')}
-                value={serviceRecordId || ''}
-                onChange={(e) => setServiceRecordId(e.target.value)}
-              >
-                <MenuItem value="">{t('service.selectService')}</MenuItem>
-                {serviceRecords.map(s => (
-                  <MenuItem key={s.id} value={s.id}>{`${s.serviceDate || ''} ${s.serviceProvider ? '- ' + s.serviceProvider : ''}`}</MenuItem>
-                ))}
-              </TextField>
-            </Grid>
+                  fullWidth
+                  select
+                  name="motRecordId"
+                  label={t('parts.motRecord')}
+                  value={motRecordId || ''}
+                  onChange={(e) => setMotRecordId(e.target.value)}
+                >
+                  <MenuItem value="">{t('parts.selectMot')}</MenuItem>
+                  {motRecords.map(m => (
+                    <MenuItem key={m.id} value={m.id}>{`${m.testDate || ''} ${m.motTestNumber ? '- ' + m.motTestNumber : ''}`}</MenuItem>
+                  ))}
+                </TextField>
+              </Grid>
+            )}
+            {!isGeneralStock && (
+              <Grid item xs={12} sm={6}>
+                  <TextField
+                  fullWidth
+                  select
+                  name="serviceRecordId"
+                  label={t('service.serviceRecord')}
+                  value={serviceRecordId || ''}
+                  onChange={(e) => setServiceRecordId(e.target.value)}
+                >
+                  <MenuItem value="">{t('service.selectService')}</MenuItem>
+                  {serviceRecords.map(s => (
+                    <MenuItem key={s.id} value={s.id}>{`${s.serviceDate || ''} ${s.serviceProvider ? '- ' + s.serviceProvider : ''}`}</MenuItem>
+                  ))}
+                </TextField>
+              </Grid>
+            )}
             <Grid item xs={12}>
               <TextField
                 fullWidth

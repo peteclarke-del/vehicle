@@ -39,6 +39,7 @@ class EntitySerializerService
         if ($detailed) {
             $data = array_merge($data, [
                 'vehicleId' => $part->getVehicle()?->getId(),
+                'isGeneralStock' => $part->getVehicle() === null,
                 'purchaseDate' => $part->getPurchaseDate()?->format('Y-m-d'),
                 'partNumber' => $part->getPartNumber(),
                 'manufacturer' => $part->getManufacturer(),
@@ -97,6 +98,7 @@ class EntitySerializerService
         if ($detailed) {
             $data = array_merge($data, [
                 'vehicleId' => $consumable->getVehicle()?->getId(),
+                'isGeneralStock' => $consumable->getVehicle() === null,
                 'serviceRecordId' => $consumable->getServiceRecord()?->getId(),
                 'consumableType' => $consumable->getConsumableType() ? [
                     'id' => $consumable->getConsumableType()->getId(),

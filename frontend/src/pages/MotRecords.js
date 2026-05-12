@@ -4,6 +4,7 @@ import logger from '../utils/logger';
 import {
   Typography,
   Button,
+  TextField,
   Table,
   TableBody,
   TableCell,
@@ -36,11 +37,13 @@ import FilteredVehicleSelector from '../components/FilteredVehicleSelector';
 import ViewAttachmentIconButton from '../components/ViewAttachmentIconButton';
 import { demoGuard } from '../utils/demoMode';
 import KnightRiderLoader from '../components/KnightRiderLoader';
+import { matchesFreeText } from '../utils/searchText';
 
 const MotRecords = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [motRecords, setMotRecords] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingMot, setEditingMot] = useState(null);
   const { vehicles, loading: vehiclesLoading, fetchVehicles, notifyRecordChange } = useVehicles();
@@ -52,6 +55,10 @@ const MotRecords = () => {
   const { statusFilter, filteredVehicles, handleStatusFilterChange, STATUS_OPTIONS } = useVehicleStatusFilter(vehicles, 'motStatusFilter');
   const { selectedVehicle, setSelectedVehicle, hasManualSelection, handleVehicleChange } = useVehicleSelection(filteredVehicles);
   const urlMotIdHandledRef = useRef(false);
+  const registrationByVehicleId = React.useMemo(
+    () => Object.fromEntries((vehicles || []).map((v) => [String(v.id), v.registrationNumber || v.registration || ''])),
+    [vehicles]
+  );
 
   const loadMotRecords = useCallback(async (signal) => {
     setLoading(true);
@@ -137,8 +144,8 @@ const MotRecords = () => {
   const sortedMotRecords = React.useMemo(() => {
     const comparator = (a, b) => {
       if (orderBy === 'registration') {
-        const aReg = vehicles.find(v => String(v.id) === String(a.vehicleId))?.registrationNumber || '';
-        const bReg = vehicles.find(v => String(v.id) === String(b.vehicleId))?.registrationNumber || '';
+        const aReg = registrationByVehicleId[String(a.vehicleId)] || '';
+        const bReg = registrationByVehicleId[String(b.vehicleId)] || '';
         if (aReg === bReg) return 0;
         return order === 'asc' ? (aReg > bReg ? 1 : -1) : (aReg < bReg ? 1 : -1);
       }
@@ -166,7 +173,14 @@ const MotRecords = () => {
     return [...motRecords].sort(comparator);
   }, [motRecords, order, orderBy]);
 
-  const { page, rowsPerPage, paginatedRows: paginatedMotRecords, handleChangePage, handleChangeRowsPerPage } = useTablePagination(sortedMotRecords);
+  const filteredMotRecords = React.useMemo(() => {
+    return sortedMotRecords.filter((mot) => {
+      const registration = registrationByVehicleId[String(mot.vehicleId)] || '';
+      return matchesFreeText(searchTerm, mot, registration);
+    });
+  }, [sortedMotRecords, searchTerm, registrationByVehicleId]);
+
+  const { page, rowsPerPage, paginatedRows: paginatedMotRecords, handleChangePage, handleChangeRowsPerPage } = useTablePagination(filteredMotRecords);
 
   const getResultChip = (result) => {
     const colors = { Pass: 'success', Fail: 'error', Advisory: 'warning' };
@@ -211,6 +225,13 @@ const MotRecords = () => {
             onVehicleChange={handleVehicleChange}
             id="mot"
             minWidth={360}
+          />
+          <TextField
+            size="small"
+            placeholder={t('common.search', 'Search')}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            sx={{ minWidth: 220 }}
           />
           {(() => {
             const sel = vehicles.find(v => v.id === selectedVehicle);
@@ -265,7 +286,7 @@ const MotRecords = () => {
       </Box>
 
       <TablePaginationBar
-        count={sortedMotRecords.length}
+        count={filteredMotRecords.length}
         page={page}
         rowsPerPage={rowsPerPage}
         onPageChange={handleChangePage}
@@ -363,7 +384,7 @@ const MotRecords = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-              {sortedMotRecords.length === 0 ? (
+              {filteredMotRecords.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={9} align="center">
                   {t('common.noRecords')}
@@ -379,7 +400,7 @@ const MotRecords = () => {
                   ...(!showRed && { '&:nth-of-type(odd)': { backgroundColor: 'action.hover' } }),
                   ...(showRed && { backgroundColor: 'rgba(255, 0, 0, 0.08)' })
                 }}>
-                  <TableCell>{vehicles.find(v => String(v.id) === String(mot.vehicleId))?.registrationNumber || '-'}</TableCell>
+                  <TableCell>{registrationByVehicleId[String(mot.vehicleId)] || '-'}</TableCell>
                   <TableCell>{formatDateISO(mot.testDate)}</TableCell>
                   <TableCell>{getResultChip(mot.result)}</TableCell>
                   <TableCell>{mot.expiryDate ? formatDateISO(mot.expiryDate) : '-'}</TableCell>
@@ -420,7 +441,7 @@ const MotRecords = () => {
         </Table>
       </TableContainer>
       <TablePaginationBar
-        count={sortedMotRecords.length}
+        count={filteredMotRecords.length}
         page={page}
         rowsPerPage={rowsPerPage}
         onPageChange={handleChangePage}

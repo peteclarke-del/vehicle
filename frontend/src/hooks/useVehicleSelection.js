@@ -52,7 +52,10 @@ const useVehicleSelection = (vehicles, options = {}) => {
   // (e.g., when a status filter is applied after initialization)
   useEffect(() => {
     if (!initializedRef.current) return;
-    if (!selectedVehicle || selectedVehicle === '__all__') return;
+    if (!selectedVehicle) return;
+    if (typeof selectedVehicle === 'string' && selectedVehicle.startsWith('__') && selectedVehicle.endsWith('__')) {
+      return;
+    }
     if (!vehicles || vehicles.length === 0) {
       // Empty list: clear the selection to avoid MUI out-of-range warnings and stale fetches
       setSelectedVehicle(includeViewAll ? '__all__' : '');
@@ -69,8 +72,8 @@ const useVehicleSelection = (vehicles, options = {}) => {
   const handleVehicleChange = useCallback((vehicleId) => {
     setHasManualSelection(true);
     setSelectedVehicle(vehicleId);
-    // Only set as default if it's an actual vehicle (not '__all__')
-    if (vehicleId && vehicleId !== '__all__') {
+    // Only set as default if it's an actual vehicle (not virtual selectors like '__all__' or '__stock__')
+    if (vehicleId && !(typeof vehicleId === 'string' && vehicleId.startsWith('__') && vehicleId.endsWith('__'))) {
       setDefaultVehicle(vehicleId);
     }
   }, [setDefaultVehicle]);

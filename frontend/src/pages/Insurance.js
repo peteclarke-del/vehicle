@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   Typography,
   Button,
+  TextField,
   Table,
   TableBody,
   TableCell,
@@ -30,6 +31,7 @@ import TablePaginationBar from '../components/TablePaginationBar';
 import FilteredVehicleSelector from '../components/FilteredVehicleSelector';
 import KnightRiderLoader from '../components/KnightRiderLoader';
 import { demoGuard } from '../utils/demoMode';
+import { matchesFreeText } from '../utils/searchText';
 
 const Insurance = () => {
   const { api } = useAuth();
@@ -40,6 +42,7 @@ const Insurance = () => {
   const [loading, setLoading] = useState(true);
   const [policyDialogOpen, setPolicyDialogOpen] = useState(false);
   const [editingPolicy, setEditingPolicy] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
   const { vehicles, loading: vehiclesLoading, fetchVehicles } = useVehicles();
   const { orderBy, order, handleRequestSort } = usePersistedSort('insurance', 'expiryDate', 'desc');
   const { statusFilter, filteredVehicles, handleStatusFilterChange, STATUS_OPTIONS } = useVehicleStatusFilter(vehicles, 'insuranceStatusFilter');
@@ -104,7 +107,16 @@ const Insurance = () => {
     return [...policies].sort(comparator);
   }, [policies, order, orderBy]);
 
-  const { page, rowsPerPage, paginatedRows: paginatedPolicies, handleChangePage, handleChangeRowsPerPage } = useTablePagination(sortedPolicies);
+  const filteredPolicies = React.useMemo(() => {
+    return sortedPolicies.filter((policy) => {
+      const vehicleRefs = Array.isArray(policy.vehicles)
+        ? policy.vehicles.map((v) => v.registrationNumber || v.registration || '').join(' ')
+        : '';
+      return matchesFreeText(searchTerm, policy, vehicleRefs);
+    });
+  }, [sortedPolicies, searchTerm]);
+
+  const { page, rowsPerPage, paginatedRows: paginatedPolicies, handleChangePage, handleChangeRowsPerPage } = useTablePagination(filteredPolicies);
 
   // Policy handlers
   const handleAddPolicy = () => {
@@ -151,6 +163,13 @@ const Insurance = () => {
             id="insurance"
             minWidth={300}
           />
+          <TextField
+            size="small"
+            placeholder={t('common.search', 'Search')}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            sx={{ minWidth: 220 }}
+          />
           <Button variant="contained" startIcon={<AddIcon />} onClick={handleAddPolicy}>
             {t('insurance.policies.addPolicy')}
           </Button>
@@ -158,7 +177,7 @@ const Insurance = () => {
       </Box>
 
       <TablePaginationBar
-        count={sortedPolicies.length}
+        count={filteredPolicies.length}
         page={page}
         rowsPerPage={rowsPerPage}
         onPageChange={handleChangePage}
@@ -218,7 +237,7 @@ const Insurance = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {sortedPolicies.length === 0 ? (
+            {filteredPolicies.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} align="center">{t('common.noRecords')}</TableCell>
               </TableRow>
@@ -260,7 +279,7 @@ const Insurance = () => {
         </Table>
       </TableContainer>
       <TablePaginationBar
-        count={sortedPolicies.length}
+        count={filteredPolicies.length}
         page={page}
         rowsPerPage={rowsPerPage}
         onPageChange={handleChangePage}

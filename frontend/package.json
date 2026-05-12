@@ -58,6 +58,7 @@
   },
   "jest": {
     "moduleNameMapper": {
+      "^axios$": "<rootDir>/src/__mocks__/axios.js",
       "^recharts$": "<rootDir>/src/__mocks__/recharts.js",
       "^@mui/x-charts(.*)$": "<rootDir>/src/__mocks__/@mui/x-charts.js"
     }

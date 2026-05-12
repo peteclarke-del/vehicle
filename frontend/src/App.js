@@ -14,6 +14,7 @@ import VehicleDetails from './pages/VehicleDetails';
 import FuelRecords from './pages/FuelRecords';
 import Parts from './pages/Parts';
 import Consumables from './pages/Consumables';
+import Stock from './pages/Stock';
 import Insurance from './pages/Insurance';
 import MotRecords from './pages/MotRecords';
 import ServiceRecords from './pages/ServiceRecords';
@@ -119,6 +120,7 @@ function AppRoutes() {
             <Route path="fuel" element={<FuelRecords />} />
             <Route path="parts" element={<Parts />} />
             <Route path="consumables" element={<Consumables />} />
+            <Route path="stock" element={<Stock />} />
             <Route path="insurance" element={<Insurance />} />
             <Route path="mot-records" element={<MotRecords />} />
             <Route path="service-records" element={<ServiceRecords />} />
