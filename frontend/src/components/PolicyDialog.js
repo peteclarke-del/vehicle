@@ -229,9 +229,17 @@ const PolicyDialog = ({ open, policy, vehicles, selectedVehicleId, existingPolic
                 }}
                 value={sortedVehicles.filter(v => formData.vehicleIds.includes(v.id))}
                 onChange={(e, newVal) => setFormData(prev => ({ ...prev, vehicleIds: newVal.map(v => v.id) }))}
-                renderTags={(value, getTagProps) => value.map((option, index) => (
-                  <Chip label={`${option.make ? option.make + (option.model ? ' ' + option.model : '') : option.name} (${option.registrationNumber || ''})`} {...getTagProps({ index })} />
-                ))}
+                renderTags={(value, getTagProps) => value.map((option, index) => {
+                  const tagProps = getTagProps({ index });
+                  const { key, ...chipProps } = tagProps;
+                  return (
+                    <Chip
+                      key={key}
+                      label={`${option.make ? option.make + (option.model ? ' ' + option.model : '') : option.name} (${option.registrationNumber || ''})`}
+                      {...chipProps}
+                    />
+                  );
+                })}
                 renderInput={(params) => (
                   <TextField {...params} label={t('insurance.policies.vehicles')} placeholder={t('insurance.policies.selectVehicles')} />
                 )}

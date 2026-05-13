@@ -9,13 +9,17 @@ use App\Entity\PartCategory;
 use App\Entity\ServiceItem;
 use App\Entity\User;
 use App\Entity\Vehicle;
+use App\Entity\VehicleAssignment;
+use App\Entity\VehicleType;
 use App\Entity\Attachment;
+use App\Entity\StockItem;
 use App\Service\ReceiptOcrService;
 use App\Service\UrlScraperService;
 use Psr\Log\LoggerInterface;
 use App\Service\RepairCostCalculator;
 use App\Service\EntitySerializerService;
 use App\Service\AttachmentLinkingService;
+use App\Service\StockLedgerService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -54,7 +58,8 @@ class PartController extends AbstractController
         private LoggerInterface $logger,
         private RepairCostCalculator $repairCostCalculator,
         private EntitySerializerService $serializer,
-        private AttachmentLinkingService $attachmentLinkingService
+        private AttachmentLinkingService $attachmentLinkingService,
+        private StockLedgerService $stockLedgerService
     ) {
     }
 
@@ -80,14 +85,41 @@ class PartController extends AbstractController
 
         $vehicleId = $request->query->get('vehicleId');
         $unassociated = $request->query->get('unassociated') === 'true';
-        
-        if ($vehicleId) {
+        $generalStock = $request->query->get('generalStock') === 'true';
+
+        if ($generalStock) {
+            // Return only general stock (no vehicle) parts owned by this user
+            $qb = $this->entityManager->createQueryBuilder()
+                ->select('p')
+                ->from(Part::class, 'p')
+                ->where('p.vehicle IS NULL');
+            if (!$this->isAdminForUser($user)) {
+                $qb->andWhere('p.user = :user')->setParameter('user', $user);
+            }
+            if ($unassociated) {
+                $qb->andWhere('p.serviceRecord IS NULL')
+                   ->andWhere('p.motRecord IS NULL');
+            }
+            $qb->orderBy('p.purchaseDate', 'DESC');
+            $parts = $qb->getQuery()->getResult();
+        } elseif ($vehicleId) {
             $vehicle = $this->entityManager->getRepository(Vehicle::class)->find($vehicleId);
-            if (!$vehicle || (!$this->isAdminForUser($user) && $vehicle->getOwner()->getId() !== $user->getId())) {
+            $assignment = null;
+            if (!$this->isAdminForUser($user) && $vehicle) {
+                $assignment = $this->entityManager->getRepository(VehicleAssignment::class)
+                    ->findOneBy(['assignedTo' => $user, 'vehicle' => $vehicle]);
+            }
+            if (
+                !$vehicle
+                || (!$this->isAdminForUser($user)
+                    && $vehicle->getOwner()->getId() !== $user->getId()
+                    && (!$assignment || !$assignment->canView()))
+            ) {
                 return $this->json(['error' => 'Vehicle not found'], 404);
             }
-            
+
             if ($unassociated) {
+                // Include both vehicle-specific unassociated parts and general stock unassociated parts
                 $qb = $this->entityManager->createQueryBuilder()
                     ->select('p')
                     ->from(Part::class, 'p')
@@ -96,31 +128,96 @@ class PartController extends AbstractController
                     ->andWhere('p.motRecord IS NULL')
                     ->setParameter('vehicle', $vehicle)
                     ->orderBy('p.purchaseDate', 'DESC');
-                $parts = $qb->getQuery()->getResult();
+                $vehicleParts = $qb->getQuery()->getResult();
+
+                // Also fetch general stock parts (no vehicle) for this user
+                $sqb = $this->entityManager->createQueryBuilder()
+                    ->select('p')
+                    ->from(Part::class, 'p')
+                    ->where('p.vehicle IS NULL')
+                    ->andWhere('p.serviceRecord IS NULL')
+                    ->andWhere('p.motRecord IS NULL')
+                    ->orderBy('p.purchaseDate', 'DESC');
+                if (!$this->isAdminForUser($user)) {
+                    $sqb->andWhere('p.user = :user')->setParameter('user', $user);
+                }
+                $stockParts = $sqb->getQuery()->getResult();
+
+                $parts = array_merge($vehicleParts, $stockParts);
             } else {
                 $parts = $this->entityManager->getRepository(Part::class)
                     ->findBy(['vehicle' => $vehicle], ['purchaseDate' => 'DESC']);
             }
         } else {
-            // Fetch parts for all vehicles the user can see
+            // Fetch parts for all vehicles the user can see, plus general stock
             $vehicleRepo = $this->entityManager->getRepository(Vehicle::class);
-            $vehicles = $this->isAdminForUser($user) ? $vehicleRepo->findAll() : $vehicleRepo->findBy(['owner' => $user]);
-            if (empty($vehicles)) {
-                $parts = [];
+            if ($this->isAdminForUser($user)) {
+                $vehicles = $vehicleRepo->findAll();
             } else {
-                $qb = $this->entityManager->createQueryBuilder()
+                $ownVehicles = $vehicleRepo->findBy(['owner' => $user]);
+                $assignments = $this->entityManager->getRepository(VehicleAssignment::class)
+                    ->findBy(['assignedTo' => $user]);
+                $ownIds = array_map(fn($v) => $v->getId(), $ownVehicles);
+                $assignedVehicles = [];
+                foreach ($assignments as $a) {
+                    if ($a->canView() && !in_array($a->getVehicle()->getId(), $ownIds, true)) {
+                        $assignedVehicles[] = $a->getVehicle();
+                    }
+                }
+                $vehicles = array_merge($ownVehicles, $assignedVehicles);
+            }
+
+            $qb = $this->entityManager->createQueryBuilder()
+                ->select('p')
+                ->from(Part::class, 'p');
+
+            if (!empty($vehicles)) {
+                $qb->where(
+                    $qb->expr()->orX(
+                        $qb->expr()->in('p.vehicle', ':vehicles'),
+                        $qb->expr()->isNull('p.vehicle')
+                    )
+                )->setParameter('vehicles', $vehicles);
+            } else {
+                $qb->where('p.vehicle IS NULL');
+            }
+
+            if (!$this->isAdminForUser($user)) {
+                // For general stock items, filter to current user; vehicle parts already scoped via vehicle owner
+                // We can't do a single clean filter without subquery; easier approach: fetch both separately and merge
+                $vehicleParts = [];
+                if (!empty($vehicles)) {
+                    $vqb = $this->entityManager->createQueryBuilder()
+                        ->select('p')
+                        ->from(Part::class, 'p')
+                        ->where('p.vehicle IN (:vehicles)')
+                        ->setParameter('vehicles', $vehicles);
+                    if ($unassociated) {
+                        $vqb->andWhere('p.serviceRecord IS NULL')
+                            ->andWhere('p.motRecord IS NULL');
+                    }
+                    $vehicleParts = $vqb->orderBy('p.purchaseDate', 'DESC')->getQuery()->getResult();
+                }
+
+                $sqb = $this->entityManager->createQueryBuilder()
                     ->select('p')
                     ->from(Part::class, 'p')
-                    ->where('p.vehicle IN (:vehicles)')
-                    ->setParameter('vehicles', $vehicles);
-                
+                    ->where('p.vehicle IS NULL')
+                    ->andWhere('p.user = :user')
+                    ->setParameter('user', $user);
+                if ($unassociated) {
+                    $sqb->andWhere('p.serviceRecord IS NULL')
+                        ->andWhere('p.motRecord IS NULL');
+                }
+                $stockParts = $sqb->orderBy('p.purchaseDate', 'DESC')->getQuery()->getResult();
+
+                $parts = array_merge($vehicleParts, $stockParts);
+            } else {
                 if ($unassociated) {
                     $qb->andWhere('p.serviceRecord IS NULL')
                        ->andWhere('p.motRecord IS NULL');
                 }
-                
                 $qb->orderBy('p.purchaseDate', 'DESC');
-
                 $parts = $qb->getQuery()->getResult();
             }
         }
@@ -148,7 +245,7 @@ class PartController extends AbstractController
 
         $part = $this->entityManager->getRepository(Part::class)->find($id);
 
-        if (!$part || (!$this->isAdminForUser($user) && $part->getVehicle()->getOwner()->getId() !== $user->getId())) {
+        if (!$part || (!$this->isAdminForUser($user) && !$this->partBelongsToUser($part, $user))) {
             return $this->json(['error' => 'Part not found'], 404);
         }
 
@@ -177,15 +274,51 @@ class PartController extends AbstractController
         }
         $data = $validation['data'];
 
-        $vehicle = $this->entityManager->getRepository(Vehicle::class)
-            ->find($data['vehicleId']);
+        $vehicle = null;
+        if (!empty($data['vehicleId'])) {
+            $vehicle = $this->entityManager->getRepository(Vehicle::class)->find($data['vehicleId']);
+            if (!$vehicle || (!$this->isAdminForUser($user) && $vehicle->getOwner()->getId() !== $user->getId())) {
+                return $this->json(['error' => 'Vehicle not found'], 404);
+            }
+        }
 
-        if (!$vehicle || (!$this->isAdminForUser($user) && $vehicle->getOwner()->getId() !== $user->getId())) {
-            return $this->json(['error' => 'Vehicle not found'], 404);
+        $stockItem = null;
+        $stockConsumeQty = 0.0;
+        if (!empty($data['stockItemId'])) {
+            $stockItem = $this->entityManager->getRepository(StockItem::class)->find((int) $data['stockItemId']);
+            if (!$stockItem || (!$this->isAdminForUser($user) && $stockItem->getUser()?->getId() !== $user->getId())) {
+                return $this->json(['error' => 'Stock item not found'], 404);
+            }
+            if ($stockItem->getItemType() !== 'part') {
+                return $this->json(['error' => 'Selected stock item is not a part'], 400);
+            }
+            if ($vehicle && $stockItem->getVehicleType() && $vehicle->getVehicleType() && $stockItem->getVehicleType()->getId() !== $vehicle->getVehicleType()->getId()) {
+                return $this->json(['error' => 'Stock item does not match vehicle type'], 400);
+            }
+
+            $stockConsumeQty = (float) ($data['quantity'] ?? 1);
+            if ($stockConsumeQty <= 0) {
+                $stockConsumeQty = 1;
+            }
+            $available = (float) ($stockItem->getQuantity() ?? '0');
+            if ($available < $stockConsumeQty) {
+                return $this->json(['error' => 'Insufficient stock quantity'], 400);
+            }
+
+            $data['description'] = $data['description'] ?? $stockItem->getDescription() ?? $stockItem->getCategory();
+            $data['partNumber'] = $data['partNumber'] ?? $stockItem->getPartNumber();
+            $data['manufacturer'] = $data['manufacturer'] ?? $stockItem->getManufacturer();
+            $data['supplier'] = $data['supplier'] ?? $stockItem->getSupplier();
+            $data['price'] = $data['price'] ?? $stockItem->getPrice();
+            $data['purchaseDate'] = $data['purchaseDate'] ?? $stockItem->getPurchaseDate()?->format('Y-m-d');
         }
 
         $part = new Part();
         $part->setVehicle($vehicle);
+        // For general stock parts (no vehicle), track ownership via user
+        if ($vehicle === null) {
+            $part->setUser($user);
+        }
         
         // Auto-detect if this part is being created as part of a service/MOT
         // If serviceRecordId or motRecordId is present, mark as included in service cost
@@ -204,6 +337,25 @@ class PartController extends AbstractController
 
         $this->entityManager->persist($part);
         $this->entityManager->flush();
+
+        if ($part->getVehicle() === null && $part->getUser() instanceof User) {
+            $this->stockLedgerService->adjust(
+                $part->getUser(),
+                null,
+                'part',
+                $this->stockLedgerService->categoryForPart($part->getDescription() ?? '', $part->getPartCategory()?->getName()),
+                $part->getSupplier(),
+                (float) ($part->getQuantity() ?? '0')
+            );
+            $this->entityManager->flush();
+        }
+
+        if ($stockItem instanceof StockItem) {
+            $remaining = max(0, (float) ($stockItem->getQuantity() ?? '0') - $stockConsumeQty);
+            $stockItem->setQuantity(number_format($remaining, 2, '.', ''));
+            $stockItem->touch();
+            $this->entityManager->flush();
+        }
 
         // Finalize attachment link after flush (entity now has ID)
         $this->attachmentLinkingService->finalizeAttachmentLink($part);
@@ -231,7 +383,7 @@ class PartController extends AbstractController
 
         $part = $this->entityManager->getRepository(Part::class)->find($id);
 
-        if (!$part || (!$this->isAdminForUser($user) && $part->getVehicle()->getOwner()->getId() !== $user->getId())) {
+        if (!$part || (!$this->isAdminForUser($user) && !$this->partBelongsToUser($part, $user))) {
             return $this->json(['error' => 'Part not found'], 404);
         }
 
@@ -242,12 +394,25 @@ class PartController extends AbstractController
         $data = $validation['data'];
         $this->logger->info('Part update payload', ['id' => $id, 'data' => $data]);
 
-        if (array_key_exists('vehicleId', $data) && !empty($data['vehicleId'])) {
-            $vehicle = $this->entityManager->getRepository(Vehicle::class)->find((int) $data['vehicleId']);
-            if (!$vehicle || (!$this->isAdminForUser($user) && $vehicle->getOwner()->getId() !== $user->getId())) {
-                return $this->json(['error' => 'Vehicle not found'], 404);
+        $wasStock = $part->getVehicle() === null;
+        $oldStockUser = $part->getUser();
+        $oldStockQty = (float) ($part->getQuantity() ?? '0');
+        $oldStockCategory = $this->stockLedgerService->categoryForPart($part->getDescription() ?? '', $part->getPartCategory()?->getName());
+        $oldStockSupplier = $part->getSupplier();
+
+        if (array_key_exists('vehicleId', $data)) {
+            if (!empty($data['vehicleId'])) {
+                $vehicle = $this->entityManager->getRepository(Vehicle::class)->find((int) $data['vehicleId']);
+                if (!$vehicle || (!$this->isAdminForUser($user) && $vehicle->getOwner()->getId() !== $user->getId())) {
+                    return $this->json(['error' => 'Vehicle not found'], 404);
+                }
+                $part->setVehicle($vehicle);
+                $part->setUser(null);
+            } else {
+                // Move to general stock
+                $part->setVehicle(null);
+                $part->setUser($user);
             }
-            $part->setVehicle($vehicle);
         }
 
         $prevMotId = $part->getMotRecord()?->getId();
@@ -268,6 +433,35 @@ class PartController extends AbstractController
         }
 
         try {
+            $this->entityManager->flush();
+
+            $isStock = $part->getVehicle() === null;
+            if ($wasStock && !$isStock && $oldStockUser instanceof User) {
+                // Stock -> vehicle: consume stock
+                $this->stockLedgerService->adjust($oldStockUser, null, 'part', $oldStockCategory, $oldStockSupplier, -$oldStockQty);
+            } elseif (!$wasStock && $isStock && $part->getUser() instanceof User) {
+                // Vehicle -> stock: return to stock
+                $this->stockLedgerService->adjust(
+                    $part->getUser(),
+                    null,
+                    'part',
+                    $this->stockLedgerService->categoryForPart($part->getDescription() ?? '', $part->getPartCategory()?->getName()),
+                    $part->getSupplier(),
+                    (float) ($part->getQuantity() ?? '0')
+                );
+            } elseif ($wasStock && $isStock && $part->getUser() instanceof User && $oldStockUser instanceof User) {
+                // Stock item edited: reconcile stock bucket changes
+                $newQty = (float) ($part->getQuantity() ?? '0');
+                $newCategory = $this->stockLedgerService->categoryForPart($part->getDescription() ?? '', $part->getPartCategory()?->getName());
+                $newSupplier = $part->getSupplier();
+                $sameBucket = $newCategory === $oldStockCategory && (string) ($newSupplier ?? '') === (string) ($oldStockSupplier ?? '') && $part->getUser()->getId() === $oldStockUser->getId();
+                if ($sameBucket) {
+                    $this->stockLedgerService->adjust($part->getUser(), null, 'part', $newCategory, $newSupplier, $newQty - $oldStockQty);
+                } else {
+                    $this->stockLedgerService->adjust($oldStockUser, null, 'part', $oldStockCategory, $oldStockSupplier, -$oldStockQty);
+                    $this->stockLedgerService->adjust($part->getUser(), null, 'part', $newCategory, $newSupplier, $newQty);
+                }
+            }
             $this->entityManager->flush();
         } catch (\Throwable $e) {
             $this->logger->error('Error flushing Part update', ['exception' => $e->getMessage()]);
@@ -314,11 +508,22 @@ class PartController extends AbstractController
 
         $part = $this->entityManager->getRepository(Part::class)->find($id);
 
-        if (!$part || (!$this->isAdminForUser($user) && $part->getVehicle()->getOwner()->getId() !== $user->getId())) {
+        if (!$part || (!$this->isAdminForUser($user) && !$this->partBelongsToUser($part, $user))) {
             return $this->json(['error' => 'Part not found'], 404);
         }
 
         $motId = $part->getMotRecord()?->getId();
+
+        if ($part->getVehicle() === null && $part->getUser() instanceof User) {
+            $this->stockLedgerService->adjust(
+                $part->getUser(),
+                null,
+                'part',
+                $this->stockLedgerService->categoryForPart($part->getDescription() ?? '', $part->getPartCategory()?->getName()),
+                $part->getSupplier(),
+                -((float) ($part->getQuantity() ?? '0'))
+            );
+        }
 
         $this->entityManager->remove($part);
         $this->entityManager->flush();
@@ -391,6 +596,9 @@ class PartController extends AbstractController
         if (array_key_exists('partCategoryId', $data) || array_key_exists('partCategory', $data) || array_key_exists('partCategoryName', $data)) {
             $pcRepo = $this->entityManager->getRepository(PartCategory::class);
             $vehicleType = $part->getVehicle()?->getVehicleType() ?? null;
+            if ($vehicleType === null && !empty($data['vehicleTypeId'])) {
+                $vehicleType = $this->entityManager->getRepository(VehicleType::class)->find((int) $data['vehicleTypeId']);
+            }
 
             $found = null;
             if (!empty($data['partCategoryId'])) {
@@ -584,5 +792,16 @@ class PartController extends AbstractController
         } catch (\Exception $e) {
             return $this->json(['error' => 'Failed to scrape URL: ' . $e->getMessage()], 500);
         }
+    }
+
+    /**
+     * Determine whether a part belongs to the given user (via vehicle owner or direct user ownership).
+     */
+    private function partBelongsToUser(\App\Entity\Part $part, User $user): bool
+    {
+        if ($part->getVehicle() !== null) {
+            return $part->getVehicle()->getOwner()->getId() === $user->getId();
+        }
+        return $part->getUser()?->getId() === $user->getId();
     }
 }

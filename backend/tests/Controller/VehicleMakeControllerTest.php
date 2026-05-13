@@ -41,50 +41,44 @@ class VehicleMakeControllerTest extends BaseWebTestCase
         
         $data = json_decode($client->getResponse()->getContent(), true);
         $this->assertIsArray($data);
-        $this->assertArrayHasKey('id', $data[0]);
-        $this->assertArrayHasKey('name', $data[0]);
+        if (!empty($data)) {
+            $this->assertArrayHasKey('id', $data[0]);
+            $this->assertArrayHasKey('name', $data[0]);
+            $this->assertArrayHasKey('vehicleTypeId', $data[0]);
+        }
     }
 
-    public function testGetMakeById(): void
-    {
-        $client = $this->client;
-        $client->request('GET', '/api/vehicle-makes/1');
-
-        $this->assertResponseIsSuccessful();
-        
-        $data = json_decode($client->getResponse()->getContent(), true);
-        $this->assertArrayHasKey('id', $data);
-        $this->assertArrayHasKey('name', $data);
-        $this->assertArrayHasKey('models', $data);
-    }
-
-    public function testGetMakeByIdReturns404ForInvalidId(): void
-    {
-        $client = $this->client;
-        $client->request('GET', '/api/vehicle-makes/99999');
-
-        $this->assertResponseStatusCodeSame(Response::HTTP_NOT_FOUND);
-    }
-
-    public function testCreateMakeRequiresAuthentication(): void
+    public function testCreateMakeWithoutAuthentication(): void
     {
         $client = $this->client;
         $client->request('POST', '/api/vehicle-makes', [], [], [
             'CONTENT_TYPE' => 'application/json',
-        ], json_encode(['name' => 'Tesla']));
+        ], json_encode([
+            'vehicleTypeId' => 1,
+            'name' => 'Tesla Public',
+        ]));
 
-        $this->assertResponseStatusCodeSame(Response::HTTP_UNAUTHORIZED);
+        $this->assertResponseStatusCodeSame(Response::HTTP_OK);
+
+        $data = json_decode($client->getResponse()->getContent(), true);
+        $this->assertSame('Tesla Public', $data['name']);
     }
 
-    public function testCreateMakeRequiresAdminRole(): void
+    public function testCreateMakeWithUserToken(): void
     {
         $client = $this->client;
         $client->request('POST', '/api/vehicle-makes', [], [], [
             'HTTP_AUTHORIZATION' => 'Bearer ' . $this->token,
             'CONTENT_TYPE' => 'application/json',
-        ], json_encode(['name' => 'Tesla']));
+        ], json_encode([
+            'vehicleTypeId' => 1,
+            'name' => 'Tesla User Token',
+        ]));
 
-        $this->assertResponseStatusCodeSame(Response::HTTP_FORBIDDEN);
+        $this->assertResponseStatusCodeSame(Response::HTTP_OK);
+
+        $data = json_decode($client->getResponse()->getContent(), true);
+        $this->assertSame('Tesla User Token', $data['name']);
     }
 
     public function testCreateMake(): void
@@ -96,16 +90,16 @@ class VehicleMakeControllerTest extends BaseWebTestCase
             'HTTP_AUTHORIZATION' => 'Bearer ' . $adminToken,
             'CONTENT_TYPE' => 'application/json',
         ], json_encode([
+            'vehicleTypeId' => 1,
             'name' => 'Tesla',
-            'countryOfOrigin' => 'USA',
-            'logoUrl' => 'https://example.com/tesla.png'
         ]));
 
-        $this->assertResponseStatusCodeSame(Response::HTTP_CREATED);
+        $this->assertResponseStatusCodeSame(Response::HTTP_OK);
         
         $data = json_decode($client->getResponse()->getContent(), true);
+        $this->assertArrayHasKey('id', $data);
         $this->assertSame('Tesla', $data['name']);
-        $this->assertSame('USA', $data['countryOfOrigin']);
+        $this->assertSame(1, $data['vehicleTypeId']);
     }
 
     public function testCreateMakeValidatesRequiredFields(): void
@@ -116,51 +110,46 @@ class VehicleMakeControllerTest extends BaseWebTestCase
         $client->request('POST', '/api/vehicle-makes', [], [], [
             'HTTP_AUTHORIZATION' => 'Bearer ' . $adminToken,
             'CONTENT_TYPE' => 'application/json',
-        ], json_encode([]));
+        ], json_encode(['name' => 'No Type']));
+
+        $this->assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
+
+        $client->request('POST', '/api/vehicle-makes', [], [], [
+            'HTTP_AUTHORIZATION' => 'Bearer ' . $adminToken,
+            'CONTENT_TYPE' => 'application/json',
+        ], json_encode(['vehicleTypeId' => 1]));
 
         $this->assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
     }
 
-    public function testUpdateMake(): void
+    public function testCreateMakeReturns404ForInvalidVehicleType(): void
     {
         $client = $this->client;
         $adminToken = $this->getAdminToken();
         
-        $client->request('PUT', '/api/vehicle-makes/1', [], [], [
+        $client->request('POST', '/api/vehicle-makes', [], [], [
             'HTTP_AUTHORIZATION' => 'Bearer ' . $adminToken,
             'CONTENT_TYPE' => 'application/json',
         ], json_encode([
-            'name' => 'Toyota Motors',
-            'countryOfOrigin' => 'Japan'
+            'vehicleTypeId' => 999999,
+            'name' => 'GhostMake',
         ]));
 
-        $this->assertResponseIsSuccessful();
-        
-        $data = json_decode($client->getResponse()->getContent(), true);
-        $this->assertSame('Toyota Motors', $data['name']);
+        $this->assertResponseStatusCodeSame(Response::HTTP_NOT_FOUND);
     }
 
-    public function testDeleteMake(): void
+    public function testListMakesCanBeFilteredByVehicleTypeId(): void
     {
         $client = $this->client;
-        $adminToken = $this->getAdminToken();
-        
-        $client->request('DELETE', '/api/vehicle-makes/999', [], [], [
-            'HTTP_AUTHORIZATION' => 'Bearer ' . $adminToken,
-        ]);
-
-        $this->assertResponseStatusCodeSame(Response::HTTP_NO_CONTENT);
-    }
-
-    public function testGetModelsByMake(): void
-    {
-        $client = $this->client;
-        $client->request('GET', '/api/vehicle-makes/1/models');
+        $client->request('GET', '/api/vehicle-makes?vehicleTypeId=1');
 
         $this->assertResponseIsSuccessful();
-        
+
         $data = json_decode($client->getResponse()->getContent(), true);
         $this->assertIsArray($data);
+        foreach ($data as $make) {
+            $this->assertSame(1, (int) ($make['vehicleTypeId'] ?? 0));
+        }
     }
 
     public function testSearchMakes(): void

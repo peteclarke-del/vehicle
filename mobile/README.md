@@ -8,6 +8,8 @@ A React Native mobile application for Android that provides vehicle management o
 - **Fuel Records**: Track fuel purchases with mileage, cost, and MPG calculations
 - **Service Records**: Log maintenance and service history
 - **Parts Inventory**: Manage spare parts and components
+- **Stock Items**: Browse and edit shared stock buckets for parts and consumables
+- **Current Inventory Scope**: Mobile now includes a dedicated Stock Items screen alongside Parts and Consumables workflows
 - **Camera Integration**: Take photos of receipts and documents directly from the app
 - **Gallery Upload**: Upload existing photos from your device
 - **Offline Support**: Continue working offline with automatic sync when back online

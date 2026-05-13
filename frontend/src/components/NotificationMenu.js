@@ -72,7 +72,11 @@ const NotificationMenu = ({ notifications, dismissNotification, snoozeNotificati
   return (
     <>
       <Tooltip title={t('notifications.title') || 'Notifications'}>
-        <IconButton color="inherit" onClick={handleOpen}>
+        <IconButton
+          color="inherit"
+          onClick={handleOpen}
+          aria-label={t('notifications.title') || 'Notifications'}
+        >
           <Badge badgeContent={items.length} color="error">
             <NotificationsIcon />
           </Badge>

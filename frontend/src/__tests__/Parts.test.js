@@ -4,6 +4,8 @@ import { BrowserRouter } from 'react-router-dom';
 import Parts from '../pages/Parts';
 import { AuthContext } from '../contexts/AuthContext';
 
+jest.setTimeout(15000);
+
 // Parts fetches vehicles itself via fetchArrayData('/vehicles')
 jest.mock('../hooks/useApiData', () => ({
   useApiData: jest.fn(() => ({ data: [], loading: false, error: null, fetchData: jest.fn(), setData: jest.fn() })),
@@ -109,9 +111,11 @@ describe('Parts Component', () => {
 
     renderWithProviders(<Parts />);
 
-    await waitFor(() => {
-      expect(screen.getByText('Air Filter')).toBeInTheDocument();
-    });
+    // Force deterministic selector state to avoid async filter races.
+    const vehicleSelector = await screen.findByLabelText('Select a vehicle');
+    fireEvent.change(vehicleSelector, { target: { value: '__all__' } });
+
+    expect(await screen.findByText('Air Filter', {}, { timeout: 10000 })).toBeInTheDocument();
   });
 
   test('shows add part button', async () => {
@@ -142,9 +146,10 @@ describe('Parts Component', () => {
 
     renderWithProviders(<Parts />);
 
-    await waitFor(() => {
-      expect(screen.getByText('Air Filter')).toBeInTheDocument();
-    });
+    const vehicleSelector = await screen.findByLabelText('Select a vehicle');
+    fireEvent.change(vehicleSelector, { target: { value: '__all__' } });
+
+    expect(await screen.findByText('Air Filter', {}, { timeout: 10000 })).toBeInTheDocument();
 
     const deleteButton = screen.getByRole('button', { name: 'common.delete' });
     fireEvent.click(deleteButton);

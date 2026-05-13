@@ -283,4 +283,145 @@ describe('ConsumableDialog', () => {
 
     expect(screen.getByTestId('loader')).toBeInTheDocument();
   });
+
+  test('lists stock ledger option and posts stockItemId when selected from MOT/service flow', async () => {
+    const onClose = jest.fn();
+
+    mockApi.get.mockImplementation((url, config) => {
+      if (url.includes('/vehicles/')) {
+        return Promise.resolve({ data: { id: 1, vehicleType: { id: 10 } } });
+      }
+      if (url.includes('/consumable-types')) {
+        return Promise.resolve({ data: [{ id: 2, name: 'Oil Filter', unit: 'pcs' }] });
+      }
+      if (url === '/consumables' && config?.params?.vehicleId === 1 && config?.params?.unassociated === 'true') {
+        return Promise.resolve({ data: [] });
+      }
+      if (url === '/consumables' && config?.params?.generalStock === 'true') {
+        return Promise.resolve({ data: [] });
+      }
+      if (url === '/stock-items') {
+        return Promise.resolve({
+          data: [{
+            id: 21,
+            itemType: 'consumable',
+            category: 'Oil Filter',
+            description: 'Mahle Oil Filter',
+            manufacturer: 'Mahle',
+            supplier: 'Motor Factors',
+            price: '8.50',
+            purchaseDate: '2026-05-11',
+          }],
+        });
+      }
+      if (url.includes('/mot-records') || url.includes('/service-records')) {
+        return Promise.resolve({ data: [] });
+      }
+
+      return Promise.resolve({ data: [] });
+    });
+
+    renderDialog({
+      onClose,
+      consumable: { motRecordId: 3, serviceRecordId: null },
+    });
+
+    await waitFor(() => {
+      expect(mockApi.get).toHaveBeenCalledWith('/stock-items', { params: { itemType: 'consumable', vehicleTypeId: 10, inStock: 'true' } });
+    });
+
+    const linkExistingFormControl = screen
+      .getAllByText('consumables.linkExisting')[0]
+      .closest('.MuiFormControl-root');
+    const linkExistingTrigger = linkExistingFormControl?.querySelector('.MuiSelect-select');
+    expect(linkExistingTrigger).toBeTruthy();
+    fireEvent.mouseDown(linkExistingTrigger);
+
+    await waitFor(() => {
+      expect(screen.getByText('[stock.title] Mahle Oil Filter - 2026-05-11')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText('[stock.title] Mahle Oil Filter - 2026-05-11'));
+    fireEvent.click(screen.getByRole('button', { name: 'common.save' }));
+
+    await waitFor(() => {
+      expect(mockApi.post).toHaveBeenCalledWith(
+        '/consumables',
+        expect.objectContaining({
+          stockItemId: 21,
+          vehicleId: 1,
+          description: 'Mahle Oil Filter',
+        })
+      );
+    });
+  });
+
+  test('lists stock ledger option and posts stockItemId in normal add-to-vehicle flow', async () => {
+    const onClose = jest.fn();
+
+    mockApi.get.mockImplementation((url, config) => {
+      if (url.includes('/vehicles/')) {
+        return Promise.resolve({ data: { id: 1, vehicleType: { id: 10 } } });
+      }
+      if (url.includes('/consumable-types')) {
+        return Promise.resolve({ data: [{ id: 2, name: 'Oil Filter', unit: 'pcs' }] });
+      }
+      if (url === '/consumables' && config?.params?.vehicleId === 1 && config?.params?.unassociated === 'true') {
+        return Promise.resolve({ data: [] });
+      }
+      if (url === '/consumables' && config?.params?.generalStock === 'true') {
+        return Promise.resolve({ data: [] });
+      }
+      if (url === '/stock-items') {
+        return Promise.resolve({
+          data: [{
+            id: 22,
+            itemType: 'consumable',
+            category: 'Oil Filter',
+            description: 'Bosch Oil Filter',
+            manufacturer: 'Bosch',
+            supplier: 'Motor Factors',
+            price: '7.95',
+            purchaseDate: '2026-05-12',
+          }],
+        });
+      }
+      if (url.includes('/mot-records') || url.includes('/service-records')) {
+        return Promise.resolve({ data: [] });
+      }
+
+      return Promise.resolve({ data: [] });
+    });
+
+    renderDialog({ onClose });
+
+    await waitFor(() => {
+      expect(mockApi.get).toHaveBeenCalledWith('/stock-items', { params: { itemType: 'consumable', vehicleTypeId: 10, inStock: 'true' } });
+    });
+
+    const linkExistingFormControl = screen
+      .getAllByText('consumables.linkExisting')[0]
+      .closest('.MuiFormControl-root');
+    const linkExistingTrigger = linkExistingFormControl?.querySelector('.MuiSelect-select');
+    expect(linkExistingTrigger).toBeTruthy();
+    fireEvent.mouseDown(linkExistingTrigger);
+
+    await waitFor(() => {
+      expect(screen.getByText('[stock.title] Bosch Oil Filter - 2026-05-12')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText('[stock.title] Bosch Oil Filter - 2026-05-12'));
+    fireEvent.click(screen.getByRole('button', { name: 'common.save' }));
+
+    await waitFor(() => {
+      expect(mockApi.post).toHaveBeenCalledWith(
+        '/consumables',
+        expect.objectContaining({
+          stockItemId: 22,
+          vehicleId: 1,
+          description: 'Bosch Oil Filter',
+        })
+      );
+    });
+  });
 });

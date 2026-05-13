@@ -113,6 +113,28 @@ describe('ImportExport page', () => {
     });
   });
 
+  test('Download Stock uses dedicated stock export endpoint', async () => {
+    global.fetch = jest.fn()
+      // vehicles list
+      .mockImplementationOnce(() => Promise.resolve({ ok: true, json: () => Promise.resolve([{ id: 1, name: 'V1' }]) }))
+      // stock export
+      .mockImplementationOnce(() => Promise.resolve({ ok: true, json: () => Promise.resolve({ stockItems: [] }) }));
+
+    renderWithRouter(<ImportExport />);
+
+    await waitFor(() => expect(global.fetch).toHaveBeenCalledWith('/api/vehicles', expect.any(Object)));
+
+    const btnStock = screen.getAllByText('importExport.downloadStock')[0];
+    fireEvent.click(btnStock);
+
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledTimes(2);
+      const calledUrl = global.fetch.mock.calls[1][0];
+      expect(calledUrl).toEqual(expect.stringContaining('/api/vehicles/export-stock'));
+      expect(calledUrl).not.toEqual(expect.stringContaining('/api/vehicles/export?'));
+    });
+  });
+
   test('ZIP import surfaces status and text for non-JSON error responses', async () => {
     const htmlBody = '<html><body>Request Entity Too Large</body></html>';
     global.fetch = jest.fn()

@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import logger from '../utils/logger';
-import { Box, Button, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, IconButton, Tooltip, TableSortLabel } from '@mui/material';
+import { Box, Button, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, IconButton, Tooltip, TableSortLabel, TextField } from '@mui/material';
 import { Add, Edit, Delete } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { useVehicles } from '../contexts/VehiclesContext';
@@ -19,6 +19,7 @@ import FilteredVehicleSelector from '../components/FilteredVehicleSelector';
 import ViewAttachmentIconButton from '../components/ViewAttachmentIconButton';
 import KnightRiderLoader from '../components/KnightRiderLoader';
 import { demoGuard } from '../utils/demoMode';
+import { matchesFreeText } from '../utils/searchText';
 
 const FuelRecords = () => {
   const [records, setRecords] = useState([]);
@@ -28,6 +29,7 @@ const FuelRecords = () => {
   const recordsAbortRef = React.useRef(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
   const { api } = useAuth();
   const { notifyRecordChange } = useVehicles();
   const { t, i18n } = useTranslation();
@@ -36,6 +38,10 @@ const FuelRecords = () => {
   const { orderBy, order, handleRequestSort } = usePersistedSort('fuelRecords', 'date', 'desc');
   const { statusFilter, filteredVehicles, handleStatusFilterChange, STATUS_OPTIONS } = useVehicleStatusFilter(vehicles, 'fuelStatusFilter');
   const { selectedVehicle, handleVehicleChange } = useVehicleSelection(filteredVehicles, { includeViewAll: true });
+  const registrationByVehicleId = React.useMemo(
+    () => Object.fromEntries((vehicles || []).map((v) => [String(v.id), v.registrationNumber || v.registration || ''])),
+    [vehicles]
+  );
 
   // Send client-side logs to backend if endpoint exists, otherwise logger.warn/error
   const sendClientLog = useCallback(async (level, message, context = {}) => {
@@ -130,8 +136,8 @@ const FuelRecords = () => {
   const sortedRecords = React.useMemo(() => {
     const comparator = (a, b) => {
       if (orderBy === 'registration') {
-        const aReg = vehicles.find(v => String(v.id) === String(a.vehicleId))?.registrationNumber || '';
-        const bReg = vehicles.find(v => String(v.id) === String(b.vehicleId))?.registrationNumber || '';
+        const aReg = registrationByVehicleId[String(a.vehicleId)] || '';
+        const bReg = registrationByVehicleId[String(b.vehicleId)] || '';
         if (aReg === bReg) return 0;
         return order === 'asc' ? (aReg > bReg ? 1 : -1) : (aReg < bReg ? 1 : -1);
       }
@@ -172,7 +178,14 @@ const FuelRecords = () => {
     return [...records].sort(comparator);
   }, [records, order, orderBy]);
 
-  const { page, rowsPerPage, paginatedRows: paginatedRecords, handleChangePage, handleChangeRowsPerPage } = useTablePagination(sortedRecords);
+  const filteredRecords = React.useMemo(() => {
+    return sortedRecords.filter((record) => {
+      const registration = registrationByVehicleId[String(record.vehicleId)] || '';
+      return matchesFreeText(searchTerm, record, registration);
+    });
+  }, [sortedRecords, searchTerm, registrationByVehicleId]);
+
+  const { page, rowsPerPage, paginatedRows: paginatedRecords, handleChangePage, handleChangeRowsPerPage } = useTablePagination(filteredRecords);
 
   // For UX: show the Date column's sort arrow so that newest-first (internal 'desc') appears as an up arrow.
   const dateDisplayDirection = orderBy === 'date' ? (order === 'desc' ? 'asc' : 'desc') : order;
@@ -203,6 +216,13 @@ const FuelRecords = () => {
             includeViewAll={true}
             minWidth={360}
           />
+          <TextField
+            size="small"
+            placeholder={t('common.search', 'Search')}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            sx={{ minWidth: 220 }}
+          />
           <Button
             variant="contained"
             startIcon={<Add />}
@@ -221,7 +241,7 @@ const FuelRecords = () => {
       ) : (
         <>
           <TablePaginationBar
-            count={sortedRecords.length}
+            count={filteredRecords.length}
             page={page}
             rowsPerPage={rowsPerPage}
             onPageChange={handleChangePage}
@@ -303,7 +323,7 @@ const FuelRecords = () => {
           <TableBody>
             {paginatedRecords.map((record) => (
               <TableRow key={record.id} sx={{ '&:nth-of-type(odd)': { backgroundColor: 'action.hover' } }}>
-                <TableCell>{vehicles.find(v => String(v.id) === String(record.vehicleId))?.registrationNumber || '-'}</TableCell>
+                <TableCell>{registrationByVehicleId[String(record.vehicleId)] || '-'}</TableCell>
                 <TableCell>{record.date}</TableCell>
                 <TableCell>{record.mileage ? format(convert(record.mileage)) : '-'}</TableCell>
                 <TableCell>{record.litres}</TableCell>
@@ -329,7 +349,7 @@ const FuelRecords = () => {
             </Table>
           </TableContainer>
           <TablePaginationBar
-            count={sortedRecords.length}
+            count={filteredRecords.length}
             page={page}
             rowsPerPage={rowsPerPage}
             onPageChange={handleChangePage}

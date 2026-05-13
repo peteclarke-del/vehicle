@@ -196,7 +196,11 @@ const VehicleSpecifications = ({ vehicle }) => {
           {!editing && (
             <>
               <Tooltip title={t('vehicleSpecifications.editTooltip')}>
-                <IconButton onClick={handleEdit} color="primary">
+                <IconButton
+                  onClick={handleEdit}
+                  color="primary"
+                  aria-label={t('common.edit') || 'Edit'}
+                >
                   <Edit />
                 </IconButton>
               </Tooltip>

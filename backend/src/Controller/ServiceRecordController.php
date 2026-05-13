@@ -9,6 +9,7 @@ use App\Controller\Trait\UserSecurityTrait;
 use App\Entity\ServiceRecord;
 use App\Entity\ServiceItem;
 use App\Entity\Vehicle;
+use App\Entity\VehicleAssignment;
 use App\Entity\Part;
 use App\Entity\Consumable;
 use App\Entity\MotRecord;
@@ -83,7 +84,17 @@ class ServiceRecordController extends AbstractController
         if ($vehicleId) {
             $vehicleId = (int)$vehicleId;
             $vehicle = $this->entityManager->getRepository(Vehicle::class)->find($vehicleId);
-            if (!$vehicle || (!$this->isAdminForUser($user) && $vehicle->getOwner()->getId() !== $user->getId())) {
+            $assignment = null;
+            if (!$this->isAdminForUser($user) && $vehicle) {
+                $assignment = $this->entityManager->getRepository(VehicleAssignment::class)
+                    ->findOneBy(['assignedTo' => $user, 'vehicle' => $vehicle]);
+            }
+            if (
+                !$vehicle
+                || (!$this->isAdminForUser($user)
+                    && $vehicle->getOwner()->getId() !== $user->getId()
+                    && (!$assignment || !$assignment->canView()))
+            ) {
                 return new JsonResponse(['error' => 'Vehicle not found'], 404);
             }
 
@@ -107,7 +118,21 @@ class ServiceRecordController extends AbstractController
                 ->getResult();
         } else {
             $vehicleRepo = $this->entityManager->getRepository(Vehicle::class);
-            $vehicles = $this->isAdminForUser($user) ? $vehicleRepo->findAll() : $vehicleRepo->findBy(['owner' => $user]);
+            if ($this->isAdminForUser($user)) {
+                $vehicles = $vehicleRepo->findAll();
+            } else {
+                $ownVehicles = $vehicleRepo->findBy(['owner' => $user]);
+                $assignments = $this->entityManager->getRepository(VehicleAssignment::class)
+                    ->findBy(['assignedTo' => $user]);
+                $ownIds = array_map(fn($v) => $v->getId(), $ownVehicles);
+                $assignedVehicles = [];
+                foreach ($assignments as $a) {
+                    if ($a->canView() && !in_array($a->getVehicle()->getId(), $ownIds, true)) {
+                        $assignedVehicles[] = $a->getVehicle();
+                    }
+                }
+                $vehicles = array_merge($ownVehicles, $assignedVehicles);
+            }
 
             if (empty($vehicles)) {
                 return new JsonResponse([]);
@@ -155,7 +180,19 @@ class ServiceRecordController extends AbstractController
         $serviceRecord = $this->entityManager->getRepository(ServiceRecord::class)->find($id);
         $user = $this->getUserEntity();
 
-        if (!$serviceRecord || !$user || (!$this->isAdminForUser($user) && $serviceRecord->getVehicle()->getOwner()->getId() !== $user->getId())) {
+        $assignment = null;
+        if ($serviceRecord && $user && !$this->isAdminForUser($user)) {
+            $assignment = $this->entityManager->getRepository(VehicleAssignment::class)
+                ->findOneBy(['assignedTo' => $user, 'vehicle' => $serviceRecord->getVehicle()]);
+        }
+
+        if (
+            !$serviceRecord
+            || !$user
+            || (!$this->isAdminForUser($user)
+                && $serviceRecord->getVehicle()->getOwner()->getId() !== $user->getId()
+                && (!$assignment || !$assignment->canView()))
+        ) {
             return new JsonResponse(['error' => 'Service record not found'], 404);
         }
 

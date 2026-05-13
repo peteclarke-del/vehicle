@@ -17,6 +17,8 @@ import PartsScreen from '../screens/PartsScreen';
 import PartFormScreen from '../screens/PartFormScreen';
 import ConsumablesScreen from '../screens/ConsumablesScreen';
 import ConsumableFormScreen from '../screens/ConsumableFormScreen';
+import StockItemsScreen from '../screens/StockItemsScreen';
+import StockItemFormScreen from '../screens/StockItemFormScreen';
 import MotRecordsScreen from '../screens/MotRecordsScreen';
 import MotRecordDetailScreen from '../screens/MotRecordDetailScreen';
 import MotRecordFormScreen from '../screens/MotRecordFormScreen';
@@ -45,6 +47,25 @@ export type MainStackParamList = {
   ConsumableForm: {consumableId?: number; vehicleId?: number};
   PartsList: undefined;
   ConsumablesList: undefined;
+  StockItemsList: undefined;
+  StockItemForm: {
+    item?: {
+      id: number;
+      itemType: 'part' | 'consumable';
+      category: string;
+      quantity: number | string;
+      supplier?: string | null;
+      description?: string | null;
+      price?: string | null;
+      notes?: string | null;
+      purchaseDate?: string | null;
+      partNumber?: string | null;
+      manufacturer?: string | null;
+      warranty?: string | null;
+      vehicleTypeId?: number | null;
+      vehicleType?: string | null;
+    };
+  };
   MotRecordsList: undefined;
   MotRecordDetail: {recordId: number; vehicleId: number};
   MotRecordForm: {recordId?: number; vehicleId?: number};
@@ -196,6 +217,18 @@ const MainNavigator: React.FC = () => {
         name="ConsumablesList"
         component={ConsumablesScreen}
         options={{title: 'Consumables'}}
+      />
+      <Stack.Screen
+        name="StockItemsList"
+        component={StockItemsScreen}
+        options={{title: 'Stock Items'}}
+      />
+      <Stack.Screen
+        name="StockItemForm"
+        component={StockItemFormScreen}
+        options={({route}) => ({
+          title: route.params?.item?.id ? 'Edit Stock Item' : 'Add Stock Item',
+        })}
       />
       <Stack.Screen
         name="ConsumableForm"

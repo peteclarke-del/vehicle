@@ -23,7 +23,7 @@ export default function useVehicleStatusFilter(vehicles, storageKey) {
 
   const filteredVehicles = useMemo(() => {
     if (statusFilter === 'all') return vehicles;
-    return vehicles.filter(v => (v.status || 'Live') === statusFilter);
+    return vehicles.filter(v => v.alwaysVisible || (v.status || 'Live') === statusFilter);
   }, [vehicles, statusFilter]);
 
   const handleStatusFilterChange = (e) => {

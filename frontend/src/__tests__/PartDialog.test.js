@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import PartDialog from '../components/PartDialog';
 import { AuthContext } from '../context/AuthContext';
 import '@testing-library/jest-dom';
+import { MemoryRouter } from 'react-router-dom';
 
 const mockSetDefaultVehicle = jest.fn();
 
@@ -58,9 +59,11 @@ const renderWithProviders = (component) => {
   };
 
   return render(
-    <AuthContext.Provider value={mockAuthContext}>
-      {component}
-    </AuthContext.Provider>
+    <MemoryRouter>
+      <AuthContext.Provider value={mockAuthContext}>
+        {component}
+      </AuthContext.Provider>
+    </MemoryRouter>
   );
 };
 
@@ -255,6 +258,151 @@ describe('PartDialog Component', () => {
   test('does not render when closed', () => {
     renderWithProviders(<PartDialog {...defaultProps} open={false} />);
     expect(screen.queryByText('parts.addPart')).not.toBeInTheDocument();
+  });
+
+  test('lists stock ledger option and posts stockItemId when selected from MOT/service flow', async () => {
+    mockApi.get.mockImplementation((url, config) => {
+      if (url === '/vehicles/1') {
+        return Promise.resolve({ data: { id: 1, vehicleType: { id: 10, name: 'Car' } } });
+      }
+      if (url === '/vehicle-types') {
+        return Promise.resolve({ data: [{ id: 10, name: 'Car' }] });
+      }
+      if (url === '/part-categories') {
+        return Promise.resolve({ data: [{ id: 7, name: 'Oil Filter' }] });
+      }
+      if (url === '/mot-records' || url === '/service-records') {
+        return Promise.resolve({ data: [] });
+      }
+      if (url === '/parts' && config?.params?.vehicleId === 1 && config?.params?.unassociated === 'true') {
+        return Promise.resolve({ data: [] });
+      }
+      if (url === '/parts' && config?.params?.generalStock === 'true') {
+        return Promise.resolve({ data: [] });
+      }
+      if (url === '/stock-items') {
+        return Promise.resolve({
+          data: [{
+            id: 12,
+            itemType: 'part',
+            category: 'Oil Filter',
+            description: 'Bosch Oil Filter',
+            partNumber: 'BOF-1',
+            supplier: 'Euro Car Parts',
+            price: '9.99',
+            purchaseDate: '2026-05-10',
+          }],
+        });
+      }
+
+      return Promise.resolve({ data: [] });
+    });
+
+    renderWithProviders(
+      <PartDialog
+        {...defaultProps}
+        part={{ motRecordId: 3, serviceRecordId: null }}
+      />
+    );
+
+    await waitFor(() => {
+      expect(mockApi.get).toHaveBeenCalledWith('/stock-items', { params: { itemType: 'part', vehicleTypeId: 10, inStock: 'true' } });
+    });
+
+    const linkExistingFormControl = screen
+      .getAllByText('parts.linkExisting')[0]
+      .closest('.MuiFormControl-root');
+    const linkExistingTrigger = linkExistingFormControl?.querySelector('.MuiSelect-select');
+    expect(linkExistingTrigger).toBeTruthy();
+    fireEvent.mouseDown(linkExistingTrigger);
+
+    await waitFor(() => {
+      expect(screen.getByText('[stock.title] Bosch Oil Filter (BOF-1) - 2026-05-10')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText('[stock.title] Bosch Oil Filter (BOF-1) - 2026-05-10'));
+    fireEvent.click(screen.getByText('common.save'));
+
+    await waitFor(() => {
+      expect(mockApi.post).toHaveBeenCalledWith(
+        '/parts',
+        expect.objectContaining({
+          stockItemId: 12,
+          vehicleId: 1,
+          description: 'Bosch Oil Filter',
+        })
+      );
+    });
+  });
+
+  test('lists stock ledger option and posts stockItemId in normal add-to-vehicle flow', async () => {
+    mockApi.get.mockImplementation((url, config) => {
+      if (url === '/vehicles/1') {
+        return Promise.resolve({ data: { id: 1, vehicleType: { id: 10, name: 'Car' } } });
+      }
+      if (url === '/vehicle-types') {
+        return Promise.resolve({ data: [{ id: 10, name: 'Car' }] });
+      }
+      if (url === '/part-categories') {
+        return Promise.resolve({ data: [{ id: 7, name: 'Oil Filter' }] });
+      }
+      if (url === '/mot-records' || url === '/service-records') {
+        return Promise.resolve({ data: [] });
+      }
+      if (url === '/parts' && config?.params?.vehicleId === 1 && config?.params?.unassociated === 'true') {
+        return Promise.resolve({ data: [] });
+      }
+      if (url === '/parts' && config?.params?.generalStock === 'true') {
+        return Promise.resolve({ data: [] });
+      }
+      if (url === '/stock-items') {
+        return Promise.resolve({
+          data: [{
+            id: 13,
+            itemType: 'part',
+            category: 'Oil Filter',
+            description: 'Mann Oil Filter',
+            partNumber: 'MOF-2',
+            supplier: 'ECP',
+            price: '11.99',
+            purchaseDate: '2026-05-12',
+          }],
+        });
+      }
+
+      return Promise.resolve({ data: [] });
+    });
+
+    renderWithProviders(<PartDialog {...defaultProps} />);
+
+    await waitFor(() => {
+      expect(mockApi.get).toHaveBeenCalledWith('/stock-items', { params: { itemType: 'part', vehicleTypeId: 10, inStock: 'true' } });
+    });
+
+    const linkExistingFormControl = screen
+      .getAllByText('parts.linkExisting')[0]
+      .closest('.MuiFormControl-root');
+    const linkExistingTrigger = linkExistingFormControl?.querySelector('.MuiSelect-select');
+    expect(linkExistingTrigger).toBeTruthy();
+    fireEvent.mouseDown(linkExistingTrigger);
+
+    await waitFor(() => {
+      expect(screen.getByText('[stock.title] Mann Oil Filter (MOF-2) - 2026-05-12')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText('[stock.title] Mann Oil Filter (MOF-2) - 2026-05-12'));
+    fireEvent.click(screen.getByText('common.save'));
+
+    await waitFor(() => {
+      expect(mockApi.post).toHaveBeenCalledWith(
+        '/parts',
+        expect.objectContaining({
+          stockItemId: 13,
+          vehicleId: 1,
+          description: 'Mann Oil Filter',
+        })
+      );
+    });
   });
 
   test('loads part categories on mount', async () => {

@@ -170,12 +170,14 @@ async function computeVehicleCosts(vehicleId: number): Promise<any> {
   const motRecords = (await getAllRecords('mot-records')).filter((r: any) => r.vehicleId === vehicleId);
   const parts = (await getAllRecords('parts')).filter((r: any) => r.vehicleId === vehicleId);
   const consumables = (await getAllRecords('consumables')).filter((r: any) => r.vehicleId === vehicleId);
+  const stockItems = await getAllRecords('stock-items');
 
   const fuelCost = fuelRecords.reduce((s: number, r: any) => s + (parseFloat(r.totalCost || r.cost || '0') || 0), 0);
   const serviceCost = serviceRecords.reduce((s: number, r: any) => s + (parseFloat(r.totalCost || r.cost || '0') || 0), 0);
   const motCost = motRecords.reduce((s: number, r: any) => s + (parseFloat(r.totalCost || r.testCost || '0') || 0), 0);
   const partsCost = parts.reduce((s: number, r: any) => s + (parseFloat(r.totalCost || r.cost || '0') || 0), 0);
   const consumablesCost = consumables.reduce((s: number, r: any) => s + (parseFloat(r.totalCost || r.cost || '0') || 0), 0);
+  const stockItemsCost = stockItems.reduce((s: number, r: any) => s + (parseFloat(r.totalCost || r.price || '0') || 0), 0);
 
   return {
     fuelCost: fuelCost.toFixed(2),
@@ -183,7 +185,8 @@ async function computeVehicleCosts(vehicleId: number): Promise<any> {
     motCost: motCost.toFixed(2),
     partsCost: partsCost.toFixed(2),
     consumablesCost: consumablesCost.toFixed(2),
-    totalCost: (fuelCost + serviceCost + motCost + partsCost + consumablesCost).toFixed(2),
+    stockItemsCost: stockItemsCost.toFixed(2),
+    totalCost: (fuelCost + serviceCost + motCost + partsCost + consumablesCost + stockItemsCost).toFixed(2),
   };
 }
 
@@ -226,6 +229,9 @@ export function createLocalApiAdapter(): any {
             serviceRecords: relatedServices,
           },
         };
+      }
+      if (entity === 'stock-items' && sub === 'scrape-url') {
+        return {data: {name: '', supplier: '', price: '', manufacturer: ''}};
       }
       if (entity === 'attachments' && id) {
         return {data: await getRecord('attachments', id)};

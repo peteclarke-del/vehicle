@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\TestCase;
 
 use App\Entity\User;
+use Doctrine\ORM\Tools\SchemaTool;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 
@@ -22,11 +23,18 @@ abstract class BaseWebTestCase extends WebTestCase
     public static function setUpBeforeClass(): void
     {
         parent::setUpBeforeClass();
-        
-        // Schema is created once via doctrine:schema:create before running tests.
-        // We don't need to create it here as we use a file-backed SQLite database.
-        // The static flag helps us know if we already checked this session.
+
+        // Ensure test schema is in sync with entities for file-backed SQLite.
+        // This keeps test DB compatible with latest entity changes/migrations.
         if (!self::$schemaCreated) {
+            static::bootKernel();
+            $em = static::getContainer()->get('doctrine')->getManager();
+            $metadata = $em->getMetadataFactory()->getAllMetadata();
+            if (!empty($metadata)) {
+                $tool = new SchemaTool($em);
+                $tool->updateSchema($metadata, true);
+            }
+            static::ensureKernelShutdown();
             self::$schemaCreated = true;
         }
     }

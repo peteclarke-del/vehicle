@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import logger from '../utils/logger';
-import { Box, Button, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, IconButton, Tooltip, TableSortLabel } from '@mui/material';
+import { Box, Button, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, IconButton, Tooltip, TableSortLabel, TextField } from '@mui/material';
 import { Add, Edit, Delete } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { useVehicles } from '../contexts/VehiclesContext';
@@ -20,6 +20,7 @@ import ViewAttachmentIconButton from '../components/ViewAttachmentIconButton';
 import TablePaginationBar from '../components/TablePaginationBar';
 import FilteredVehicleSelector from '../components/FilteredVehicleSelector';
 import { demoGuard } from '../utils/demoMode';
+import { matchesFreeText } from '../utils/searchText';
 
 const Consumables = () => {
   const [consumables, setConsumables] = useState([]);
@@ -27,6 +28,7 @@ const Consumables = () => {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedConsumable, setSelectedConsumable] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
   const [openServiceDialog, setOpenServiceDialog] = useState(false);
   const [selectedServiceRecord, setSelectedServiceRecord] = useState(null);
   const { api } = useAuth();
@@ -39,6 +41,10 @@ const Consumables = () => {
   const { orderBy, order, handleRequestSort } = usePersistedSort('consumables', 'description', 'asc');
   const { statusFilter, filteredVehicles, handleStatusFilterChange, STATUS_OPTIONS } = useVehicleStatusFilter(vehicles, 'consumablesStatusFilter');
   const { selectedVehicle, handleVehicleChange } = useVehicleSelection(filteredVehicles, { includeViewAll: true });
+  const registrationByVehicleId = React.useMemo(
+    () => Object.fromEntries((vehicles || []).map((v) => [String(v.id), v.registrationNumber || v.registration || ''])),
+    [vehicles]
+  );
 
   const loadVehicles = useCallback(async () => {
     const data = await fetchArrayData(api, '/vehicles');
@@ -47,10 +53,27 @@ const Consumables = () => {
   }, [api]);
 
   const loadConsumables = useCallback(async (signal) => {
-    const url = (!selectedVehicle || selectedVehicle === '__all__') ? '/consumables' : `/consumables?vehicleId=${selectedVehicle}`;
-    const data = await fetchArrayData(api, url, signal ? { signal } : {});
-    setConsumables(data);
-    return data;
+    const options = signal ? { signal } : {};
+
+    if (!selectedVehicle || selectedVehicle === '__all__') {
+      const data = await fetchArrayData(api, '/consumables', options);
+      const vehicleOnly = data.filter((c) => c.vehicleId != null);
+      setConsumables(vehicleOnly);
+      return vehicleOnly;
+    }
+
+    const selectedVehicleId = String(selectedVehicle);
+    let data = await fetchArrayData(api, `/consumables?vehicleId=${selectedVehicle}`, options);
+
+    // Fallback for environments where the vehicle-filtered endpoint returns empty unexpectedly.
+    if (data.length === 0) {
+      const allConsumables = await fetchArrayData(api, '/consumables', options);
+      data = allConsumables.filter((c) => String(c.vehicleId) === selectedVehicleId);
+    }
+
+    const vehicleOnly = data.filter((c) => String(c.vehicleId) === selectedVehicleId);
+    setConsumables(vehicleOnly);
+    return vehicleOnly;
   }, [api, selectedVehicle]);
 
   useEffect(() => {
@@ -108,8 +131,8 @@ const Consumables = () => {
   const sortedConsumables = React.useMemo(() => {
     const comparator = (a, b) => {
       if (orderBy === 'registration') {
-        const aReg = vehicles.find(v => String(v.id) === String(a.vehicleId))?.registrationNumber || '';
-        const bReg = vehicles.find(v => String(v.id) === String(b.vehicleId))?.registrationNumber || '';
+        const aReg = registrationByVehicleId[String(a.vehicleId)] || '';
+        const bReg = registrationByVehicleId[String(b.vehicleId)] || '';
         if (aReg === bReg) return 0;
         return order === 'asc' ? (aReg > bReg ? 1 : -1) : (aReg < bReg ? 1 : -1);
       }
@@ -137,7 +160,14 @@ const Consumables = () => {
     return [...consumables].sort(comparator);
   }, [consumables, order, orderBy]);
 
-  const { page, rowsPerPage, paginatedRows: paginatedConsumables, handleChangePage, handleChangeRowsPerPage } = useTablePagination(sortedConsumables);
+  const filteredConsumables = React.useMemo(() => {
+    return sortedConsumables.filter((consumable) => {
+      const registration = registrationByVehicleId[String(consumable.vehicleId)] || '';
+      return matchesFreeText(searchTerm, consumable, consumable.consumableType?.name, registration);
+    });
+  }, [sortedConsumables, searchTerm, registrationByVehicleId]);
+
+  const { page, rowsPerPage, paginatedRows: paginatedConsumables, handleChangePage, handleChangeRowsPerPage } = useTablePagination(filteredConsumables);
 
   const calculateTotalCost = () => {
     return consumables.reduce((sum, consumable) => sum + (parseFloat(consumable.cost) || 0), 0);
@@ -180,6 +210,13 @@ const Consumables = () => {
             includeViewAll={true}
             minWidth={360}
           />
+          <TextField
+            size="small"
+            placeholder={t('common.search', 'Search')}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            sx={{ minWidth: 220 }}
+          />
           <Button
             variant="contained"
             startIcon={<Add />}
@@ -200,7 +237,7 @@ const Consumables = () => {
       )}
 
       <TablePaginationBar
-        count={sortedConsumables.length}
+        count={filteredConsumables.length}
         page={page}
         rowsPerPage={rowsPerPage}
         onPageChange={handleChangePage}
@@ -284,7 +321,7 @@ const Consumables = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {sortedConsumables.length === 0 ? (
+            {filteredConsumables.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={9} align="center">
                   <Typography color="textSecondary">{t('common.noRecords')}</Typography>
@@ -293,7 +330,7 @@ const Consumables = () => {
             ) : (
               paginatedConsumables.map((consumable) => (
                 <TableRow key={consumable.id} sx={{ '&:nth-of-type(odd)': { backgroundColor: 'action.hover' } }}>
-                  <TableCell>{vehicles.find(v => String(v.id) === String(consumable.vehicleId))?.registrationNumber || '-'}</TableCell>
+                  <TableCell>{registrationByVehicleId[String(consumable.vehicleId)] || '-'}</TableCell>
                   <TableCell>
                     {consumable.consumableType?.name || '-'}
                   </TableCell>
@@ -345,7 +382,7 @@ const Consumables = () => {
         </Table>
       </TableContainer>
       <TablePaginationBar
-        count={sortedConsumables.length}
+        count={filteredConsumables.length}
         page={page}
         rowsPerPage={rowsPerPage}
         onPageChange={handleChangePage}

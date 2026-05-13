@@ -65,12 +65,24 @@ const MoreScreen: React.FC = () => {
           </>
         )}
         {can('consumables.view') && (
+          <>
+            <List.Item
+              title="Consumables"
+              description="Oils, filters, brake pads, spark plugs"
+              left={props => <List.Icon {...props} icon="oil" />}
+              right={props => <List.Icon {...props} icon="chevron-right" />}
+              onPress={() => navigation.navigate('ConsumablesList')}
+            />
+            <Divider />
+          </>
+        )}
+        {(can('stock.view') || can('parts.view') || can('consumables.view')) && (
           <List.Item
-            title="Consumables"
-            description="Oils, filters, brake pads, spark plugs"
-            left={props => <List.Icon {...props} icon="oil" />}
+            title="Stock Items"
+            description="Shared stock buckets for parts and consumables"
+            left={props => <List.Icon {...props} icon="archive" />}
             right={props => <List.Icon {...props} icon="chevron-right" />}
-            onPress={() => navigation.navigate('ConsumablesList')}
+            onPress={() => navigation.navigate('StockItemsList')}
           />
         )}
       </List.Section>

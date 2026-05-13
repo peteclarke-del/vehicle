@@ -13,6 +13,7 @@ use App\Entity\VehicleMake;
 use App\Entity\VehicleModel;
 use App\Entity\Part;
 use App\Entity\Consumable;
+use App\Entity\StockItem;
 use App\Entity\PartCategory;
 use App\Entity\ConsumableType;
 use App\Entity\ServiceRecord;
@@ -86,6 +87,25 @@ class VehicleImportService
         bool $dryRun = false
     ): ImportResult {
         $startTime = microtime(true);
+        $stockItemsData = $this->extractStockItemsData($data);
+        $data = $this->extractVehicleData($data);
+
+        // Normalize object-like payloads: support a single vehicle object,
+        // and avoid treating stock-only payload maps as vehicle rows.
+        if (array_keys($data) !== range(0, count($data) - 1)) {
+            if (
+                isset($data['registrationNumber']) ||
+                isset($data['name']) ||
+                isset($data['make']) ||
+                isset($data['model'])
+            ) {
+                $data = [$data];
+            } else {
+                $data = [];
+            }
+        }
+
+        $data = $this->normalizeImportData($data);
         
         if (!$dryRun) {
             $this->entityManager->beginTransaction();
@@ -98,20 +118,28 @@ class VehicleImportService
                 'zipExtractDir' => $zipExtractDir
             ]);
 
-            // Validate data
-            $validationErrors = $this->validateImportData($data);
-            if (!empty($validationErrors)) {
+            if (empty($data) && empty($stockItemsData)) {
                 if (!$dryRun) {
                     $this->entityManager->rollback();
                 }
                 return ImportResult::createFailure(
-                    $validationErrors,
+                    ['No data to import'],
                     'Validation failed'
                 );
             }
 
-            // Normalize data format
-            $data = $this->normalizeImportData($data);
+            if (!empty($data)) {
+                $validationErrors = $this->validateImportData($data);
+                if (!empty($validationErrors)) {
+                    if (!$dryRun) {
+                        $this->entityManager->rollback();
+                    }
+                    return ImportResult::createFailure(
+                        $validationErrors,
+                        'Validation failed'
+                    );
+                }
+            }
 
             // Pre-load existing data for duplicate detection  
             $isAdmin = in_array('ROLE_ADMIN', $user->getRoles(), true);
@@ -193,6 +221,10 @@ class VehicleImportService
                 }
             }
 
+            if (!empty($stockItemsData) && !$dryRun) {
+                $stats['stockItemsImported'] = $this->importStockItems($stockItemsData, $user);
+            }
+
             if (!$dryRun) {
                 $this->entityManager->flush();
                 $this->resolveAttachmentEntityLinks();
@@ -216,6 +248,7 @@ class VehicleImportService
 
             $statistics = [
                 'vehiclesImported' => $stats['processed'],
+                'stockItemsImported' => $stats['stockItemsImported'] ?? 0,
                 'errors' => count($stats['errors']),
                 'processingTimeSeconds' => round(microtime(true) - $startTime, 2),
                 'memoryPeakMB' => round(memory_get_peak_usage(true) / 1024 / 1024, 2),
@@ -297,6 +330,59 @@ class VehicleImportService
         }
 
         return $errors;
+    }
+
+    /**
+     * function extractVehicleData
+     *
+     * @param array $data
+     *
+     * @return array
+     */
+    private function extractVehicleData(array $data): array
+    {
+        $isSequential = array_keys($data) === range(0, count($data) - 1);
+        if ($isSequential) {
+            return $data;
+        }
+
+        if (!empty($data['vehicles']) && is_array($data['vehicles'])) {
+            return $data['vehicles'];
+        }
+
+        if (!empty($data['data']) && is_array($data['data'])) {
+            return $data['data'];
+        }
+
+        if (!empty($data['parsed']) && is_array($data['parsed'])) {
+            return $data['parsed'];
+        }
+
+        if (!empty($data['results']) && is_array($data['results'])) {
+            return $data['results'];
+        }
+
+        return $data;
+    }
+
+    /**
+     * function extractStockItemsData
+     *
+     * @param array $data
+     *
+     * @return array
+     */
+    private function extractStockItemsData(array $data): array
+    {
+        if (!empty($data['stockItems']) && is_array($data['stockItems'])) {
+            return $data['stockItems'];
+        }
+
+        if (!empty($data['stock']) && is_array($data['stock'])) {
+            return $data['stock'];
+        }
+
+        return [];
     }
 
     /**
@@ -1623,6 +1709,74 @@ class VehicleImportService
         
         // Final flush for all attachments and relationships
         $this->entityManager->flush();
+    }
+
+    /**
+     * function importStockItems
+     *
+     * @param array $stockItemsData
+     * @param User $user
+     *
+     * @return int
+     */
+    private function importStockItems(array $stockItemsData, User $user): int
+    {
+        $imported = 0;
+        $repo = $this->entityManager->getRepository(StockItem::class);
+
+        foreach ($stockItemsData as $stockItemData) {
+            if (!is_array($stockItemData)) {
+                continue;
+            }
+
+            $itemType = trim((string) ($stockItemData['itemType'] ?? ''));
+            $category = trim((string) ($stockItemData['category'] ?? ''));
+            if ($itemType === '' || $category === '') {
+                continue;
+            }
+
+            $supplier = isset($stockItemData['supplier']) ? trim((string) $stockItemData['supplier']) : null;
+            if ($supplier === '') {
+                $supplier = null;
+            }
+
+            $item = $repo->findOneBy([
+                'user' => $user,
+                'itemType' => $itemType,
+                'category' => $category,
+                'supplier' => $supplier,
+            ]);
+
+            if (!$item) {
+                $item = new StockItem();
+                $item->setUser($user);
+                $this->entityManager->persist($item);
+            }
+
+            $item->setItemType($itemType)
+                ->setCategory($category)
+                ->setSupplier($supplier)
+                ->setDescription(isset($stockItemData['description']) ? trim((string) $stockItemData['description']) : null)
+                ->setPrice(isset($stockItemData['price']) ? trim((string) $stockItemData['price']) : null)
+                ->setNotes(isset($stockItemData['notes']) ? trim((string) $stockItemData['notes']) : null)
+                ->setPartNumber(isset($stockItemData['partNumber']) ? trim((string) $stockItemData['partNumber']) : null)
+                ->setManufacturer(isset($stockItemData['manufacturer']) ? trim((string) $stockItemData['manufacturer']) : null)
+                ->setWarranty(isset($stockItemData['warranty']) ? trim((string) $stockItemData['warranty']) : null)
+                ->setQuantity(number_format((float) ($stockItemData['quantity'] ?? 0), 2, '.', ''));
+
+            if (!empty($stockItemData['purchaseDate'])) {
+                try {
+                    $item->setPurchaseDate(new \DateTime((string) $stockItemData['purchaseDate']));
+                } catch (\Exception $e) {
+                    // Ignore invalid date
+                }
+            }
+
+            $item->touch();
+            $imported++;
+        }
+
+        return $imported;
     }
 
     /**

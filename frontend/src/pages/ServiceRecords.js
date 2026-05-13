@@ -3,6 +3,7 @@ import { Link as RouterLink } from 'react-router-dom';
 import {
   Typography,
   Button,
+  TextField,
   Table,
   TableBody,
   TableCell,
@@ -36,12 +37,14 @@ import FilteredVehicleSelector from '../components/FilteredVehicleSelector';
 import ViewAttachmentIconButton from '../components/ViewAttachmentIconButton';
 import { demoGuard } from '../utils/demoMode';
 import KnightRiderLoader from '../components/KnightRiderLoader';
+import { matchesFreeText } from '../utils/searchText';
 
 const ServiceRecords = () => {
   const [serviceRecords, setServiceRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingService, setEditingService] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
   const { vehicles, loading: vehiclesLoading, fetchVehicles, notifyRecordChange } = useVehicles();
   const { api } = useAuth();
   const { t, i18n } = useTranslation();
@@ -50,6 +53,10 @@ const ServiceRecords = () => {
   const { statusFilter, filteredVehicles, handleStatusFilterChange, STATUS_OPTIONS } = useVehicleStatusFilter(vehicles, 'serviceStatusFilter');
   const { selectedVehicle, handleVehicleChange } = useVehicleSelection(filteredVehicles);
   const { convert, format, getLabel } = useDistance();
+  const registrationByVehicleId = React.useMemo(
+    () => Object.fromEntries((vehicles || []).map((v) => [String(v.id), v.registrationNumber || v.registration || ''])),
+    [vehicles]
+  );
 
   const loadServiceRecords = useCallback(async (signal) => {
     setLoading(true);
@@ -145,8 +152,8 @@ const ServiceRecords = () => {
   const sortedServiceRecords = React.useMemo(() => {
     const comparator = (a, b) => {
       if (orderBy === 'registration') {
-        const aReg = vehicles.find(v => String(v.id) === String(a.vehicleId))?.registrationNumber || '';
-        const bReg = vehicles.find(v => String(v.id) === String(b.vehicleId))?.registrationNumber || '';
+        const aReg = registrationByVehicleId[String(a.vehicleId)] || '';
+        const bReg = registrationByVehicleId[String(b.vehicleId)] || '';
         if (aReg === bReg) return 0;
         return order === 'asc' ? (aReg > bReg ? 1 : -1) : (aReg < bReg ? 1 : -1);
       }
@@ -174,7 +181,14 @@ const ServiceRecords = () => {
     return [...base].sort(comparator);
   }, [serviceRecords, order, orderBy]);
 
-    const { page, rowsPerPage, paginatedRows: paginatedServiceRecords, handleChangePage, handleChangeRowsPerPage } = useTablePagination(sortedServiceRecords);
+  const filteredServiceRecords = React.useMemo(() => {
+    return sortedServiceRecords.filter((record) => {
+      const registration = registrationByVehicleId[String(record.vehicleId)] || '';
+      return matchesFreeText(searchTerm, record, registration);
+    });
+  }, [sortedServiceRecords, searchTerm, registrationByVehicleId]);
+
+    const { page, rowsPerPage, paginatedRows: paginatedServiceRecords, handleChangePage, handleChangeRowsPerPage } = useTablePagination(filteredServiceRecords);
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP' }).format(amount);
@@ -221,6 +235,13 @@ const ServiceRecords = () => {
             id="service"
             minWidth={360}
           />
+          <TextField
+            size="small"
+            placeholder={t('common.search', 'Search')}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            sx={{ minWidth: 220 }}
+          />
           <Button variant="contained" color="primary" startIcon={<AddIcon />} onClick={handleAdd} disabled={!selectedVehicle || selectedVehicle === '__all__'}>
             {t('service.addService')}
           </Button>
@@ -228,7 +249,7 @@ const ServiceRecords = () => {
       </Box>
 
       <TablePaginationBar
-        count={sortedServiceRecords.length}
+        count={filteredServiceRecords.length}
         page={page}
         rowsPerPage={rowsPerPage}
         onPageChange={handleChangePage}
@@ -336,7 +357,7 @@ const ServiceRecords = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {serviceRecords.length === 0 ? (
+            {filteredServiceRecords.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={12} align="center">
                   {t('common.noRecords')}
@@ -345,7 +366,7 @@ const ServiceRecords = () => {
             ) : (
               paginatedServiceRecords.map((service) => (
                 <TableRow key={service.id} sx={{ '&:nth-of-type(odd)': { backgroundColor: 'action.hover' } }}>
-                  <TableCell>{vehicles.find(v => String(v.id) === String(service.vehicleId))?.registrationNumber || '-'}</TableCell>
+                  <TableCell>{registrationByVehicleId[String(service.vehicleId)] || '-'}</TableCell>
                   <TableCell>{formatDateISO(service.serviceDate)}</TableCell>
                   <TableCell>{service.serviceType}</TableCell>
                   <TableCell align="right">{formatCurrency(service.laborCost, 'GBP', i18n.language)}</TableCell>
@@ -387,7 +408,7 @@ const ServiceRecords = () => {
         </Table>
       </TableContainer>
       <TablePaginationBar
-        count={sortedServiceRecords.length}
+        count={filteredServiceRecords.length}
         page={page}
         rowsPerPage={rowsPerPage}
         onPageChange={handleChangePage}

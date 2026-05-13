@@ -85,6 +85,10 @@ class VehicleModelController extends AbstractController
         }
         $data = $validation['data'];
 
+        if (!isset($data['makeId']) || !isset($data['name'])) {
+            return $this->json(['error' => 'makeId and name are required'], 400);
+        }
+
         $make = $em->getRepository(VehicleMake::class)->find($data['makeId']);
         if (!$make) {
             return $this->json(['error' => 'Make not found'], 404);

@@ -6,6 +6,7 @@ namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
 use App\Entity\Attachment;
+use App\Entity\User;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'consumables')]
@@ -25,12 +26,20 @@ class Consumable
     private ?int $id = null;
 
     #[ORM\ManyToOne(targetEntity: Vehicle::class, inversedBy: 'consumables')]
-    #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'CASCADE')]
 
     /**
      * @var Vehicle
      */
     private ?Vehicle $vehicle = null;
+
+    #[ORM\ManyToOne(targetEntity: User::class)]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'CASCADE')]
+
+    /**
+     * @var User
+     */
+    private ?User $user = null;
 
     #[ORM\ManyToOne(targetEntity: ConsumableType::class, inversedBy: 'consumables')]
     #[ORM\JoinColumn(nullable: false)]
@@ -218,6 +227,29 @@ class Consumable
     public function setVehicle(?Vehicle $vehicle): self
     {
         $this->vehicle = $vehicle;
+        return $this;
+    }
+
+    /**
+     * function getUser
+     *
+     * @return User
+     */
+    public function getUser(): ?User
+    {
+        return $this->user;
+    }
+
+    /**
+     * function setUser
+     *
+     * @param User $user
+     *
+     * @return self
+     */
+    public function setUser(?User $user): self
+    {
+        $this->user = $user;
         return $this;
     }
 

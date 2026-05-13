@@ -17,6 +17,11 @@ import { useTranslation } from 'react-i18next';
 import { fetchArrayData } from '../hooks/useApiData';
 import logger from '../utils/logger';
 
+const formatStockLabel = (item, fallback = '') => {
+  const base = fallback || item.description || item.name || item.partNumber || '';
+  return item.isGeneralStock ? `[Stock] ${base}` : base;
+};
+
 const TodoDialog = ({ open, onClose, vehicleId, todo }) => {
   const { api } = useAuth();
   const { t } = useTranslation();
@@ -57,7 +62,14 @@ const TodoDialog = ({ open, onClose, vehicleId, todo }) => {
   const loadOptions = async () => {
     if (!vehicleId) return { parts: [], consumables: [] };
     const p = await fetchArrayData(api, `/parts?vehicleId=${vehicleId}`) || [];
-    const c = await fetchArrayData(api, `/consumables?vehicleId=${vehicleId}`) || [];
+    const [vehicleConsumables, stockConsumables] = await Promise.all([
+      fetchArrayData(api, `/consumables?vehicleId=${vehicleId}`),
+      fetchArrayData(api, '/consumables?generalStock=true'),
+    ]);
+    const c = [
+      ...(vehicleConsumables || []),
+      ...(stockConsumables || []),
+    ];
     setParts(p);
     setConsumables(c);
     return { parts: p, consumables: c };
@@ -107,22 +119,24 @@ const TodoDialog = ({ open, onClose, vehicleId, todo }) => {
           <Autocomplete
             multiple
             options={availableParts}
-            getOptionLabel={(opt) => opt.description || opt.partNumber || opt.id}
+            getOptionLabel={(opt) => formatStockLabel(opt, opt.description || opt.partNumber || String(opt.id))}
             value={selectedParts}
             onChange={(e, v) => setSelectedParts(v)}
-            renderTags={(value, getTagProps) => value.map((option, index) => (<Chip label={option.description || option.partNumber} {...getTagProps({ index })} />))}
+            renderTags={(value, getTagProps) => value.map((option, index) => (
+              <Chip label={formatStockLabel(option, option.description || option.partNumber || '')} {...getTagProps({ index })} />
+            ))}
             renderInput={(params) => <TextField {...params} label={t('todo.parts') || 'Parts'} />}
           />
 
           <Autocomplete
             multiple
             options={availableConsumables}
-            getOptionLabel={(opt) => opt.description || opt.name || opt.partNumber || ''}
+            getOptionLabel={(opt) => formatStockLabel(opt, opt.description || opt.name || opt.partNumber || '')}
             value={selectedConsumables}
             onChange={(e, v) => setSelectedConsumables(v)}
             renderTags={(value, getTagProps) => value.map((option, index) => (
               <Chip
-                label={option.description || option.name || option.partNumber || ''}
+                label={formatStockLabel(option, option.description || option.name || option.partNumber || '')}
                 {...getTagProps({ index })}
               />
             ))}

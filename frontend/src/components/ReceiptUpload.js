@@ -348,12 +348,20 @@ export default function ReceiptUpload({
             )}
           </Box>
           <Tooltip title={t('attachment.view')}>
-            <IconButton size="small" onClick={(e) => { e.stopPropagation(); handleView(); }}>
+            <IconButton
+              size="small"
+              onClick={(e) => { e.stopPropagation(); handleView(); }}
+              aria-label={t('attachment.view') || 'View attachment'}
+            >
               <ViewIcon />
             </IconButton>
           </Tooltip>
           <Tooltip title={t('attachment.remove')}>
-            <IconButton size="small" onClick={(e) => { e.stopPropagation(); handleRemoveExisting(); }}>
+            <IconButton
+              size="small"
+              onClick={(e) => { e.stopPropagation(); handleRemoveExisting(); }}
+              aria-label={t('attachment.remove') || 'Remove attachment'}
+            >
               <DeleteIcon />
             </IconButton>
           </Tooltip>

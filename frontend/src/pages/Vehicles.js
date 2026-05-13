@@ -29,6 +29,7 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  TextField,
 } from '@mui/material';
 import { 
   Add, 
@@ -57,6 +58,7 @@ import VehicleSpecifications from '../components/VehicleSpecifications';
 import KnightRiderLoader from '../components/KnightRiderLoader';
 import TablePaginationBar from '../components/TablePaginationBar';
 import { demoGuard } from '../utils/demoMode';
+import { matchesFreeText } from '../utils/searchText';
 
 const Vehicles = () => {
   const [vehicles, setVehicles] = useState([]);
@@ -65,6 +67,7 @@ const Vehicles = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
   const [statusFilter, setStatusFilter] = useState(() => SafeStorage.get('vehiclesStatusFilter', 'Live'));
+  const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState(() => {
     return SafeStorage.get('vehiclesViewMode', 'card');
   });
@@ -162,8 +165,11 @@ const Vehicles = () => {
   }, [vehicles, order, orderBy]);
 
   const displayedVehicles = React.useMemo(() => {
-    return sortedVehicles.filter(v => statusFilter === 'all' || (v.status || 'Live') === statusFilter);
-  }, [sortedVehicles, statusFilter]);
+    return sortedVehicles.filter((vehicle) => {
+      const statusMatches = statusFilter === 'all' || (vehicle.status || 'Live') === statusFilter;
+      return statusMatches && matchesFreeText(searchTerm, vehicle, vehicle.vehicleType?.name);
+    });
+  }, [sortedVehicles, statusFilter, searchTerm]);
 
   const { page, rowsPerPage, paginatedRows: paginatedVehicles, handleChangePage, handleChangeRowsPerPage } = useTablePagination(displayedVehicles);
 
@@ -265,6 +271,13 @@ const Vehicles = () => {
               ))}
             </Select>
           </FormControl>
+          <TextField
+            size="small"
+            placeholder={t('common.search', 'Search')}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            sx={{ minWidth: 220 }}
+          />
           <ToggleButtonGroup
             value={viewMode}
             exclusive
