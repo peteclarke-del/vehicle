@@ -9,6 +9,7 @@ use App\Entity\Consumable;
 use App\Entity\FuelRecord;
 use App\Entity\MotRecord;
 use App\Entity\Part;
+use App\Entity\StockItem;
 use App\Entity\ServiceRecord;
 use App\Entity\Vehicle;
 use Doctrine\ORM\EntityManagerInterface;
@@ -232,6 +233,22 @@ class AttachmentLinkingService
                 'entityType' => $entityType
             ]);
             return null;
+        }
+
+        if (method_exists($entity, 'getReceiptAttachment')) {
+            $currentAttachment = $entity->getReceiptAttachment();
+            if ($currentAttachment && $currentAttachment->getId() !== $attachment->getId()) {
+                $this->unlinkAttachment($currentAttachment, $entity);
+            }
+        }
+
+        $oldEntityType = $attachment->getEntityType();
+        $oldEntityId = $attachment->getEntityId();
+        if ($oldEntityType && $oldEntityId) {
+            $oldEntity = $this->resolveEntityByTypeAndId($oldEntityType, $oldEntityId);
+            if ($oldEntity && $oldEntity !== $entity) {
+                $this->unlinkAttachment($attachment, $oldEntity);
+            }
         }
 
         $this->logger->info('[AttachmentLinking] Found attachment, linking to entity', [
@@ -489,6 +506,7 @@ class AttachmentLinkingService
             'fuel' => FuelRecord::class,
             'part' => Part::class,
             'consumable' => Consumable::class,
+            'stockitem' => StockItem::class,
             'vehicle' => Vehicle::class,
             default => null,
         };

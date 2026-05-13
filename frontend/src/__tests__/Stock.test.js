@@ -27,6 +27,8 @@ jest.mock('../components/KnightRiderLoader', () => () => <div data-testid="loade
 
 jest.mock('../utils/logger', () => ({ error: jest.fn(), warn: jest.fn() }));
 
+jest.setTimeout(15000);
+
 describe('Stock page', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -72,6 +74,7 @@ describe('Stock page', () => {
         quantity: '2.00',
         purchaseDate: '2026-05-11',
         updatedAt: '2026-05-11T10:00:00Z',
+        receiptAttachmentId: 77,
       },
     ]);
   });
@@ -161,6 +164,29 @@ describe('Stock page', () => {
           delta: 2,
           partNumber: 'C-123',
           manufacturer: 'BrandCo',
+        })
+      );
+    });
+  });
+
+  test('adjust buttons target the clicked row and receipt icon is shown when attached', async () => {
+    render(<Stock />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Bosch Oil Filter')).toBeInTheDocument();
+    });
+
+    expect(screen.getAllByLabelText('attachment.view')).toHaveLength(1);
+
+    const plusButtons = screen.getAllByRole('button', { name: '+' });
+    fireEvent.click(plusButtons[1]);
+
+    await waitFor(() => {
+      expect(mockApi.post).toHaveBeenCalledWith(
+        '/stock-items/adjust',
+        expect.objectContaining({
+          stockItemId: 2,
+          delta: 1,
         })
       );
     });

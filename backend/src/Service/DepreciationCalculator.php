@@ -140,7 +140,7 @@ class DepreciationCalculator
     }
 
     /* Compatibility API expected by tests */
-    public function generateSchedule(Vehicle $vehicle, int $years, string $method = null, float $rate = null, float $minValue = 0.0): array
+    public function generateSchedule(Vehicle $vehicle, int $years, ?string $method = null, ?float $rate = null, float $minValue = 0.0): array
     {
         // Determine method/rate from args or vehicle
         $method = $method ?? $vehicle->getDepreciationMethod();

@@ -11,6 +11,7 @@ use App\Entity\Part;
 use App\Entity\Consumable;
 use App\Entity\ServiceRecord;
 use App\Entity\MotRecord;
+use App\Entity\StockItem;
 use App\Entity\RoadTax;
 use App\Entity\InsurancePolicy;
 use App\Entity\Todo;
@@ -176,6 +177,7 @@ class AttachmentController extends AbstractController
             'fuel' => $this->entityManager->getRepository(FuelRecord::class)->find($entityId)?->getVehicle(),
             'part' => $this->entityManager->getRepository(Part::class)->find($entityId)?->getVehicle(),
             'consumable' => $this->entityManager->getRepository(Consumable::class)->find($entityId)?->getVehicle(),
+            'stockItem' => null,
             'service' => $this->entityManager->getRepository(ServiceRecord::class)->find($entityId)?->getVehicle(),
             'mot' => $this->entityManager->getRepository(MotRecord::class)->find($entityId)?->getVehicle(),
             'roadTax' => $this->entityManager->getRepository(RoadTax::class)->find($entityId)?->getVehicle(),

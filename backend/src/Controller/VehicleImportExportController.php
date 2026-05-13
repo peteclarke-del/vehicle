@@ -456,6 +456,47 @@ class VehicleImportExportController extends AbstractController
 
             // Write vehicles.json
             file_put_contents($tempDir . '/vehicles.json', $vehiclesJson);
+                // Parse the export data to separate into distinct files
+                $exportData = json_decode($vehiclesJson, true);
+                if (is_array($exportData)) {
+                    // Write vehicles to separate file
+                    if (!empty($exportData['vehicles']) && is_array($exportData['vehicles'])) {
+                        file_put_contents(
+                            $tempDir . '/vehicles.json',
+                            json_encode($exportData['vehicles'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)
+                        );
+                    }
+                
+                    // Write stock items to separate file if present
+                    if (!empty($exportData['stockItems']) && is_array($exportData['stockItems'])) {
+                        file_put_contents(
+                            $tempDir . '/stock.json',
+                            json_encode(['stockItems' => $exportData['stockItems']], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)
+                        );
+                        $logger->info('[export-zip] Included stock items', ['count' => count($exportData['stockItems'])]);
+                    }
+                
+                    // Create manifest file listing what's in the export
+                    $manifest = [
+                        'exportDate' => (new \DateTime())->format('c'),
+                        'filesIncluded' => [
+                            'vehicles.json' => 'Vehicle records with parts, consumables, service records, MOT records, fuel records, insurance, road tax, todos, and attachment references',
+                            'stock.json' => 'Stock/inventory items (if present)',
+                            'attachments/' => 'Attachment files (if present)',
+                            'images/' => 'Vehicle images (if present)',
+                        ],
+                    ];
+                    if (!empty($exportData['stockItems'])) {
+                        $manifest['dataStats'] = [
+                            'vehicleCount' => count($exportData['vehicles'] ?? []),
+                            'stockItemCount' => count($exportData['stockItems'] ?? []),
+                        ];
+                    }
+                    file_put_contents(
+                        $tempDir . '/MANIFEST.json',
+                        json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)
+                    );
+                }
 
             // Create ZIP archive
             $zipPath = sys_get_temp_dir() . '/vehicle-export-' . uniqid() . '.zip';
@@ -593,6 +634,30 @@ class VehicleImportExportController extends AbstractController
             if (!is_array($vehicles)) {
                 return new JsonResponse(['error' => 'Invalid vehicles.json'], 400);
             }
+            
+                // Check for optional stock.json file
+                $stockFile = $tmpDir . '/stock.json';
+                $stockItems = [];
+                if (file_exists($stockFile)) {
+                    $stockData = json_decode(file_get_contents($stockFile), true);
+                    if (is_array($stockData)) {
+                        // stock.json can contain either ['stockItems' => [...]] or just [...]
+                        $stockItems = $stockData['stockItems'] ?? (is_array($stockData) ? $stockData : []);
+                        $logger->info('[import-zip] Found stock.json', ['stockItemCount' => count($stockItems)]);
+                    }
+                }
+
+                // Merge stock items into vehicles data if present
+                if (!empty($stockItems)) {
+                    if (!is_array($vehicles)) {
+                        $vehicles = [];
+                    }
+                    if (!isset($vehicles['stockItems'])) {
+                        $vehicles['stockItems'] = [];
+                    }
+                    $vehicles['stockItems'] = array_merge($vehicles['stockItems'] ?? [], $stockItems);
+                    $logger->info('[import-zip] Merged stock items into import data');
+                }
 
             // Check for optional manifest.json (for vehicle images)
             $manifestFile = $tmpDir . '/manifest.json';
@@ -827,13 +892,13 @@ class VehicleImportExportController extends AbstractController
                 if (str_contains($ct, 'csv') || str_contains($content, ',')) {
                     $lines = array_values(array_filter(array_map('trim', explode("\n", $content))));
                     if (!empty($lines)) {
-                        $header = str_getcsv(array_shift($lines));
+                        $header = str_getcsv(array_shift($lines), ',', '"', '\\');
                         $vehicles = [];
                         foreach ($lines as $line) {
                             if ($line === '') {
                                 continue;
                             }
-                            $row = str_getcsv($line);
+                            $row = str_getcsv($line, ',', '"', '\\');
                             if (count($row) < count($header)) {
                                 $row = array_pad($row, count($header), null);
                             }

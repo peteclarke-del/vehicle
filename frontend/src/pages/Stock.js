@@ -22,6 +22,7 @@ import useTablePagination from '../hooks/useTablePagination';
 import TablePaginationBar from '../components/TablePaginationBar';
 import StockDialog from '../components/StockDialog';
 import KnightRiderLoader from '../components/KnightRiderLoader';
+import ViewAttachmentIconButton from '../components/ViewAttachmentIconButton';
 import SafeStorage from '../utils/SafeStorage';
 
 const Stock = () => {
@@ -297,13 +298,14 @@ const Stock = () => {
                   {t('stock.updatedAt', 'Updated')}
                 </TableSortLabel>
               </TableCell>
+              <TableCell>{t('stock.receipt', 'Receipt')}</TableCell>
               <TableCell>{t('stock.adjust', 'Adjust')}</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {visibleItems.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={10} align="center">{t('stock.empty', 'No stock records')}</TableCell>
+                <TableCell colSpan={11} align="center">{t('stock.empty', 'No stock records')}</TableCell>
               </TableRow>
             ) : paginatedItems.map((item) => (
               <TableRow
@@ -325,11 +327,17 @@ const Stock = () => {
                 <TableCell>{item.purchaseDate ? new Date(item.purchaseDate).toLocaleDateString() : '-'}</TableCell>
                 <TableCell>{item.updatedAt ? new Date(item.updatedAt).toLocaleString() : '-'}</TableCell>
                 <TableCell>
+                  <ViewAttachmentIconButton record={item} />
+                </TableCell>
+                <TableCell>
                   <Stack direction="row" spacing={1} alignItems="center">
                     <Button
                       size="small"
                       variant="outlined"
+                      type="button"
+                      onMouseDown={(e) => e.stopPropagation()}
                       onClick={(e) => {
+                        e.preventDefault();
                         e.stopPropagation();
                         handleAdjust(item, 'add', 1);
                       }}
@@ -341,7 +349,10 @@ const Stock = () => {
                       size="small"
                       variant="outlined"
                       color="warning"
+                      type="button"
+                      onMouseDown={(e) => e.stopPropagation()}
                       onClick={(e) => {
+                        e.preventDefault();
                         e.stopPropagation();
                         handleAdjust(item, 'remove', 1);
                       }}

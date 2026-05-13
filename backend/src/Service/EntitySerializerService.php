@@ -7,6 +7,7 @@ namespace App\Service;
 use App\Entity\Part;
 use App\Entity\Consumable;
 use App\Entity\MotRecord;
+use App\Entity\StockItem;
 
 /**
  * class EntitySerializerService
@@ -125,6 +126,35 @@ class EntitySerializerService
         }
 
         return $data;
+    }
+
+    /**
+     * function serializeStockItem
+     *
+     * Serialize a StockItem entity to an array
+     *
+     * @param StockItem $item
+     * @return array
+     */
+    public function serializeStockItem(StockItem $item): array
+    {
+        return [
+            'id' => $item->getId(),
+            'vehicleTypeId' => $item->getVehicleType()?->getId(),
+            'vehicleType' => $item->getVehicleType()?->getName(),
+            'itemType' => $item->getItemType(),
+            'category' => $item->getCategory(),
+            'quantity' => $item->getQuantity(),
+            'supplier' => $item->getSupplier(),
+            'description' => $item->getDescription(),
+            'price' => $item->getPrice(),
+            'purchaseDate' => $item->getPurchaseDate()?->format('Y-m-d'),
+            'partNumber' => $item->getPartNumber(),
+            'manufacturer' => $item->getManufacturer(),
+            'warranty' => $item->getWarranty(),
+            'receiptAttachmentId' => $item->getReceiptAttachment()?->getId(),
+            'updatedAt' => $item->getUpdatedAt()?->format('c'),
+        ];
     }
 
     /**

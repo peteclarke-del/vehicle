@@ -21,6 +21,12 @@ class DvlaApiService
     private ?int $tokenExpiry = null;
     private string $vehicleBaseUrl;
 
+    /** @var string[] */
+    private array $dotenvFallbackPaths = [
+        '/var/www/html/.env.local',
+        '/var/www/html/.env',
+    ];
+
     public function __construct(
         HttpClientInterface $httpClient,
         LoggerInterface $logger,
@@ -51,6 +57,48 @@ class DvlaApiService
 
         $this->vehicleBaseUrl = $_ENV['DVLA_VEHICLE_URL'] ?? getenv('DVLA_VEHICLE_URL') ?:
             'https://driver-vehicle-licensing.api.gov.uk/vehicle-enquiry/v1/vehicles';
+    }
+
+    private function readApiKeyFromDotenv(): ?string
+    {
+        foreach ($this->dotenvFallbackPaths as $path) {
+            if (!is_readable($path)) {
+                continue;
+            }
+
+            $lines = @file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+            if ($lines === false) {
+                continue;
+            }
+
+            foreach ($lines as $line) {
+                $trimmed = trim($line);
+                if ($trimmed === '' || str_starts_with($trimmed, '#')) {
+                    continue;
+                }
+
+                if (!str_starts_with($trimmed, 'DVLA_API_KEY=')) {
+                    continue;
+                }
+
+                $value = trim(substr($trimmed, strlen('DVLA_API_KEY=')));
+                if ($value === '') {
+                    return null;
+                }
+
+                // Remove optional surrounding quotes from dotenv values.
+                if (
+                    (str_starts_with($value, '"') && str_ends_with($value, '"')) ||
+                    (str_starts_with($value, "'") && str_ends_with($value, "'"))
+                ) {
+                    $value = substr($value, 1, -1);
+                }
+
+                return $value !== '' ? $value : null;
+            }
+        }
+
+        return null;
     }
 
     private function fetchAccessToken(): ?string
@@ -188,6 +236,42 @@ class DvlaApiService
                     );
                     sleep($backoff);
                     continue;
+                }
+
+                // Handle API key 403 with one retry from mounted dotenv key (if different).
+                if ($useApiKey && $status === 403) {
+                    $fallbackApiKey = $this->readApiKeyFromDotenv();
+                    if (!empty($fallbackApiKey) && $fallbackApiKey !== $this->dvlaApiKey) {
+                        $this->logger->info('DVLA returned 403; retrying with fallback dotenv API key');
+
+                        try {
+                            $retryHeaders = $headers;
+                            $retryHeaders['x-api-key'] = $fallbackApiKey;
+                            $retryResp = $this->httpClient->request('POST', $url, [
+                                'headers' => $retryHeaders,
+                                'body' => json_encode(['registrationNumber' => $normalized]),
+                                'timeout' => 10,
+                            ]);
+
+                            if ($retryResp->getStatusCode() === 200) {
+                                $this->dvlaApiKey = $fallbackApiKey;
+                                return $retryResp->toArray(false);
+                            }
+
+                            try {
+                                $retryRaw = $retryResp->getContent(false);
+                            } catch (\Throwable $e) {
+                                $retryRaw = 'unable to read response body: ' . $e->getMessage();
+                            }
+
+                            $this->logger->warning(
+                                'DVLA fallback API key retry failed',
+                                ['status' => $retryResp->getStatusCode(), 'body' => $retryRaw]
+                            );
+                        } catch (\Exception $e) {
+                            $this->logger->error('DVLA fallback API key retry exception: ' . $e->getMessage());
+                        }
+                    }
                 }
 
                 // Handle API key 403 -> try token flow (existing behaviour)

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Entity\Attachment;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
@@ -55,6 +56,10 @@ class StockItem
 
     #[ORM\Column(type: 'string', length: 100, nullable: true)]
     private ?string $warranty = null;
+
+    #[ORM\ManyToOne(targetEntity: Attachment::class, cascade: ['remove'])]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
+    private ?Attachment $receiptAttachment = null;
 
     #[ORM\Column(type: 'datetime')]
     private ?\DateTimeInterface $createdAt = null;
@@ -213,6 +218,17 @@ class StockItem
     public function setWarranty(?string $warranty): self
     {
         $this->warranty = $warranty;
+        return $this;
+    }
+
+    public function getReceiptAttachment(): ?Attachment
+    {
+        return $this->receiptAttachment;
+    }
+
+    public function setReceiptAttachment(?Attachment $receiptAttachment): self
+    {
+        $this->receiptAttachment = $receiptAttachment;
         return $this;
     }
 

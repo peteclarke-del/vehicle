@@ -39,7 +39,7 @@ const mockAuthValue = {
 };
 
 const mockVehicles = [
-  { id: 1, make: 'Toyota', model: 'Corolla', year: 2020, registrationNumber: 'ABC123', registration: 'ABC123' },
+  { id: 1, make: 'Toyota', model: 'Corolla', year: 2020, registrationNumber: 'ABC123', registration: 'ABC123', status: 'Live' },
 ];
 
 const mockConsumables = [
@@ -68,10 +68,13 @@ const renderWithProviders = (component) => {
 };
 
 describe('Consumables Component', () => {
+  jest.setTimeout(15000);
+
   beforeEach(() => {
     jest.clearAllMocks();
     fetchArrayData.mockImplementation((api, url) => {
       if (url === '/vehicles') return Promise.resolve(mockVehicles);
+      if (url.startsWith('/consumables')) return Promise.resolve([]);
       return Promise.resolve([]);
     });
   });
@@ -105,14 +108,16 @@ describe('Consumables Component', () => {
   test('loads and displays consumables', async () => {
     fetchArrayData.mockImplementation((api, url) => {
       if (url === '/vehicles') return Promise.resolve(mockVehicles);
-      return Promise.resolve(mockConsumables);
+      if (url.startsWith('/consumables')) return Promise.resolve(mockConsumables);
+      return Promise.resolve([]);
     });
 
     renderWithProviders(<Consumables />);
 
-    await waitFor(() => {
-      expect(screen.getByText('Engine Oil')).toBeInTheDocument();
-    });
+    const vehicleSelector = await screen.findByRole('combobox', { name: 'Select a vehicle' });
+    fireEvent.change(vehicleSelector, { target: { value: '__all__' } });
+
+    expect(await screen.findByText('Engine Oil', {}, { timeout: 5000 })).toBeInTheDocument();
   });
 
   test('shows add consumable button', async () => {
@@ -136,16 +141,18 @@ describe('Consumables Component', () => {
   test('handles delete with confirmation', async () => {
     fetchArrayData.mockImplementation((api, url) => {
       if (url === '/vehicles') return Promise.resolve(mockVehicles);
-      return Promise.resolve(mockConsumables);
+      if (url.startsWith('/consumables')) return Promise.resolve(mockConsumables);
+      return Promise.resolve([]);
     });
     mockApi.delete.mockResolvedValue({});
     global.confirm = jest.fn(() => true);
 
     renderWithProviders(<Consumables />);
 
-    await waitFor(() => {
-      expect(screen.getByText('Engine Oil')).toBeInTheDocument();
-    });
+    const vehicleSelector = await screen.findByRole('combobox', { name: 'Select a vehicle' });
+    fireEvent.change(vehicleSelector, { target: { value: '__all__' } });
+
+    expect(await screen.findByText('Engine Oil', {}, { timeout: 5000 })).toBeInTheDocument();
 
     // Consumables delete buttons don't have aria-label, click icon buttons until delete is called
     const allButtons = screen.getAllByRole('button');

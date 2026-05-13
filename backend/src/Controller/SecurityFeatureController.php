@@ -13,18 +13,14 @@ use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Contracts\Cache\CacheInterface;
 use Symfony\Contracts\Cache\ItemInterface;
 
-/**
- * @Route("/api/security-features", name="security_features_")
- */
+#[Route('/api/security-features', name: 'security_features_')]
 class SecurityFeatureController extends AbstractController
 {
     public function __construct(private CacheInterface $lookupsCache)
     {
     }
 
-    /**
-     * @Route("", name="list", methods={"GET"})
-     */
+    #[Route('', name: 'list', methods: ['GET'])]
     public function list(Request $request, EntityManagerInterface $entityManager): JsonResponse
     {
         $vehicleTypeId = $request->query->get('vehicleTypeId');

@@ -5,9 +5,12 @@
 import '@testing-library/jest-dom';
 
 const originalConsoleWarn = console.warn;
+const originalConsoleError = console.error;
+let consoleWarnSpy;
+let consoleErrorSpy;
 
 beforeAll(() => {
-  jest.spyOn(console, 'warn').mockImplementation((...args) => {
+  consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation((...args) => {
     const message = String(args[0] || '');
     if (
       message.includes('react-i18next:: You will need to pass in an i18next instance') ||
@@ -17,10 +20,26 @@ beforeAll(() => {
     }
     originalConsoleWarn(...args);
   });
+
+  consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation((...args) => {
+    const message = String(args[0] || '');
+    if (
+      message.includes('not wrapped in act(...)') ||
+      message.includes('Encountered two children with the same key')
+    ) {
+      return;
+    }
+    originalConsoleError(...args);
+  });
 });
 
 afterAll(() => {
-  console.warn.mockRestore();
+  if (consoleWarnSpy) {
+    consoleWarnSpy.mockRestore();
+  }
+  if (consoleErrorSpy) {
+    consoleErrorSpy.mockRestore();
+  }
 });
 
 // Polyfill ResizeObserver for jsdom

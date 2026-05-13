@@ -161,7 +161,7 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId,
         supplier: stockItem.supplier || '',
         notes: ''
       });
-      setReceiptAttachmentId(null);
+      setReceiptAttachmentId(stockItem.receiptAttachmentId || null);
       setProductUrl('');
       return;
     }

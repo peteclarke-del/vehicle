@@ -27,6 +27,10 @@ class GenericDomAdapter implements SiteAdapterInterface
 
     public function parse(string $html): array
     {
+        if (trim($html) === '') {
+            return [];
+        }
+
         // Try JSON-LD first
         $data = $this->extractJsonLd($html);
 

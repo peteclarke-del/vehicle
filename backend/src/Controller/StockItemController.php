@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Entity\Attachment;
 use App\Entity\StockItem;
 use App\Entity\User;
 use App\Entity\VehicleType;
+use App\Service\AttachmentLinkingService;
+use App\Service\EntitySerializerService;
 use App\Service\StockLedgerService;
 use App\Service\UrlScraperService;
 use Doctrine\ORM\EntityManagerInterface;
@@ -39,7 +42,9 @@ class StockItemController extends AbstractController
     public function __construct(
         private EntityManagerInterface $entityManager,
         private StockLedgerService $stockLedgerService,
-        private UrlScraperService $scraperService
+        private UrlScraperService $scraperService,
+        private AttachmentLinkingService $attachmentLinkingService,
+        private EntitySerializerService $serializer
     ) {
     }
 
@@ -85,24 +90,7 @@ class StockItemController extends AbstractController
 
         $items = $qb->getQuery()->getResult();
 
-        $data = array_map(
-            static fn(StockItem $i) => [
-                'id' => $i->getId(),
-                'vehicleTypeId' => $i->getVehicleType()?->getId(),
-                'vehicleType' => $i->getVehicleType()?->getName(),
-                'itemType' => $i->getItemType(),
-                'category' => $i->getCategory(),
-                'quantity' => $i->getQuantity(),
-                'supplier' => $i->getSupplier(),
-                'description' => $i->getDescription(),
-                'price' => $i->getPrice(),
-                'purchaseDate' => $i->getPurchaseDate()?->format('Y-m-d'),
-                'partNumber' => $i->getPartNumber(),
-                'manufacturer' => $i->getManufacturer(),
-                'updatedAt' => $i->getUpdatedAt()?->format('c'),
-            ],
-            $items
-        );
+        $data = array_map(fn(StockItem $i) => $this->serializer->serializeStockItem($i), $items);
 
         return $this->json($data);
     }
@@ -204,7 +192,7 @@ class StockItemController extends AbstractController
             $forceCreate = true;
         }
 
-        $this->stockLedgerService->adjust(
+        $adjustedItem = $this->stockLedgerService->adjust(
             $targetUser,
             $vehicleType,
             $itemType,
@@ -221,6 +209,26 @@ class StockItemController extends AbstractController
             $forceCreate
         );
         $this->entityManager->flush();
+
+        if (array_key_exists('receiptAttachmentId', $data) && $adjustedItem instanceof StockItem) {
+            $attachmentId = $data['receiptAttachmentId'];
+            if ($attachmentId === null || $attachmentId === '' || $attachmentId === 0) {
+                if ($adjustedItem->getReceiptAttachment()) {
+                    $this->attachmentLinkingService->unlinkAttachment($adjustedItem->getReceiptAttachment(), $adjustedItem);
+                    $adjustedItem->setReceiptAttachment(null);
+                }
+            } else {
+                $this->attachmentLinkingService->processReceiptAttachmentId(
+                    (int) $attachmentId,
+                    $adjustedItem,
+                    'stockItem'
+                );
+            }
+        }
+
+        if ($adjustedItem instanceof StockItem) {
+            $this->entityManager->flush();
+        }
 
         return $this->json(['success' => true]);
     }
@@ -301,6 +309,22 @@ class StockItemController extends AbstractController
                 } catch (\Exception) {
                     return $this->json(['error' => 'Invalid purchaseDate'], 400);
                 }
+            }
+        }
+
+        if (array_key_exists('receiptAttachmentId', $data)) {
+            $attachmentId = $data['receiptAttachmentId'];
+            if ($attachmentId === null || $attachmentId === '' || $attachmentId === 0) {
+                if ($item->getReceiptAttachment()) {
+                    $this->attachmentLinkingService->unlinkAttachment($item->getReceiptAttachment(), $item);
+                }
+                $item->setReceiptAttachment(null);
+            } else {
+                $this->attachmentLinkingService->processReceiptAttachmentId(
+                    (int) $attachmentId,
+                    $item,
+                    'stockItem'
+                );
             }
         }
 

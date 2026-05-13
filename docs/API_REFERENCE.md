@@ -3,6 +3,8 @@
 This document provides comprehensive documentation for all REST API endpoints in the Vehicle Management System.
 
 > **Note:** This API is consumed by both the web frontend (`frontend/`) and the mobile app (`mobile/`). The mobile app uses the same endpoints with JWT authentication.
+>
+> **Current Platform Scope:** The dedicated Stock Items UI ships in both the web frontend and the mobile app.
 
 ---
 
@@ -21,6 +23,7 @@ This document provides comprehensive documentation for all REST API endpoints in
    - [Parts](#parts)
    - [Part Categories](#part-categories)
    - [Consumables](#consumables)
+    - [Stock Items](#stock-items)
    - [Insurance](#insurance)
    - [Road Tax](#road-tax)
    - [Attachments](#attachments)
@@ -1031,6 +1034,133 @@ List consumables.
     "receiptAttachmentId": 25
   }
 ]
+```
+
+---
+
+### Stock Items
+
+Stock Items represent ledger-style inventory buckets keyed by item type, category, supplier, and optional vehicle type.
+
+#### GET /api/stock-items
+
+List stock buckets for the authenticated user (admins can list all users).
+
+**Query Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| itemType | string | Filter by item type (for example `part` or `consumable`) |
+| vehicleTypeId | integer | Filter by vehicle type |
+| inStock | boolean | When `true`, only buckets with `quantity > 0` |
+
+**Response (200):**
+```json
+[
+  {
+    "id": 14,
+    "vehicleTypeId": 2,
+    "vehicleType": "Motorcycle",
+    "itemType": "part",
+    "category": "Brakes",
+    "quantity": "3.00",
+    "supplier": "Wemoto",
+    "description": "Front brake pads",
+    "price": "24.99",
+    "purchaseDate": "2026-05-11",
+    "partNumber": "FA209",
+    "manufacturer": "EBC",
+    "updatedAt": "2026-05-12T21:14:08+00:00"
+  }
+]
+```
+
+---
+
+#### POST /api/stock-items/adjust
+
+Adjust stock quantity for an existing stock bucket, or create/adjust a bucket when `stockItemId` is omitted.
+
+**Request Body (existing bucket):**
+```json
+{
+  "stockItemId": 14,
+  "delta": -1
+}
+```
+
+**Request Body (create/adjust by fields):**
+```json
+{
+  "vehicleTypeId": 2,
+  "itemType": "part",
+  "category": "Brakes",
+  "supplier": "Wemoto",
+  "description": "Front brake pads",
+  "price": "24.99",
+  "notes": "Batch order",
+  "purchaseDate": "2026-05-11",
+  "partNumber": "FA209",
+  "manufacturer": "EBC",
+  "warranty": "12 months",
+  "delta": 3
+}
+```
+
+**Validation Rules:**
+- `delta` is required and cannot be zero.
+- When `stockItemId` is not provided, `itemType` and `category` are required.
+
+**Response (200):**
+```json
+{ "success": true }
+```
+
+---
+
+#### PUT /api/stock-items/{id}
+
+Update a stock bucket's metadata and absolute quantity.
+
+**Key Fields:**
+| Field | Type | Required |
+|-------|------|----------|
+| vehicleTypeId | integer | No |
+| itemType | string | Yes |
+| category | string | Yes |
+| supplier | string | No |
+| description | string | No |
+| price | decimal-string | No |
+| notes | string | No |
+| purchaseDate | date (`YYYY-MM-DD`) | No |
+| partNumber | string | No |
+| manufacturer | string | No |
+| warranty | string | No |
+| quantity | decimal | No (must be >= 0) |
+
+**Response (200):**
+```json
+{ "success": true }
+```
+
+---
+
+#### POST /api/stock-items/scrape-url
+
+Scrape product details from a URL to prefill stock item fields.
+
+**Request Body:**
+```json
+{ "url": "https://example.com/product" }
+```
+
+**Response (200):**
+```json
+{
+  "name": "Brake Pads FA209",
+  "supplier": "Wemoto",
+  "price": "24.99",
+  "manufacturer": "EBC"
+}
 ```
 
 ---

@@ -45,6 +45,7 @@ A comprehensive web application for managing personal or fleet vehicles, built w
 - **Native Mobile Experience**: React Native app for Android devices
 - **Standalone Mode**: Full offline operation with local AsyncStorage - no server required
 - **Web Mode**: Connect to any backend instance for full server-backed operation
+- **Current Inventory Scope**: Dedicated Stock Items management is available in both the mobile app and web app; mobile also supports Parts and Consumables workflows
 - **Camera Integration**: Take photos of receipts directly from the app
 - **Gallery Upload**: Select existing photos from your device
 - **Data Sync**: Keeps mobile and web data in sync via the API
@@ -80,6 +81,7 @@ A comprehensive web application for managing personal or fleet vehicles, built w
 - **Import/Export**: Full data export/import including attachments
 - **Automated Testing**: PHPUnit and Jest test suites
 - **Database Migrations**: Version-controlled schema management
+- **Baseline Schema State**: Consolidated baseline migration at `backend/migrations/Version20260512220157.php`
 
 ## Tech Stack
 
@@ -722,6 +724,7 @@ Key endpoint groups:
 - `/api/mot-records` - MOT test records
 - `/api/parts` - Parts inventory
 - `/api/consumables` - Consumable items
+- `/api/stock-items` - Stock ledger buckets and quantity adjustments
 - `/api/insurance/policies` - Insurance management
 - `/api/road-tax` - Road tax records
 - `/api/attachments` - File uploads

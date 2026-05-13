@@ -30,10 +30,10 @@ class StockLedgerService
         ?string $manufacturer = null,
         ?string $warranty = null,
         bool $forceCreate = false
-    ): void {
+    ): ?StockItem {
         $normalizedCategory = trim($category);
         if ($normalizedCategory === '' || abs($delta) < 0.00001) {
-            return;
+            return null;
         }
 
         $normalizedSupplier = $supplier !== null ? trim($supplier) : null;
@@ -55,7 +55,7 @@ class StockLedgerService
 
         if (!$item) {
             if ($delta <= 0) {
-                return;
+                return null;
             }
             $item = new StockItem();
             $item->setUser($user)
@@ -80,7 +80,7 @@ class StockLedgerService
             }
             
             $this->entityManager->persist($item);
-            return;
+            return $item;
         }
 
         $current = (float) $item->getQuantity();
@@ -116,6 +116,8 @@ class StockLedgerService
             }
         }
         $item->touch();
+
+        return $item;
     }
 
     public function categoryForPart(string $description, ?string $partCategoryName): string

@@ -89,6 +89,22 @@ class VehicleImportService
         $startTime = microtime(true);
         $stockItemsData = $this->extractStockItemsData($data);
         $data = $this->extractVehicleData($data);
+
+        // Normalize object-like payloads: support a single vehicle object,
+        // and avoid treating stock-only payload maps as vehicle rows.
+        if (array_keys($data) !== range(0, count($data) - 1)) {
+            if (
+                isset($data['registrationNumber']) ||
+                isset($data['name']) ||
+                isset($data['make']) ||
+                isset($data['model'])
+            ) {
+                $data = [$data];
+            } else {
+                $data = [];
+            }
+        }
+
         $data = $this->normalizeImportData($data);
         
         if (!$dryRun) {
@@ -102,16 +118,27 @@ class VehicleImportService
                 'zipExtractDir' => $zipExtractDir
             ]);
 
-            // Validate data
-            $validationErrors = $this->validateImportData($data);
-            if (!empty($validationErrors)) {
+            if (empty($data) && empty($stockItemsData)) {
                 if (!$dryRun) {
                     $this->entityManager->rollback();
                 }
                 return ImportResult::createFailure(
-                    $validationErrors,
+                    ['No data to import'],
                     'Validation failed'
                 );
+            }
+
+            if (!empty($data)) {
+                $validationErrors = $this->validateImportData($data);
+                if (!empty($validationErrors)) {
+                    if (!$dryRun) {
+                        $this->entityManager->rollback();
+                    }
+                    return ImportResult::createFailure(
+                        $validationErrors,
+                        'Validation failed'
+                    );
+                }
             }
 
             // Pre-load existing data for duplicate detection  

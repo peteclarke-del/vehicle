@@ -54,8 +54,8 @@ class PartTest extends TestCase
     {
         $part = new Part();
         $part->setQuantity(2);
-        
-        $this->assertSame(2, $part->getQuantity());
+
+        $this->assertSame('2', $part->getQuantity());
     }
 
     public function testCalculateTotalCost(): void

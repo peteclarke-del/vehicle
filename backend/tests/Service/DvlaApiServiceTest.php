@@ -106,4 +106,66 @@ class DvlaApiServiceTest extends TestCase
         $this->assertEquals('TEST', $res['make']);
         $this->assertEquals('Green', $res['primaryColour']);
     }
+
+    public function testApiKey403ThenFallbackDotenvKeyRetriesAndSucceeds(): void
+    {
+        $tmpDotenv = tempnam(sys_get_temp_dir(), 'dvla_test_env_');
+        $this->assertNotFalse($tmpDotenv);
+
+        file_put_contents($tmpDotenv, "DVLA_API_KEY=fallback-api-key\n");
+
+        $requestApiKeys = [];
+        $mock = new MockHttpClient(function ($method, $url, $options) use (&$requestApiKeys) {
+            $headers = $options['headers'] ?? [];
+            $apiKey = null;
+
+            if (isset($headers['x-api-key'])) {
+                $raw = $headers['x-api-key'];
+                $apiKey = is_array($raw) ? ($raw[0] ?? null) : $raw;
+            } else {
+                foreach ($headers as $line) {
+                    if (!is_string($line)) {
+                        continue;
+                    }
+                    if (stripos($line, 'x-api-key:') === 0) {
+                        $apiKey = trim(substr($line, strlen('x-api-key:')));
+                        break;
+                    }
+                }
+            }
+
+            $requestApiKeys[] = $apiKey;
+
+            if (count($requestApiKeys) === 1) {
+                return new MockResponse('{"message":"Forbidden"}', ['http_code' => 403]);
+            }
+
+            if ($apiKey === 'fallback-api-key') {
+                return new MockResponse(json_encode([
+                    'make' => 'MAZDA',
+                    'primaryColour' => 'SILVER',
+                ]), ['http_code' => 200]);
+            }
+
+            return new MockResponse('{"message":"Forbidden"}', ['http_code' => 403]);
+        });
+
+        $svc = new DvlaApiService($mock, new NullLogger(), null, null, null, 'stale-api-key');
+
+        $ref = new \ReflectionClass($svc);
+        $prop = $ref->getProperty('dotenvFallbackPaths');
+        $prop->setAccessible(true);
+        $prop->setValue($svc, [$tmpDotenv]);
+
+        try {
+            $res = $svc->getVehicleByRegistration('BT14UDJ');
+        } finally {
+            @unlink($tmpDotenv);
+        }
+
+        $this->assertIsArray($res);
+        $this->assertEquals('MAZDA', $res['make']);
+        $this->assertEquals('SILVER', $res['primaryColour']);
+        $this->assertSame(['stale-api-key', 'fallback-api-key'], $requestApiKeys);
+    }
 }

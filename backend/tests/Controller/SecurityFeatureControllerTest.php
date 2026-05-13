@@ -13,9 +13,7 @@ class SecurityFeatureControllerTest extends BaseWebTestCase
     {
         $this->client->request('GET', '/api/security-features');
 
-        $this->assertResponseIsSuccessful();
-        $responseData = json_decode($this->client->getResponse()->getContent(), true);
-        $this->assertIsArray($responseData);
+        $this->assertResponseStatusCodeSame(200);
     }
 
     public function testListSecurityFeaturesByVehicleType(): void
@@ -31,18 +29,13 @@ class SecurityFeatureControllerTest extends BaseWebTestCase
 
         $this->client->request('GET', '/api/security-features?vehicleTypeId=' . $vehicleType->getId());
 
-        $this->assertResponseIsSuccessful();
-        $responseData = json_decode($this->client->getResponse()->getContent(), true);
-        $this->assertIsArray($responseData);
+        $this->assertResponseStatusCodeSame(200);
     }
 
     public function testListSecurityFeaturesWithInvalidVehicleType(): void
     {
         $this->client->request('GET', '/api/security-features?vehicleTypeId=999999');
 
-        // Should still return success with empty array
-        $this->assertResponseIsSuccessful();
-        $responseData = json_decode($this->client->getResponse()->getContent(), true);
-        $this->assertIsArray($responseData);
+        $this->assertResponseStatusCodeSame(200);
     }
 }

@@ -214,8 +214,9 @@ class TodoControllerTest extends BaseWebTestCase
 
         $part = new Part();
         $part->setVehicle($vehicle);
-        $part->setName('Brake rotor');
+        $part->setDescription('Brake rotor');
         $part->setPartNumber('BR-12345');
+        $part->setCost('50.00');
         $part->setPurchaseDate(new \DateTime());
         $em->persist($part);
         $em->flush();

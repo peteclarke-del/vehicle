@@ -12,6 +12,7 @@ import {
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
+import ReceiptUpload from './ReceiptUpload';
 import logger from '../utils/logger';
 
 const EMPTY_FORM = {
@@ -44,6 +45,7 @@ export default function StockDialog({
   const [partCategories, setPartCategories] = useState([]);
   const [consumableTypes, setConsumableTypes] = useState([]);
   const [formData, setFormData] = useState(EMPTY_FORM);
+  const [receiptAttachmentId, setReceiptAttachmentId] = useState(null);
 
   const isEdit = Boolean(item?.id);
 
@@ -52,6 +54,7 @@ export default function StockDialog({
 
     if (item) {
       setVehicleTypeId(item.vehicleTypeId || defaultVehicleTypeId || null);
+      setReceiptAttachmentId(item.receiptAttachmentId || null);
       setFormData({
         itemType: item.itemType || 'part',
         category: item.category || '',
@@ -67,6 +70,7 @@ export default function StockDialog({
       });
     } else {
       setVehicleTypeId(defaultVehicleTypeId || null);
+      setReceiptAttachmentId(null);
       setFormData(EMPTY_FORM);
     }
 
@@ -118,6 +122,24 @@ export default function StockDialog({
     }));
   };
 
+  const handleReceiptUploaded = (attachmentId, ocrData = {}) => {
+    setReceiptAttachmentId(attachmentId || null);
+
+    if (!ocrData) return;
+
+    setFormData((prev) => ({
+      ...prev,
+      description: ocrData.name || prev.description,
+      supplier: ocrData.supplier || prev.supplier,
+      price: ocrData.price || prev.price,
+      manufacturer: ocrData.manufacturer || prev.manufacturer,
+    }));
+  };
+
+  const handleReceiptRemoved = () => {
+    setReceiptAttachmentId(null);
+  };
+
   const handleScrape = async () => {
     if (!scrapeUrl) return;
 
@@ -163,6 +185,7 @@ export default function StockDialog({
         partNumber: formData.partNumber || null,
         manufacturer: formData.manufacturer || null,
         warranty: formData.warranty || null,
+        receiptAttachmentId: receiptAttachmentId,
       };
 
       if (isEdit) {
@@ -184,11 +207,21 @@ export default function StockDialog({
   };
 
   return (
-    <Dialog open={open} onClose={() => onClose(false)} maxWidth="md" fullWidth>
+    <Dialog
+      open={open}
+      onClose={() => onClose(false)}
+      maxWidth="md"
+      fullWidth
+      PaperProps={{
+        sx: {
+          maxHeight: '88vh',
+        },
+      }}
+    >
       <DialogTitle>
         {isEdit ? t('stock.editItem', 'Edit Stock Item') : t('stock.addNew', 'Add Stock Item')}
       </DialogTitle>
-      <DialogContent>
+      <DialogContent sx={{ display: 'flex', flexDirection: 'column' }}>
         <Box sx={{ display: 'flex', gap: 1.5, mt: 1, mb: 2 }}>
           <TextField
             fullWidth
@@ -209,7 +242,7 @@ export default function StockDialog({
         </Box>
 
         <Grid container spacing={1.5} sx={{ mb: 2 }}>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid item xs={12} sm={6} md={4}>
             <TextField
               select
               fullWidth
@@ -241,7 +274,7 @@ export default function StockDialog({
             </TextField>
           </Grid>
 
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid item xs={12} sm={6} md={4}>
             {vehicleTypeId && categoryOptions.length > 0 ? (
               <TextField
                 select
@@ -277,30 +310,6 @@ export default function StockDialog({
               size="small"
             />
           </Grid>
-
-          <Grid item xs={12} sm={6} md={1}>
-            <TextField
-              fullWidth
-              label={t('stock.quantity', 'Qty')}
-              type="number"
-              inputProps={{ step: '0.01', min: '0' }}
-              value={formData.quantity}
-              onChange={(e) => setFormData((prev) => ({ ...prev, quantity: e.target.value }))}
-              size="small"
-            />
-          </Grid>
-
-          <Grid item xs={12} sm={6} md={1}>
-            <TextField
-              fullWidth
-              label={t('stock.price', 'Price')}
-              type="number"
-              inputProps={{ step: '0.01', min: '0' }}
-              value={formData.price}
-              onChange={(e) => setFormData((prev) => ({ ...prev, price: e.target.value }))}
-              size="small"
-            />
-          </Grid>
         </Grid>
 
         <TextField
@@ -313,7 +322,7 @@ export default function StockDialog({
         />
 
         <Grid container spacing={1.5} sx={{ mb: 1.5 }}>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid item xs={12} sm={6} md={4}>
             <TextField
               fullWidth
               label={t('stock.purchaseDate', 'Purchase Date')}
@@ -324,7 +333,32 @@ export default function StockDialog({
               size="small"
             />
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid item xs={12} sm={6} md={4}>
+            <TextField
+              fullWidth
+              label={t('stock.quantity', 'Qty')}
+              type="number"
+              inputProps={{ step: '0.01', min: '0' }}
+              value={formData.quantity}
+              onChange={(e) => setFormData((prev) => ({ ...prev, quantity: e.target.value }))}
+              size="small"
+            />
+          </Grid>
+          <Grid item xs={12} sm={6} md={4}>
+            <TextField
+              fullWidth
+              label={t('stock.price', 'Price')}
+              type="number"
+              inputProps={{ step: '0.01', min: '0' }}
+              value={formData.price}
+              onChange={(e) => setFormData((prev) => ({ ...prev, price: e.target.value }))}
+              size="small"
+            />
+          </Grid>
+        </Grid>
+
+        <Grid container spacing={1.5} sx={{ mb: 1.5 }}>
+          <Grid item xs={12} sm={6} md={4}>
             <TextField
               fullWidth
               label={t('stock.warranty', 'Warranty')}
@@ -333,7 +367,7 @@ export default function StockDialog({
               size="small"
             />
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid item xs={12} sm={6} md={4}>
             <TextField
               fullWidth
               label={t('stock.partNumber', 'Part Number')}
@@ -342,7 +376,7 @@ export default function StockDialog({
               size="small"
             />
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid item xs={12} sm={6} md={4}>
             <TextField
               fullWidth
               label={formData.itemType === 'consumable' ? t('stock.brand', 'Brand') : t('stock.manufacturer', 'Manufacturer')}
@@ -361,6 +395,15 @@ export default function StockDialog({
           value={formData.notes}
           onChange={(e) => setFormData((prev) => ({ ...prev, notes: e.target.value }))}
           size="small"
+        />
+
+        <ReceiptUpload
+          entityType="stockItem"
+          entityId={item?.id || null}
+          vehicleId={null}
+          receiptAttachmentId={receiptAttachmentId}
+          onReceiptUploaded={handleReceiptUploaded}
+          onReceiptRemoved={handleReceiptRemoved}
         />
       </DialogContent>
       <DialogActions>

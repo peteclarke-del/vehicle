@@ -76,6 +76,7 @@
           <li><a href="#service-api">Service Records</a></li>
           <li><a href="#parts-api">Parts</a></li>
           <li><a href="#consumables-api">Consumables</a></li>
+          <li><a href="#stock-api">Stock Items</a></li>
           <li><a href="#mot-api">MOT Records</a></li>
           <li><a href="#insurance-api">Insurance</a></li>
           <li><a href="#road-tax-api">Road Tax</a></li>
@@ -1437,6 +1438,60 @@ cd vehicle</code></pre>
       <span class="endpoint-desc">Scrape product details from URL</span>
     </div>
     <div class="endpoint-body"><p>Identical to the parts scraper - extracts product name, price, and description from a retailer URL.</p></div>
+  </div>
+</section>
+
+<section id="stock-api" data-section-name="Backend API">
+  <h2>Stock Items API</h2>
+  <p>
+    Stock Items are ledger-style inventory buckets used across the web and mobile inventory screens. Buckets track
+    quantity, supplier, pricing, and purchase metadata, and can be adjusted incrementally.
+  </p>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method method-get">GET</span>
+      <span class="endpoint-path">/api/stock-items</span>
+      <span class="endpoint-desc">List stock buckets</span>
+    </div>
+    <div class="endpoint-body">
+      <h4>Query Parameters</h4>
+      <table class="docs-table">
+        <thead><tr><th>Param</th><th>Type</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>itemType</code></td><td>string</td><td>Filter by item type, for example <code>part</code> or <code>consumable</code></td></tr>
+          <tr><td><code>vehicleTypeId</code></td><td>int</td><td>Filter by vehicle type</td></tr>
+          <tr><td><code>inStock</code></td><td>bool</td><td>When true, only rows with quantity &gt; 0</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method method-post">POST</span>
+      <span class="endpoint-path">/api/stock-items/adjust</span>
+      <span class="endpoint-desc">Adjust stock up/down</span>
+    </div>
+    <div class="endpoint-body"><p>Adjust an existing bucket by <code>stockItemId</code>, or create/adjust by sending <code>itemType</code>, <code>category</code>, and <code>delta</code>.</p></div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method method-put">PUT</span>
+      <span class="endpoint-path">/api/stock-items/{id}</span>
+      <span class="endpoint-desc">Update stock metadata</span>
+    </div>
+    <div class="endpoint-body"><p>Updates item metadata including quantity, price, purchase date, part number, manufacturer, and warranty.</p></div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method method-post">POST</span>
+      <span class="endpoint-path">/api/stock-items/scrape-url</span>
+      <span class="endpoint-desc">Scrape and prefill fields</span>
+    </div>
+    <div class="endpoint-body"><p>Extracts product details from a URL to prefill stock fields such as description, supplier, price, and manufacturer.</p></div>
   </div>
 </section>
 
@@ -3002,7 +3057,7 @@ cd vehicle</code></pre>
   <p>
     All record pages (Fuel, Service, Parts, Consumables, MOT, Insurance, Road Tax, Todos) follow a consistent
     pattern: a list view with a vehicle selector filter, action buttons for add/edit/delete, and a dialog-based
-    form. Each form handles receipt photograph upload, URL scraping (for parts and consumables), and
+    form. Stock item forms handle URL scraping, while other forms handle receipt photograph upload and
     entity linking.
   </p>
   <p>

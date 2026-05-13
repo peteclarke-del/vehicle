@@ -157,7 +157,7 @@ export default function PartDialog({ open, onClose, part, vehicleId, onVehicleMo
         supplier: stockItem.supplier || '',
         notes: ''
       });
-      setReceiptAttachmentId(null);
+      setReceiptAttachmentId(stockItem.receiptAttachmentId || null);
       setProductUrl('');
       return;
     }

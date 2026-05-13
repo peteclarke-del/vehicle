@@ -10,6 +10,12 @@ use App\Tests\TestCase\BaseWebTestCase;
 
 class StockItemControllerTest extends BaseWebTestCase
 {
+    public function testListStockItemsRequiresAuthentication(): void
+    {
+        $this->client->request('GET', '/api/stock-items');
+        $this->assertResponseStatusCodeSame(401);
+    }
+
     public function testListStockItemsSupportsFiltersAndVehicleTypeField(): void
     {
         $em = $this->getEntityManager();
@@ -170,5 +176,69 @@ class StockItemControllerTest extends BaseWebTestCase
         $this->assertSame('Updated description', $updated->getDescription());
         $this->assertSame('Updated Supplier', $updated->getSupplier());
         $this->assertEquals(5.0, (float) $updated->getQuantity());
+    }
+
+    public function testUpdateStockItemRejectsNegativeQuantity(): void
+    {
+        $em = $this->getEntityManager();
+        $user = $em->getRepository(User::class)->findOneBy(['email' => 'test@example.com']);
+        self::assertInstanceOf(User::class, $user);
+
+        $stockItem = new StockItem();
+        $stockItem->setUser($user);
+        $stockItem->setItemType('part');
+        $stockItem->setCategory('Negative Quantity Validation');
+        $stockItem->setQuantity('2.00');
+        $em->persist($stockItem);
+        $em->flush();
+
+        $this->client->request(
+            'PUT',
+            '/api/stock-items/' . $stockItem->getId(),
+            [],
+            [],
+            [
+                'HTTP_AUTHORIZATION' => $this->getAuthToken(),
+                'CONTENT_TYPE' => 'application/json',
+            ],
+            json_encode([
+                'itemType' => 'part',
+                'category' => 'Negative Quantity Validation',
+                'quantity' => -1,
+            ])
+        );
+
+        $this->assertResponseStatusCodeSame(400);
+    }
+
+    public function testScrapeUrlValidationErrors(): void
+    {
+        $this->client->request(
+            'POST',
+            '/api/stock-items/scrape-url',
+            [],
+            [],
+            [
+                'HTTP_AUTHORIZATION' => $this->getAuthToken(),
+                'CONTENT_TYPE' => 'application/json',
+            ],
+            json_encode([])
+        );
+
+        $this->assertResponseStatusCodeSame(400);
+
+        $this->client->request(
+            'POST',
+            '/api/stock-items/scrape-url',
+            [],
+            [],
+            [
+                'HTTP_AUTHORIZATION' => $this->getAuthToken(),
+                'CONTENT_TYPE' => 'application/json',
+            ],
+            '{invalid-json}'
+        );
+
+        $this->assertResponseStatusCodeSame(400);
     }
 }
