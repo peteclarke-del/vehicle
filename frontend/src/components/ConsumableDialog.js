@@ -419,6 +419,14 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId,
     setLoading(true);
 
     try {
+      // If linking existing and a service is selected, use the service date as lastChanged
+      let lastChanged = formData.lastChanged;
+      if (isLinkingExisting && serviceRecordId && serviceRecords && serviceRecords.length > 0) {
+        const svc = serviceRecords.find(s => String(s.id) === String(serviceRecordId));
+        if (svc && svc.serviceDate) {
+          lastChanged = svc.serviceDate;
+        }
+      }
       const data = {
         ...formData,
         vehicleId: actualVehicleId,
@@ -428,7 +436,7 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId,
         mileageAtChange: isGeneralStock ? null : (formData.mileageAtChange ? Math.round(toKm(parseFloat(formData.mileageAtChange))) : null),
         replacementIntervalMiles: isGeneralStock ? null : (formData.replacementIntervalMiles ? Math.round(toKm(parseFloat(formData.replacementIntervalMiles))) : null),
         nextReplacementMileage: isGeneralStock ? null : (formData.nextReplacementMileage ? Math.round(toKm(parseFloat(formData.nextReplacementMileage))) : null),
-        lastChanged: isGeneralStock ? null : formData.lastChanged,
+        lastChanged: isGeneralStock ? null : lastChanged,
         receiptAttachmentId,
         productUrl,
         motRecordId: isGeneralStock ? null : motRecordId,

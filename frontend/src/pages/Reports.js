@@ -452,10 +452,22 @@ const Reports = () => {
                   <TableCell>{r.generatedAt ? new Date(r.generatedAt).toLocaleString() : '-'}</TableCell>
                   <TableCell align="center">
                     <Tooltip title={t('common.download') || 'Download'}>
-                      <IconButton size="small" onClick={(e) => handleDownloadClick(e, r)}><DownloadIcon /></IconButton>
+                      <IconButton
+                        size="small"
+                        onClick={(e) => handleDownloadClick(e, r)}
+                        aria-label={t('common.download') || 'Download'}
+                      >
+                        <DownloadIcon />
+                      </IconButton>
                     </Tooltip>
                     <Tooltip title={t('common.delete') || 'Delete'}>
-                      <IconButton size="small" onClick={() => handleDelete(r)}><DeleteIcon /></IconButton>
+                      <IconButton
+                        size="small"
+                        onClick={() => handleDelete(r)}
+                        aria-label={t('common.delete') || 'Delete'}
+                      >
+                        <DeleteIcon />
+                      </IconButton>
                     </Tooltip>
                   </TableCell>
                 </TableRow>

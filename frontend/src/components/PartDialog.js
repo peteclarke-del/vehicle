@@ -23,6 +23,24 @@ import ReceiptUpload from './ReceiptUpload';
 import UrlScraper from './UrlScraper';
 import logger from '../utils/logger';
 
+const normalizeListPayload = (payload, nestedKeys = []) => {
+  if (Array.isArray(payload)) {
+    return payload;
+  }
+
+  if (!payload || typeof payload !== 'object') {
+    return [];
+  }
+
+  for (const key of nestedKeys) {
+    if (Array.isArray(payload[key])) {
+      return payload[key];
+    }
+  }
+
+  return [];
+};
+
 export default function PartDialog({ open, onClose, part, vehicleId, onVehicleMoved }) {
   const { t } = useTranslation();
   const { api } = useAuth();
@@ -292,7 +310,7 @@ export default function PartDialog({ open, onClose, part, vehicleId, onVehicleMo
     const loadVehicleTypes = async () => {
       try {
         const resp = await api.get('/vehicle-types');
-        setVehicleTypes(Array.isArray(resp.data) ? resp.data : []);
+        setVehicleTypes(normalizeListPayload(resp.data, ['items', 'data', 'vehicleTypes']));
       } catch (e) {
         logger.error('Failed to load vehicle types', e);
         setVehicleTypes([]);
@@ -306,9 +324,10 @@ export default function PartDialog({ open, onClose, part, vehicleId, onVehicleMo
       try {
         const params = vehicleTypeId ? { vehicleTypeId } : {};
         const resp = await api.get('/part-categories', { params });
-        setPartCategories(resp.data || []);
+        setPartCategories(normalizeListPayload(resp.data, ['items', 'data', 'categories', 'partCategories']));
       } catch (e) {
         logger.error('Failed to load part categories', e);
+        setPartCategories([]);
       }
     };
     if (open) loadCategories();
@@ -433,6 +452,14 @@ export default function PartDialog({ open, onClose, part, vehicleId, onVehicleMo
         return Number.isFinite(parsed) ? parsed : '';
       })();
 
+      // If linking existing and a service is selected, use the service date as installationDate
+      let installationDate = formData.installationDate;
+      if (isLinkingExisting && serviceRecordId && serviceRecords && serviceRecords.length > 0) {
+        const svc = serviceRecords.find(s => String(s.id) === String(serviceRecordId));
+        if (svc && svc.serviceDate) {
+          installationDate = svc.serviceDate;
+        }
+      }
       const data = {
         ...formData,
         partCategoryId: normalizedCategoryId,
@@ -445,7 +472,7 @@ export default function PartDialog({ open, onClose, part, vehicleId, onVehicleMo
         productUrl,
         motRecordId: isGeneralStock ? null : motRecordId,
         serviceRecordId: isGeneralStock ? null : serviceRecordId,
-        installationDate: isGeneralStock ? null : formData.installationDate,
+        installationDate: isGeneralStock ? null : installationDate,
         mileageAtInstallation: isGeneralStock ? null : (formData.mileageAtInstallation ? Math.round(toKm(parseFloat(formData.mileageAtInstallation))) : null)
       };
 
