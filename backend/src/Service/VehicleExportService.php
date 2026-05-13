@@ -187,14 +187,33 @@ class VehicleExportService
     }
 
     /**
-     * Load a batch of vehicles
+     * Load a batch of vehicles with eager loading to prevent N+1 queries
      */
     private function loadVehicleBatch(array $batchIds): array
     {
         $qb = $this->entityManager->createQueryBuilder();
-        $qb->select('v')
+        $qb->select('v, vt, spec, fr, p, pc, c, ct, sr, sm, mr, ip, rt, t, sh, vi, img')
             ->from(Vehicle::class, 'v')
             ->leftJoin('v.vehicleType', 'vt')
+            ->leftJoin('v.specification', 'spec')
+            ->leftJoin('v.fuelRecords', 'fr')
+            ->leftJoin('fr.receiptAttachment', 'fra')
+            ->leftJoin('v.parts', 'p')
+            ->leftJoin('p.partCategory', 'pc')
+            ->leftJoin('p.receiptAttachment', 'pra')
+            ->leftJoin('v.consumables', 'c')
+            ->leftJoin('c.consumableType', 'ct')
+            ->leftJoin('c.receiptAttachment', 'cra')
+            ->leftJoin('v.serviceRecords', 'sr')
+            ->leftJoin('sr.receiptAttachment', 'sra')
+            ->leftJoin('sr.serviceItems', 'sm')
+            ->leftJoin('v.motRecords', 'mr')
+            ->leftJoin('mr.receiptAttachment', 'mra')
+            ->leftJoin('v.insurancePolicies', 'ip')
+            ->leftJoin('v.roadTaxRecords', 'rt')
+            ->leftJoin('v.todos', 't')
+            ->leftJoin('v.statusHistory', 'sh')
+            ->leftJoin('v.images', 'img')
             ->where($qb->expr()->in('v.id', ':ids'))
             ->setParameter('ids', $batchIds)
             ->orderBy('vt.name', 'ASC')
