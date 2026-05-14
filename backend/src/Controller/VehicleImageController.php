@@ -1,4 +1,3 @@
-use App\Service\FileValidationService;
 <?php
 
 declare(strict_types=1);
@@ -18,6 +17,7 @@ use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\String\Slugger\SluggerInterface;
 use App\Controller\Trait\UserSecurityTrait;
 use App\Controller\Trait\JsonValidationTrait;
+use App\Service\FileValidationService;
 
 #[Route('/api')]
 
@@ -41,7 +41,7 @@ class VehicleImageController extends AbstractController
     public function __construct(
         private EntityManagerInterface $entityManager,
         private SluggerInterface $slugger,
-            private FileValidationService $fileValidator
+        private FileValidationService $fileValidator,
         private int $uploadMaxBytes
     ) {
     }

@@ -28,17 +28,23 @@ class FuelRecordControllerTest extends BaseWebTestCase
         $user = $em->getRepository(User::class)->findOneBy(['email' => 'test@example.com']);
         $vehicle = $this->createTestVehicle($user, 'FUEL2-' . uniqid());
 
+        $payload = [
+            'vehicleId' => $vehicle->getId(),
+            'date' => '2026-01-15',
+            'mileage' => 10000,
+            'litres' => 45,
+            'cost' => 70,
+        ];
+
         $this->client->request('POST', '/api/fuel-records', [], [], [
             'HTTP_AUTHORIZATION' => $this->getAuthToken(),
             'CONTENT_TYPE' => 'application/json',
-        ], json_encode([
-            'vehicleId' => $vehicle->getId(),
-            'fuelDate' => '2026-01-15',
-            'odometer' => 10000,
-            'litres' => 45,
-            'totalCost' => 70,
-        ]));
+        ], json_encode($payload));
 
-        $this->assertContains($this->client->getResponse()->getStatusCode(), [201, 400, 500]);
+        $this->assertSame(201, $this->client->getResponse()->getStatusCode());
+        $data = json_decode((string) $this->client->getResponse()->getContent(), true);
+        $this->assertIsArray($data);
+        $this->assertArrayHasKey('id', $data);
+        $this->assertSame('2026-01-15', $data['date']);
     }
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Controller;
 
+use App\Entity\ConsumableType;
 use App\Entity\StockItem;
 use App\Entity\User;
 use App\Tests\TestCase\BaseWebTestCase;
@@ -18,39 +19,89 @@ class ConsumableControllerTest extends BaseWebTestCase
 
     public function testCreateUpdateDeleteConsumable(): void
     {
-        $this->client->request('POST', '/api/consumables', [], [], [
-            'HTTP_AUTHORIZATION' => $this->getAuthToken(),
-            'CONTENT_TYPE' => 'application/json',
-        ], json_encode([
-            'vehicleId' => 1,
+        $em = $this->getEntityManager();
+        $user = $em->getRepository(User::class)
+            ->findOneBy(['email' => 'test@example.com']);
+        $vehicle = $this->createTestVehicle($user, 'CON-' . uniqid());
+
+        $consumableType = new ConsumableType();
+        $consumableType->setVehicleType($vehicle->getVehicleType());
+        $consumableType->setName('Engine Oil');
+        $consumableType->setUnit('L');
+        $em->persist($consumableType);
+        $em->flush();
+
+        $payload = [
+            'vehicleId' => $vehicle->getId(),
+            'consumableTypeName' => 'Engine Oil',
             'description' => 'Engine Oil',
             'quantity' => 5,
             'cost' => 35.00,
             'purchaseDate' => '2026-01-15',
-        ]));
+        ];
 
-        $status = $this->client->getResponse()->getStatusCode();
-        $this->assertContains($status, [201, 400, 404, 500]);
-
-        if ($status === 201) {
-            $created = json_decode($this->client->getResponse()->getContent(), true);
-            $this->client->request('PUT', '/api/consumables/' . $created['id'], [], [], [
+        $this->client->request(
+            'POST',
+            '/api/consumables',
+            [],
+            [],
+            [
                 'HTTP_AUTHORIZATION' => $this->getAuthToken(),
                 'CONTENT_TYPE' => 'application/json',
-            ], json_encode(['cost' => 36.00]));
-            $this->assertContains($this->client->getResponse()->getStatusCode(), [200, 500]);
+            ],
+            json_encode($payload)
+        );
 
-            $this->client->request('DELETE', '/api/consumables/' . $created['id'], [], [], [
+        $this->assertSame(201, $this->client->getResponse()->getStatusCode());
+        $created = json_decode(
+            (string) $this->client->getResponse()->getContent(),
+            true
+        );
+        $this->assertIsArray($created);
+        $this->assertArrayHasKey('id', $created);
+
+        $this->client->request(
+            'PUT',
+            '/api/consumables/' . $created['id'],
+            [],
+            [],
+            [
                 'HTTP_AUTHORIZATION' => $this->getAuthToken(),
-            ]);
-            $this->assertContains($this->client->getResponse()->getStatusCode(), [200, 204, 500]);
-        }
+                'CONTENT_TYPE' => 'application/json',
+            ],
+            json_encode(['cost' => 36.00])
+        );
+        $this->assertSame(200, $this->client->getResponse()->getStatusCode());
+        $updated = json_decode(
+            (string) $this->client->getResponse()->getContent(),
+            true
+        );
+        $this->assertIsArray($updated);
+        $this->assertArrayHasKey('cost', $updated);
+
+        $this->client->request(
+            'DELETE',
+            '/api/consumables/' . $created['id'],
+            [],
+            [],
+            [
+                'HTTP_AUTHORIZATION' => $this->getAuthToken(),
+            ]
+        );
+        $this->assertSame(200, $this->client->getResponse()->getStatusCode());
+        $deleted = json_decode(
+            (string) $this->client->getResponse()->getContent(),
+            true
+        );
+        $this->assertIsArray($deleted);
+        $this->assertSame('Consumable deleted successfully', $deleted['message']);
     }
 
     public function testCreateConsumableFromStockDecrementsStockQuantity(): void
     {
         $em = $this->getEntityManager();
-        $user = $em->getRepository(User::class)->findOneBy(['email' => 'test@example.com']);
+        $user = $em->getRepository(User::class)
+            ->findOneBy(['email' => 'test@example.com']);
         self::assertInstanceOf(User::class, $user);
 
         $stockItem = new StockItem();
@@ -63,17 +114,39 @@ class ConsumableControllerTest extends BaseWebTestCase
         $em->persist($stockItem);
         $em->flush();
 
-        $this->client->request('POST', '/api/consumables', [], [], [
-            'HTTP_AUTHORIZATION' => $this->getAuthToken(),
-            'CONTENT_TYPE' => 'application/json',
-        ], json_encode([
-            'vehicleId' => 1,
+        $vehicle = $this->createTestVehicle($user, 'CONS-' . uniqid());
+        $payload = [
+            'vehicleId' => $vehicle->getId(),
             'stockItemId' => $stockItem->getId(),
             'quantity' => 2,
             'consumableTypeName' => 'Oil Filter',
             'unit' => 'pcs',
-        ]));
+        ];
 
-        $this->assertContains($this->client->getResponse()->getStatusCode(), [201, 404, 500]);
+        $this->client->request(
+            'POST',
+            '/api/consumables',
+            [],
+            [],
+            [
+                'HTTP_AUTHORIZATION' => $this->getAuthToken(),
+                'CONTENT_TYPE' => 'application/json',
+            ],
+            json_encode($payload)
+        );
+
+        $this->assertSame(201, $this->client->getResponse()->getStatusCode());
+        $responseData = json_decode(
+            (string) $this->client->getResponse()->getContent(),
+            true
+        );
+        $this->assertIsArray($responseData);
+        $this->assertArrayHasKey('id', $responseData);
+
+        $em->clear();
+        $updatedStockItem = $em->getRepository(StockItem::class)
+            ->find($stockItem->getId());
+        $this->assertInstanceOf(StockItem::class, $updatedStockItem);
+        $this->assertSame('3', $updatedStockItem->getQuantity());
     }
 }

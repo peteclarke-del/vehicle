@@ -879,7 +879,7 @@ class AuthController extends AbstractController
             );
         }
     }
-}
+
     #[Route('/auth/request-password-reset', name: 'api_request_password_reset', methods: ['POST'])]
 
     /**
@@ -1057,4 +1057,6 @@ class AuthController extends AbstractController
             200
         );
     }
+
+}
 

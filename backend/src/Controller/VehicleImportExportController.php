@@ -86,8 +86,8 @@ class VehicleImportExportController extends AbstractController
 
             return new JsonResponse(['stockItems' => $stockItems]);
         } catch (\Exception $e) {
-            $logger->error('Stock export failed', ['exception' => $e->getMessage()]);
-            return new JsonResponse(['error' => 'Export failed: ' . $e->getMessage()], 500);
+            $logger->error('Stock export failed', ['exception' => $e]);
+            return new JsonResponse(['error' => 'Export failed'], 500);
         }
     }
 
@@ -304,7 +304,7 @@ class VehicleImportExportController extends AbstractController
                 'includeImages' => $includeImages,
             ];
             file_put_contents(
-                $tempDir . '/MANIFEST.json',
+                $tempDir . '/manifest.json',
                 json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)
             );
 

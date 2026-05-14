@@ -10,9 +10,15 @@ class DvsaControllerTest extends BaseWebTestCase
 {
     public function testCheckEndpointResponds(): void
     {
-        $this->client->request('GET', '/api/dvsa/check', [], [], [
-            'HTTP_AUTHORIZATION' => $this->getAuthToken(),
-        ]);
+        $this->client->request(
+            'GET',
+            '/api/dvsa/check',
+            [],
+            [],
+            [
+                'HTTP_AUTHORIZATION' => $this->getAuthToken(),
+            ]
+        );
 
         $this->assertResponseIsSuccessful();
         $data = json_decode($this->client->getResponse()->getContent(), true);
@@ -21,14 +27,40 @@ class DvsaControllerTest extends BaseWebTestCase
 
     public function testVehicleAndMotHistoryEndpointsExist(): void
     {
-        $this->client->request('GET', '/api/dvsa/vehicle/AB12CDE', [], [], [
-            'HTTP_AUTHORIZATION' => $this->getAuthToken(),
-        ]);
-        $this->assertContains($this->client->getResponse()->getStatusCode(), [200, 404]);
+        $registration = 'ZZ99ZZZ';
 
-        $this->client->request('GET', '/api/dvsa/mot-history/AB12CDE', [], [], [
-            'HTTP_AUTHORIZATION' => $this->getAuthToken(),
-        ]);
-        $this->assertContains($this->client->getResponse()->getStatusCode(), [200, 404]);
+        $this->client->request(
+            'GET',
+            '/api/dvsa/vehicle/' . $registration,
+            [],
+            [],
+            [
+                'HTTP_AUTHORIZATION' => $this->getAuthToken(),
+            ]
+        );
+        $this->assertSame(404, $this->client->getResponse()->getStatusCode());
+        $vehicleData = json_decode(
+            (string) $this->client->getResponse()->getContent(),
+            true
+        );
+        $this->assertIsArray($vehicleData);
+        $this->assertArrayHasKey('error', $vehicleData);
+
+        $this->client->request(
+            'GET',
+            '/api/dvsa/mot-history/' . $registration,
+            [],
+            [],
+            [
+                'HTTP_AUTHORIZATION' => $this->getAuthToken(),
+            ]
+        );
+        $this->assertSame(404, $this->client->getResponse()->getStatusCode());
+        $motData = json_decode(
+            (string) $this->client->getResponse()->getContent(),
+            true
+        );
+        $this->assertIsArray($motData);
+        $this->assertArrayHasKey('error', $motData);
     }
 }

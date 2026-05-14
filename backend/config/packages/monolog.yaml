@@ -1,4 +1,5 @@
 monolog:
+  channels: ['audit']
   handlers:
     main:
       type: stream
@@ -14,4 +15,4 @@ monolog:
       path: '%kernel.project_dir%/var/log/audit.log'
       level: debug
       channels: ['audit']
-      formatter: json
+      formatter: monolog.formatter.json

@@ -121,7 +121,13 @@ class VehicleImportService
             ) {
                 $data = [$data];
             } else {
-                $data = [];
+                $rows = [];
+                foreach ($data as $key => $row) {
+                    if ((is_int($key) || ctype_digit((string) $key)) && is_array($row)) {
+                        $rows[] = $row;
+                    }
+                }
+                $data = $rows;
             }
         }
 
@@ -2060,9 +2066,10 @@ class VehicleImportService
                 continue;
             }
 
-            $itemType = trim((string) ($stockItemData['itemType'] ?? ''));
+            $allowedItemTypes = ['part', 'consumable'];
+            $itemType = strtolower(trim((string) ($stockItemData['itemType'] ?? '')));
             $category = trim((string) ($stockItemData['category'] ?? ''));
-            if ($itemType === '' || $category === '') {
+            if ($itemType === '' || $category === '' || !in_array($itemType, $allowedItemTypes, true)) {
                 continue;
             }
 

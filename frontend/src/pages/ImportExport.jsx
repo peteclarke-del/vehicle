@@ -489,22 +489,6 @@ const ImportExport = () => {
                 </Typography>
               </>
             )}
-                  <ImportPreview open={importPreviewOpen} data={importPreviewData} fileName={importFileName} onClose={() => setImportPreviewOpen(false)} onConfirm={confirmJsonImport} />
-                  <Grid item xs={12}>
-                    <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
-                      <Typography variant="h5" sx={{ mb: 2 }}>
-                        {t('importExport.stockTitle')}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                        {t('importExport.stockDescription')}
-                      </Typography>
-                      <Box display="flex" justifyContent="flex-end">
-                        <Button variant="outlined" startIcon={<Download />} onClick={downloadStockExport}>
-                          {t('importExport.downloadStock')}
-                        </Button>
-                      </Box>
-                    </Paper>
-                  </Grid>
             {importStatus === 'success' && (
               <Alert severity="success" sx={{ mt: 2 }}>
                 {importMessage}
