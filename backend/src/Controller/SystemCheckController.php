@@ -20,12 +20,18 @@ class SystemCheckController extends AbstractController
     public function check(EntityManagerInterface $em): JsonResponse
     {
         $projectDir = $this->getParameter('kernel.project_dir');
+        if (!is_string($projectDir)) {
+            return new JsonResponse(['error' => 'Project directory not configured'], 500);
+        }
 
         $results = [
-            'backend' => ['ok' => true, 'message' => 'Backend running'],
+            'backend' => ['ok' => false, 'message' => 'Backend check failed'],
             'db' => ['ok' => false, 'message' => 'Unknown'],
             'paths' => [],
         ];
+
+        // Backend check: always ok if we reach here (no exception thrown)
+        $results['backend'] = ['ok' => true, 'message' => 'Backend running'];
 
         // DB check
         try {
@@ -57,7 +63,7 @@ class SystemCheckController extends AbstractController
             ];
         }
 
-        $ok = $results['backend']['ok'] && $results['db']['ok'];
+        $ok = $results['db']['ok'];
         foreach ($results['paths'] as $p) {
             if (!$p['exists'] || !$p['writable']) {
                 $ok = false;

@@ -136,7 +136,7 @@ describe('Stock page', () => {
       expect(screen.getByText('Bosch Oil Filter')).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByRole('button', { name: 'common.add' }));
+    fireEvent.click(screen.getByRole('button', { name: 'stock.addItem' }));
 
     fireEvent.mouseDown(screen.getByLabelText('stock.type'));
     fireEvent.click(screen.getByRole('option', { name: 'consumables.title' }));
@@ -178,7 +178,7 @@ describe('Stock page', () => {
 
     expect(screen.getAllByLabelText('attachment.view')).toHaveLength(1);
 
-    const plusButtons = screen.getAllByRole('button', { name: '+' });
+    const plusButtons = screen.getAllByRole('button', { name: 'stock.adjustIncrease' });
     fireEvent.click(plusButtons[1]);
 
     await waitFor(() => {
@@ -190,5 +190,21 @@ describe('Stock page', () => {
         })
       );
     });
+  });
+
+  test('row is keyboard operable for edit dialog', async () => {
+    render(<Stock />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Bosch Oil Filter')).toBeInTheDocument();
+    });
+
+    const rowCell = screen.getByText('Bosch Oil Filter');
+    const row = rowCell.closest('tr');
+    expect(row).toBeInTheDocument();
+
+    fireEvent.keyDown(row, { key: 'Enter' });
+
+    expect(screen.getByLabelText('stock.description')).toHaveValue('Bosch Oil Filter');
   });
 });

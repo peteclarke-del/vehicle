@@ -36,6 +36,7 @@ const Stock = () => {
   const [order, setOrder] = useState('desc');
   const [orderBy, setOrderBy] = useState('updatedAt');
   const [searchTerm, setSearchTerm] = useState('');
+  const [liveMessage, setLiveMessage] = useState('');
   const [vehicleTypeId, setVehicleTypeId] = useState(() => {
     const storedVehicleTypeId = SafeStorage.get('stock.vehicleTypeId', null);
     if (storedVehicleTypeId === null || storedVehicleTypeId === '') return null;
@@ -86,6 +87,12 @@ const Stock = () => {
         delta: direction === 'add' ? amount : -amount,
       });
       await loadStock();
+      setLiveMessage(
+        t(
+          'stock.adjustSuccess',
+          '{{description}} quantity updated'
+        ).replace('{{description}}', item.description || item.category || t('stock.item', 'Item'))
+      );
     } finally {
       setSaving(false);
     }
@@ -172,6 +179,7 @@ const Stock = () => {
 
     if (reload) {
       loadStock();
+      setLiveMessage(t('stock.itemSaved', 'Stock item saved'));
     }
   };
 
@@ -185,12 +193,30 @@ const Stock = () => {
 
   return (
     <Box>
+      <Box
+        aria-live="polite"
+        aria-atomic="true"
+        sx={{
+          position: 'absolute',
+          width: 1,
+          height: 1,
+          p: 0,
+          m: -1,
+          overflow: 'hidden',
+          clip: 'rect(0, 0, 0, 0)',
+          whiteSpace: 'nowrap',
+          border: 0,
+        }}
+      >
+        {liveMessage}
+      </Box>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Typography variant="h4">{t('stock.title', 'Stock')}</Typography>
         <Box display="flex" gap={2}>
           <TextField
             size="small"
             placeholder={t('common.search', 'Search')}
+            aria-label={t('common.search', 'Search')}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             sx={{ minWidth: 260 }}
@@ -199,6 +225,7 @@ const Stock = () => {
             variant="contained"
             startIcon={<Add />}
             onClick={handleAdd}
+            aria-label={t('stock.addItem', 'Add stock item')}
           >
             {t('common.add', 'Add')}
           </Button>
@@ -214,7 +241,7 @@ const Stock = () => {
       />
 
       <TableContainer component={Paper} sx={{ maxHeight: 'calc(100vh - 180px)', overflow: 'auto' }}>
-        <Table stickyHeader>
+        <Table stickyHeader aria-label={t('stock.tableLabel', 'Stock items table')}>
           <TableHead>
             <TableRow>
               <TableCell>
@@ -311,11 +338,18 @@ const Stock = () => {
               <TableRow
                 key={item.id}
                 hover
+                tabIndex={0}
                 sx={{
                   cursor: 'pointer',
                   '&:nth-of-type(odd)': { backgroundColor: 'action.hover' },
                 }}
                 onClick={() => handleRowClick(item)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleRowClick(item);
+                  }
+                }}
               >
                 <TableCell>{item.itemType}</TableCell>
                 <TableCell>{item.category}</TableCell>
@@ -335,6 +369,7 @@ const Stock = () => {
                       size="small"
                       variant="outlined"
                       type="button"
+                      aria-label={t('stock.adjustIncrease', 'Increase quantity')}
                       onMouseDown={(e) => e.stopPropagation()}
                       onClick={(e) => {
                         e.preventDefault();
@@ -350,6 +385,7 @@ const Stock = () => {
                       variant="outlined"
                       color="warning"
                       type="button"
+                      aria-label={t('stock.adjustDecrease', 'Decrease quantity')}
                       onMouseDown={(e) => e.stopPropagation()}
                       onClick={(e) => {
                         e.preventDefault();

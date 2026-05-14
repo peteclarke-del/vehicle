@@ -185,7 +185,7 @@ class NotificationController extends AbstractController
      *
      * @param User $user
      *
-     * @return array
+     * @return array<string, mixed>
      */
     private function getNotificationSettings(User $user): array
     {
@@ -217,7 +217,7 @@ class NotificationController extends AbstractController
      *
      * @param User $user
      *
-     * @return array
+     * @return array<int, array<string, mixed>>
      */
     private function buildNotifications(User $user): array
     {

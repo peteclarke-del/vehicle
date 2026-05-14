@@ -22,7 +22,9 @@ const SafeStorage = {
         return item;
       }
     } catch (error) {
-      console.warn(`SafeStorage.get("${key}") failed:`, error.message);
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn(`SafeStorage.get("${key}") failed:`, error.message);
+      }
       return defaultValue;
     }
   },
@@ -39,7 +41,9 @@ const SafeStorage = {
       localStorage.setItem(key, item);
       return true;
     } catch (error) {
-      console.warn(`SafeStorage.set("${key}") failed:`, error.message);
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn(`SafeStorage.set("${key}") failed:`, error.message);
+      }
       return false;
     }
   },
@@ -54,7 +58,9 @@ const SafeStorage = {
       localStorage.removeItem(key);
       return true;
     } catch (error) {
-      console.warn(`SafeStorage.remove("${key}") failed:`, error.message);
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn(`SafeStorage.remove("${key}") failed:`, error.message);
+      }
       return false;
     }
   },
@@ -68,7 +74,9 @@ const SafeStorage = {
       localStorage.clear();
       return true;
     } catch (error) {
-      console.warn('SafeStorage.clear() failed:', error.message);
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn('SafeStorage.clear() failed:', error.message);
+      }
       return false;
     }
   },

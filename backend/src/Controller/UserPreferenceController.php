@@ -32,8 +32,12 @@ class UserPreferenceController extends AbstractController
         foreach ($prefs as $p) {
             $value = $p->getValue();
             // Try to decode JSON values where possible
-            $decoded = json_decode($value, true);
-            $out[$p->getName()] = json_last_error() === JSON_ERROR_NONE ? $decoded : $value;
+            if ($value !== null) {
+                $decoded = json_decode($value, true);
+                $out[$p->getName()] = json_last_error() === JSON_ERROR_NONE ? $decoded : $value;
+            } else {
+                $out[$p->getName()] = null;
+            }
         }
 
         return new JsonResponse($out);
@@ -69,7 +73,8 @@ class UserPreferenceController extends AbstractController
 
         // Normalize value to string for storage
         if (is_array($value) || is_object($value)) {
-            $value = json_encode($value);
+            $encoded = json_encode($value);
+            $value = $encoded === false ? null : $encoded;
         } elseif ($value === null) {
             $value = null;
         } else {
@@ -81,8 +86,13 @@ class UserPreferenceController extends AbstractController
         $em->flush();
 
         // Return current value (decoded if JSON)
-        $decoded = json_decode($pref->getValue(), true);
-        $out = json_last_error() === JSON_ERROR_NONE ? $decoded : $pref->getValue();
+        $currentValue = $pref->getValue();
+        if ($currentValue !== null) {
+            $decoded = json_decode($currentValue, true);
+            $out = json_last_error() === JSON_ERROR_NONE ? $decoded : $currentValue;
+        } else {
+            $out = null;
+        }
 
         return new JsonResponse(['key' => $key, 'value' => $out]);
     }

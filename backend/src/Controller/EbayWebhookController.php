@@ -76,9 +76,9 @@ class EbayWebhookController extends AbstractController
 
         // Calculate challenge response: SHA256(challengeCode + verificationToken + endpoint)
         $hash = hash_init('sha256');
-        hash_update($hash, $challengeCode);
-        hash_update($hash, $verificationToken);
-        hash_update($hash, $endpoint);
+        hash_update($hash, (string) $challengeCode);
+        hash_update($hash, (string) $verificationToken);
+        hash_update($hash, (string) $endpoint);
         $challengeResponse = hash_final($hash);
 
         $this->logger->info('eBay webhook: Challenge verification', [

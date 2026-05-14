@@ -40,7 +40,6 @@ class FuelRecordController extends AbstractController
 
     public function __construct(
         private EntityManagerInterface $entityManager,
-        private LoggerInterface $logger,
         private AttachmentLinkingService $attachmentLinkingService
     ) {
     }
@@ -67,7 +66,7 @@ class FuelRecordController extends AbstractController
 
         if ($vehicleId) {
             $vehicle = $this->entityManager->getRepository(Vehicle::class)->find($vehicleId);
-            if (!$vehicle || (!$this->isAdminForUser($user) && $vehicle->getOwner()->getId() !== $user->getId()
+            if (!$vehicle instanceof Vehicle || (!$this->isAdminForUser($user) && $vehicle->getOwner()?->getId() !== $user->getId()
                 && !$this->entityManager->getRepository(VehicleAssignment::class)->findOneBy(['assignedTo' => $user, 'vehicle' => $vehicle]))) {
                 return $this->json(['error' => 'Vehicle not found'], 404);
             }
@@ -82,11 +81,18 @@ class FuelRecordController extends AbstractController
                 $ownVehicles = $vehicleRepo->findBy(['owner' => $user]);
                 $assignments = $this->entityManager->getRepository(VehicleAssignment::class)
                     ->findBy(['assignedTo' => $user]);
-                $ownIds = array_map(fn($v) => $v->getId(), $ownVehicles);
+                $ownIds = array_values(array_filter(array_map(
+                    static fn(Vehicle $v): ?int => $v->getId(),
+                    $ownVehicles
+                )));
                 $assignedVehicles = [];
                 foreach ($assignments as $a) {
-                    if ($a->canView() && !in_array($a->getVehicle()->getId(), $ownIds, true)) {
-                        $assignedVehicles[] = $a->getVehicle();
+                    $assignedVehicle = $a->getVehicle();
+                    if ($assignedVehicle === null) {
+                        continue;
+                    }
+                    if ($a->canView() && !in_array($assignedVehicle->getId(), $ownIds, true)) {
+                        $assignedVehicles[] = $assignedVehicle;
                     }
                 }
                 $vehicles = array_merge($ownVehicles, $assignedVehicles);
@@ -119,8 +125,9 @@ class FuelRecordController extends AbstractController
         }
 
         $record = $this->entityManager->getRepository(FuelRecord::class)->find($id);
+        $recordVehicle = $record instanceof FuelRecord ? $record->getVehicle() : null;
 
-        if (!$record || (!$this->isAdminForUser($user) && $record->getVehicle()->getOwner()->getId() !== $user->getId())) {
+        if (!$record instanceof FuelRecord || !$recordVehicle instanceof Vehicle || (!$this->isAdminForUser($user) && $recordVehicle->getOwner()?->getId() !== $user->getId())) {
             return $this->json(['error' => 'Fuel record not found'], 404);
         }
 
@@ -144,7 +151,7 @@ class FuelRecordController extends AbstractController
         $vehicle = $this->entityManager->getRepository(Vehicle::class)
             ->find($data['vehicleId']);
 
-        if (!$vehicle || (!$this->isAdminForUser($user) && $vehicle->getOwner()->getId() !== $user->getId())) {
+        if (!$vehicle instanceof Vehicle || (!$this->isAdminForUser($user) && $vehicle->getOwner()?->getId() !== $user->getId())) {
             return $this->json(['error' => 'Vehicle not found'], 404);
         }
 
@@ -176,8 +183,9 @@ class FuelRecordController extends AbstractController
         }
 
         $record = $this->entityManager->getRepository(FuelRecord::class)->find($id);
+        $recordVehicle = $record instanceof FuelRecord ? $record->getVehicle() : null;
 
-        if (!$record || (!$this->isAdminForUser($user) && $record->getVehicle()->getOwner()->getId() !== $user->getId())) {
+        if (!$record instanceof FuelRecord || !$recordVehicle instanceof Vehicle || (!$this->isAdminForUser($user) && $recordVehicle->getOwner()?->getId() !== $user->getId())) {
             return $this->json(['error' => 'Fuel record not found'], 404);
         }
 
@@ -202,8 +210,9 @@ class FuelRecordController extends AbstractController
         }
 
         $record = $this->entityManager->getRepository(FuelRecord::class)->find($id);
+        $recordVehicle = $record instanceof FuelRecord ? $record->getVehicle() : null;
 
-        if (!$record || (!$this->isAdminForUser($user) && $record->getVehicle()->getOwner()->getId() !== $user->getId())) {
+        if (!$record instanceof FuelRecord || !$recordVehicle instanceof Vehicle || (!$this->isAdminForUser($user) && $recordVehicle->getOwner()?->getId() !== $user->getId())) {
             return $this->json(['error' => 'Fuel record not found'], 404);
         }
 
@@ -213,11 +222,16 @@ class FuelRecordController extends AbstractController
         return $this->json(['message' => 'Fuel record deleted successfully']);
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     private function serializeFuelRecord(FuelRecord $record): array
     {
+        $vehicleId = $record->getVehicle()?->getId();
+
         return [
             'id' => $record->getId(),
-            'vehicleId' => $record->getVehicle()->getId(),
+            'vehicleId' => $vehicleId,
             'date' => $record->getDate()?->format('Y-m-d'),
             'litres' => $record->getLitres(),
             'cost' => $record->getCost(),
@@ -230,6 +244,9 @@ class FuelRecordController extends AbstractController
         ];
     }
 
+    /**
+     * @param array<string, mixed> $data
+     */
     private function updateRecordFromData(FuelRecord $record, array $data): void
     {
         if (isset($data['date'])) {

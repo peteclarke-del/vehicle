@@ -119,13 +119,13 @@ const Register = () => {
           <Typography component="h1" variant="h5" align="center" gutterBottom>
             {t('auth.register')}
           </Typography>
-          {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+          {error && <Alert severity="error" sx={{ mb: 2 }} role="alert" aria-live="assertive">{error}</Alert>}
           {success && (
-            <Alert severity="success" sx={{ mb: 2 }}>
+            <Alert severity="success" sx={{ mb: 2 }} role="status" aria-live="polite">
               {t('register.success')}
             </Alert>
           )}
-          <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
+          <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }} aria-label={t('auth.registerForm') || 'Register form'}>
             <TextField
               margin="normal"
               required
@@ -134,6 +134,7 @@ const Register = () => {
               label={t('auth.firstName')}
               value={formData.firstName}
               onChange={handleChange}
+              inputProps={{ 'aria-label': t('auth.firstName') || 'First name' }}
             />
             <TextField
               margin="normal"
@@ -143,6 +144,7 @@ const Register = () => {
               label={t('auth.lastName')}
               value={formData.lastName}
               onChange={handleChange}
+              inputProps={{ 'aria-label': t('auth.lastName') || 'Last name' }}
             />
             <TextField
               margin="normal"
@@ -153,6 +155,7 @@ const Register = () => {
               type="email"
               value={formData.email}
               onChange={handleChange}
+              inputProps={{ 'aria-label': t('auth.email') || 'Email address' }}
             />
             <TextField
               margin="normal"
@@ -164,9 +167,10 @@ const Register = () => {
               value={formData.password}
               onChange={handleChange}
               error={formData.password.length > 0 && !isValidPassword}
+              inputProps={{ 'aria-label': t('auth.password') || 'Password', 'aria-describedby': 'password-requirements' }}
             />
             {formData.password.length > 0 && (
-              <Box sx={{ mt: 1, mb: 1 }}>
+              <Box sx={{ mt: 1, mb: 1 }} id="password-requirements">
                 <Typography variant="caption" color="text.secondary">
                   {t('password.passwordRequirements')}:
                 </Typography>

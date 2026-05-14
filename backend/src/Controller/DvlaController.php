@@ -63,9 +63,10 @@ class DvlaController extends AbstractController
 
                     // Normalize response for frontend - include more useful fields
                     // Helper to capitalise first letter only
-                    $capitalize = function ($v) {
+                    /** @param mixed $v */
+                    $capitalize = function ($v): string {
                         if (!$v) {
-                            return $v;
+                            return '';
                         }
                         $s = trim((string) $v);
                         return ucfirst(strtolower($s));

@@ -32,7 +32,6 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 use Symfony\Contracts\Cache\TagAwareCacheInterface;
-use Symfony\Component\String\Slugger\SluggerInterface;
 use App\Controller\Trait\UserSecurityTrait;
 use App\Service\VehicleExportService;
 use App\Service\VehicleImportService;
@@ -48,16 +47,6 @@ class VehicleImportExportController extends AbstractController
     use UserSecurityTrait;
 
     /**
-     * @var LoggerInterface
-     */
-    private LoggerInterface $logger;
-
-    /**
-     * @var SluggerInterface
-     */
-    private SluggerInterface $slugger;
-
-    /**
      * @var VehicleExportService
      */
     private VehicleExportService $exportService;
@@ -70,225 +59,17 @@ class VehicleImportExportController extends AbstractController
     /**
      * function __construct
      *
-     * @param LoggerInterface $logger
-     * @param SluggerInterface $slugger
      * @param VehicleExportService $exportService
      * @param VehicleImportService $importService
      *
      * @return void
      */
     public function __construct(
-        LoggerInterface $logger,
-        SluggerInterface $slugger,
         VehicleExportService $exportService,
         VehicleImportService $importService
     ) {
-        $this->logger = $logger;
-        $this->slugger = $slugger;
         $this->exportService = $exportService;
         $this->importService = $importService;
-    }
-
-    /**
-     * function trimString
-     *
-     * Safely trim a string value, returning null if empty or not a string
-     *
-     * @param mixed $value
-     *
-     * @return string
-     */
-    private function trimString($value): ?string
-    {
-        if (!is_string($value)) {
-            return null;
-        }
-        $trimmed = trim($value);
-        return $trimmed === '' ? null : $trimmed;
-    }
-
-    /**
-     * function serializeAttachment
-     *
-     * Serialize attachment data for export
-     *
-     * @param Attachment $attachment
-     * @param string $zipDir
-     *
-     * @return array
-     */
-    private function serializeAttachment(?Attachment $attachment, string $zipDir): ?array
-    {
-        if (!$attachment || !$zipDir) {
-            return null;
-        }
-
-        // Validate essential attachment data
-        if (!$attachment->getFilename()) {
-            $this->logger->warning('[export] Attachment has no filename', ['id' => $attachment->getId()]);
-            return null;
-        }
-
-        $attachmentData = [
-            'filename' => $attachment->getFilename(),
-            'storagePath' => $attachment->getStoragePath(),
-            'mimetype' => $attachment->getMimeType(),
-            'filesize' => $attachment->getFileSize(),
-            'uploadedAt' => $attachment->getUploadedAt()?->format('c'),
-            'category' => $attachment->getCategory(),
-            'description' => $attachment->getDescription(),
-        ];
-
-        // Copy the physical file to ZIP directory
-        $storagePath = $attachment->getStoragePath() ?: ('attachments/' . $attachment->getFilename());
-        $sourcePath = $this->getParameter('kernel.project_dir') . '/uploads/' . ltrim($storagePath, '/');
-        
-        if (file_exists($sourcePath)) {
-            $safeName = 'attachment_' . $attachment->getId() . '_' . basename($attachment->getFilename());
-            $targetPath = $zipDir . '/attachments/' . $safeName;
-            $destDir = dirname($targetPath);
-            
-            try {
-                if (!is_dir($destDir)) {
-                    mkdir($destDir, 0755, true);
-                }
-                
-                if (!copy($sourcePath, $targetPath)) {
-                    throw new \RuntimeException('Failed to copy file');
-                }
-                
-                $this->logger->info('[export] Copied attachment to ZIP', [
-                    'attachmentId' => $attachment->getId(),
-                    'targetPath' => $targetPath
-                ]);
-                // Store the safe name in the serialized data so import knows where to find it
-                $attachmentData['importFilename'] = $safeName;
-            } catch (\Throwable $e) {
-                $this->logger->error('[export] Failed to copy attachment', [
-                    'attachmentId' => $attachment->getId(),
-                    'sourcePath' => $sourcePath,
-                    'targetPath' => $targetPath,
-                    'exception' => $e->getMessage()
-                ]);
-            }
-        } else {
-            $this->logger->warning('[export] Attachment file not found', [
-                'attachmentId' => $attachment->getId(),
-                'sourcePath' => $sourcePath
-            ]);
-        }
-
-        return $attachmentData;
-    }
-
-    /**
-     * function deserializeAttachment
-     *
-     * Deserialize attachment data during import and create Attachment entity
-     *
-     * @param array $attachmentData
-     * @param string $zipDir
-     * @param mixed $user
-     * @param string $vehicleRegNo
-     *
-     * @return Attachment
-     */
-    private function deserializeAttachment(?array $attachmentData, string $zipDir, $user, ?string $vehicleRegNo = null): ?Attachment
-    {
-        if (!$attachmentData || !isset($attachmentData['importFilename'])) {
-            return null;
-        }
-
-        // Validate filename
-        if (empty($attachmentData['filename'])) {
-            $this->logger->warning('[import] Attachment data missing filename');
-            return null;
-        }
-
-        // Copy file from ZIP to uploads directory
-        $sourcePath = $zipDir . '/attachments/' . $attachmentData['importFilename'];
-        if (!file_exists($sourcePath)) {
-            $this->logger->warning('[import] Attachment file not found in ZIP', [
-                'importFilename' => $attachmentData['importFilename'],
-                'sourcePath' => $sourcePath
-            ]);
-            return null;
-        }
-
-        // Determine storage path based on vehicle registration and category
-        // If no category provided, infer from entityType
-        $category = $attachmentData['category'] ?? null;
-        if (!$category && isset($attachmentData['entityType'])) {
-            $entityType = strtolower($attachmentData['entityType']);
-            // Map entity types to sensible category names
-            $category = match($entityType) {
-                'servicerecord' => 'service',
-                'motrecord' => 'mot',
-                'fuelrecord' => 'fuel',
-                'insurancepolicy' => 'insurance',
-                'part' => 'parts',
-                'consumable' => 'consumables',
-                default => 'misc'
-            };
-        }
-        $category = $category ?? 'misc';
-        
-        if ($vehicleRegNo) {
-            // Sanitize registration number for filesystem use
-            $safeRegNo = preg_replace('/[^a-zA-Z0-9-_]/', '_', $vehicleRegNo);
-            $uploadDir = $this->getParameter('kernel.project_dir') . '/uploads/vehicles/' . $safeRegNo . '/' . $category;
-            $storagePath = 'vehicles/' . $safeRegNo . '/' . $category;
-        } else {
-            // Fallback to attachments folder if no vehicle registration
-            $uploadDir = $this->getParameter('kernel.project_dir') . '/uploads/attachments/' . $category;
-            $storagePath = 'attachments/' . $category;
-        }
-        
-        try {
-            if (!is_dir($uploadDir)) {
-                mkdir($uploadDir, 0755, true);
-            }
-
-            // Generate unique filename to avoid collisions
-            $newFilename = uniqid('att_') . '_' . basename($attachmentData['filename']);
-            $destPath = $uploadDir . '/' . $newFilename;
-            
-            if (!copy($sourcePath, $destPath)) {
-                throw new \RuntimeException('Failed to copy file');
-            }
-        } catch (\Throwable $e) {
-            $this->logger->error('[import] Failed to copy attachment file', [
-                'sourcePath' => $sourcePath,
-                'destPath' => $destPath ?? 'unknown',
-                'exception' => $e->getMessage()
-            ]);
-            return null;
-        }
-
-        // Create Attachment entity
-        $attachment = new Attachment();
-        $attachment->setFilename($newFilename);
-        $attachment->setOriginalFilename($attachmentData['filename']);
-        $attachment->setMimeType($attachmentData['mimetype'] ?? 'application/octet-stream');
-        $attachment->setFileSize($attachmentData['filesize'] ?? filesize($destPath));
-        $attachment->setStoragePath($storagePath . '/' . $newFilename);
-        $attachment->setUploadedAt(new \DateTime());
-        $attachment->setUser($user);
-        
-        if (isset($attachmentData['category'])) {
-            $attachment->setCategory($attachmentData['category']);
-        }
-        if (isset($attachmentData['description'])) {
-            $attachment->setDescription($attachmentData['description']);
-        }
-
-        $this->logger->info('[import] Created attachment from embedded data', [
-            'filename' => $newFilename,
-            'originalFilename' => $attachmentData['filename'],
-            'storagePath' => $storagePath . '/' . $newFilename
-        ]);
-
-        return $attachment;
     }
 
     #[Route('/export-stock', name: 'vehicles_export_stock', methods: ['GET'])]
@@ -331,6 +112,7 @@ class VehicleImportExportController extends AbstractController
             }
 
             $includeAttachmentRefs = $request->query->getBoolean('includeAttachmentRefs', false);
+            $includeGlobalState = $request->query->getBoolean('includeGlobalState', false);
             $isAdmin = $this->isAdminForUser($user);
 
             // Delegate to service
@@ -338,12 +120,13 @@ class VehicleImportExportController extends AbstractController
                 $user,
                 $isAdmin,
                 $includeAttachmentRefs,
-                $zipDir
+                $zipDir,
+                $includeGlobalState
             );
 
             if (!$result->isSuccess()) {
                 return new JsonResponse([
-                    'error' => 'Export failed: ' . implode(', ', $result->getErrors())
+                    'error' => 'Export failed: ' . ($result->getMessage() ?? 'unknown error')
                 ], 500);
             }
 
@@ -397,6 +180,11 @@ class VehicleImportExportController extends AbstractController
     /**
      * function exportZip
      *
+     * Exports vehicle data as ZIP with streaming response to avoid timeout on large exports.
+     * Query parameters:
+     * - includeGlobalState: false (optional, set to true to include global reference data)
+     * - includeImages: false (optional, set to true to include vehicle images)
+     *
      * @param Request $request
      * @param EntityManagerInterface $entityManager
      * @param LoggerInterface $logger
@@ -411,10 +199,22 @@ class VehicleImportExportController extends AbstractController
                 return new JsonResponse(['error' => 'Unauthorized'], 401);
             }
 
-            $logger->info('Export ZIP started', ['userId' => $user->getId()]);
+            $includeGlobalState = $request->query->getBoolean('includeGlobalState', false);
+            $includeImages = $request->query->getBoolean('includeImages', false);
+
+            $logger->info('Export ZIP started', [
+                'userId' => $user->getId(),
+                'includeGlobalState' => $includeGlobalState,
+                'includeImages' => $includeImages
+            ]);
 
             // Create temp directory
-            $projectTmpRoot = $this->getParameter('kernel.project_dir') . '/var/tmp';
+            $projectDirParam = $this->getParameter('kernel.project_dir');
+            if (!is_string($projectDirParam)) {
+                return new JsonResponse(['error' => 'Invalid project directory configuration'], 500);
+            }
+            $projectDir = $projectDirParam;
+            $projectTmpRoot = $projectDir . '/var/tmp';
             if (!file_exists($projectTmpRoot)) {
                 try {
                     mkdir($projectTmpRoot, 0755, true);
@@ -454,49 +254,59 @@ class VehicleImportExportController extends AbstractController
                 return new JsonResponse(['error' => 'Export failed: empty payload'], 500);
             }
 
-            // Write vehicles.json
-            file_put_contents($tempDir . '/vehicles.json', $vehiclesJson);
-                // Parse the export data to separate into distinct files
-                $exportData = json_decode($vehiclesJson, true);
-                if (is_array($exportData)) {
-                    // Write vehicles to separate file
-                    if (!empty($exportData['vehicles']) && is_array($exportData['vehicles'])) {
-                        file_put_contents(
-                            $tempDir . '/vehicles.json',
-                            json_encode($exportData['vehicles'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)
-                        );
-                    }
-                
-                    // Write stock items to separate file if present
-                    if (!empty($exportData['stockItems']) && is_array($exportData['stockItems'])) {
-                        file_put_contents(
-                            $tempDir . '/stock.json',
-                            json_encode(['stockItems' => $exportData['stockItems']], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)
-                        );
-                        $logger->info('[export-zip] Included stock items', ['count' => count($exportData['stockItems'])]);
-                    }
-                
-                    // Create manifest file listing what's in the export
-                    $manifest = [
-                        'exportDate' => (new \DateTime())->format('c'),
-                        'filesIncluded' => [
-                            'vehicles.json' => 'Vehicle records with parts, consumables, service records, MOT records, fuel records, insurance, road tax, todos, and attachment references',
-                            'stock.json' => 'Stock/inventory items (if present)',
-                            'attachments/' => 'Attachment files (if present)',
-                            'images/' => 'Vehicle images (if present)',
-                        ],
-                    ];
-                    if (!empty($exportData['stockItems'])) {
-                        $manifest['dataStats'] = [
-                            'vehicleCount' => count($exportData['vehicles'] ?? []),
-                            'stockItemCount' => count($exportData['stockItems'] ?? []),
-                        ];
-                    }
-                    file_put_contents(
-                        $tempDir . '/MANIFEST.json',
-                        json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)
-                    );
-                }
+            // Parse the export data to separate into dedicated files
+            $exportData = json_decode($vehiclesJson, true);
+            if (!is_array($exportData)) {
+                return new JsonResponse(['error' => 'Export failed: invalid payload'], 500);
+            }
+
+            // Full payload for forward-compatible restore.
+            file_put_contents(
+                $tempDir . '/backup.json',
+                json_encode($exportData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)
+            );
+
+            // Backward-compatible split files.
+            file_put_contents(
+                $tempDir . '/vehicles.json',
+                json_encode($exportData['vehicles'] ?? [], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)
+            );
+
+            if (!empty($exportData['stockItems']) && is_array($exportData['stockItems'])) {
+                file_put_contents(
+                    $tempDir . '/stock.json',
+                    json_encode(['stockItems' => $exportData['stockItems']], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)
+                );
+                $logger->info('[export-zip] Included stock items', ['count' => count($exportData['stockItems'])]);
+            }
+
+            if ($includeGlobalState && !empty($exportData['globalState']) && is_array($exportData['globalState'])) {
+                file_put_contents(
+                    $tempDir . '/global.json',
+                    json_encode(['globalState' => $exportData['globalState']], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)
+                );
+                $logger->info('[export-zip] Included global state', ['groups' => count($exportData['globalState'])]);
+            }
+
+            $manifest = is_array($exportData['manifest'] ?? null)
+                ? $exportData['manifest']
+                : [];
+            $manifest['filesIncluded'] = [
+                'backup.json' => 'Full backup payload including vehicles, stockItems, globalState, manifest.',
+                'vehicles.json' => 'Vehicle records for legacy import compatibility.',
+                'stock.json' => 'Stock/inventory items (if present).',
+                'global.json' => 'Global reference/user state (if present, only if includeGlobalState=true).',
+                'attachments/' => 'Attachment files (if present).',
+                'images/' => 'Vehicle images (if present, only if includeImages=true).',
+            ];
+            $manifest['exportOptions'] = [
+                'includeGlobalState' => $includeGlobalState,
+                'includeImages' => $includeImages,
+            ];
+            file_put_contents(
+                $tempDir . '/MANIFEST.json',
+                json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)
+            );
 
             // Create ZIP archive
             $zipPath = sys_get_temp_dir() . '/vehicle-export-' . uniqid() . '.zip';
@@ -506,7 +316,7 @@ class VehicleImportExportController extends AbstractController
             }
 
             // Recursively add all files and directories to ZIP
-            $addToZip = function($dir, $zipPath = '') use (&$addToZip, $zip, $tempDir) {
+            $addToZip = function($dir, $zipPath = '') use (&$addToZip, $zip) {
                 $files = scandir($dir);
                 foreach ($files as $f) {
                     if ($f === '.' || $f === '..') {
@@ -527,7 +337,7 @@ class VehicleImportExportController extends AbstractController
             $addToZip($tempDir);
             $zip->close();
 
-            $logger->info('Export ZIP archive created', ['zipPath' => $zipPath]);
+            $logger->info('Export ZIP archive created', ['zipPath' => $zipPath, 'sizeBytes' => filesize($zipPath)]);
 
             // Cleanup temp dir recursively
             $deleteDir = function($dir) use (&$deleteDir) {
@@ -552,8 +362,11 @@ class VehicleImportExportController extends AbstractController
 
             $response = new BinaryFileResponse($zipPath);
             $response->headers->set('Content-Type', 'application/zip');
+            $response->headers->set('Content-Encoding', 'gzip');
             $response->setContentDisposition(ResponseHeaderBag::DISPOSITION_ATTACHMENT, 'vehicles-export.zip');
-            $response->deleteFileAfterSend(true);
+            if ($this->getParameter('kernel.environment') !== 'test') {
+                $response->deleteFileAfterSend(true);
+            }
 
             $logger->info('Export ZIP completed', ['zipPath' => $zipPath]);
             return $response;
@@ -593,7 +406,12 @@ class VehicleImportExportController extends AbstractController
                 return new JsonResponse(['error' => 'No file uploaded'], 400);
             }
 
-            $projectTmpRoot = $this->getParameter('kernel.project_dir') . '/var/tmp';
+            $projectDirParam = $this->getParameter('kernel.project_dir');
+            if (!is_string($projectDirParam)) {
+                return new JsonResponse(['error' => 'Invalid project directory configuration'], 500);
+            }
+            $projectDir = $projectDirParam;
+            $projectTmpRoot = $projectDir . '/var/tmp';
             if (!file_exists($projectTmpRoot)) {
                 try {
                     mkdir($projectTmpRoot, 0755, true);
@@ -625,46 +443,78 @@ class VehicleImportExportController extends AbstractController
             $zip->extractTo($tmpDir);
             $zip->close();
 
+            $backupFile = $tmpDir . '/backup.json';
             $vehiclesFile = $tmpDir . '/vehicles.json';
-            if (!file_exists($vehiclesFile)) {
-                return new JsonResponse(['error' => 'Missing vehicles.json in zip'], 400);
+            $loadedFromBackup = false;
+
+            if (!file_exists($backupFile) && !file_exists($vehiclesFile)) {
+                return new JsonResponse(['error' => 'Missing backup.json or vehicles.json in zip'], 400);
             }
 
-            $vehicles = json_decode(file_get_contents($vehiclesFile), true);
-            if (!is_array($vehicles)) {
-                return new JsonResponse(['error' => 'Invalid vehicles.json'], 400);
+            if (file_exists($backupFile)) {
+                $backupContents = file_get_contents($backupFile);
+                if (!is_string($backupContents)) {
+                    return new JsonResponse(['error' => 'Invalid backup.json'], 400);
+                }
+                $vehicles = json_decode($backupContents, true);
+                if (!is_array($vehicles)) {
+                    return new JsonResponse(['error' => 'Invalid backup.json'], 400);
+                }
+                $loadedFromBackup = true;
+            } else {
+                $vehiclesContents = file_get_contents($vehiclesFile);
+                if (!is_string($vehiclesContents)) {
+                    return new JsonResponse(['error' => 'Invalid vehicles.json'], 400);
+                }
+                $vehicles = json_decode($vehiclesContents, true);
+                if (!is_array($vehicles)) {
+                    return new JsonResponse(['error' => 'Invalid vehicles.json'], 400);
+                }
             }
             
-                // Check for optional stock.json file
-                $stockFile = $tmpDir . '/stock.json';
-                $stockItems = [];
-                if (file_exists($stockFile)) {
-                    $stockData = json_decode(file_get_contents($stockFile), true);
-                    if (is_array($stockData)) {
-                        // stock.json can contain either ['stockItems' => [...]] or just [...]
-                        $stockItems = $stockData['stockItems'] ?? (is_array($stockData) ? $stockData : []);
-                        $logger->info('[import-zip] Found stock.json', ['stockItemCount' => count($stockItems)]);
+            $payload = $vehicles;
+            $isSequentialVehicles = array_keys($vehicles) === range(0, count($vehicles) - 1);
+            if ($isSequentialVehicles) {
+                $payload = ['vehicles' => $vehicles];
+            }
+
+            // Merge optional split files into payload (for old and mixed archives).
+            $stockFile = $tmpDir . '/stock.json';
+            if (file_exists($stockFile) && (!$loadedFromBackup || empty($payload['stockItems']))) {
+                $stockContents = file_get_contents($stockFile);
+                $stockData = is_string($stockContents) ? json_decode($stockContents, true) : null;
+                if (is_array($stockData)) {
+                    $stockItems = $stockData['stockItems'] ?? $stockData;
+                    if (is_array($stockItems)) {
+                        $payload['stockItems'] = array_merge($payload['stockItems'] ?? [], $stockItems);
+                        $logger->info('[import-zip] Merged stock items into import data', ['stockItemCount' => count($stockItems)]);
                     }
                 }
+            }
 
-                // Merge stock items into vehicles data if present
-                if (!empty($stockItems)) {
-                    if (!is_array($vehicles)) {
-                        $vehicles = [];
+            $globalFile = $tmpDir . '/global.json';
+            if (file_exists($globalFile) && (!$loadedFromBackup || empty($payload['globalState']))) {
+                $globalContents = file_get_contents($globalFile);
+                $globalData = is_string($globalContents) ? json_decode($globalContents, true) : null;
+                if (is_array($globalData)) {
+                    $globalState = $globalData['globalState'] ?? $globalData;
+                    if (is_array($globalState)) {
+                        $existing = $payload['globalState'] ?? [];
+                        $payload['globalState'] = array_merge($existing, $globalState);
+                        $logger->info('[import-zip] Merged global state into import data', ['groups' => count($globalState)]);
                     }
-                    if (!isset($vehicles['stockItems'])) {
-                        $vehicles['stockItems'] = [];
-                    }
-                    $vehicles['stockItems'] = array_merge($vehicles['stockItems'] ?? [], $stockItems);
-                    $logger->info('[import-zip] Merged stock items into import data');
                 }
+            }
 
-            // Check for optional manifest.json (for vehicle images)
-            $manifestFile = $tmpDir . '/manifest.json';
+            // Check for optional manifest file.
+            $manifestFile = file_exists($tmpDir . '/MANIFEST.json')
+                ? $tmpDir . '/MANIFEST.json'
+                : $tmpDir . '/manifest.json';
             $manifest = null;
             $hasManifest = file_exists($manifestFile);
             if ($hasManifest) {
-                $manifest = json_decode(file_get_contents($manifestFile), true);
+                $manifestContents = file_get_contents($manifestFile);
+                $manifest = is_string($manifestContents) ? json_decode($manifestContents, true) : null;
                 if (!is_array($manifest)) {
                     $logger->warning('[import] Invalid manifest.json, skipping vehicle images');
                     $manifest = null;
@@ -672,7 +522,7 @@ class VehicleImportExportController extends AbstractController
                 }
             }
 
-            $uploadDir = $this->getParameter('kernel.project_dir') . '/uploads';
+            $uploadDir = $projectDir . '/uploads';
             if (!file_exists($uploadDir)) {
                 try {
                     mkdir($uploadDir, 0755, true);
@@ -693,11 +543,15 @@ class VehicleImportExportController extends AbstractController
             ]);
 
             // call existing import logic by creating a synthetic Request
-            $importRequest = new Request([], [], [], [], [], [], json_encode($vehicles));
+            $importContent = json_encode($payload);
+            if (!is_string($importContent)) {
+                return new JsonResponse(['error' => 'Invalid import payload encoding'], 500);
+            }
+            $importRequest = new Request([], [], [], [], [], [], $importContent);
             $result = $this->import($importRequest, $entityManager, $logger, $cache, $tmpDir);
 
             // build registration -> vehicle map for image import
-            $vehiclesList = $vehicles;
+            $vehiclesList = $payload;
             $isSequential = array_keys($vehiclesList) === range(0, count($vehiclesList) - 1);
             if (!$isSequential) {
                 if (!empty($vehiclesList['vehicles']) && is_array($vehiclesList['vehicles'])) {
@@ -710,31 +564,34 @@ class VehicleImportExportController extends AbstractController
             }
 
             $vehicleByReg = [];
-            if (is_array($vehiclesList)) {
-                foreach ($vehiclesList as $vehicleData) {
-                    $reg = $vehicleData['registrationNumber'] ?? $vehicleData['registration'] ?? null;
-                    if (!$reg) {
-                        continue;
-                    }
-                    $vehicle = $entityManager->getRepository(Vehicle::class)
-                    ->findOneBy(['registrationNumber' => $reg, 'owner' => $user]);
-                    if ($vehicle) {
-                        $vehicleByReg[$reg] = $vehicle;
-                    }
+            foreach ($vehiclesList as $vehicleData) {
+                $reg = $vehicleData['registrationNumber'] ?? $vehicleData['registration'] ?? null;
+                if (!$reg) {
+                    continue;
+                }
+                $vehicle = $entityManager->getRepository(Vehicle::class)
+                ->findOneBy(['registrationNumber' => $reg, 'owner' => $user]);
+                if ($vehicle) {
+                    $vehicleByReg[$reg] = $vehicle;
                 }
             }
 
-            // Import vehicle images if manifest.json is present
+            // Import vehicle images if a legacy image-list manifest is present.
             $vehicleImagesSkipped = false;
             $vehicleImagesImported = 0;
+            $manifestLooksLikeLegacyImageList = $hasManifest
+                && is_array($manifest)
+                && isset($manifest[0])
+                && is_array($manifest[0])
+                && (($manifest[0]['type'] ?? null) === 'vehicle_image');
             
-            if ($hasManifest && $manifest) {
+            if ($manifestLooksLikeLegacyImageList) {
                 foreach ($manifest as $m) {
                     if (($m['type'] ?? null) !== 'vehicle_image') {
                         continue;
                     }
                     $src = $tmpDir . '/' . ($m['manifestName'] ?? '');
-                    if (!$src || !file_exists($src)) {
+                    if (!file_exists($src)) {
                         continue;
                     }
 
@@ -826,11 +683,18 @@ class VehicleImportExportController extends AbstractController
             if ($hasManifest) {
                 @unlink($manifestFile);
             }
+            @unlink($backupFile);
             @unlink($vehiclesFile);
+            @unlink($tmpDir . '/stock.json');
+            @unlink($tmpDir . '/global.json');
             @rmdir($tmpDir);
 
             // Add vehicle images info to result
-            $resultData = json_decode($result->getContent(), true);
+            $resultContent = $result->getContent();
+            $resultData = is_string($resultContent) ? json_decode($resultContent, true) : [];
+            if (!is_array($resultData)) {
+                $resultData = [];
+            }
             if ($vehicleImagesSkipped) {
                 $resultData['vehicleImagesSkipped'] = true;
                 $resultData['vehicleImagesMessage'] = 'import.no_manifest_vehicle_images_skipped';
@@ -892,12 +756,10 @@ class VehicleImportExportController extends AbstractController
                 if (str_contains($ct, 'csv') || str_contains($content, ',')) {
                     $lines = array_values(array_filter(array_map('trim', explode("\n", $content))));
                     if (!empty($lines)) {
-                        $header = str_getcsv(array_shift($lines), ',', '"', '\\');
+                        $rawHeader = str_getcsv(array_shift($lines), ',', '"', '\\');
+                        $header = array_map(static fn($value): string => (string) $value, $rawHeader);
                         $vehicles = [];
                         foreach ($lines as $line) {
-                            if ($line === '') {
-                                continue;
-                            }
                             $row = str_getcsv($line, ',', '"', '\\');
                             if (count($row) < count($header)) {
                                 $row = array_pad($row, count($header), null);
@@ -911,10 +773,6 @@ class VehicleImportExportController extends AbstractController
 
             if (!is_array($data)) {
                 return new JsonResponse(['error' => 'Invalid JSON format'], Response::HTTP_BAD_REQUEST);
-            }
-
-            if (!is_array($data)) {
-                return new JsonResponse(['error' => 'Invalid data format'], Response::HTTP_BAD_REQUEST);
             }
 
             // Delegate to service
@@ -935,7 +793,8 @@ class VehicleImportExportController extends AbstractController
                 'imported' => $result->getImportedCount(),
                 'failed' => $result->getFailedCount(),
                 'total' => $result->getTotalCount(),
-                'executionTime' => $result->getExecutionTime()
+                'executionTime' => $result->getExecutionTime(),
+                'statistics' => $result->getStatistics(),
             ];
 
             if (count($result->getErrors()) > 0) {
@@ -1011,7 +870,7 @@ class VehicleImportExportController extends AbstractController
         // Additional cleanup when cascade=true: remove attachments that reference vehicles
         $cascade = filter_var($request->query->get('cascade'), FILTER_VALIDATE_BOOLEAN);
         $extraDeleted = 0;
-        if ($cascade && $count > 0) {
+            if ($cascade) {
             // Delete attachments where entityType is 'vehicle' or 'vehicle_image' and entityId in vehicleIds
             try {
                 $qb = $entityManager->createQueryBuilder();

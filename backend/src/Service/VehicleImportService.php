@@ -23,6 +23,11 @@ use App\Entity\InsurancePolicy;
 use App\Entity\RoadTax;
 use App\Entity\Todo;
 use App\Entity\Attachment;
+use App\Entity\FeatureFlag;
+use App\Entity\UserFeatureOverride;
+use App\Entity\UserPreference;
+use App\Entity\SecurityFeature;
+use App\Entity\Report;
 use App\Exception\ImportException;
 use App\Service\Trait\EntityHydratorTrait;
 use Doctrine\ORM\EntityManagerInterface;
@@ -34,20 +39,34 @@ use Symfony\Contracts\Cache\TagAwareCacheInterface;
  * class VehicleImportService
  *
  * Service for importing vehicle data
+ *
+ * @phpstan-type ImportRow array<string, mixed>
+ * @phpstan-type ImportRows array<int|string, mixed>
+ * @phpstan-type ImportStats array{processed:int, errors:list<string>, vehicleMap:array<string, Vehicle>, stockItemsImported?:int, globalEntitiesImported?:int}
  */
 class VehicleImportService
 {
     use EntityHydratorTrait;
 
     /**
-     * @var array
+     * @var array<string, InsurancePolicy>
      */
     private array $insurancePolicyMap = [];
 
     /**
-     * @var array
+     * @var array<string, Attachment>
      */
     private array $importedAttachmentsByKey = [];
+
+    /**
+     * @var array<string, Attachment>
+     */
+    private array $importedAttachmentsByOriginalId = [];
+
+    /**
+     * @var list<array{attachment: Attachment, entity: object, entityType: string}>
+     */
+    private array $pendingAttachmentLinks = [];
 
     /**
      * function __construct
@@ -73,7 +92,7 @@ class VehicleImportService
      *
      * Import vehicles from JSON data
      *
-     * @param array $data
+    * @param array<int|string, mixed> $data
      * @param User $user
      * @param string $zipExtractDir
      * @param bool $dryRun
@@ -88,6 +107,7 @@ class VehicleImportService
     ): ImportResult {
         $startTime = microtime(true);
         $stockItemsData = $this->extractStockItemsData($data);
+        $globalStateData = $this->extractGlobalStateData($data);
         $data = $this->extractVehicleData($data);
 
         // Normalize object-like payloads: support a single vehicle object,
@@ -114,11 +134,12 @@ class VehicleImportService
         try {
             $this->logger->info('[import] Starting import', [
                 'vehicleCount' => count($data),
+                'globalStateGroups' => count($globalStateData),
                 'dryRun' => $dryRun,
                 'zipExtractDir' => $zipExtractDir
             ]);
 
-            if (empty($data) && empty($stockItemsData)) {
+            if (empty($data) && empty($stockItemsData) && empty($globalStateData)) {
                 if (!$dryRun) {
                     $this->entityManager->rollback();
                 }
@@ -155,6 +176,10 @@ class VehicleImportService
             $partImportMap = [];
             $consumableImportMap = [];
             $batchSize = $this->config->getBatchSize();
+
+            if (!empty($globalStateData)) {
+                $stats['globalEntitiesImported'] = $this->importGlobalState($globalStateData, $user);
+            }
             
             foreach ($data as $index => $vehicleData) {
                 try {
@@ -222,7 +247,11 @@ class VehicleImportService
             }
 
             if (!empty($stockItemsData) && !$dryRun) {
-                $stats['stockItemsImported'] = $this->importStockItems($stockItemsData, $user);
+                $stats['stockItemsImported'] = $this->importStockItems(
+                    $stockItemsData,
+                    $user,
+                    $zipExtractDir
+                );
             }
 
             if (!$dryRun) {
@@ -249,6 +278,7 @@ class VehicleImportService
             $statistics = [
                 'vehiclesImported' => $stats['processed'],
                 'stockItemsImported' => $stats['stockItemsImported'] ?? 0,
+                'globalEntitiesImported' => $stats['globalEntitiesImported'] ?? 0,
                 'errors' => count($stats['errors']),
                 'processingTimeSeconds' => round(microtime(true) - $startTime, 2),
                 'memoryPeakMB' => round(memory_get_peak_usage(true) / 1024 / 1024, 2),
@@ -267,7 +297,7 @@ class VehicleImportService
             );
 
         } catch (\Exception $e) {
-            if (!$dryRun) {
+            if ($this->entityManager->getConnection()->isTransactionActive()) {
                 $this->entityManager->rollback();
             }
             
@@ -291,9 +321,9 @@ class VehicleImportService
      *
      * Validate import data structure
      *
-     * @param array $data
-     *
-     * @return array
+    * @param array<int|string, mixed> $data
+    *
+    * @return list<string>
      */
     public function validateImportData(array $data): array
     {
@@ -335,9 +365,9 @@ class VehicleImportService
     /**
      * function extractVehicleData
      *
-     * @param array $data
-     *
-     * @return array
+    * @param array<int|string, mixed> $data
+    *
+    * @return array<int|string, mixed>
      */
     private function extractVehicleData(array $data): array
     {
@@ -368,9 +398,9 @@ class VehicleImportService
     /**
      * function extractStockItemsData
      *
-     * @param array $data
-     *
-     * @return array
+    * @param array<int|string, mixed> $data
+    *
+    * @return array<int|string, mixed>
      */
     private function extractStockItemsData(array $data): array
     {
@@ -386,13 +416,366 @@ class VehicleImportService
     }
 
     /**
+     * Extract global state payload from backup data.
+     *
+     * @param array<int|string, mixed> $data
+     *
+     * @return array<string, mixed>
+     */
+    private function extractGlobalStateData(array $data): array
+    {
+        if (!empty($data['globalState']) && is_array($data['globalState'])) {
+            return $data['globalState'];
+        }
+
+        if (!empty($data['global']) && is_array($data['global'])) {
+            return $data['global'];
+        }
+
+        if (!empty($data['referenceData']) && is_array($data['referenceData'])) {
+            return $data['referenceData'];
+        }
+
+        return [];
+    }
+
+    /**
+     * Import global reference and user-scoped entities.
+     *
+     * @param array<string, mixed> $globalStateData
+     */
+    private function importGlobalState(array $globalStateData, User $user): int
+    {
+        $imported = 0;
+
+        foreach (($globalStateData['vehicleTypes'] ?? []) as $row) {
+            $name = trim((string) ($row['name'] ?? ''));
+            if ($name === '') {
+                continue;
+            }
+
+            $vehicleType = $this->entityManager->getRepository(VehicleType::class)
+                ->findOneBy(['name' => $name]);
+            if (!$vehicleType) {
+                $vehicleType = new VehicleType();
+                $vehicleType->setName($name);
+                $this->entityManager->persist($vehicleType);
+                $imported++;
+            }
+        }
+
+        $this->entityManager->flush();
+
+        foreach (($globalStateData['vehicleMakes'] ?? []) as $row) {
+            $name = trim((string) ($row['name'] ?? ''));
+            $vehicleTypeName = trim((string) ($row['vehicleType'] ?? ''));
+            if ($name === '' || $vehicleTypeName === '') {
+                continue;
+            }
+
+            $vehicleType = $this->entityManager->getRepository(VehicleType::class)
+                ->findOneBy(['name' => $vehicleTypeName]);
+            if (!$vehicleType) {
+                continue;
+            }
+
+            $vehicleMake = $this->entityManager->getRepository(VehicleMake::class)
+                ->findOneBy(['name' => $name, 'vehicleType' => $vehicleType]);
+
+            if (!$vehicleMake) {
+                $vehicleMake = new VehicleMake();
+                $vehicleMake->setName($name);
+                $vehicleMake->setVehicleType($vehicleType);
+                $imported++;
+            }
+
+            if (isset($row['isActive'])) {
+                $vehicleMake->setIsActive((bool) $row['isActive']);
+            }
+            $this->entityManager->persist($vehicleMake);
+        }
+
+        $this->entityManager->flush();
+
+        foreach (($globalStateData['vehicleModels'] ?? []) as $row) {
+            $name = trim((string) ($row['name'] ?? ''));
+            $makeName = trim((string) ($row['make'] ?? ''));
+            if ($name === '' || $makeName === '') {
+                continue;
+            }
+
+            $vehicleMake = $this->entityManager->getRepository(VehicleMake::class)
+                ->findOneBy(['name' => $makeName]);
+            if (!$vehicleMake) {
+                continue;
+            }
+
+            $startYear = isset($row['startYear']) && is_numeric((string) $row['startYear'])
+                ? (int) $row['startYear']
+                : null;
+
+            $criteria = ['name' => $name, 'make' => $vehicleMake];
+            if ($startYear !== null) {
+                $criteria['startYear'] = $startYear;
+            }
+
+            $vehicleModel = $this->entityManager->getRepository(VehicleModel::class)
+                ->findOneBy($criteria);
+
+            if (!$vehicleModel) {
+                $vehicleModel = new VehicleModel();
+                $vehicleModel->setName($name);
+                $vehicleModel->setMake($vehicleMake);
+                $imported++;
+            }
+
+            $vehicleTypeName = trim((string) ($row['vehicleType'] ?? ''));
+            if ($vehicleTypeName !== '') {
+                $vehicleType = $this->entityManager->getRepository(VehicleType::class)
+                    ->findOneBy(['name' => $vehicleTypeName]);
+                if ($vehicleType) {
+                    $vehicleModel->setVehicleType($vehicleType);
+                }
+            }
+
+            if ($startYear !== null) {
+                $vehicleModel->setStartYear($startYear);
+            }
+            if (isset($row['endYear']) && is_numeric((string) $row['endYear'])) {
+                $vehicleModel->setEndYear((int) $row['endYear']);
+            }
+            if (isset($row['imageUrl'])) {
+                $vehicleModel->setImageUrl($this->trimString($row['imageUrl']));
+            }
+            if (isset($row['isActive'])) {
+                $vehicleModel->setIsActive((bool) $row['isActive']);
+            }
+
+            $this->entityManager->persist($vehicleModel);
+        }
+
+        foreach (($globalStateData['partCategories'] ?? []) as $row) {
+            $name = trim((string) ($row['name'] ?? ''));
+            if ($name === '') {
+                continue;
+            }
+
+            $vehicleType = null;
+            $vehicleTypeName = trim((string) ($row['vehicleType'] ?? ''));
+            if ($vehicleTypeName !== '') {
+                $vehicleType = $this->entityManager->getRepository(VehicleType::class)
+                    ->findOneBy(['name' => $vehicleTypeName]);
+            }
+
+            $partCategory = $this->entityManager->getRepository(PartCategory::class)
+                ->findOneBy(['name' => $name, 'vehicleType' => $vehicleType]);
+
+            if (!$partCategory) {
+                $partCategory = new PartCategory();
+                $partCategory->setName($name);
+                $partCategory->setVehicleType($vehicleType);
+                $imported++;
+            }
+
+            if (array_key_exists('description', $row)) {
+                $partCategory->setDescription($this->trimString($row['description']));
+            }
+
+            $this->entityManager->persist($partCategory);
+        }
+
+        foreach (($globalStateData['consumableTypes'] ?? []) as $row) {
+            $name = trim((string) ($row['name'] ?? ''));
+            $vehicleTypeName = trim((string) ($row['vehicleType'] ?? ''));
+            if ($name === '' || $vehicleTypeName === '') {
+                continue;
+            }
+
+            $vehicleType = $this->entityManager->getRepository(VehicleType::class)
+                ->findOneBy(['name' => $vehicleTypeName]);
+            if (!$vehicleType) {
+                continue;
+            }
+
+            $consumableType = $this->entityManager->getRepository(ConsumableType::class)
+                ->findOneBy(['name' => $name, 'vehicleType' => $vehicleType]);
+
+            if (!$consumableType) {
+                $consumableType = new ConsumableType();
+                $consumableType->setName($name);
+                $consumableType->setVehicleType($vehicleType);
+                $imported++;
+            }
+
+            if (array_key_exists('unit', $row)) {
+                $consumableType->setUnit($this->trimString($row['unit']));
+            }
+            if (array_key_exists('description', $row)) {
+                $consumableType->setDescription($this->trimString($row['description']));
+            }
+
+            $this->entityManager->persist($consumableType);
+        }
+
+        foreach (($globalStateData['securityFeatures'] ?? []) as $row) {
+            $name = trim((string) ($row['name'] ?? ''));
+            $vehicleTypeName = trim((string) ($row['vehicleType'] ?? ''));
+            if ($name === '' || $vehicleTypeName === '') {
+                continue;
+            }
+
+            $vehicleType = $this->entityManager->getRepository(VehicleType::class)
+                ->findOneBy(['name' => $vehicleTypeName]);
+            if (!$vehicleType) {
+                continue;
+            }
+
+            $securityFeature = $this->entityManager->getRepository(SecurityFeature::class)
+                ->findOneBy(['name' => $name, 'vehicleType' => $vehicleType]);
+
+            if (!$securityFeature) {
+                $securityFeature = new SecurityFeature();
+                $securityFeature->setName($name);
+                $securityFeature->setVehicleType($vehicleType);
+                $imported++;
+            }
+
+            if (array_key_exists('description', $row)) {
+                $securityFeature->setDescription($this->trimString($row['description']));
+            }
+
+            $this->entityManager->persist($securityFeature);
+        }
+
+        foreach (($globalStateData['featureFlags'] ?? []) as $row) {
+            $featureKey = trim((string) ($row['featureKey'] ?? ''));
+            $label = trim((string) ($row['label'] ?? ''));
+            $category = trim((string) ($row['category'] ?? ''));
+            if ($featureKey === '' || $label === '' || $category === '') {
+                continue;
+            }
+
+            $featureFlag = $this->entityManager->getRepository(FeatureFlag::class)
+                ->findOneBy(['featureKey' => $featureKey]);
+
+            if (!$featureFlag) {
+                $featureFlag = new FeatureFlag();
+                $featureFlag->setFeatureKey($featureKey);
+                $imported++;
+            }
+
+            $featureFlag->setLabel($label);
+            $featureFlag->setCategory($category);
+            $featureFlag->setDescription($this->trimString($row['description'] ?? null));
+            $featureFlag->setDefaultEnabled((bool) ($row['defaultEnabled'] ?? true));
+            $featureFlag->setSortOrder((int) ($row['sortOrder'] ?? 0));
+
+            $this->entityManager->persist($featureFlag);
+        }
+
+        foreach (($globalStateData['userPreferences'] ?? []) as $row) {
+            $name = trim((string) ($row['name'] ?? ''));
+            if ($name === '') {
+                continue;
+            }
+
+            $preference = $this->entityManager->getRepository(UserPreference::class)
+                ->findOneBy(['user' => $user, 'name' => $name]);
+
+            if (!$preference) {
+                $preference = new UserPreference();
+                $preference->setUser($user);
+                $preference->setName($name);
+                $imported++;
+            }
+
+            $preference->setValue(isset($row['value']) ? (string) $row['value'] : null);
+            $this->entityManager->persist($preference);
+        }
+
+        $this->entityManager->flush();
+
+        foreach (($globalStateData['userFeatureOverrides'] ?? []) as $row) {
+            $featureKey = trim((string) ($row['featureKey'] ?? ''));
+            if ($featureKey === '') {
+                continue;
+            }
+
+            $featureFlag = $this->entityManager->getRepository(FeatureFlag::class)
+                ->findOneBy(['featureKey' => $featureKey]);
+            if (!$featureFlag) {
+                continue;
+            }
+
+            $override = $this->entityManager->getRepository(UserFeatureOverride::class)
+                ->findOneBy(['user' => $user, 'featureFlag' => $featureFlag]);
+
+            if (!$override) {
+                $override = new UserFeatureOverride();
+                $override->setUser($user);
+                $override->setFeatureFlag($featureFlag);
+                $imported++;
+            }
+
+            $override->setEnabled((bool) ($row['enabled'] ?? true));
+            $this->entityManager->persist($override);
+        }
+
+        foreach (($globalStateData['reports'] ?? []) as $row) {
+            $name = trim((string) ($row['name'] ?? ''));
+            if ($name === '') {
+                continue;
+            }
+
+            $generatedAtRaw = $row['generatedAt'] ?? null;
+            $generatedAt = null;
+            if (is_string($generatedAtRaw) && $generatedAtRaw !== '') {
+                try {
+                    $generatedAt = new \DateTime($generatedAtRaw);
+                } catch (\Exception) {
+                    $generatedAt = null;
+                }
+            }
+
+            $criteria = [
+                'user' => $user,
+                'name' => $name,
+                'templateKey' => isset($row['templateKey']) ? (string) $row['templateKey'] : null,
+            ];
+
+            $report = $this->entityManager->getRepository(Report::class)->findOneBy($criteria);
+            if (!$report) {
+                $report = new Report();
+                $report->setUser($user);
+                $report->setName($name);
+                $imported++;
+            }
+
+            $report->setTemplateKey(isset($row['templateKey']) ? (string) $row['templateKey'] : null);
+            $report->setPayload(isset($row['payload']) && is_array($row['payload']) ? $row['payload'] : null);
+            if (isset($row['vehicleId']) && is_numeric((string) $row['vehicleId'])) {
+                $report->setVehicleId((int) $row['vehicleId']);
+            }
+            if ($generatedAt !== null) {
+                $report->setGeneratedAt($generatedAt);
+            }
+
+            $this->entityManager->persist($report);
+        }
+
+        $this->entityManager->flush();
+
+        return $imported;
+    }
+
+    /**
      * function normalizeImportData
      *
      * Normalize import data format
      *
-     * @param array $data
-     *
-     * @return array
+    * @param array<int|string, mixed> $data
+    *
+    * @return array<int|string, mixed>
      */
     private function normalizeImportData(array $data): array
     {
@@ -439,7 +822,7 @@ class VehicleImportService
      * @param User $user
      * @param bool $isAdmin
      *
-     * @return array
+    * @return array<string, Vehicle>
      */
     private function buildExistingVehiclesMap(User $user, bool $isAdmin): array
     {
@@ -462,77 +845,15 @@ class VehicleImportService
     }
 
     /**
-     * function buildExistingPartsMap
-     *
-     * @param User $user
-     * @param bool $isAdmin
-     *
-     * @return array
-     */
-    private function buildExistingPartsMap(User $user, bool $isAdmin): array
-    {
-        $qb = $this->entityManager->createQueryBuilder()
-            ->select('p')
-            ->from(Part::class, 'p')
-            ->join('p.vehicle', 'v');
-        
-        if (!$isAdmin) {
-            $qb->andWhere('v.owner = :user')->setParameter('user', $user);
-        }
-        
-        $parts = $qb->getQuery()->getResult();
-        
-        $map = [];
-        foreach ($parts as $part) {
-            if ($part->getId()) {
-                $map[$part->getId()] = $part;
-            }
-        }
-        
-        return $map;
-    }
-
-    /**
-     * function buildExistingConsumablesMap
-     *
-     * @param User $user
-     * @param bool $isAdmin
-     *
-     * @return array
-     */
-    private function buildExistingConsumablesMap(User $user, bool $isAdmin): array
-    {
-        $qb = $this->entityManager->createQueryBuilder()
-            ->select('c')
-            ->from(Consumable::class, 'c')
-            ->join('c.vehicle', 'v');
-        
-        if (!$isAdmin) {
-            $qb->andWhere('v.owner = :user')->setParameter('user', $user);
-        }
-        
-        $consumables = $qb->getQuery()->getResult();
-        
-        $map = [];
-        foreach ($consumables as $consumable) {
-            if ($consumable->getId()) {
-                $map[$consumable->getId()] = $consumable;
-            }
-        }
-        
-        return $map;
-    }
-
-    /**
      * function processVehicleImport
      *
-     * @param array $vehicleData
+    * @param ImportRow $vehicleData
      * @param User $user
-     * @param array $existingVehiclesMap
-     * @param array $partImportMap
-     * @param array $consumableImportMap
+    * @param array<string, Vehicle> $existingVehiclesMap
+    * @param array<int, Part> $partImportMap
+    * @param array<int, Consumable> $consumableImportMap
      * @param string $zipExtractDir
-     * @param array $stats
+    * @param ImportStats $stats
      *
      * @return Vehicle
      */
@@ -557,7 +878,8 @@ class VehicleImportService
         // Create vehicle entity
         $vehicle = new Vehicle();
         $vehicle->setOwner($user);
-        $vehicle->setName($this->trimString($vehicleData['name']));
+        $vehicleName = $this->trimString($vehicleData['name'] ?? null) ?? $regNum;
+        $vehicle->setName($vehicleName);
         $vehicle->setVehicleType($vehicleType);
 
         // Set basic fields
@@ -599,7 +921,7 @@ class VehicleImportService
     /**
      * function resolveVehicleType
      *
-     * @param array $vehicleData
+    * @param ImportRow $vehicleData
      *
      * @return VehicleType
      */
@@ -630,7 +952,7 @@ class VehicleImportService
      * function hydrateVehicleBasicFields
      *
      * @param Vehicle $vehicle
-     * @param array $data
+    * @param ImportRow $data
      *
      * @return void
      */
@@ -665,23 +987,33 @@ class VehicleImportService
         // Numeric fields
         if (!empty($data['year'])) $vehicle->setYear((int)$data['year']);
         if (isset($data['purchaseCost'])) {
-            $vehicle->setPurchaseCost((string)($data['purchaseCost'] ?? 0));
+            $vehicle->setPurchaseCost((string)$data['purchaseCost']);
         }
         if (isset($data['purchaseMileage'])) {
-            $vehicle->setPurchaseMileage($this->extractNumeric($data, 'purchaseMileage', true));
+            $purchaseMileage = $this->extractNumeric($data, 'purchaseMileage', true);
+            $vehicle->setPurchaseMileage($purchaseMileage === null ? null : (int) $purchaseMileage);
         }
         if (isset($data['serviceIntervalMonths'])) {
-            $vehicle->setServiceIntervalMonths($this->extractNumeric($data, 'serviceIntervalMonths', true));
+            $serviceIntervalMonths = $this->extractNumeric($data, 'serviceIntervalMonths', true);
+            if ($serviceIntervalMonths !== null) {
+                $vehicle->setServiceIntervalMonths((int) $serviceIntervalMonths);
+            }
         }
         if (isset($data['serviceIntervalMiles'])) {
-            $vehicle->setServiceIntervalMiles($this->extractNumeric($data, 'serviceIntervalMiles', true));
+            $serviceIntervalMiles = $this->extractNumeric($data, 'serviceIntervalMiles', true);
+            if ($serviceIntervalMiles !== null) {
+                $vehicle->setServiceIntervalMiles((int) $serviceIntervalMiles);
+            }
         }
         if (isset($data['depreciationYears'])) {
-            $vehicle->setDepreciationYears($this->extractNumeric($data, 'depreciationYears', true));
+            $depreciationYears = $this->extractNumeric($data, 'depreciationYears', true);
+            if ($depreciationYears !== null) {
+                $vehicle->setDepreciationYears((int) $depreciationYears);
+            }
         }
         if (isset($data['depreciationRate'])) {
             $rate = $this->extractNumeric($data, 'depreciationRate', false);
-            if ($rate !== null && $rate !== '') {
+            if ($rate !== null) {
                 $vehicle->setDepreciationRate((string)$rate);
             }
         }
@@ -716,7 +1048,7 @@ class VehicleImportService
      * function resolveVehicleMakeModel
      *
      * @param Vehicle $vehicle
-     * @param array $vehicleData
+    * @param ImportRow $vehicleData
      * @param VehicleType $vehicleType
      *
      * @return void
@@ -744,6 +1076,9 @@ class VehicleImportService
 
         if (!empty($vehicleData['model']) && !empty($vehicleData['year'])) {
             $modelName = $this->trimString($vehicleData['model']);
+            if ($modelName === null) {
+                return;
+            }
             $year = (int)$vehicleData['year'];
             
             $vehicleModel = $this->entityManager->getRepository(VehicleModel::class)
@@ -768,7 +1103,7 @@ class VehicleImportService
     /**
      * function deserializeAttachment
      *
-     * @param array $attachmentData
+    * @param ImportRow $attachmentData
      * @param string $zipExtractDir
      * @param User $user
      * @param string $vehicleReg
@@ -929,6 +1264,9 @@ class VehicleImportService
             'service_record' => 'serviceRecord',
             'mot' => 'mot_records',
             'mot_record' => 'mot_records',
+            'stock' => 'stock_item',
+            'stockitem' => 'stock_item',
+            'stock_item' => 'stock_item',
             'insurancepolicy' => 'insurancePolicy',
             'insurance-policy' => 'insurancePolicy',
             'insurance_policy' => 'insurancePolicy',
@@ -983,27 +1321,12 @@ class VehicleImportService
             'service_record' => 'service_record',
             'mot' => 'mot_record',
             'mot_record' => 'mot_record',
+            'stock' => 'stock_item',
+            'stockitem' => 'stock_item',
+            'stock_item' => 'stock_item',
         ];
 
         return $map[$type] ?? $entityType;
-    }
-
-    /**
-     * function registerAttachmentEntityLink
-     *
-     * @param Attachment $attachment
-     * @param object $entity
-     * @param string $entityType
-     *
-     * @return void
-     */
-    private function registerAttachmentEntityLink(Attachment $attachment, object $entity, string $entityType): void
-    {
-        $this->pendingAttachmentLinks[] = [
-            'attachment' => $attachment,
-            'entity' => $entity,
-            'entityType' => $entityType,
-        ];
     }
 
     /**
@@ -1040,7 +1363,7 @@ class VehicleImportService
     /**
      * function getAttachmentKeyFromData
      *
-     * @param array $attachmentData
+    * @param ImportRow $attachmentData
      * @param Attachment $attachment
      *
      * @return string
@@ -1076,7 +1399,7 @@ class VehicleImportService
      * function registerImportedAttachment
      *
      * @param Attachment $attachment
-     * @param array $attachmentData
+    * @param ImportRow $attachmentData
      *
      * @return void
      */
@@ -1096,7 +1419,7 @@ class VehicleImportService
     /**
      * function getOrCreateAttachment
      *
-     * @param array $attachmentData
+    * @param ImportRow $attachmentData
      * @param string $zipExtractDir
      * @param User $user
      * @param string $vehicleReg
@@ -1140,7 +1463,7 @@ class VehicleImportService
      * IMPORTANT: Entity MUST be persisted and flushed before calling this method
      *
      * @param object $entity - The entity (ServiceRecord, MotRecord, Part, etc)
-     * @param array $attachmentData - Attachment data from JSON
+    * @param ImportRow $attachmentData - Attachment data from JSON
      * @param string $entityType - Entity type (service_record, mot_record, part, consumable, fuel_record)
      * @param string|null $zipExtractDir - Path to extracted ZIP files
      * @param User $user
@@ -1154,7 +1477,7 @@ class VehicleImportService
         string $entityType,
         ?string $zipExtractDir,
         User $user,
-        Vehicle $vehicle
+        ?Vehicle $vehicle = null
     ): ?Attachment {
         // Ensure entity has ID (must be flushed first)
         if (!method_exists($entity, 'getId') || !$entity->getId()) {
@@ -1170,7 +1493,7 @@ class VehicleImportService
             $attachmentData,
             $zipExtractDir,
             $user,
-            $vehicle->getRegistrationNumber()
+            $vehicle?->getRegistrationNumber()
         );
 
         if (!$attachment) {
@@ -1188,7 +1511,9 @@ class VehicleImportService
         // 1. Attachment -> Entity (entityType and entityId)
         $attachment->setEntityType($entityType);
         $attachment->setEntityId((int) $entity->getId());
-        $attachment->setVehicle($vehicle);
+        if ($vehicle) {
+            $attachment->setVehicle($vehicle);
+        }
 
         // 2. Entity -> Attachment (receipt_attachment_id)
         if (method_exists($entity, 'setReceiptAttachment')) {
@@ -1207,12 +1532,12 @@ class VehicleImportService
      * function processRelatedEntities
      *
      * @param Vehicle $vehicle
-     * @param array $vehicleData
+    * @param ImportRow $vehicleData
      * @param User $user
      * @param string $zipExtractDir
-     * @param array $partImportMap
-     * @param array $consumableImportMap
-     * @param array $stats
+    * @param array<int, Part> $partImportMap
+    * @param array<int, Consumable> $consumableImportMap
+    * @param ImportStats $stats
      *
      * @return void
      */
@@ -1290,7 +1615,7 @@ class VehicleImportService
      * function importSpecification
      *
      * @param Vehicle $vehicle
-     * @param array $specData
+    * @param ImportRow $specData
      *
      * @return void
      */
@@ -1347,7 +1672,7 @@ class VehicleImportService
      * function importStatusHistory
      *
      * @param Vehicle $vehicle
-     * @param array $historyData
+    * @param ImportRows $historyData
      * @param User $user
      *
      * @return void
@@ -1401,7 +1726,7 @@ class VehicleImportService
      * function importFuelRecords
      *
      * @param Vehicle $vehicle
-     * @param array $fuelData
+    * @param ImportRows $fuelData
      * @param User $user
      * @param string $zipExtractDir
      *
@@ -1435,7 +1760,10 @@ class VehicleImportService
                 $record->setCost($this->extractNumeric($fuelRecord, 'cost', false));
             }
             if (isset($fuelRecord['mileage'])) {
-                $record->setMileage($this->extractNumeric($fuelRecord, 'mileage', true));
+                $mileage = $this->extractNumeric($fuelRecord, 'mileage', true);
+                if ($mileage !== null) {
+                    $record->setMileage((int) $mileage);
+                }
             }
 
             $stringFields = ['fuelType', 'station', 'notes'];
@@ -1482,10 +1810,10 @@ class VehicleImportService
      * function importParts
      *
      * @param Vehicle $vehicle
-     * @param array $partsData
+    * @param ImportRows $partsData
      * @param User $user
      * @param string $zipExtractDir
-     * @param array $partImportMap
+    * @param array<int, Part> $partImportMap
      *
      * @return void
      */
@@ -1535,7 +1863,8 @@ class VehicleImportService
                 $part->setWarranty($this->extractNumeric($partData, 'warrantyMonths', true));
             }
             if (isset($partData['mileageAtInstallation'])) {
-                $part->setMileageAtInstallation($this->extractNumeric($partData, 'mileageAtInstallation', true));
+                $mileageAtInstallation = $this->extractNumeric($partData, 'mileageAtInstallation', true);
+                $part->setMileageAtInstallation($mileageAtInstallation === null ? null : (int) $mileageAtInstallation);
             }
             if (isset($partData['cost'])) {
                 $part->setCost((string)$partData['cost']);
@@ -1551,7 +1880,7 @@ class VehicleImportService
 
             // Boolean fields
             if (isset($partData['includedInServiceCost'])) {
-                $part->setIncludedInServiceCost($this->extractBoolean($partData, 'includedInServiceCost'));
+                $part->setIncludedInServiceCost($this->extractBoolean($partData, 'includedInServiceCost') ?? false);
             }
 
             // Resolve part category
@@ -1593,10 +1922,10 @@ class VehicleImportService
      * function importConsumables
      *
      * @param Vehicle $vehicle
-     * @param array $consumablesData
+    * @param ImportRows $consumablesData
      * @param User $user
      * @param string $zipExtractDir
-     * @param array $consumableImportMap
+    * @param array<int, Consumable> $consumableImportMap
      *
      * @return void
      */
@@ -1639,19 +1968,16 @@ class VehicleImportService
 
             // Numeric fields
             if (isset($consumableData['replacementIntervalMiles'])) {
-                $consumable->setReplacementInterval(
-                    $this->extractNumeric($consumableData, 'replacementIntervalMiles', true)
-                );
+                $replacementInterval = $this->extractNumeric($consumableData, 'replacementIntervalMiles', true);
+                $consumable->setReplacementInterval($replacementInterval === null ? null : (int) $replacementInterval);
             }
             if (isset($consumableData['nextReplacementMileage'])) {
-                $consumable->setNextReplacementMileage(
-                    $this->extractNumeric($consumableData, 'nextReplacementMileage', true)
-                );
+                $nextReplacementMileage = $this->extractNumeric($consumableData, 'nextReplacementMileage', true);
+                $consumable->setNextReplacementMileage($nextReplacementMileage === null ? null : (int) $nextReplacementMileage);
             }
             if (isset($consumableData['mileageAtChange'])) {
-                $consumable->setMileageAtChange(
-                    $this->extractNumeric($consumableData, 'mileageAtChange', true)
-                );
+                $mileageAtChange = $this->extractNumeric($consumableData, 'mileageAtChange', true);
+                $consumable->setMileageAtChange($mileageAtChange === null ? null : (int) $mileageAtChange);
             }
             if (isset($consumableData['quantity'])) {
                 $consumable->setQuantity($this->extractNumeric($consumableData, 'quantity', false));
@@ -1671,7 +1997,7 @@ class VehicleImportService
             // Boolean fields
             if (isset($consumableData['includedInServiceCost'])) {
                 $consumable->setIncludedInServiceCost(
-                    $this->extractBoolean($consumableData, 'includedInServiceCost')
+                    $this->extractBoolean($consumableData, 'includedInServiceCost') ?? false
                 );
             }
 
@@ -1714,17 +2040,22 @@ class VehicleImportService
     /**
      * function importStockItems
      *
-     * @param array $stockItemsData
+    * @param ImportRows $stockItemsData
      * @param User $user
      *
      * @return int
      */
-    private function importStockItems(array $stockItemsData, User $user): int
+    private function importStockItems(
+        array $stockItemsData,
+        User $user,
+        ?string $zipExtractDir = null
+    ): int
     {
         $imported = 0;
         $repo = $this->entityManager->getRepository(StockItem::class);
+        $importedItems = [];
 
-        foreach ($stockItemsData as $stockItemData) {
+        foreach ($stockItemsData as $index => $stockItemData) {
             if (!is_array($stockItemData)) {
                 continue;
             }
@@ -1753,6 +2084,15 @@ class VehicleImportService
                 $this->entityManager->persist($item);
             }
 
+            if (!empty($stockItemData['vehicleType'])) {
+                $vehicleType = $this->entityManager
+                    ->getRepository(VehicleType::class)
+                    ->findOneBy(['name' => trim((string) $stockItemData['vehicleType'])]);
+                if ($vehicleType) {
+                    $item->setVehicleType($vehicleType);
+                }
+            }
+
             $item->setItemType($itemType)
                 ->setCategory($category)
                 ->setSupplier($supplier)
@@ -1773,8 +2113,31 @@ class VehicleImportService
             }
 
             $item->touch();
+            $importedItems[$index] = $item;
             $imported++;
         }
+
+        $this->entityManager->flush();
+
+        foreach ($stockItemsData as $index => $stockItemData) {
+            $item = $importedItems[$index] ?? null;
+            if (!$item instanceof StockItem) {
+                continue;
+            }
+
+            if (isset($stockItemData['receiptAttachment'])
+                && is_array($stockItemData['receiptAttachment'])) {
+                $this->createAndLinkReceiptAttachment(
+                    $item,
+                    $stockItemData['receiptAttachment'],
+                    'stock_item',
+                    $zipExtractDir,
+                    $user
+                );
+            }
+        }
+
+        $this->entityManager->flush();
 
         return $imported;
     }
@@ -1783,7 +2146,7 @@ class VehicleImportService
      * function resolvePartCategory
      *
      * @param Part $part
-     * @param array $partData
+    * @param ImportRow $partData
      * @param Vehicle $vehicle
      *
      * @return void
@@ -1844,14 +2207,14 @@ class VehicleImportService
      */
     private function resolveConsumableType(string $typeName, ?VehicleType $vehicleType): ConsumableType
     {
-        $typeName = $this->trimString($typeName);
+        $resolvedTypeName = $this->trimString($typeName) ?? $typeName;
         
         $consumableType = $this->entityManager->getRepository(ConsumableType::class)
-            ->findOneBy(['name' => $typeName]);
+            ->findOneBy(['name' => $resolvedTypeName]);
 
         if (!$consumableType) {
             $consumableType = new ConsumableType();
-            $consumableType->setName($typeName);
+            $consumableType->setName($resolvedTypeName);
             if ($vehicleType) {
                 $consumableType->setVehicleType($vehicleType);
             }
@@ -1866,7 +2229,7 @@ class VehicleImportService
      * function importTodos
      *
      * @param Vehicle $vehicle
-     * @param array $todosData
+    * @param ImportRows $todosData
      *
      * @return void
      */
@@ -1876,24 +2239,20 @@ class VehicleImportService
             $todo = new Todo();
             $todo->setVehicle($vehicle);
 
-            if (!empty($todoData['title'])) {
-                $todo->setTitle($this->trimString($todoData['title']));
-            }
+            $title = $this->trimString($todoData['title'] ?? null) ?? 'Untitled';
+            $todo->setTitle($title);
             if (!empty($todoData['description'])) {
                 $todo->setDescription($this->trimString($todoData['description']));
             }
             if (isset($todoData['isCompleted'])) {
-                $todo->setIsCompleted($this->extractBoolean($todoData, 'isCompleted'));
-            }
-            if (isset($todoData['priority'])) {
-                $todo->setPriority($this->extractNumeric($todoData, 'priority', true));
+                $todo->setDone($this->extractBoolean($todoData, 'isCompleted') ?? false);
             }
 
             $dateFields = ['dueDate', 'completedAt', 'createdAt'];
             $dates = $this->hydrateDates($todoData, $dateFields);
             
             if (isset($dates['dueDate'])) $todo->setDueDate($dates['dueDate']);
-            if (isset($dates['completedAt'])) $todo->setCompletedAt($dates['completedAt']);
+            if (isset($dates['completedAt'])) $todo->setCompletedBy($dates['completedAt']);
             if (isset($dates['createdAt'])) $todo->setCreatedAt($dates['createdAt']);
 
             $this->entityManager->persist($todo);
@@ -1904,7 +2263,7 @@ class VehicleImportService
      * function importAttachments
      *
      * @param Vehicle $vehicle
-     * @param array $attachmentsData
+    * @param ImportRows $attachmentsData
      * @param User $user
      * @param string $zipExtractDir
      *
@@ -1990,7 +2349,7 @@ class VehicleImportService
      * function importVehicleImages
      *
      * @param Vehicle $vehicle
-     * @param array $imagesData
+    * @param ImportRows $imagesData
      * @param User $user
      * @param string $zipExtractDir
      *
@@ -2010,13 +2369,16 @@ class VehicleImportService
                 $image->setCaption($this->trimString($imageData['caption']));
             }
             if (isset($imageData['displayOrder'])) {
-                $image->setDisplayOrder($this->extractNumeric($imageData, 'displayOrder', true));
+                $displayOrder = $this->extractNumeric($imageData, 'displayOrder', true);
+                if ($displayOrder !== null) {
+                    $image->setDisplayOrder((int) $displayOrder);
+                }
             }
             // Handle both isMain (from export) and isPrimary
             if (isset($imageData['isMain'])) {
                 $image->setIsPrimary((bool)$imageData['isMain']);
             } elseif (isset($imageData['isPrimary'])) {
-                $image->setIsPrimary($this->extractBoolean($imageData, 'isPrimary'));
+                $image->setIsPrimary($this->extractBoolean($imageData, 'isPrimary') ?? false);
             }
 
             if (!empty($imageData['uploadedAt'])) {
@@ -2078,7 +2440,7 @@ class VehicleImportService
      * function importInsuranceRecords
      *
      * @param Vehicle $vehicle
-     * @param array $insuranceData
+    * @param ImportRows $insuranceData
      * @param User $user
      *
      * @return void
@@ -2146,10 +2508,12 @@ class VehicleImportService
                 $policy->setAnnualCost($this->extractNumeric($data, 'annualCost', false));
             }
             if (isset($data['mileageLimit'])) {
-                $policy->setMileageLimit($this->extractNumeric($data, 'mileageLimit', true));
+                $mileageLimit = $this->extractNumeric($data, 'mileageLimit', true);
+                $policy->setMileageLimit($mileageLimit === null ? null : (int) $mileageLimit);
             }
             if (isset($data['ncdYears'])) {
-                $policy->setNcdYears($this->extractNumeric($data, 'ncdYears', true));
+                $ncdYears = $this->extractNumeric($data, 'ncdYears', true);
+                $policy->setNcdYears($ncdYears === null ? null : (int) $ncdYears);
             }
 
             // Date fields
@@ -2162,7 +2526,7 @@ class VehicleImportService
 
             // Boolean fields
             if (isset($data['autoRenewal'])) {
-                $policy->setAutoRenewal($this->extractBoolean($data, 'autoRenewal'));
+                $policy->setAutoRenewal($this->extractBoolean($data, 'autoRenewal') ?? false);
             }
 
             // Handle multiple vehicles if provided
@@ -2184,7 +2548,7 @@ class VehicleImportService
      * function importRoadTaxRecords
      *
      * @param Vehicle $vehicle
-     * @param array $roadTaxData
+    * @param ImportRows $roadTaxData
      *
      * @return void
      */
@@ -2204,7 +2568,7 @@ class VehicleImportService
             // Numeric fields
             if (isset($data['amount'])) {
                 $amount = $this->extractNumeric($data, 'amount', false);
-                if ($amount !== null && $amount !== '') {
+                if ($amount !== null) {
                     $roadTax->setAmount((string)$amount);
                 }
             }
@@ -2219,7 +2583,7 @@ class VehicleImportService
 
             // Boolean fields
             if (isset($data['sorn'])) {
-                $roadTax->setSorn($this->extractBoolean($data, 'sorn'));
+                $roadTax->setSorn($this->extractBoolean($data, 'sorn') ?? false);
             }
 
             $this->entityManager->persist($roadTax);
@@ -2230,11 +2594,11 @@ class VehicleImportService
      * function importServiceRecords
      *
      * @param Vehicle $vehicle
-     * @param array $serviceRecordsData
+    * @param ImportRows $serviceRecordsData
      * @param User $user
      * @param string $zipExtractDir
-     * @param array $partImportMap
-     * @param array $consumableImportMap
+    * @param array<int, Part> $partImportMap
+    * @param array<int, Consumable> $consumableImportMap
      *
      * @return void
      */
@@ -2280,10 +2644,12 @@ class VehicleImportService
                 $serviceRecord->setAdditionalCosts($this->extractNumeric($serviceData, 'additionalCosts', false));
             }
             if (isset($serviceData['mileage'])) {
-                $serviceRecord->setMileage($this->extractNumeric($serviceData, 'mileage', true));
+                $mileage = $this->extractNumeric($serviceData, 'mileage', true);
+                $serviceRecord->setMileage($mileage === null ? null : (int) $mileage);
             }
             if (isset($serviceData['nextServiceMileage'])) {
-                $serviceRecord->setNextServiceMileage($this->extractNumeric($serviceData, 'nextServiceMileage', true));
+                $nextServiceMileage = $this->extractNumeric($serviceData, 'nextServiceMileage', true);
+                $serviceRecord->setNextServiceMileage($nextServiceMileage === null ? null : (int) $nextServiceMileage);
             }
 
             // Date fields
@@ -2347,12 +2713,12 @@ class VehicleImportService
      * function importServiceItems
      *
      * @param ServiceRecord $serviceRecord
-     * @param array $items
+    * @param ImportRows $items
      * @param Vehicle $vehicle
      * @param User $user
      * @param string $zipExtractDir
-     * @param array $partImportMap
-     * @param array $consumableImportMap
+    * @param array<int, Part> $partImportMap
+    * @param array<int, Consumable> $consumableImportMap
      *
      * @return void
      */
@@ -2501,11 +2867,11 @@ class VehicleImportService
      * function importMotRecords
      *
      * @param Vehicle $vehicle
-     * @param array $motRecordsData
+    * @param ImportRows $motRecordsData
      * @param User $user
      * @param string $zipExtractDir
-     * @param array $partImportMap
-     * @param array $consumableImportMap
+    * @param array<int, Part> $partImportMap
+    * @param array<int, Consumable> $consumableImportMap
      *
      * @return void
      */
@@ -2555,18 +2921,19 @@ class VehicleImportService
             // Numeric fields
             if (isset($motData['testCost'])) {
                 $testCost = $this->extractNumeric($motData, 'testCost', false);
-                if ($testCost !== null && $testCost !== '') {
+                if ($testCost !== null) {
                     $motRecord->setTestCost((string)$testCost);
                 }
             }
             if (isset($motData['repairCost'])) {
                 $repairCost = $this->extractNumeric($motData, 'repairCost', false);
-                if ($repairCost !== null && $repairCost !== '') {
+                if ($repairCost !== null) {
                     $motRecord->setRepairCost((string)$repairCost);
                 }
             }
             if (isset($motData['mileage'])) {
-                $motRecord->setMileage($this->extractNumeric($motData, 'mileage', true));
+                $mileage = $this->extractNumeric($motData, 'mileage', true);
+                $motRecord->setMileage($mileage === null ? null : (int) $mileage);
             }
 
             // Date fields
@@ -2583,7 +2950,7 @@ class VehicleImportService
 
             // Boolean fields
             if (isset($motData['isRetest'])) {
-                $motRecord->setIsRetest($this->extractBoolean($motData, 'isRetest'));
+                $motRecord->setIsRetest($this->extractBoolean($motData, 'isRetest') ?? false);
             }
 
             $this->entityManager->persist($motRecord);
@@ -2634,7 +3001,7 @@ class VehicleImportService
      * function importMotParts
      *
      * @param MotRecord $motRecord
-     * @param array $partsData
+    * @param ImportRows $partsData
      * @param Vehicle $vehicle
      * @param User $user
      * @param string $zipExtractDir
@@ -2682,7 +3049,7 @@ class VehicleImportService
      * function importMotConsumables
      *
      * @param MotRecord $motRecord
-     * @param array $consumablesData
+    * @param ImportRows $consumablesData
      * @param Vehicle $vehicle
      * @param User $user
      * @param string $zipExtractDir
@@ -2734,12 +3101,12 @@ class VehicleImportService
      * function importMotServiceRecords
      *
      * @param MotRecord $motRecord
-     * @param array $serviceRecordsData
+    * @param ImportRows $serviceRecordsData
      * @param Vehicle $vehicle
      * @param User $user
      * @param string $zipExtractDir
-     * @param array $partImportMap
-     * @param array $consumableImportMap
+    * @param array<int, Part> $partImportMap
+    * @param array<int, Consumable> $consumableImportMap
      *
      * @return void
      */
@@ -2771,7 +3138,8 @@ class VehicleImportService
                 $serviceRecord->setLaborCost($this->extractNumeric($serviceData, 'laborCost', false));
             }
             if (isset($serviceData['mileage'])) {
-                $serviceRecord->setMileage($this->extractNumeric($serviceData, 'mileage', true));
+                $mileage = $this->extractNumeric($serviceData, 'mileage', true);
+                $serviceRecord->setMileage($mileage === null ? null : (int) $mileage);
             }
 
             $dateFields = ['serviceDate', 'createdAt'];
@@ -2807,7 +3175,7 @@ class VehicleImportService
     /**
      * function createPartFromData
      *
-     * @param array $partData
+    * @param ImportRow $partData
      * @param Vehicle $vehicle
      * @param User $user
      * @param string $zipExtractDir
@@ -2846,7 +3214,8 @@ class VehicleImportService
         if (isset($partData['price'])) $part->setPrice($this->extractNumeric($partData, 'price', false));
         if (isset($partData['quantity'])) $part->setQuantity($this->extractNumeric($partData, 'quantity', true));
         if (isset($partData['mileageAtInstallation'])) {
-            $part->setMileageAtInstallation($this->extractNumeric($partData, 'mileageAtInstallation', true));
+            $mileageAtInstallation = $this->extractNumeric($partData, 'mileageAtInstallation', true);
+            $part->setMileageAtInstallation($mileageAtInstallation === null ? null : (int) $mileageAtInstallation);
         }
 
         // Date fields
@@ -2858,7 +3227,7 @@ class VehicleImportService
 
         // Boolean fields
         if (isset($partData['includedInServiceCost'])) {
-            $part->setIncludedInServiceCost($this->extractBoolean($partData, 'includedInServiceCost'));
+            $part->setIncludedInServiceCost($this->extractBoolean($partData, 'includedInServiceCost') ?? false);
         }
 
         // Category resolution
@@ -2872,7 +3241,7 @@ class VehicleImportService
     /**
      * function createConsumableFromData
      *
-     * @param array $consumableData
+    * @param ImportRow $consumableData
      * @param Vehicle $vehicle
      * @param User $user
      * @param string $zipExtractDir
@@ -2915,19 +3284,16 @@ class VehicleImportService
 
         // Numeric fields
         if (isset($consumableData['replacementIntervalMiles'])) {
-            $consumable->setReplacementInterval(
-                $this->extractNumeric($consumableData, 'replacementIntervalMiles', true)
-            );
+            $replacementInterval = $this->extractNumeric($consumableData, 'replacementIntervalMiles', true);
+            $consumable->setReplacementInterval($replacementInterval === null ? null : (int) $replacementInterval);
         }
         if (isset($consumableData['nextReplacementMileage'])) {
-            $consumable->setNextReplacementMileage(
-                $this->extractNumeric($consumableData, 'nextReplacementMileage', true)
-            );
+            $nextReplacementMileage = $this->extractNumeric($consumableData, 'nextReplacementMileage', true);
+            $consumable->setNextReplacementMileage($nextReplacementMileage === null ? null : (int) $nextReplacementMileage);
         }
         if (isset($consumableData['mileageAtChange'])) {
-            $consumable->setMileageAtChange(
-                $this->extractNumeric($consumableData, 'mileageAtChange', true)
-            );
+            $mileageAtChange = $this->extractNumeric($consumableData, 'mileageAtChange', true);
+            $consumable->setMileageAtChange($mileageAtChange === null ? null : (int) $mileageAtChange);
         }
         if (isset($consumableData['quantity'])) {
             $consumable->setQuantity($this->extractNumeric($consumableData, 'quantity', false));
@@ -2946,7 +3312,7 @@ class VehicleImportService
         // Boolean fields
         if (isset($consumableData['includedInServiceCost'])) {
             $consumable->setIncludedInServiceCost(
-                $this->extractBoolean($consumableData, 'includedInServiceCost')
+                $this->extractBoolean($consumableData, 'includedInServiceCost') ?? false
             );
         }
 

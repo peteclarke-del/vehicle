@@ -12,7 +12,7 @@ use App\Entity\VehicleAssignment;
 use App\Entity\VehicleType;
 use App\Entity\ServiceItem;
 use App\Entity\StockItem;
-use App\Service\ReceiptOcrService;
+
 use App\Service\UrlScraperService;
 use Psr\Log\LoggerInterface;
 use App\Service\RepairCostCalculator;
@@ -41,7 +41,6 @@ class ConsumableController extends AbstractController
      * function __construct
      *
      * @param EntityManagerInterface $entityManager
-     * @param ReceiptOcrService $ocrService
      * @param UrlScraperService $scraperService
      * @param LoggerInterface $logger
      * @param RepairCostCalculator $repairCostCalculator
@@ -52,7 +51,6 @@ class ConsumableController extends AbstractController
      */
     public function __construct(
         private EntityManagerInterface $entityManager,
-        private ReceiptOcrService $ocrService,
         private UrlScraperService $scraperService,
         private LoggerInterface $logger,
         private RepairCostCalculator $repairCostCalculator,
@@ -107,7 +105,7 @@ class ConsumableController extends AbstractController
             if (
                 !$vehicle
                 || (!$this->isAdminForUser($user)
-                    && $vehicle->getOwner()->getId() !== $user->getId()
+                    && $vehicle->getOwner()?->getId() !== $user->getId()
                     && (!$assignment || !$assignment->canView()))
             ) {
                 return $this->json(['error' => 'Vehicle not found'], 404);
@@ -154,7 +152,7 @@ class ConsumableController extends AbstractController
                 $ownIds = array_map(fn($v) => $v->getId(), $ownVehicles);
                 $assignedVehicles = [];
                 foreach ($assignments as $a) {
-                    if ($a->canView() && !in_array($a->getVehicle()->getId(), $ownIds, true)) {
+                    if ($a->canView() && !in_array($a->getVehicle()?->getId(), $ownIds, true)) {
                         $assignedVehicles[] = $a->getVehicle();
                     }
                 }
@@ -270,7 +268,7 @@ class ConsumableController extends AbstractController
         $vehicle = null;
         if (!empty($data['vehicleId'])) {
             $vehicle = $this->entityManager->getRepository(Vehicle::class)->find($data['vehicleId']);
-            if (!$vehicle || (!$this->isAdminForUser($user) && $vehicle->getOwner()->getId() !== $user->getId())) {
+            if (!$vehicle || (!$this->isAdminForUser($user) && $vehicle->getOwner()?->getId() !== $user->getId())) {
                 return $this->json(['error' => 'Vehicle not found'], 404);
             }
         }
@@ -293,7 +291,7 @@ class ConsumableController extends AbstractController
             if ($stockConsumeQty <= 0) {
                 $stockConsumeQty = 1;
             }
-            $available = (float) ($stockItem->getQuantity() ?? '0');
+            $available = (float) ($stockItem->getQuantity());
             if ($available < $stockConsumeQty) {
                 return $this->json(['error' => 'Insufficient stock quantity'], 400);
             }
@@ -350,7 +348,7 @@ class ConsumableController extends AbstractController
         }
 
         if ($stockItem instanceof StockItem) {
-            $remaining = max(0, (float) ($stockItem->getQuantity() ?? '0') - $stockConsumeQty);
+            $remaining = max(0, (float) ($stockItem->getQuantity()) - $stockConsumeQty);
             $stockItem->setQuantity(number_format($remaining, 2, '.', ''));
             $stockItem->touch();
             $this->entityManager->flush();
@@ -403,7 +401,7 @@ class ConsumableController extends AbstractController
         if (array_key_exists('vehicleId', $data)) {
             if (!empty($data['vehicleId'])) {
                 $vehicle = $this->entityManager->getRepository(Vehicle::class)->find((int) $data['vehicleId']);
-                if (!$vehicle || (!$this->isAdminForUser($user) && $vehicle->getOwner()->getId() !== $user->getId())) {
+                if (!$vehicle || (!$this->isAdminForUser($user) && $vehicle->getOwner()?->getId() !== $user->getId())) {
                     return $this->json(['error' => 'Vehicle not found'], 404);
                 }
                 $consumable->setVehicle($vehicle);
@@ -545,7 +543,7 @@ class ConsumableController extends AbstractController
      * function updateConsumableFromData
      *
      * @param Consumable $consumable
-     * @param array $data
+     * @param array<string, mixed> $data
      *
      * @return void
      */
@@ -560,12 +558,12 @@ class ConsumableController extends AbstractController
         // Accept `description` from clients (and fallback to legacy `name`).
         if (isset($data['description'])) {
             $desc = is_string($data['description']) ? trim($data['description']) : $data['description'];
-            if ($desc !== '' && $desc !== null) {
+            if ($desc !== '') {
                 $consumable->setDescription((string) $desc);
             }
         } elseif (isset($data['name'])) {
             $name = is_string($data['name']) ? trim($data['name']) : $data['name'];
-            if ($name !== '' && $name !== null) {
+            if ($name !== '') {
                 $consumable->setDescription((string) $name);
             }
         }
@@ -713,7 +711,7 @@ class ConsumableController extends AbstractController
     /**
      * function resolveConsumableType
      *
-     * @param array $data
+     * @param array<string, mixed> $data
      * @param Vehicle $vehicle
      *
      * @return ConsumableType
@@ -823,7 +821,7 @@ class ConsumableController extends AbstractController
     private function consumableBelongsToUser(\App\Entity\Consumable $consumable, User $user): bool
     {
         if ($consumable->getVehicle() !== null) {
-            return $consumable->getVehicle()->getOwner()->getId() === $user->getId();
+            return $consumable->getVehicle()->getOwner()?->getId() === $user->getId();
         }
         return $consumable->getUser()?->getId() === $user->getId();
     }

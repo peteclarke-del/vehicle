@@ -9,3 +9,9 @@ monolog:
       type: console
       process_psr_3_messages: false
       channels: ['!event', '!doctrine']
+    audit:
+      type: stream
+      path: '%kernel.project_dir%/var/log/audit.log'
+      level: debug
+      channels: ['audit']
+      formatter: json

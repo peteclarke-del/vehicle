@@ -16,6 +16,9 @@ security:
         login:
             pattern: ^/api/login
             stateless: true
+            login_throttling:
+                max_attempts: 5
+                interval: '1 minute'
             json_login:
                 check_path: /api/login
                 username_path: email
@@ -39,6 +42,8 @@ security:
         - { path: ^/api/auth/refresh, roles: PUBLIC_ACCESS }
         - { path: ^/api/reports/templates, roles: PUBLIC_ACCESS }
         - { path: ^/api/notifications/stream, roles: PUBLIC_ACCESS }
+            - { path: ^/api/auth/request-password-reset, roles: PUBLIC_ACCESS }
+            - { path: ^/api/auth/reset-password, roles: PUBLIC_ACCESS }
         - { path: ^/api/auth/issue-refresh, roles: IS_AUTHENTICATED_FULLY }
         - { path: ^/api, roles: IS_AUTHENTICATED_FULLY }
 

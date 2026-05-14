@@ -7,6 +7,7 @@ namespace App\Controller;
 use App\Controller\Trait\UserSecurityTrait;
 use App\Controller\Trait\JsonValidationTrait;
 use App\Entity\InsurancePolicy;
+use App\Entity\User;
 use App\Entity\Vehicle;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -142,7 +143,7 @@ class InsuranceController extends AbstractController
                 if (! $attachment) {
                     continue;
                 }
-                if ($attachment->getUser()?->getId() !== $user->getId()) {
+                if ($attachment->getUser()->getId() !== $user->getId()) {
                     continue;
                 }
 
@@ -323,7 +324,7 @@ class InsuranceController extends AbstractController
                     continue;
                 }
 
-                if ($attachment->getUser()?->getId() !== $user->getId()) {
+                if ($attachment->getUser()->getId() !== $user->getId()) {
                     continue;
                 }
 
@@ -463,7 +464,7 @@ class InsuranceController extends AbstractController
 
         $vehicle = $this->entityManager->getRepository(Vehicle::class)->find($vehicleId);
         $user = $this->getUserEntity();
-        if (!$vehicle || !$user || (!$this->isAdminForUser($user) && $vehicle->getOwner()->getId() !== $user->getId())) {
+        if (!$vehicle instanceof Vehicle || !$user instanceof User || (!$this->isAdminForUser($user) && $vehicle->getOwner()?->getId() !== $user->getId())) {
             return new JsonResponse(['error' => 'Vehicle not found'], 404);
         }
 
@@ -493,7 +494,7 @@ class InsuranceController extends AbstractController
 
         $vehicle = $this->entityManager->getRepository(Vehicle::class)->find($data['vehicleId']);
         $user = $this->getUserEntity();
-        if (!$vehicle || !$user || (!$this->isAdminForUser($user) && $vehicle->getOwner()->getId() !== $user->getId())) {
+        if (!$vehicle instanceof Vehicle || !$user instanceof User || (!$this->isAdminForUser($user) && $vehicle->getOwner()?->getId() !== $user->getId())) {
             return new JsonResponse(['error' => 'Vehicle not found'], 404);
         }
 
@@ -630,7 +631,7 @@ class InsuranceController extends AbstractController
      *
      * @param InsurancePolicy $policy Policy entity to serialize.
      *
-     * @return array
+    * @return array<string, mixed>
      */
     private function serializePolicy(InsurancePolicy $policy): array
     {

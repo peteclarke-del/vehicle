@@ -24,7 +24,6 @@ class PartCategoryController extends AbstractController
 
     public function __construct(
         private EntityManagerInterface $entityManager,
-        private LoggerInterface $logger,
         private CacheInterface $lookupsCache
     ) {
     }
@@ -114,11 +113,12 @@ class PartCategoryController extends AbstractController
                 return $this->json(['error' => 'Vehicle type not found'], 404);
             }
         }
-// Invalidate caches
+        // Invalidate caches
         $tags = ['part_categories'];
         if ($vehicleType) {
             $tags[] = "vehicle_type_{$vehicleType->getId()}";
         }
+        /** @phpstan-ignore method.notFound */
         $this->lookupsCache->invalidateTags($tags);
 
         

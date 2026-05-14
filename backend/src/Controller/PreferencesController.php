@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Entity\User;
 use App\Entity\UserPreference;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -34,6 +35,7 @@ class PreferencesController extends AbstractController
 
     /**
      * Resolve a single preference: stored value → user entity getter → default.
+     * @param array<string, UserPreference> $prefsByName
      */
     private function resolvePreference(array $prefsByName, object $user, string $name): mixed
     {
@@ -81,7 +83,7 @@ class PreferencesController extends AbstractController
         $repo = $em->getRepository(UserPreference::class);
         $pref = $repo->findOneBy(['user' => $user, 'name' => $key]);
 
-        if (array_key_exists($key, self::DEFAULTS)) {
+        if (is_string($key) && array_key_exists($key, self::DEFAULTS)) {
             $prefsByName = $pref ? [$key => $pref] : [];
             $val = $this->resolvePreference($prefsByName, $user, $key);
             return new JsonResponse(['key' => $key, 'value' => $val]);
@@ -111,12 +113,14 @@ class PreferencesController extends AbstractController
         // Log incoming preference changes for debugging
         try {
             $logger = $this->container->get('logger');
-            $logger->info('Preferences POST received', [
-                'user_id' => $user?->getId(),
-                'user_email' => $user?->getEmail(),
-                'key' => $key,
-                'value' => $value,
-            ]);
+            if ($user instanceof User) {
+                $logger->info('Preferences POST received', [
+                    'user_id' => $user->getId(),
+                    'user_email' => $user->getEmail(),
+                    'key' => $key,
+                    'value' => $value,
+                ]);
+            }
         } catch (\Throwable $e) {
             // ignore logging failures
         }
@@ -131,13 +135,18 @@ class PreferencesController extends AbstractController
         $pref = $repo->findOneBy(['user' => $user, 'name' => $key]);
         if (!$pref) {
             $pref = new UserPreference();
-            $pref->setUser($user);
+            if ($user instanceof User) {
+                $pref->setUser($user);
+            }
             $pref->setName($key);
         }
 
         // store as JSON for non-string types
         if (is_array($value) || is_object($value)) {
-            $pref->setValue(json_encode($value));
+            $encoded = json_encode($value);
+            if ($encoded !== false) {
+                $pref->setValue($encoded);
+            }
         } elseif ($value === null) {
             $pref->setValue(null);
         } else {
