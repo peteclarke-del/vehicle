@@ -134,7 +134,7 @@ class RoundTripExportImportTest extends BaseWebTestCase
         }
 
         $this->assertArrayHasKey('backup.json', $zipFiles);
-        $this->assertArrayHasKey('MANIFEST.json', $zipFiles);
+        $this->assertArrayHasKey('manifest.json', $zipFiles);
 
         // Extract and inspect backup.json
         $backupJson = $zip->getFromName('backup.json');
@@ -149,7 +149,7 @@ class RoundTripExportImportTest extends BaseWebTestCase
         ];
 
         // Show manifest
-        $manifestJson = $zip->getFromName('MANIFEST.json');
+        $manifestJson = $zip->getFromName('manifest.json');
         $this->assertNotFalse($manifestJson);
 
         $zip->close();

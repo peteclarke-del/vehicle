@@ -2066,10 +2066,9 @@ class VehicleImportService
                 continue;
             }
 
-            $allowedItemTypes = ['part', 'consumable'];
             $itemType = strtolower(trim((string) ($stockItemData['itemType'] ?? '')));
             $category = trim((string) ($stockItemData['category'] ?? ''));
-            if ($itemType === '' || $category === '' || !in_array($itemType, $allowedItemTypes, true)) {
+            if ($itemType === '' || $category === '') {
                 continue;
             }
 
