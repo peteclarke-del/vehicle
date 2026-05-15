@@ -61,7 +61,8 @@ class VehicleExportService
         bool $isAdmin = false,
         bool $includeAttachmentRefs = false,
         ?string $zipDir = null,
-        bool $includeGlobalState = false
+        bool $includeGlobalState = false,
+        bool $includeImages = false
     ): ExportResult {
         try {
             $startTime = microtime(true);
@@ -72,6 +73,7 @@ class VehicleExportService
                 'userId' => $user->getId(),
                 'includeAttachmentRefs' => $includeAttachmentRefs,
                 'includeGlobalState' => $includeGlobalState,
+                'includeImages' => $includeImages,
                 'zipDir' => $zipDir
                 ]
             );
@@ -91,6 +93,7 @@ class VehicleExportService
                 $vehicleIds,
                 $includeAttachmentRefs,
                 $zipDir,
+                $includeImages,
                 $startTime
             );
             $stockItems = $this->exportStockItems(
@@ -188,6 +191,7 @@ class VehicleExportService
         array $vehicleIds,
         bool $includeAttachmentRefs,
         ?string $zipDir,
+        bool $includeImages,
         float $startTime
     ): array {
         $data = [];
@@ -224,7 +228,8 @@ class VehicleExportService
                     $vehicle,
                     $specification,
                     $includeAttachmentRefs,
-                    $zipDir
+                    $zipDir,
+                    $includeImages
                 );
             }
 
@@ -325,7 +330,8 @@ class VehicleExportService
         Vehicle $vehicle,
         ?Specification $specification,
         bool $includeAttachmentRefs,
-        ?string $zipDir
+        ?string $zipDir,
+        bool $includeImages
     ): array {
         // Reset exported attachment tracking for this vehicle
         $this->exportedAttachmentIds = [];
@@ -358,6 +364,7 @@ class VehicleExportService
         $todosData = $this->exportTodos($vehicle);
         
         $includeMedia = $zipDir !== null;
+        $includeVehicleImages = $includeMedia && $includeImages;
 
         // Export attachments (ZIP export only)
         $attachmentsData = $includeMedia
@@ -365,7 +372,7 @@ class VehicleExportService
             : null;
         
         // Export vehicle images (ZIP export only)
-        $vehicleImages = $includeMedia
+        $vehicleImages = $includeVehicleImages
             ? $this->exportVehicleImages($vehicle, $zipDir)
             : null;
 

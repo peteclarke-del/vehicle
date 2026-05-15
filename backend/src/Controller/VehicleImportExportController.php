@@ -113,6 +113,7 @@ class VehicleImportExportController extends AbstractController
 
             $includeAttachmentRefs = $request->query->getBoolean('includeAttachmentRefs', false);
             $includeGlobalState = $request->query->getBoolean('includeGlobalState', false);
+            $includeImages = $request->query->getBoolean('includeImages', false);
             $isAdmin = $this->isAdminForUser($user);
 
             // Delegate to service
@@ -121,7 +122,8 @@ class VehicleImportExportController extends AbstractController
                 $isAdmin,
                 $includeAttachmentRefs,
                 $zipDir,
-                $includeGlobalState
+                $includeGlobalState,
+                $includeImages
             );
 
             if (!$result->isSuccess()) {

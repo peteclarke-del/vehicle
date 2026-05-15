@@ -6,8 +6,10 @@ namespace App\Tests\Controller;
 
 use App\Entity\StockItem;
 use App\Entity\User;
+use App\Entity\VehicleImage;
 use App\Tests\TestCase\BaseWebTestCase;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 class ExportImportApiTest extends BaseWebTestCase
@@ -82,6 +84,80 @@ class ExportImportApiTest extends BaseWebTestCase
 
         $this->assertStringContainsString('zip', strtolower($contentType));
         $this->assertStringContainsString('.zip', $contentDisposition);
+    }
+
+    public function testExportZipExcludeImagesWhenIncludeImagesFalse(): void
+    {
+        $user = $this->getTestUser();
+        $registration = 'IMG' . random_int(1000, 9999);
+        $vehicle = $this->createTestVehicle($user, $registration);
+
+        $projectDir = (string) self::getContainer()->getParameter('kernel.project_dir');
+        $vehicleSlug = strtolower((string) preg_replace('/[^a-zA-Z0-9]+/', '-', $registration));
+        $vehicleSlug = trim($vehicleSlug, '-');
+        $relativePath = '/uploads/vehicles/' . $vehicleSlug . '/test-image.jpg';
+        $absolutePath = $projectDir . $relativePath;
+
+        $imageDir = dirname($absolutePath);
+        if (!is_dir($imageDir)) {
+            mkdir($imageDir, 0777, true);
+        }
+        file_put_contents($absolutePath, 'fake-image-bytes');
+
+        $image = new VehicleImage();
+        $image->setVehicle($vehicle);
+        $image->setPath($relativePath);
+        $image->setCaption('Test image');
+        $image->setIsPrimary(true);
+        $this->entityManager->persist($image);
+        $this->entityManager->flush();
+
+        $this->client->request('GET', '/api/vehicles/export-zip?includeImages=false', [], [], [
+            'HTTP_X_TEST_MOCK_AUTH' => $this->apiUserEmail,
+        ]);
+
+        $this->assertResponseIsSuccessful();
+        $response = $this->client->getResponse();
+        $this->assertInstanceOf(BinaryFileResponse::class, $response);
+
+        $zipPath = (string) $response->getFile()?->getPathname();
+        $this->assertFileExists($zipPath);
+
+        $zip = new \ZipArchive();
+        $opened = $zip->open($zipPath);
+        $this->assertTrue($opened === true, 'Failed to open exported ZIP');
+
+        $hasImageFiles = false;
+        for ($i = 0; $i < $zip->numFiles; $i++) {
+            $name = (string) $zip->getNameIndex($i);
+            if (str_starts_with($name, 'images/')) {
+                $hasImageFiles = true;
+                break;
+            }
+        }
+
+        $backupJson = $zip->getFromName('backup.json');
+        $this->assertNotFalse($backupJson);
+        $backup = json_decode((string) $backupJson, true);
+        $this->assertIsArray($backup);
+
+        $vehiclePayload = null;
+        foreach (($backup['vehicles'] ?? []) as $row) {
+            if (($row['registrationNumber'] ?? null) === $registration) {
+                $vehiclePayload = $row;
+                break;
+            }
+        }
+
+        $zip->close();
+
+        $this->assertFalse($hasImageFiles, 'ZIP should not include images/ files when includeImages=false');
+        $this->assertNotNull($vehiclePayload);
+        $this->assertTrue(
+            !array_key_exists('vehicleImages', $vehiclePayload)
+            || empty($vehiclePayload['vehicleImages']),
+            'Vehicle payload should not include vehicleImages data when includeImages=false'
+        );
     }
 
     public function testImportJsonWithStockItems(): void
