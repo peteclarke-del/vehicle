@@ -153,6 +153,10 @@ class NotificationController extends AbstractController
 
         try {
             $payload = $this->jwtEncoder->decode((string) $token);
+            if (!$this->isJwtPayloadCurrentlyValid($payload)) {
+                return null;
+            }
+
             $identifier = $payload['username'] ?? $payload['email'] ?? null;
             $userId = $payload['id'] ?? $payload['user_id'] ?? null;
 
@@ -178,6 +182,34 @@ class NotificationController extends AbstractController
         }
 
         return null;
+    }
+
+    /**
+     * Defensive validation for time-based JWT claims in query-token mode.
+     * The standard firewall path validates bearer tokens; this endpoint also
+     * accepts query tokens for EventSource and must verify temporal claims.
+     *
+     * @param array<string, mixed>|null $payload
+     */
+    private function isJwtPayloadCurrentlyValid(?array $payload): bool
+    {
+        if (!is_array($payload) || $payload === []) {
+            return false;
+        }
+
+        $now = time();
+
+        $exp = isset($payload['exp']) ? (int) $payload['exp'] : null;
+        if ($exp !== null && $exp > 0 && $exp <= $now) {
+            return false;
+        }
+
+        $nbf = isset($payload['nbf']) ? (int) $payload['nbf'] : null;
+        if ($nbf !== null && $nbf > $now) {
+            return false;
+        }
+
+        return true;
     }
 
     /**

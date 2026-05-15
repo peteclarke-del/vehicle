@@ -350,6 +350,7 @@ const Layout = () => {
           />
           <IconButton
             color="inherit"
+            aria-label={mode === 'dark' ? t('theme.switchToLight', { defaultValue: 'Switch to light theme' }) : t('theme.switchToDark', { defaultValue: 'Switch to dark theme' })}
             onClick={async () => {
               const newMode = mode === 'light' ? 'dark' : 'light';
               try {
@@ -369,7 +370,7 @@ const Layout = () => {
             {mode === 'dark' ? <LightMode /> : <DarkMode />}
           </IconButton>
           <Tooltip title={t('preferences.title')}>
-            <IconButton color="inherit" onClick={() => setPreferencesOpen(true)}>
+            <IconButton color="inherit" aria-label={t('preferences.title')} onClick={() => setPreferencesOpen(true)}>
               <SettingsIcon />
             </IconButton>
           </Tooltip>
@@ -521,6 +522,7 @@ const Layout = () => {
               <Tooltip key={item.key} title={item.text} placement="right" arrow>
                 <IconButton
                   onClick={() => navigate(item.path)}
+                  aria-label={item.text}
                   sx={{
                     my: 0.5,
                     color: isActive(item.path) ? 'primary.main' : 'text.secondary',
@@ -539,6 +541,8 @@ const Layout = () => {
       )}
       <Box
         component="main"
+        id="app-main-content"
+        tabIndex={-1}
         sx={{
           flexGrow: 1,
           p: 3,

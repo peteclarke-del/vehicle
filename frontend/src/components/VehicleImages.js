@@ -264,15 +264,26 @@ const VehicleImages = ({ vehicle }) => {
                           autoFocus
                         />
                       ) : (
-                        <span
+                        <button
+                          type="button"
                           onClick={(e) => {
                             e.stopPropagation();
                             setEditingCaption(image.id);
                             setCaptionText(image.caption || '');
                           }}
+                          style={{
+                            background: 'none',
+                            border: 0,
+                            color: 'inherit',
+                            font: 'inherit',
+                            textAlign: 'left',
+                            padding: 0,
+                            cursor: 'pointer',
+                          }}
+                          aria-label={t('vehicleImages.editCaption', { defaultValue: 'Edit image caption' })}
                         >
                           {image.caption || t('vehicleImages.clickToAddCaption')}
-                        </span>
+                        </button>
                       )}
                     </Box>
                   }

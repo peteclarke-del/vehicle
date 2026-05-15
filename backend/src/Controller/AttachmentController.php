@@ -15,6 +15,7 @@ use App\Entity\StockItem;
 use App\Entity\RoadTax;
 use App\Entity\InsurancePolicy;
 use App\Entity\Todo;
+use App\Entity\User;
 use App\Service\ReceiptOcrService;
 use App\Service\AttachmentLinkingService;
 use App\Controller\Trait\UserSecurityTrait;
@@ -401,6 +402,17 @@ class AttachmentController extends AbstractController
             $category = $this->attachmentLinkingService->normalizeEntityType($entityType);
         }
 
+        if (is_string($entityType) && $entityType !== '' && $entityId > 0) {
+            $targetEntity = $this->attachmentLinkingService->resolveEntityByTypeAndId($entityType, $entityId);
+            if ($targetEntity === null) {
+                return $this->json(['error' => 'Target entity not found'], 404);
+            }
+
+            if (!$this->canAccessAttachmentEntity($user, $targetEntity)) {
+                return $this->json(['error' => 'Forbidden'], 403);
+            }
+        }
+
         /** @var UploadedFile|null $file */
         $file = $request->files->get('file');
         if (!$file) {
@@ -429,6 +441,10 @@ class AttachmentController extends AbstractController
         // If entity doesn't exist yet, try to resolve vehicle directly from vehicleId
         if (!$vehicle && $vehicleId) {
             $vehicle = $this->entityManager->getRepository(Vehicle::class)->find($vehicleId);
+        }
+
+        if ($vehicle && !$this->canAccessAttachmentEntity($user, $vehicle)) {
+            return $this->json(['error' => 'Forbidden'], 403);
         }
         
         $storageSubDir = $this->getStorageSubdirectory($vehicle, $category);
@@ -814,6 +830,15 @@ class AttachmentController extends AbstractController
             $entityId = isset($data['entityId']) ? (int) $data['entityId'] : $attachment->getEntityId();
 
             if ($entityType && $entityId) {
+                $entity = $this->attachmentLinkingService->resolveEntityByTypeAndId($entityType, $entityId);
+                if (!$entity) {
+                    return $this->json(['error' => 'Target entity not found'], 404);
+                }
+
+                if (!$this->canAccessAttachmentEntity($user, $entity)) {
+                    return $this->json(['error' => 'Forbidden'], 403);
+                }
+
                 // Unlink from old entity first to avoid stale receiptAttachment references
                 $oldEntityType = $attachment->getEntityType();
                 $oldEntityId   = $attachment->getEntityId();
@@ -825,19 +850,12 @@ class AttachmentController extends AbstractController
                 }
 
                 // Resolve the new entity and link properly
-                $entity = $this->attachmentLinkingService->resolveEntityByTypeAndId($entityType, $entityId);
-                if ($entity) {
-                    $this->attachmentLinkingService->linkAttachmentToEntity(
-                        $attachment,
-                        $entity,
-                        $entityType,
-                        true // reorganize file
-                    );
-                } else {
-                    // Entity not found, just set the raw values
-                    $attachment->setEntityType($entityType);
-                    $attachment->setEntityId($entityId);
-                }
+                $this->attachmentLinkingService->linkAttachmentToEntity(
+                    $attachment,
+                    $entity,
+                    $entityType,
+                    true // reorganize file
+                );
             } elseif (!$entityType && !$entityId) {
                 // Clear entity association
                 $oldEntityType = $attachment->getEntityType();
@@ -888,5 +906,41 @@ class AttachmentController extends AbstractController
             'isImage' => $attachment->isImage(),
             'isPdf' => $attachment->isPdf(),
         ];
+    }
+
+    /**
+     * Restrict attachment linking/uploading to resources owned by the caller
+     * unless the caller is an admin.
+     */
+    private function canAccessAttachmentEntity(User $user, object $entity): bool
+    {
+        if ($this->isAdminForUser($user)) {
+            return true;
+        }
+
+        if ($entity instanceof Vehicle) {
+            $owner = $entity->getOwner();
+            return $owner !== null && $owner->getId() === $user->getId();
+        }
+
+        if (method_exists($entity, 'getVehicle')) {
+            $vehicle = $entity->getVehicle();
+            if ($vehicle instanceof Vehicle) {
+                $owner = $vehicle->getOwner();
+                return $owner !== null && $owner->getId() === $user->getId();
+            }
+        }
+
+        if (method_exists($entity, 'getUser')) {
+            $owner = $entity->getUser();
+            return $owner instanceof User && $owner->getId() === $user->getId();
+        }
+
+        if (method_exists($entity, 'getOwner')) {
+            $owner = $entity->getOwner();
+            return $owner instanceof User && $owner->getId() === $user->getId();
+        }
+
+        return false;
     }
 }
