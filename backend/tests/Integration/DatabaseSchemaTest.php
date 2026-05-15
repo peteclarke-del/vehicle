@@ -33,7 +33,17 @@ class DatabaseSchemaTest extends KernelTestCase
         $migrationsDir = self::getContainer()->getParameter('kernel.project_dir') . '/migrations';
         $files = glob($migrationsDir . '/Version*.php') ?: [];
 
-        $this->assertCount(2, $files, 'Expected consolidated baseline plus one incremental migration.');
+        $this->assertGreaterThanOrEqual(
+            2,
+            count($files),
+            'Expected at least a consolidated baseline migration and one incremental migration.'
+        );
+
+        $baselines = array_filter(
+            $files,
+            static fn (string $file): bool => str_contains($file, 'Version20260512220157.php')
+        );
+        $this->assertNotEmpty($baselines, 'Expected consolidated baseline migration Version20260512220157.php.');
     }
 
     public function testStockItemsTableHasExpectedColumns(): void

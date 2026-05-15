@@ -12,6 +12,9 @@ if (file_exists(dirname(__DIR__).'/config/bootstrap.php')) {
     (new Dotenv())->bootEnv(dirname(__DIR__).'/.env');
 }
 
+// Keep test output clean from third-party deprecations on newer PHP runtime.
+error_reporting(E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED);
+
 // Additionally, proactively reset the protected static `booted` flag on any test
 // classes under the `tests/` directory that may inherit it. This prevents the
 // `WebTestCase::createClient()` LogicException if a prior static boot flag was

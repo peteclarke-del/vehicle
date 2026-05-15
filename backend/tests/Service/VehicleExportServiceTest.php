@@ -13,7 +13,6 @@ use Doctrine\ORM\EntityRepository;
 use Doctrine\ORM\QueryBuilder;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
-use Symfony\Component\String\Slugger\SluggerInterface;
 
 class VehicleExportServiceTest extends TestCase
 {
@@ -21,7 +20,6 @@ class VehicleExportServiceTest extends TestCase
     {
         $em = $this->createMock(EntityManagerInterface::class);
         $logger = $this->createMock(LoggerInterface::class);
-        $slugger = $this->createMock(SluggerInterface::class);
         $config = new ImportExportConfig();
 
         $qb = $this->createMock(QueryBuilder::class);
@@ -44,7 +42,7 @@ class VehicleExportServiceTest extends TestCase
         $em->method('createQueryBuilder')->willReturn($qb);
         $em->method('getRepository')->willReturn($stockRepo);
 
-        return new VehicleExportService($em, $logger, $slugger, $config, '/tmp/project');
+        return new VehicleExportService($em, $logger, $config, '/tmp/project');
     }
 
     public function testExportWithNoVehicles(): void

@@ -24,3 +24,12 @@ when@test:
         test: true
         session:
             storage_factory_id: session.storage.factory.mock_file
+        rate_limiter:
+            register:
+                policy: 'fixed_window'
+                limit: 1000
+                interval: '1 hour'
+            refresh_token:
+                policy: 'sliding_window'
+                limit: 10000
+                interval: '1 minute'
