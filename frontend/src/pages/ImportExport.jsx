@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -50,12 +50,223 @@ const ImportExport = () => {
   const [exportStatus, setExportStatus] = useState('processing'); // 'processing', 'downloading', 'success', 'error'
   const [exportMessage, setExportMessage] = useState('');
   const [exportError, setExportError] = useState('');
+  const [exportStageHistory, setExportStageHistory] = useState([]);
+  const [activeExportJobId, setActiveExportJobId] = useState('');
+  const [activeExportStatusUrl, setActiveExportStatusUrl] = useState('');
+  const [isCancellingExport, setIsCancellingExport] = useState(false);
+
+  const cancelExportRef = useRef(false);
 
   const apiBase = process.env.REACT_APP_API_URL || '';
   const auth = authHeaders;
 
   // Helper: build full URL (apiBase + path) with provided params object.
   const buildUrl = (path, params) => helpersBuildUrl(apiBase, path, params);
+
+  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  const formatDuration = (totalSeconds) => {
+    const safe = Math.max(0, Number(totalSeconds) || 0);
+    const minutes = Math.floor(safe / 60);
+    const seconds = safe % 60;
+    if (minutes <= 0) {
+      return `${seconds}s`;
+    }
+    return `${minutes}m ${String(seconds).padStart(2, '0')}s`;
+  };
+
+  const normalizeExportError = (error, fallback) => {
+    const message = (error && error.message) ? String(error.message) : '';
+    if (/operation was aborted|aborterror|the user aborted a request/i.test(message)) {
+      return `${fallback}: Download stream was interrupted. Please retry export.`;
+    }
+    if (/networkerror|failed to fetch|network request failed/i.test(message)) {
+      return `${fallback}: Network connection interrupted while exporting. Please retry.`;
+    }
+    if (/timed out|timeout/i.test(message)) {
+      return `${fallback}: The export is taking longer than expected. Please retry.`;
+    }
+    return message || fallback;
+  };
+
+  const getStageLabel = (stage, status) => {
+    const stageKey = String(stage || '').toLowerCase();
+    const stageMap = {
+      queued: 'Queued',
+      prepare: 'Preparing',
+      db_export: 'Exporting Database',
+      json_write: 'Writing Export Files',
+      zip_prepare: 'Creating ZIP',
+      zip_pack: 'Adding Files to ZIP',
+      zip_finalize: 'Finalizing ZIP',
+      completed: 'Completed',
+      failed: 'Failed',
+    };
+
+    if (stageMap[stageKey]) {
+      return stageMap[stageKey];
+    }
+
+    if (status === 'completed') return 'Completed';
+    if (status === 'failed') return 'Failed';
+    return 'Processing';
+  };
+
+  const formatStageTimestamp = (value) => {
+    const date = value ? new Date(value) : new Date();
+    if (Number.isNaN(date.getTime())) {
+      return new Date().toLocaleTimeString();
+    }
+    return date.toLocaleTimeString([], { hour12: false });
+  };
+
+  const pushStageHistory = (stage, message, timestamp) => {
+    const stageText = String(stage || 'Processing');
+    const messageText = String(message || 'Working...');
+    const timeText = formatStageTimestamp(timestamp);
+
+    setExportStageHistory((prev) => {
+      const last = prev[prev.length - 1];
+      if (last && last.stage === stageText && last.message === messageText) {
+        return prev;
+      }
+
+      const next = [
+        ...prev,
+        {
+          id: `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+          stage: stageText,
+          message: messageText,
+          time: timeText,
+        },
+      ];
+
+      return next.slice(-5);
+    });
+  };
+
+  const getCancelUrl = () => {
+    if (activeExportStatusUrl) {
+      return `${activeExportStatusUrl}/cancel`;
+    }
+
+    if (activeExportJobId) {
+      return `/api/vehicles/export-zip-jobs/${activeExportJobId}/cancel`;
+    }
+
+    return '';
+  };
+
+  const cancelFullExport = async () => {
+    if (isCancellingExport) {
+      return;
+    }
+
+    cancelExportRef.current = true;
+    setIsCancellingExport(true);
+    pushStageHistory('Cancelling', 'Cancellation requested. Stopping export worker...', new Date().toISOString());
+
+    try {
+      const cancelUrl = getCancelUrl();
+      if (cancelUrl) {
+        const resp = await fetch(cancelUrl, { method: 'POST', headers: auth() });
+        if (!resp.ok) {
+          const cancelErr = await getApiErrorMessage(resp, 'Failed to cancel export');
+          throw new Error(cancelErr);
+        }
+      }
+
+      setExportStatus('error');
+      setExportError('Export cancelled by user.');
+      setExportMessage('Export cancelled by user.');
+      setOpStatus('Export cancelled');
+      pushStageHistory('Cancelled', 'Export cancelled by user.', new Date().toISOString());
+    } catch (err) {
+      const msg = normalizeExportError(err, 'Failed to cancel export');
+      setExportStatus('error');
+      setExportError(msg);
+      setExportMessage(msg);
+      setOpStatus(msg);
+      pushStageHistory('Cancel Failed', msg, new Date().toISOString());
+    } finally {
+      setIsCancellingExport(false);
+      setActiveExportJobId('');
+      setActiveExportStatusUrl('');
+    }
+  };
+
+  const findJsonPayloadEnd = (raw) => {
+    if (!raw) return null;
+    let i = 0;
+    while (i < raw.length && /\s/.test(raw[i])) i += 1;
+    if (i >= raw.length) return null;
+
+    const first = raw[i];
+    if (first !== '{' && first !== '[') return null;
+
+    const stack = [first === '{' ? '}' : ']'];
+    let inString = false;
+    let escaped = false;
+
+    for (let idx = i + 1; idx < raw.length; idx += 1) {
+      const ch = raw[idx];
+
+      if (inString) {
+        if (escaped) {
+          escaped = false;
+        } else if (ch === '\\') {
+          escaped = true;
+        } else if (ch === '"') {
+          inString = false;
+        }
+        continue;
+      }
+
+      if (ch === '"') {
+        inString = true;
+        continue;
+      }
+
+      if (ch === '{') stack.push('}');
+      if (ch === '[') stack.push(']');
+      if (ch === '}' || ch === ']') {
+        if (stack.length === 0) return null;
+        const expected = stack.pop();
+        if (expected !== ch) return null;
+        if (stack.length === 0) return idx + 1;
+      }
+    }
+
+    return null;
+  };
+
+  const parseJsonResponse = async (resp, fallbackMessage = 'Invalid JSON response') => {
+    if (typeof resp?.text !== 'function') {
+      if (typeof resp?.json === 'function') {
+        return resp.json();
+      }
+      throw new Error(`${fallbackMessage}: Response body reader is unavailable`);
+    }
+
+    const raw = await resp.text();
+
+    try {
+      return JSON.parse(raw);
+    } catch (err) {
+      const payloadEnd = findJsonPayloadEnd(raw);
+      if (payloadEnd && payloadEnd < raw.length) {
+        const trimmed = raw.slice(0, payloadEnd);
+        try {
+          return JSON.parse(trimmed);
+        } catch (trimErr) {
+          // Fall through to throw below.
+        }
+      }
+
+      const compact = String(raw || '').replace(/\s+/g, ' ').slice(0, 220);
+      throw new Error(`${fallbackMessage}: ${compact || (err && err.message) || 'Malformed JSON'}`);
+    }
+  };
 
   // Extract useful API error details even when the server/proxy returns HTML/text.
   const getApiErrorMessage = async (resp, fallbackMessage) => {
@@ -84,6 +295,35 @@ const ImportExport = () => {
     }
 
     return status ? `${fallbackMessage} (${status})` : fallbackMessage;
+  };
+
+  const fetchBlobWithRetry = async (url, headers, maxAttempts = 3) => {
+    let lastError = null;
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      try {
+        const response = await fetch(url, { headers });
+        if (!response.ok) {
+          const msg = await getApiErrorMessage(response, 'Failed to download export archive');
+          throw new Error(msg);
+        }
+
+        const blob = await response.blob();
+        return blob;
+      } catch (error) {
+        lastError = error;
+        const msg = String(error?.message || '');
+        const isTransientAbort = /operation was aborted|aborterror|failed to fetch|networkerror/i.test(msg);
+
+        if (!isTransientAbort || attempt >= maxAttempts) {
+          break;
+        }
+
+        await sleep(500 * attempt);
+      }
+    }
+
+    throw lastError || new Error('Failed to download export archive');
   };
 
   useEffect(() => {
@@ -159,7 +399,7 @@ const ImportExport = () => {
       const resp = await fetch(url, { headers: auth() });
       if (!resp.ok) throw new Error('Export failed');
       setExportProgress(60);
-      const json = await resp.json();
+      const json = await parseJsonResponse(resp, 'Export response was not valid JSON');
       setExportProgress(85);
       const filename = isAll
         ? `vehicles_export_all_${new Date().toISOString().split('T')[0]}.json`
@@ -183,32 +423,138 @@ const ImportExport = () => {
   async function downloadFullExport() {
     try {
       setExportModalOpen(true);
-      setExportStatus('downloading');
-      setExportProgress(10);
-      setExportMessage(t('importExport.modal.exportingZip') || 'Downloading full export...');
+      setExportStatus('processing');
+      setExportProgress(5);
+      setExportMessage(t('importExport.modal.exportingZip') || 'Preparing full export...');
+      setExportStageHistory([]);
+      setActiveExportJobId('');
+      setActiveExportStatusUrl('');
+      setIsCancellingExport(false);
+      cancelExportRef.current = false;
       setOpStatus(t('importExport.op.downloadingAll'));
-      const url = buildUrl('/vehicles/export-zip', { all: 1 });
-      const resp = await fetch(url, { headers: auth() });
-      if (resp.ok) {
-        setExportProgress(70);
-        const blob = await resp.blob();
-        setExportProgress(90);
-        saveBlob(blob, `vehicles_full_export_${new Date().toISOString().split('T')[0]}.zip`);
-        setExportProgress(100);
-        setExportStatus('success');
-        setExportMessage(t('importExport.modal.exportSuccessAll') || 'Full export downloaded');
-        setTimeout(() => setExportModalOpen(false), 1000);
-        setOpStatus(t('importExport.op.downloadedAll'));
+
+      const enqueueUrl = buildUrl('/vehicles/export-zip-async', { all: 1 });
+      const enqueueResp = await fetch(enqueueUrl, { method: 'POST', headers: auth() });
+      if (!enqueueResp.ok) {
+        const enqueueError = await getApiErrorMessage(enqueueResp, 'Failed to queue export');
+        throw new Error(enqueueError);
+      }
+
+      const queued = await parseJsonResponse(enqueueResp, 'Export queue response was not valid JSON');
+      setActiveExportJobId(String(queued?.jobId || ''));
+      setActiveExportStatusUrl(String(queued?.statusUrl || ''));
+      const statusUrl = queued?.statusUrl;
+      const initialDownloadUrl = queued?.downloadUrl;
+      const pollIntervalMs = Number(queued?.pollIntervalMs) > 0 ? Number(queued.pollIntervalMs) : 2000;
+
+      if (!statusUrl) {
+        throw new Error('Export queue response missing status URL');
+      }
+
+      setExportStatus('processing');
+      setExportProgress(15);
+      setExportMessage('Export queued. Waiting for worker...');
+      pushStageHistory('Queued', 'Export queued. Waiting for worker...', new Date().toISOString());
+
+      const maxPollAttempts = 300;
+      let readyDownloadUrl = initialDownloadUrl;
+      const startedAt = Date.now();
+
+      for (let attempt = 0; attempt < maxPollAttempts; attempt += 1) {
+        if (cancelExportRef.current) {
+          throw new Error('EXPORT_CANCELLED_BY_USER');
+        }
+
+        const statusResp = await fetch(statusUrl, { headers: auth() });
+        if (!statusResp.ok) {
+          const statusError = await getApiErrorMessage(statusResp, 'Failed to check export status');
+          throw new Error(statusError);
+        }
+
+        const statusData = await parseJsonResponse(statusResp, 'Export status response was not valid JSON');
+        const status = String(statusData?.status || 'unknown');
+        const progress = Number(statusData?.progress);
+        const cappedProgress = Number.isFinite(progress) ? Math.max(10, Math.min(progress, 95)) : Math.min(95, 15 + attempt);
+        const elapsedSeconds = Math.floor((Date.now() - startedAt) / 1000);
+
+        let backendAgeSeconds = null;
+        if (statusData?.updatedAt) {
+          const updatedTime = Date.parse(String(statusData.updatedAt));
+          if (!Number.isNaN(updatedTime)) {
+            backendAgeSeconds = Math.max(0, Math.floor((Date.now() - updatedTime) / 1000));
+          }
+        }
+
+        const stageText = getStageLabel(statusData?.stage, status);
+        const heartbeatText = backendAgeSeconds === null
+          ? `Elapsed ${formatDuration(elapsedSeconds)}`
+          : `Elapsed ${formatDuration(elapsedSeconds)} - backend updated ${formatDuration(backendAgeSeconds)} ago`;
+        const transitionMessage = statusData?.message || 'Building archive...';
+        pushStageHistory(stageText, transitionMessage, statusData?.updatedAt || new Date().toISOString());
+
+        if (status === 'completed') {
+          readyDownloadUrl = statusData?.downloadUrl || readyDownloadUrl;
+          setExportProgress(92);
+          setExportStatus('downloading');
+          setExportMessage(`Archive ready after ${formatDuration(elapsedSeconds)}. Downloading...`);
+          pushStageHistory('Completed', 'Archive ready. Starting download.', statusData?.updatedAt || new Date().toISOString());
+          break;
+        }
+
+        if (status === 'failed') {
+          const statusError = statusData?.error || statusData?.message || 'Export failed';
+          throw new Error(String(statusError));
+        }
+
+        if (status === 'cancelled') {
+          throw new Error('EXPORT_CANCELLED_BY_USER');
+        }
+
+        setExportProgress(cappedProgress);
+        setExportMessage(`${stageText}: ${transitionMessage} (${heartbeatText})`);
+        await sleep(pollIntervalMs);
+      }
+
+      if (!readyDownloadUrl) {
+        throw new Error('Export completed without a download URL');
+      }
+
+      if (cancelExportRef.current) {
+        throw new Error('EXPORT_CANCELLED_BY_USER');
+      }
+
+      const blob = await fetchBlobWithRetry(readyDownloadUrl, auth(), 3);
+      setExportProgress(98);
+      saveBlob(blob, `vehicles_full_export_${new Date().toISOString().split('T')[0]}.zip`);
+      pushStageHistory('Downloading', 'Download completed in browser.', new Date().toISOString());
+
+      setExportProgress(100);
+      setExportStatus('success');
+      setExportMessage(t('importExport.modal.exportSuccessAll') || 'Full export downloaded');
+      setActiveExportJobId('');
+      setActiveExportStatusUrl('');
+      setTimeout(() => setExportModalOpen(false), 1000);
+      setOpStatus(t('importExport.op.downloadedAll'));
+    } catch (err) {
+      if (String(err?.message || '') === 'EXPORT_CANCELLED_BY_USER') {
+        setExportProgress(0);
+        setExportStatus('error');
+        setExportError('Export cancelled by user.');
+        setExportMessage('Export cancelled by user.');
+        setOpStatus('Export cancelled');
+        pushStageHistory('Cancelled', 'Export cancelled by user.', new Date().toISOString());
+        setActiveExportJobId('');
+        setActiveExportStatusUrl('');
         return;
       }
-      // fallback to JSON export if ZIP endpoint not available
-      setExportMessage(t('importExport.modal.exportingFallback') || 'ZIP unavailable, exporting JSON...');
-      await exportJson('all', {}, { reuseModal: true });
-    } catch (err) {
+
       setExportProgress(0);
       setExportStatus('error');
-      setExportError(err.message || 'Export failed');
-      setOpStatus(t('importExport.op.error') + ': ' + err.message);
+      const exportErr = normalizeExportError(err, 'Full export failed');
+      setExportError(exportErr);
+      setOpStatus(t('importExport.op.error') + ': ' + exportErr);
+      setActiveExportJobId('');
+      setActiveExportStatusUrl('');
     }
   }
 
@@ -219,7 +565,7 @@ const ImportExport = () => {
       if (!resp.ok) {
         throw new Error(`Export failed: ${resp.status}`);
       }
-      const data = await resp.json();
+      const data = await parseJsonResponse(resp, 'Stock export response was not valid JSON');
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       saveBlob(blob, `stock_export_${new Date().toISOString().split('T')[0]}.json`);
     } catch (err) {
@@ -272,7 +618,7 @@ const ImportExport = () => {
       }
       
       setImportProgress(80);
-      const json = await resp.json();
+      const json = await parseJsonResponse(resp, 'Image manifest response was not valid JSON');
       const importedCount = json ? (json.imported ?? json.count ?? json.total ?? 0) : 0;
       const successMsg = t('common.importSuccess', { count: importedCount });
       
@@ -333,7 +679,7 @@ const ImportExport = () => {
       setImportStatus('processing');
       setImportMessage(t('importExport.op.processing') || 'Processing import...');
       
-      const json = await resp.json();
+      const json = await parseJsonResponse(resp, 'Import response was not valid JSON');
       
       setImportProgress(100);
       setImportStatus('success');
@@ -375,7 +721,7 @@ const ImportExport = () => {
       });
       const resp = await fetch(url, { headers: auth() });
       if (!resp.ok) throw new Error('Export failed');
-      const json = await resp.json();
+      const json = await parseJsonResponse(resp, 'ZIP import response was not valid JSON');
       const filename = `vehicles_images_manifest_${new Date().toISOString().split('T')[0]}.json`;
       downloadJsonObject(json, filename.replace(/\.json$/, ''));
       setOpStatus(t('importExport.op.downloadedJson'));
@@ -552,6 +898,34 @@ const ImportExport = () => {
                 <Typography variant="body2" color="text.secondary" align="center">
                   {exportMessage}
                 </Typography>
+                {exportStageHistory.length > 0 && (
+                  <Box sx={{ mt: 2, p: 1.5, border: 1, borderColor: 'divider', borderRadius: 1 }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.75 }}>
+                      {t('importExport.modal.recentStages') || 'Recent stages'}
+                    </Typography>
+                    <Box component="ul" sx={{ m: 0, pl: 2 }}>
+                      {exportStageHistory.map((entry) => (
+                        <li key={entry.id}>
+                          <Typography variant="caption" color="text.secondary">
+                            [{entry.time}] {entry.stage}: {entry.message}
+                          </Typography>
+                        </li>
+                      ))}
+                    </Box>
+                  </Box>
+                )}
+                {(exportStatus === 'processing' || exportStatus === 'downloading') && (
+                  <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
+                    <Button
+                      color="warning"
+                      variant="outlined"
+                      onClick={cancelFullExport}
+                      disabled={isCancellingExport}
+                    >
+                      {isCancellingExport ? 'Cancelling...' : (t('common.cancel') || 'Cancel')}
+                    </Button>
+                  </Box>
+                )}
               </>
             )}
             {exportStatus === 'success' && (

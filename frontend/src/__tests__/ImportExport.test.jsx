@@ -113,6 +113,50 @@ describe('ImportExport page', () => {
     });
   });
 
+  test('Full export uses async queue and status polling', async () => {
+    global.fetch = jest.fn()
+      // vehicles list
+      .mockImplementationOnce(() => Promise.resolve({ ok: true, json: () => Promise.resolve([{ id: 1, name: 'V1' }]) }))
+      // enqueue async export
+      .mockImplementationOnce(() => Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({
+          jobId: 'abc123',
+          statusUrl: '/api/vehicles/export-zip-jobs/abc123',
+          downloadUrl: null,
+          pollIntervalMs: 1,
+        }),
+      }))
+      // status poll result
+      .mockImplementationOnce(() => Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({
+          status: 'completed',
+          progress: 100,
+          message: 'ready',
+          downloadUrl: '/api/vehicles/export-zip-jobs/abc123/download',
+        }),
+      }))
+      // download archive
+      .mockImplementationOnce(() => Promise.resolve({ ok: true, blob: () => Promise.resolve(new Blob(['zip'])) }));
+
+    renderWithRouter(<ImportExport />);
+
+    await waitFor(() => expect(global.fetch).toHaveBeenCalledWith('/api/vehicles', expect.any(Object)));
+
+    const btnFull = screen.getByText('importExport.fullExport');
+    fireEvent.click(btnFull);
+
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/vehicles/export-zip-async'),
+        expect.objectContaining({ method: 'POST' })
+      );
+      expect(global.fetch).toHaveBeenCalledWith('/api/vehicles/export-zip-jobs/abc123', expect.any(Object));
+      expect(global.fetch).toHaveBeenCalledWith('/api/vehicles/export-zip-jobs/abc123/download', expect.any(Object));
+    });
+  });
+
   test('Download Stock uses dedicated stock export endpoint', async () => {
     global.fetch = jest.fn()
       // vehicles list

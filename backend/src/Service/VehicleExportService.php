@@ -292,27 +292,9 @@ class VehicleExportService
     private function loadVehicleBatch(array $batchIds): array
     {
         $qb = $this->entityManager->createQueryBuilder();
-        $qb->select('v, vt, fr, p, pc, c, ct, sr, sm, mr, ip, rt, t, sh, img')
+        $qb->select('v, vt')
             ->from(Vehicle::class, 'v')
             ->leftJoin('v.vehicleType', 'vt')
-            ->leftJoin('v.fuelRecords', 'fr')
-            ->leftJoin('fr.receiptAttachment', 'fra')
-            ->leftJoin('v.parts', 'p')
-            ->leftJoin('p.partCategory', 'pc')
-            ->leftJoin('p.receiptAttachment', 'pra')
-            ->leftJoin('v.consumables', 'c')
-            ->leftJoin('c.consumableType', 'ct')
-            ->leftJoin('c.receiptAttachment', 'cra')
-            ->leftJoin('v.serviceRecords', 'sr')
-            ->leftJoin('sr.receiptAttachment', 'sra')
-            ->leftJoin('sr.items', 'sm')
-            ->leftJoin('v.motRecords', 'mr')
-            ->leftJoin('mr.receiptAttachment', 'mra')
-            ->leftJoin('v.insurancePolicies', 'ip')
-            ->leftJoin('v.roadTaxRecords', 'rt')
-            ->leftJoin('v.todos', 't')
-            ->leftJoin('v.statusHistory', 'sh')
-            ->leftJoin('v.images', 'img')
             ->where($qb->expr()->in('v.id', ':ids'))
             ->setParameter('ids', $batchIds)
             ->orderBy('vt.name', 'ASC')
@@ -461,43 +443,15 @@ class VehicleExportService
             'originalId' => $attachment->getId(),
         ];
 
-        // Copy the physical file to ZIP directory (only if zipDir provided)
+        // Prepare ZIP metadata for archive builder (no pre-copy to temp dir)
         if ($zipDir) {
             $storagePath = $attachment->getStoragePath() ?: ('attachments/' . $attachment->getFilename());
             $sourcePath = $this->projectDir . '/uploads/' . ltrim($storagePath, '/');
-            
-            if (file_exists($sourcePath)) {
-                $safeName = 'attachment_' . $attachment->getId() . '_' . basename($attachment->getFilename());
-                $targetPath = $zipDir . '/attachments/' . $safeName;
-                $destDir = dirname($targetPath);
-                
-                try {
-                    if (!is_dir($destDir)) {
-                        mkdir($destDir, 0755, true);
-                    }
-                    
-                    if (!copy($sourcePath, $targetPath)) {
-                        throw new \RuntimeException('Failed to copy file');
-                    }
-                    
-                    $attachmentData['exportFilename'] = $safeName;
-                    $this->logger->debug(
-                        '[export] Copied attachment file', [
-                        'source' => $sourcePath,
-                        'target' => $targetPath
-                        ]
-                    );
-                } catch (\Exception $e) {
-                    $this->logger->error(
-                        '[export] Failed to copy attachment', [
-                        'source' => $sourcePath,
-                        'error' => $e->getMessage()
-                        ]
-                    );
-                }
-            } else {
-                $this->logger->warning('[export] Attachment file not found', ['path' => $sourcePath]);
-            }
+
+            $safeName = 'attachment_' . $attachment->getId() . '_' . basename($attachment->getFilename());
+            $attachmentData['exportFilename'] = $safeName;
+            $attachmentData['_zipSourcePath'] = $sourcePath;
+            $attachmentData['_zipTargetPath'] = 'attachments/' . $safeName;
         }
 
         return $attachmentData;
@@ -1144,56 +1098,16 @@ class VehicleExportService
                 'createdAt' => $img->getUploadedAt()?->format('c'),
             ];
 
-            // Copy the physical image file to ZIP directory
+            // Prepare ZIP metadata for archive builder (no pre-copy to temp dir)
             if ($zipDir && $img->getPath()) {
                 // Path already includes /uploads prefix, so just prepend project dir
                 $sourcePath = $this->projectDir . $img->getPath();
                 
-                $this->logger->info(
-                    '[export] Checking image file', [
-                    'imagePath' => $img->getPath(),
-                    'sourcePath' => $sourcePath,
-                    'exists' => file_exists($sourcePath)
-                    ]
-                );
-                
-                if (file_exists($sourcePath)) {
-                    // Create a safe filename with image ID to avoid collisions
-                    $safeName = 'image_' . $img->getId() . '_' . basename($img->getPath());
-                    $targetPath = $zipDir . '/images/' . $safeName;
-                    $destDir = dirname($targetPath);
-                    
-                    try {
-                        if (!is_dir($destDir)) {
-                            mkdir($destDir, 0755, true);
-                        }
-                        
-                        if (copy($sourcePath, $targetPath)) {
-                            $imageData['exportFilename'] = $safeName;
-                            $this->logger->debug(
-                                '[export] Copied vehicle image', [
-                                'source' => $sourcePath,
-                                'target' => $targetPath
-                                ]
-                            );
-                        } else {
-                            $this->logger->error(
-                                '[export] Failed to copy vehicle image', [
-                                'source' => $sourcePath
-                                ]
-                            );
-                        }
-                    } catch (\Exception $e) {
-                        $this->logger->error(
-                            '[export] Exception copying vehicle image', [
-                            'source' => $sourcePath,
-                            'error' => $e->getMessage()
-                            ]
-                        );
-                    }
-                } else {
-                    $this->logger->warning('[export] Vehicle image file not found', ['path' => $sourcePath]);
-                }
+                // Create a safe filename with image ID to avoid collisions
+                $safeName = 'image_' . $img->getId() . '_' . basename($img->getPath());
+                $imageData['exportFilename'] = $safeName;
+                $imageData['_zipSourcePath'] = $sourcePath;
+                $imageData['_zipTargetPath'] = 'images/' . $safeName;
             }
             
             $images[] = $imageData;

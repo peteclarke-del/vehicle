@@ -43,4 +43,18 @@ class SystemCheckControllerTest extends BaseWebTestCase
         $this->assertArrayHasKey('cache', $responseData['paths']);
         $this->assertArrayHasKey('logs', $responseData['paths']);
     }
+
+    public function testAppCompatibilityEndpoint(): void
+    {
+        $this->client->request('GET', '/api/app-compatibility');
+
+        $this->assertResponseIsSuccessful();
+        $responseData = json_decode($this->client->getResponse()->getContent(), true);
+
+        $this->assertIsArray($responseData);
+        $this->assertSame('0.96.0', $responseData['server']['releaseVersion'] ?? null);
+        $this->assertSame('1.0.0', $responseData['mobile']['minimumSupportedVersion'] ?? null);
+        $this->assertSame(1, $responseData['compatibility']['apiCompatibilityVersion'] ?? null);
+        $this->assertSame('8d148cf', $responseData['server']['compatibilityBaselineCommit'] ?? null);
+    }
 }

@@ -1,5 +1,13 @@
 parameters:
     app.upload_max_bytes: '%env(int:UPLOAD_MAX_BYTES)%'
+    app.release_version: '0.96.0'
+    app.internal_version: '2026.05.19+server.compat.1'
+    app.mobile_api_compatibility_version: 1
+    app.mobile_min_supported_version: '1.0.0'
+    app.mobile_latest_supported_version: '1.0.0'
+    app.mobile_min_supported_server_release_version: '0.96.0'
+    app.mobile_compatibility_baseline_commit: '8d148cf'
+    app.mobile_compatibility_baseline_label: 'mobile stock items + consolidated migrations'
 
 services:
     _defaults:

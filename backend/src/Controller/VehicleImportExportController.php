@@ -33,8 +33,13 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 use Symfony\Contracts\Cache\TagAwareCacheInterface;
 use App\Controller\Trait\UserSecurityTrait;
+use App\Service\ExportZipArchiveBuilder;
+use App\Service\ExportZipJobRunner;
+use App\Service\ExportZipJobService;
 use App\Service\VehicleExportService;
 use App\Service\VehicleImportService;
+use Symfony\Component\Process\PhpExecutableFinder;
+use Symfony\Component\Process\Process;
 
 #[Route('/api/vehicles')]
 #[IsGranted('ROLE_USER')]
@@ -56,6 +61,12 @@ class VehicleImportExportController extends AbstractController
      */
     private VehicleImportService $importService;
 
+    private ExportZipArchiveBuilder $exportZipArchiveBuilder;
+
+    private ExportZipJobService $exportZipJobService;
+
+    private ExportZipJobRunner $exportZipJobRunner;
+
     /**
      * function __construct
      *
@@ -66,10 +77,16 @@ class VehicleImportExportController extends AbstractController
      */
     public function __construct(
         VehicleExportService $exportService,
-        VehicleImportService $importService
+        VehicleImportService $importService,
+        ExportZipArchiveBuilder $exportZipArchiveBuilder,
+        ExportZipJobService $exportZipJobService,
+        ExportZipJobRunner $exportZipJobRunner
     ) {
         $this->exportService = $exportService;
         $this->importService = $importService;
+        $this->exportZipArchiveBuilder = $exportZipArchiveBuilder;
+        $this->exportZipJobService = $exportZipJobService;
+        $this->exportZipJobRunner = $exportZipJobRunner;
     }
 
     #[Route('/export-stock', name: 'vehicles_export_stock', methods: ['GET'])]
@@ -188,13 +205,15 @@ class VehicleImportExportController extends AbstractController
      * - includeImages: false (optional, set to true to include vehicle images)
      *
      * @param Request $request
-     * @param EntityManagerInterface $entityManager
      * @param LoggerInterface $logger
      *
      * @return BinaryFileResponse|JsonResponse
      */
-    public function exportZip(Request $request, EntityManagerInterface $entityManager, LoggerInterface $logger): BinaryFileResponse|JsonResponse
+    public function exportZip(Request $request, LoggerInterface $logger): BinaryFileResponse|JsonResponse
     {
+        $workDir = null;
+        $zipPath = null;
+
         try {
             $user = $this->getUserEntity();
             if (!$user) {
@@ -226,145 +245,35 @@ class VehicleImportExportController extends AbstractController
                 }
             }
 
-            $tempDir = $projectTmpRoot . '/vehicle-export-' . uniqid();
+            $workDir = $projectTmpRoot . '/vehicle-export-' . uniqid();
             try {
-                mkdir($tempDir, 0755, true);
+                mkdir($workDir, 0755, true);
             } catch (\Throwable $e) {
-                $logger->error('Failed to create export tmp dir', ['path' => $tempDir, 'exception' => $e->getMessage()]);
+                $logger->error('Failed to create export tmp dir', ['path' => $workDir, 'exception' => $e->getMessage()]);
                 return new JsonResponse(['error' => 'Unable to prepare temporary directory for export'], 500);
             }
 
-            // Add flag to include attachment references for ZIP export
-            $modifiedRequest = $request->duplicate();
-            $modifiedRequest->query->set('includeAttachmentRefs', '1');
-
-            // Reuse export() to get vehicles JSON with attachments
-            $exportResponse = $this->export($modifiedRequest, $entityManager, $logger, $tempDir);
-            if ($exportResponse->getStatusCode() >= 400) {
-                $logger->error('Export ZIP failed: export() returned error', [
-                    'status' => $exportResponse->getStatusCode(),
-                    'body' => $exportResponse->getContent()
-                ]);
-                return new JsonResponse([
-                    'error' => 'Export failed: ' . ($exportResponse->getContent() ?: 'unknown error')
-                ], $exportResponse->getStatusCode());
-            }
-
-            $vehiclesJson = $exportResponse->getContent();
-            if (!is_string($vehiclesJson) || trim($vehiclesJson) === '') {
-                $logger->error('Export returned empty payload for ZIP');
-                return new JsonResponse(['error' => 'Export failed: empty payload'], 500);
-            }
-
-            // Parse the export data to separate into dedicated files
-            $exportData = json_decode($vehiclesJson, true);
-            if (!is_array($exportData)) {
-                return new JsonResponse(['error' => 'Export failed: invalid payload'], 500);
-            }
-
-            // Full payload for forward-compatible restore.
-            file_put_contents(
-                $tempDir . '/backup.json',
-                json_encode($exportData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)
-            );
-
-            // Backward-compatible split files.
-            file_put_contents(
-                $tempDir . '/vehicles.json',
-                json_encode($exportData['vehicles'] ?? [], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)
-            );
-
-            if (!empty($exportData['stockItems']) && is_array($exportData['stockItems'])) {
-                file_put_contents(
-                    $tempDir . '/stock.json',
-                    json_encode(['stockItems' => $exportData['stockItems']], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)
-                );
-                $logger->info('[export-zip] Included stock items', ['count' => count($exportData['stockItems'])]);
-            }
-
-            if ($includeGlobalState && !empty($exportData['globalState']) && is_array($exportData['globalState'])) {
-                file_put_contents(
-                    $tempDir . '/global.json',
-                    json_encode(['globalState' => $exportData['globalState']], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)
-                );
-                $logger->info('[export-zip] Included global state', ['groups' => count($exportData['globalState'])]);
-            }
-
-            $manifest = is_array($exportData['manifest'] ?? null)
-                ? $exportData['manifest']
-                : [];
-            $manifest['filesIncluded'] = [
-                'backup.json' => 'Full backup payload including vehicles, stockItems, globalState, manifest.',
-                'vehicles.json' => 'Vehicle records for legacy import compatibility.',
-                'stock.json' => 'Stock/inventory items (if present).',
-                'global.json' => 'Global reference/user state (if present, only if includeGlobalState=true).',
-                'attachments/' => 'Attachment files (if present).',
-                'images/' => 'Vehicle images (if present, only if includeImages=true).',
-            ];
-            $manifest['exportOptions'] = [
-                'includeGlobalState' => $includeGlobalState,
-                'includeImages' => $includeImages,
-            ];
-            file_put_contents(
-                $tempDir . '/manifest.json',
-                json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)
-            );
-
-            // Create ZIP archive
+            $isAdmin = $this->isAdminForUser($user);
             $zipPath = sys_get_temp_dir() . '/vehicle-export-' . uniqid() . '.zip';
-            $zip = new \ZipArchive();
-            if ($zip->open($zipPath, \ZipArchive::CREATE) !== true) {
-                return new JsonResponse(['error' => 'Failed to create zip'], 500);
-            }
+            $archiveResult = $this->exportZipArchiveBuilder->build(
+                $user,
+                $isAdmin,
+                $includeGlobalState,
+                $includeImages,
+                $workDir,
+                $zipPath
+            );
 
-            // Recursively add all files and directories to ZIP
-            $addToZip = function($dir, $zipPath = '') use (&$addToZip, $zip) {
-                $files = scandir($dir);
-                foreach ($files as $f) {
-                    if ($f === '.' || $f === '..') {
-                        continue;
-                    }
-                    $fullPath = $dir . '/' . $f;
-                    $zipFilePath = $zipPath ? $zipPath . '/' . $f : $f;
-                    
-                    if (is_dir($fullPath)) {
-                        $zip->addEmptyDir($zipFilePath);
-                        $addToZip($fullPath, $zipFilePath);
-                    } else {
-                        $zip->addFile($fullPath, $zipFilePath);
-                    }
-                }
-            };
-            
-            $addToZip($tempDir);
-            $zip->close();
+            $zipSize = $archiveResult['zipSize'] ?? 0;
+            $logger->info('Export ZIP archive created', ['zipPath' => $zipPath, 'sizeBytes' => $zipSize]);
 
-            $logger->info('Export ZIP archive created', ['zipPath' => $zipPath, 'sizeBytes' => filesize($zipPath)]);
-
-            // Cleanup temp dir recursively
-            $deleteDir = function($dir) use (&$deleteDir) {
-                if (!is_dir($dir)) {
-                    return;
-                }
-                $files = scandir($dir);
-                foreach ($files as $f) {
-                    if ($f === '.' || $f === '..') {
-                        continue;
-                    }
-                    $fullPath = $dir . '/' . $f;
-                    if (is_dir($fullPath)) {
-                        $deleteDir($fullPath);
-                    } else {
-                        @unlink($fullPath);
-                    }
-                }
-                @rmdir($dir);
-            };
-            $deleteDir($tempDir);
+            $this->removeDirectory((string) $workDir);
 
             $response = new BinaryFileResponse($zipPath);
             $response->headers->set('Content-Type', 'application/zip');
-            $response->headers->set('Content-Encoding', 'gzip');
+            if ($zipSize > 0) {
+                $response->headers->set('Content-Length', (string) $zipSize);
+            }
             $response->setContentDisposition(ResponseHeaderBag::DISPOSITION_ATTACHMENT, 'vehicles-export.zip');
             if ($this->getParameter('kernel.environment') !== 'test') {
                 $response->deleteFileAfterSend(true);
@@ -373,6 +282,14 @@ class VehicleImportExportController extends AbstractController
             $logger->info('Export ZIP completed', ['zipPath' => $zipPath]);
             return $response;
         } catch (\Exception $e) {
+            if (is_string($workDir) && $workDir !== '') {
+                $this->removeDirectory($workDir);
+            }
+
+            if (is_string($zipPath) && $zipPath !== '' && is_file($zipPath)) {
+                @unlink($zipPath);
+            }
+
             $logger->error('Zip export failed with exception', [
                 'exception' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
@@ -381,6 +298,271 @@ class VehicleImportExportController extends AbstractController
                 'error' => 'Export failed: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    #[Route('/export-zip-async', name: 'vehicles_export_zip_async', methods: ['POST'])]
+    public function exportZipAsync(Request $request, LoggerInterface $logger): JsonResponse
+    {
+        $jobId = null;
+
+        try {
+            $user = $this->getUserEntity();
+            if (!$user) {
+                return new JsonResponse(['error' => 'Unauthorized'], 401);
+            }
+
+            $includeGlobalState = $request->query->getBoolean('includeGlobalState', false);
+            $includeImages = $request->query->getBoolean('includeImages', false);
+
+            $job = $this->exportZipJobService->createJob($user, $includeGlobalState, $includeImages);
+            $jobId = (string) ($job['id'] ?? '');
+
+            if ($jobId === '') {
+                return new JsonResponse(['error' => 'Failed to create export job'], 500);
+            }
+
+            if ((string) $this->getParameter('kernel.environment') === 'test') {
+                $this->exportZipJobRunner->run($jobId);
+            } else {
+                $pid = $this->startExportZipWorker($jobId, $logger);
+                if ($pid <= 0) {
+                    throw new \RuntimeException('Failed to launch export worker process');
+                }
+
+                $this->exportZipJobService->markRunning(
+                    $jobId,
+                    'Worker started. Waiting for export runner...',
+                    10,
+                    'prepare'
+                );
+                $this->exportZipJobService->setWorkerPid($jobId, $pid);
+            }
+
+            $statusPath = '/api/vehicles/export-zip-jobs/' . $jobId;
+            $downloadPath = $statusPath . '/download';
+            $jobData = $this->exportZipJobService->getJob($jobId) ?? $job;
+
+            return new JsonResponse(
+                $this->exportZipJobService->getPublicPayload($jobData, $statusPath, $downloadPath),
+                202
+            );
+        } catch (\Throwable $e) {
+            if (is_string($jobId) && $jobId !== '') {
+                $this->exportZipJobService->markFailed($jobId, 'Export worker failed to start: ' . $e->getMessage());
+            }
+
+            $logger->error('Async ZIP export enqueue failed', ['error' => $e->getMessage()]);
+
+            return new JsonResponse([
+                'error' => 'Failed to queue export job: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    #[Route('/export-zip-jobs/{jobId}', name: 'vehicles_export_zip_job_status', methods: ['GET'])]
+    public function exportZipJobStatus(string $jobId): JsonResponse
+    {
+        $user = $this->getUserEntity();
+        if (!$user) {
+            return new JsonResponse(['error' => 'Unauthorized'], 401);
+        }
+
+        $this->exportZipJobService->pruneExpiredJobs();
+        $job = $this->exportZipJobService->getJob($jobId);
+        if (!is_array($job)) {
+            return new JsonResponse(['error' => 'Export job not found'], 404);
+        }
+
+        $isAdmin = $this->isAdminForUser($user);
+        if (!$this->exportZipJobService->canAccessJob($job, $user, $isAdmin)) {
+            return new JsonResponse(['error' => 'Export job not found'], 404);
+        }
+
+        $statusPath = '/api/vehicles/export-zip-jobs/' . $jobId;
+        $downloadPath = $statusPath . '/download';
+
+        return new JsonResponse(
+            $this->exportZipJobService->getPublicPayload($job, $statusPath, $downloadPath)
+        );
+    }
+
+    #[Route('/export-zip-jobs/{jobId}/cancel', name: 'vehicles_export_zip_job_cancel', methods: ['POST'])]
+    public function exportZipJobCancel(string $jobId, LoggerInterface $logger): JsonResponse
+    {
+        $user = $this->getUserEntity();
+        if (!$user) {
+            return new JsonResponse(['error' => 'Unauthorized'], 401);
+        }
+
+        $job = $this->exportZipJobService->getJob($jobId);
+        if (!is_array($job)) {
+            return new JsonResponse(['error' => 'Export job not found'], 404);
+        }
+
+        $isAdmin = $this->isAdminForUser($user);
+        if (!$this->exportZipJobService->canAccessJob($job, $user, $isAdmin)) {
+            return new JsonResponse(['error' => 'Export job not found'], 404);
+        }
+
+        $status = (string) ($job['status'] ?? '');
+        if (in_array($status, ['completed', 'failed', 'cancelled'], true)) {
+            $statusPath = '/api/vehicles/export-zip-jobs/' . $jobId;
+            $downloadPath = $statusPath . '/download';
+
+            return new JsonResponse(
+                $this->exportZipJobService->getPublicPayload($job, $statusPath, $downloadPath)
+            );
+        }
+
+        $this->exportZipJobService->markCancelling($jobId);
+
+        $workerPid = (int) ($job['workerPid'] ?? 0);
+        if ($workerPid > 0) {
+            $this->terminateWorkerProcess($workerPid, $logger, $jobId);
+        }
+
+        $this->exportZipJobService->cleanupWorkDirectory($jobId);
+        $archivePath = $this->exportZipJobService->getArchivePath($jobId);
+        if (is_file($archivePath)) {
+            @unlink($archivePath);
+        }
+
+        $updated = $this->exportZipJobService->markCancelled($jobId, 'Export cancelled by user');
+        $statusPath = '/api/vehicles/export-zip-jobs/' . $jobId;
+        $downloadPath = $statusPath . '/download';
+
+        return new JsonResponse(
+            $this->exportZipJobService->getPublicPayload($updated ?? $job, $statusPath, $downloadPath)
+        );
+    }
+
+    #[Route('/export-zip-jobs/{jobId}/download', name: 'vehicles_export_zip_job_download', methods: ['GET'])]
+    public function exportZipJobDownload(string $jobId): BinaryFileResponse|JsonResponse
+    {
+        $user = $this->getUserEntity();
+        if (!$user) {
+            return new JsonResponse(['error' => 'Unauthorized'], 401);
+        }
+
+        $job = $this->exportZipJobService->getJob($jobId);
+        if (!is_array($job)) {
+            return new JsonResponse(['error' => 'Export job not found'], 404);
+        }
+
+        $isAdmin = $this->isAdminForUser($user);
+        if (!$this->exportZipJobService->canAccessJob($job, $user, $isAdmin)) {
+            return new JsonResponse(['error' => 'Export job not found'], 404);
+        }
+
+        if (($job['status'] ?? '') !== 'completed') {
+            return new JsonResponse(['error' => 'Export is not ready yet'], 409);
+        }
+
+        $zipPath = $this->exportZipJobService->getArchivePathFromJob($job);
+        if (!is_string($zipPath) || $zipPath === '') {
+            return new JsonResponse(['error' => 'Export archive no longer available'], 410);
+        }
+
+        $zipSize = filesize($zipPath);
+        $filename = $job['output']['downloadFilename'] ?? 'vehicles-export.zip';
+        $filename = is_string($filename) && $filename !== '' ? $filename : 'vehicles-export.zip';
+
+        $response = new BinaryFileResponse($zipPath);
+        $response->headers->set('Content-Type', 'application/zip');
+        if (is_int($zipSize) || is_float($zipSize)) {
+            $response->headers->set('Content-Length', (string) $zipSize);
+        }
+        $response->setContentDisposition(ResponseHeaderBag::DISPOSITION_ATTACHMENT, $filename);
+
+        return $response;
+    }
+
+    private function startExportZipWorker(string $jobId, LoggerInterface $logger): int
+    {
+        $projectDirParam = $this->getParameter('kernel.project_dir');
+        if (!is_string($projectDirParam)) {
+            throw new \RuntimeException('Invalid project directory configuration');
+        }
+
+        $consolePath = $projectDirParam . '/bin/console';
+        if (!is_file($consolePath)) {
+            throw new \RuntimeException('Console executable not found');
+        }
+
+        $phpFinder = new PhpExecutableFinder();
+        $phpBinary = $phpFinder->find(false) ?: 'php';
+        $environment = (string) $this->getParameter('kernel.environment');
+
+        $command = sprintf(
+            'nohup %s %s app:export-zip-job %s --env=%s --no-debug > /dev/null 2>&1 & echo $!',
+            escapeshellarg($phpBinary),
+            escapeshellarg($consolePath),
+            escapeshellarg($jobId),
+            escapeshellarg($environment)
+        );
+
+        $process = Process::fromShellCommandline($command, $projectDirParam);
+        $process->setTimeout(10);
+        $process->run();
+
+        if (!$process->isSuccessful()) {
+            throw new \RuntimeException('Failed to start export worker process');
+        }
+
+        $pidOutput = trim((string) $process->getOutput());
+        $pid = ctype_digit($pidOutput) ? (int) $pidOutput : 0;
+        if ($pid <= 0) {
+            throw new \RuntimeException('Worker PID could not be determined');
+        }
+
+        $logger->info('Async ZIP export worker started', [
+            'jobId' => $jobId,
+            'pid' => $pid,
+        ]);
+
+        return $pid;
+    }
+
+    private function terminateWorkerProcess(int $pid, LoggerInterface $logger, string $jobId): void
+    {
+        if ($pid <= 0) {
+            return;
+        }
+
+        $kill = Process::fromShellCommandline('kill -TERM ' . (int)$pid . ' >/dev/null 2>&1 || true');
+        $kill->setTimeout(5);
+        $kill->run();
+
+        $logger->info('Requested async export worker termination', [
+            'jobId' => $jobId,
+            'pid' => $pid,
+        ]);
+    }
+
+    private function removeDirectory(string $directory): void
+    {
+        if (!is_dir($directory)) {
+            return;
+        }
+
+        $files = scandir($directory);
+        if (!is_array($files)) {
+            return;
+        }
+
+        foreach ($files as $file) {
+            if ($file === '.' || $file === '..') {
+                continue;
+            }
+            $path = $directory . '/' . $file;
+            if (is_dir($path)) {
+                $this->removeDirectory($path);
+            } else {
+                @unlink($path);
+            }
+        }
+
+        @rmdir($directory);
     }
 
     #[Route('/import-zip', name: 'vehicles_import_zip', methods: ['POST'])]

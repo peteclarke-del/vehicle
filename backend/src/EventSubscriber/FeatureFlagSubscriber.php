@@ -80,6 +80,7 @@ class FeatureFlagSubscriber implements EventSubscriberInterface
             '/api/user/preferences',
             '/api/admin/',
             '/api/system-check',
+            '/api/app-compatibility',
             '/api/health',
             '/api/client-logs',
             '/api/ebay/',

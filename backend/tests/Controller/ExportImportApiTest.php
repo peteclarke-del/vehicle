@@ -79,11 +79,25 @@ class ExportImportApiTest extends BaseWebTestCase
 
         $this->assertResponseIsSuccessful();
 
-        $contentType = (string) $this->client->getResponse()->headers->get('Content-Type');
-        $contentDisposition = (string) $this->client->getResponse()->headers->get('Content-Disposition');
+        $response = $this->client->getResponse();
+        $contentType = (string) $response->headers->get('Content-Type');
+        $contentDisposition = (string) $response->headers->get('Content-Disposition');
 
         $this->assertStringContainsString('zip', strtolower($contentType));
         $this->assertStringContainsString('.zip', $contentDisposition);
+        $this->assertInstanceOf(BinaryFileResponse::class, $response);
+        $this->assertNull($response->headers->get('Content-Encoding'));
+
+        $zipPath = (string) $response->getFile()?->getPathname();
+        $this->assertFileExists($zipPath);
+
+        $zip = new \ZipArchive();
+        $opened = $zip->open($zipPath);
+        $this->assertTrue($opened === true, 'Failed to open exported ZIP');
+        $this->assertNotFalse($zip->locateName('backup.json'));
+        $this->assertNotFalse($zip->locateName('vehicles.json'));
+        $this->assertNotFalse($zip->locateName('stock.json'));
+        $zip->close();
     }
 
     public function testExportZipExcludeImagesWhenIncludeImagesFalse(): void
@@ -158,6 +172,57 @@ class ExportImportApiTest extends BaseWebTestCase
             || empty($vehiclePayload['vehicleImages']),
             'Vehicle payload should not include vehicleImages data when includeImages=false'
         );
+    }
+
+    public function testExportZipAsyncQueueStatusAndDownload(): void
+    {
+        $this->client->request('POST', '/api/vehicles/export-zip-async', [], [], [
+            'HTTP_X_TEST_MOCK_AUTH' => $this->apiUserEmail,
+        ]);
+
+        $this->assertResponseStatusCodeSame(202);
+        $queued = json_decode($this->client->getResponse()->getContent(), true);
+
+        $this->assertIsArray($queued);
+        $this->assertArrayHasKey('jobId', $queued);
+        $this->assertArrayHasKey('statusUrl', $queued);
+
+        $statusUrl = (string) ($queued['statusUrl'] ?? '');
+        $this->assertNotSame('', $statusUrl);
+
+        $statusData = null;
+        for ($attempt = 0; $attempt < 25; $attempt++) {
+            $this->client->request('GET', $statusUrl, [], [], [
+                'HTTP_X_TEST_MOCK_AUTH' => $this->apiUserEmail,
+            ]);
+            $this->assertResponseIsSuccessful();
+
+            $statusData = json_decode($this->client->getResponse()->getContent(), true);
+            if (($statusData['status'] ?? null) === 'completed') {
+                break;
+            }
+
+            usleep(100000);
+        }
+
+        $this->assertIsArray($statusData);
+        $this->assertSame('completed', $statusData['status'] ?? null);
+        $this->assertArrayHasKey('downloadUrl', $statusData);
+        $this->assertNotEmpty($statusData['downloadUrl']);
+
+        $this->client->request('GET', (string) $statusData['downloadUrl'], [], [], [
+            'HTTP_X_TEST_MOCK_AUTH' => $this->apiUserEmail,
+        ]);
+
+        $this->assertResponseIsSuccessful();
+        $downloadResponse = $this->client->getResponse();
+        $this->assertInstanceOf(BinaryFileResponse::class, $downloadResponse);
+
+        $contentType = (string) $downloadResponse->headers->get('Content-Type');
+        $this->assertStringContainsString('zip', strtolower($contentType));
+
+        $zipPath = (string) $downloadResponse->getFile()?->getPathname();
+        $this->assertFileExists($zipPath);
     }
 
     public function testImportJsonWithStockItems(): void

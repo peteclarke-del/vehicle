@@ -21,7 +21,10 @@ class SystemCheckController extends AbstractController
     {
         $projectDir = $this->getParameter('kernel.project_dir');
         if (!is_string($projectDir)) {
-            return new JsonResponse(['error' => 'Project directory not configured'], 500);
+            return new JsonResponse(
+                ['error' => 'Project directory not configured'],
+                500
+            );
         }
 
         $results = [
@@ -49,8 +52,10 @@ class SystemCheckController extends AbstractController
         // Paths to check
         $paths = [
             'uploads' => $projectDir . DIRECTORY_SEPARATOR . 'uploads',
-            'cache' => $projectDir . DIRECTORY_SEPARATOR . 'var' . DIRECTORY_SEPARATOR . 'cache',
-            'logs' => $projectDir . DIRECTORY_SEPARATOR . 'var' . DIRECTORY_SEPARATOR . 'log',
+            'cache' => $projectDir . DIRECTORY_SEPARATOR . 'var'
+                . DIRECTORY_SEPARATOR . 'cache',
+            'logs' => $projectDir . DIRECTORY_SEPARATOR . 'var'
+                . DIRECTORY_SEPARATOR . 'log',
         ];
 
         foreach ($paths as $key => $path) {
@@ -71,6 +76,53 @@ class SystemCheckController extends AbstractController
             }
         }
 
-        return $this->json($results, $ok ? Response::HTTP_OK : Response::HTTP_SERVICE_UNAVAILABLE);
+        return $this->json(
+            $results,
+            $ok ? Response::HTTP_OK : Response::HTTP_SERVICE_UNAVAILABLE
+        );
+    }
+
+    #[Route(
+        '/api/app-compatibility',
+        name: 'api_app_compatibility',
+        methods: ['GET']
+    )]
+    public function appCompatibility(): JsonResponse
+    {
+        return $this->json(
+            [
+                'server' => [
+                    'releaseVersion' => (string) $this->getParameter(
+                        'app.release_version'
+                    ),
+                    'internalVersion' => (string) $this->getParameter(
+                        'app.internal_version'
+                    ),
+                    'compatibilityBaselineCommit' => (string) $this->getParameter(
+                        'app.mobile_compatibility_baseline_commit'
+                    ),
+                    'compatibilityBaselineLabel' => (string) $this->getParameter(
+                        'app.mobile_compatibility_baseline_label'
+                    ),
+                ],
+                'mobile' => [
+                    'minimumSupportedVersion' => (string) $this->getParameter(
+                        'app.mobile_min_supported_version'
+                    ),
+                    'latestSupportedVersion' => (string) $this->getParameter(
+                        'app.mobile_latest_supported_version'
+                    ),
+                    'minimumSupportedServerReleaseVersion' => (string) $this->getParameter(
+                        'app.mobile_min_supported_server_release_version'
+                    ),
+                ],
+                'compatibility' => [
+                    'apiCompatibilityVersion' => (int) $this->getParameter(
+                        'app.mobile_api_compatibility_version'
+                    ),
+                    'checkedAt' => (new \DateTimeImmutable())->format(DATE_ATOM),
+                ],
+            ]
+        );
     }
 }
