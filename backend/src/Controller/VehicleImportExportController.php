@@ -953,8 +953,10 @@ class VehicleImportExportController extends AbstractController
 
             $content = (string)$request->getContent();
 
-            // Protect against excessively large imports
-            if (strlen($content) > 500000) {
+            // Protect public JSON import endpoint from oversized payloads.
+            // ZIP imports call this method internally with $zipExtractDir set,
+            // so they must bypass this check.
+            if ($zipExtractDir === null && strlen($content) > 500000) {
                 return new JsonResponse(['error' => 'Payload too large'], Response::HTTP_REQUEST_ENTITY_TOO_LARGE);
             }
 
