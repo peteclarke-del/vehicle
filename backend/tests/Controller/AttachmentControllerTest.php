@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Controller;
 
+use App\Entity\User;
 use App\Tests\TestCase\BaseWebTestCase;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
@@ -17,6 +18,11 @@ class AttachmentControllerTest extends BaseWebTestCase
 
     public function testUploadAttachmentAndFetchList(): void
     {
+        $em = $this->getEntityManager();
+        $user = $em->getRepository(User::class)
+            ->findOneBy(['email' => 'test@example.com']);
+        $vehicle = $this->createTestVehicle($user, 'ATT-' . uniqid());
+
         $tmpFile = tempnam(sys_get_temp_dir(), 'att_');
         file_put_contents($tmpFile, '%PDF-1.4 test');
 
@@ -28,25 +34,38 @@ class AttachmentControllerTest extends BaseWebTestCase
             true
         );
 
-        $this->client->request('POST', '/api/attachments', [
-            'entityType' => 'vehicle',
-            'entityId' => 1,
-        ], [
-            'file' => $uploadedFile,
-        ], [
-            'HTTP_AUTHORIZATION' => $this->getAuthToken(),
-        ]);
-
-        $this->assertContains($this->client->getResponse()->getStatusCode(), [201, 404]);
-
-        if ($this->client->getResponse()->getStatusCode() === 201) {
-            $data = json_decode($this->client->getResponse()->getContent(), true);
-            $this->assertArrayHasKey('id', $data);
-
-            $this->client->request('GET', '/api/attachments', [], [], [
+        $this->client->request(
+            'POST',
+            '/api/attachments',
+            [
+                'entityType' => 'vehicle',
+                'entityId' => $vehicle->getId(),
+            ],
+            [
+                'file' => $uploadedFile,
+            ],
+            [
                 'HTTP_AUTHORIZATION' => $this->getAuthToken(),
-            ]);
-            $this->assertResponseIsSuccessful();
-        }
+            ]
+        );
+
+        $this->assertSame(201, $this->client->getResponse()->getStatusCode());
+        $data = json_decode(
+            (string) $this->client->getResponse()->getContent(),
+            true
+        );
+        $this->assertIsArray($data);
+        $this->assertArrayHasKey('id', $data);
+
+        $this->client->request(
+            'GET',
+            '/api/attachments',
+            [],
+            [],
+            [
+                'HTTP_AUTHORIZATION' => $this->getAuthToken(),
+            ]
+        );
+        $this->assertResponseIsSuccessful();
     }
 }

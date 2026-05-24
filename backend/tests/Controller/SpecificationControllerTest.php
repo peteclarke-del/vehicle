@@ -11,21 +11,38 @@ class SpecificationControllerTest extends BaseWebTestCase
 {
     public function testGetSpecificationsWithoutAuthentication(): void
     {
-        $this->client->request('GET', '/api/specifications/vehicle/1');
-        $this->assertContains($this->client->getResponse()->getStatusCode(), [401, 403, 404]);
+        $this->client->request('GET', '/api/vehicles/1/specifications');
+        $this->assertSame(404, $this->client->getResponse()->getStatusCode());
     }
 
     public function testSetSpecificationsForOwnedVehicle(): void
     {
         $em = $this->getEntityManager();
-        $user = $em->getRepository(User::class)->findOneBy(['email' => 'test@example.com']);
+        $user = $em->getRepository(User::class)
+            ->findOneBy(['email' => 'test@example.com']);
         $vehicle = $this->createTestVehicle($user, 'SPEC-' . uniqid());
 
-        $this->client->request('PUT', '/api/specifications/vehicle/' . $vehicle->getId(), [], [], [
-            'HTTP_AUTHORIZATION' => $this->getAuthToken(),
-            'CONTENT_TYPE' => 'application/json',
-        ], json_encode(['specifications' => ['enginePower' => '150hp']]));
+        $payload = ['specifications' => ['enginePower' => '150hp']];
 
-        $this->assertContains($this->client->getResponse()->getStatusCode(), [200, 201, 400, 404, 500]);
+        $this->client->request(
+            'PUT',
+            '/api/vehicles/' . $vehicle->getId() . '/specifications',
+            [],
+            [],
+            [
+                'HTTP_AUTHORIZATION' => $this->getAuthToken(),
+                'CONTENT_TYPE' => 'application/json',
+            ],
+            json_encode($payload)
+        );
+
+        $this->assertSame(200, $this->client->getResponse()->getStatusCode());
+        $data = json_decode(
+            (string) $this->client->getResponse()->getContent(),
+            true
+        );
+        $this->assertIsArray($data);
+        $this->assertArrayHasKey('message', $data);
+        $this->assertArrayHasKey('specification', $data);
     }
 }

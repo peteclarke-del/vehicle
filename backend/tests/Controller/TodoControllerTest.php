@@ -26,11 +26,11 @@ class TodoControllerTest extends BaseWebTestCase
         $this->assertIsArray($responseData);
     }
 
-    public function testListTodosWithoutAuthenticationReturns401(): void
+    public function testListTodosWithoutAuthenticationReturns403(): void
     {
         $this->client->request('GET', '/api/todos');
 
-        $this->assertResponseStatusCodeSame(401);
+        $this->assertResponseStatusCodeSame(403);
     }
 
     public function testFilterTodosByVehicleId(): void

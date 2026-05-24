@@ -274,7 +274,7 @@ class StockItemController extends AbstractController
         $partNumber = isset($data['partNumber']) ? trim((string) $data['partNumber']) : null;
         $manufacturer = isset($data['manufacturer']) ? trim((string) $data['manufacturer']) : null;
         $warranty = isset($data['warranty']) ? trim((string) $data['warranty']) : null;
-        $quantity = isset($data['quantity']) ? (float) $data['quantity'] : (float) ($item->getQuantity() ?? 0);
+        $quantity = isset($data['quantity']) ? (float) $data['quantity'] : (float) $item->getQuantity();
         if ($quantity < 0) {
             return $this->json(['error' => 'Quantity cannot be negative'], 400);
         }

@@ -13,7 +13,6 @@ use App\Entity\VehicleAssignment;
 use App\Entity\VehicleType;
 use App\Entity\Attachment;
 use App\Entity\StockItem;
-use App\Service\ReceiptOcrService;
 use App\Service\UrlScraperService;
 use Psr\Log\LoggerInterface;
 use App\Service\RepairCostCalculator;
@@ -42,7 +41,6 @@ class PartController extends AbstractController
      * function __construct
      *
      * @param EntityManagerInterface $entityManager
-     * @param ReceiptOcrService $ocrService
      * @param UrlScraperService $scraperService
      * @param LoggerInterface $logger
      * @param RepairCostCalculator $repairCostCalculator
@@ -53,7 +51,6 @@ class PartController extends AbstractController
      */
     public function __construct(
         private EntityManagerInterface $entityManager,
-        private ReceiptOcrService $ocrService,
         private UrlScraperService $scraperService,
         private LoggerInterface $logger,
         private RepairCostCalculator $repairCostCalculator,
@@ -112,7 +109,7 @@ class PartController extends AbstractController
             if (
                 !$vehicle
                 || (!$this->isAdminForUser($user)
-                    && $vehicle->getOwner()->getId() !== $user->getId()
+                    && $vehicle->getOwner()?->getId() !== $user->getId()
                     && (!$assignment || !$assignment->canView()))
             ) {
                 return $this->json(['error' => 'Vehicle not found'], 404);
@@ -160,7 +157,7 @@ class PartController extends AbstractController
                 $ownIds = array_map(fn($v) => $v->getId(), $ownVehicles);
                 $assignedVehicles = [];
                 foreach ($assignments as $a) {
-                    if ($a->canView() && !in_array($a->getVehicle()->getId(), $ownIds, true)) {
+                    if ($a->canView() && !in_array($a->getVehicle()?->getId(), $ownIds, true)) {
                         $assignedVehicles[] = $a->getVehicle();
                     }
                 }
@@ -277,7 +274,7 @@ class PartController extends AbstractController
         $vehicle = null;
         if (!empty($data['vehicleId'])) {
             $vehicle = $this->entityManager->getRepository(Vehicle::class)->find($data['vehicleId']);
-            if (!$vehicle || (!$this->isAdminForUser($user) && $vehicle->getOwner()->getId() !== $user->getId())) {
+            if (!$vehicle || (!$this->isAdminForUser($user) && $vehicle->getOwner()?->getId() !== $user->getId())) {
                 return $this->json(['error' => 'Vehicle not found'], 404);
             }
         }
@@ -300,7 +297,7 @@ class PartController extends AbstractController
             if ($stockConsumeQty <= 0) {
                 $stockConsumeQty = 1;
             }
-            $available = (float) ($stockItem->getQuantity() ?? '0');
+            $available = (float) $stockItem->getQuantity();
             if ($available < $stockConsumeQty) {
                 return $this->json(['error' => 'Insufficient stock quantity'], 400);
             }
@@ -345,13 +342,13 @@ class PartController extends AbstractController
                 'part',
                 $this->stockLedgerService->categoryForPart($part->getDescription() ?? '', $part->getPartCategory()?->getName()),
                 $part->getSupplier(),
-                (float) ($part->getQuantity() ?? '0')
+                (float) $part->getQuantity()
             );
             $this->entityManager->flush();
         }
 
         if ($stockItem instanceof StockItem) {
-            $remaining = max(0, (float) ($stockItem->getQuantity() ?? '0') - $stockConsumeQty);
+            $remaining = max(0, (float) $stockItem->getQuantity() - $stockConsumeQty);
             $stockItem->setQuantity(number_format($remaining, 2, '.', ''));
             $stockItem->touch();
             $this->entityManager->flush();
@@ -396,14 +393,14 @@ class PartController extends AbstractController
 
         $wasStock = $part->getVehicle() === null;
         $oldStockUser = $part->getUser();
-        $oldStockQty = (float) ($part->getQuantity() ?? '0');
+        $oldStockQty = (float) $part->getQuantity();
         $oldStockCategory = $this->stockLedgerService->categoryForPart($part->getDescription() ?? '', $part->getPartCategory()?->getName());
         $oldStockSupplier = $part->getSupplier();
 
         if (array_key_exists('vehicleId', $data)) {
             if (!empty($data['vehicleId'])) {
                 $vehicle = $this->entityManager->getRepository(Vehicle::class)->find((int) $data['vehicleId']);
-                if (!$vehicle || (!$this->isAdminForUser($user) && $vehicle->getOwner()->getId() !== $user->getId())) {
+                if (!$vehicle || (!$this->isAdminForUser($user) && $vehicle->getOwner()?->getId() !== $user->getId())) {
                     return $this->json(['error' => 'Vehicle not found'], 404);
                 }
                 $part->setVehicle($vehicle);
@@ -427,7 +424,7 @@ class PartController extends AbstractController
                 ? ($part->getPrice() ?? $part->getCost()) 
                 : '0.00';
             $serviceItem->setCost($costToUse);
-            $serviceItem->setQuantity($part->getQuantity() ?? 1);
+            $serviceItem->setQuantity($part->getQuantity());
             $serviceItem->setDescription($part->getDescription() ?? $part->getName());
             $this->entityManager->persist($serviceItem);
         }
@@ -447,11 +444,11 @@ class PartController extends AbstractController
                     'part',
                     $this->stockLedgerService->categoryForPart($part->getDescription() ?? '', $part->getPartCategory()?->getName()),
                     $part->getSupplier(),
-                    (float) ($part->getQuantity() ?? '0')
+                    (float) $part->getQuantity()
                 );
             } elseif ($wasStock && $isStock && $part->getUser() instanceof User && $oldStockUser instanceof User) {
                 // Stock item edited: reconcile stock bucket changes
-                $newQty = (float) ($part->getQuantity() ?? '0');
+                $newQty = (float) $part->getQuantity();
                 $newCategory = $this->stockLedgerService->categoryForPart($part->getDescription() ?? '', $part->getPartCategory()?->getName());
                 $newSupplier = $part->getSupplier();
                 $sameBucket = $newCategory === $oldStockCategory && (string) ($newSupplier ?? '') === (string) ($oldStockSupplier ?? '') && $part->getUser()->getId() === $oldStockUser->getId();
@@ -521,7 +518,7 @@ class PartController extends AbstractController
                 'part',
                 $this->stockLedgerService->categoryForPart($part->getDescription() ?? '', $part->getPartCategory()?->getName()),
                 $part->getSupplier(),
-                -((float) ($part->getQuantity() ?? '0'))
+                -((float) $part->getQuantity())
             );
         }
 
@@ -546,7 +543,7 @@ class PartController extends AbstractController
      * function updatePartFromData
      *
      * @param Part $part
-     * @param array $data
+     * @param array<string, mixed> $data
      *
      * @return void
      */
@@ -586,7 +583,7 @@ class PartController extends AbstractController
         if (array_key_exists('price', $data) || array_key_exists('quantity', $data)) {
             $p = $data['price'] ?? $part->getPrice();
             $q = array_key_exists('quantity', $data) ? (float)$data['quantity'] : (float)$part->getQuantity();
-            if ($p !== null && $q !== null) {
+            if ($p !== null) {
                 $computed = number_format(((float)$p) * $q, 2, '.', '');
                 $part->setCost((string)$computed);
             }
@@ -800,7 +797,7 @@ class PartController extends AbstractController
     private function partBelongsToUser(\App\Entity\Part $part, User $user): bool
     {
         if ($part->getVehicle() !== null) {
-            return $part->getVehicle()->getOwner()->getId() === $user->getId();
+            return $part->getVehicle()->getOwner()?->getId() === $user->getId();
         }
         return $part->getUser()?->getId() === $user->getId();
     }

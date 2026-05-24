@@ -71,7 +71,7 @@ const Vehicles = () => {
   const [viewMode, setViewMode] = useState(() => {
     return SafeStorage.get('vehiclesViewMode', 'card');
   });
-  const { orderBy, order, handleRequestSort } = usePersistedSort('vehicles', 'name', 'asc');
+  const { orderBy, order, handleRequestSort } = usePersistedSort('vehicles', 'vehicleType', 'asc');
   const [purgeDialogOpen, setPurgeDialogOpen] = useState(false);
   const [purgeMode, setPurgeMode] = useState('vehicles-only');
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
@@ -125,7 +125,35 @@ const Vehicles = () => {
   };
 
   const sortedVehicles = React.useMemo(() => {
+    const compareTextAsc = (left, right) => {
+      const aValue = (left || '').toString().toLowerCase();
+      const bValue = (right || '').toString().toLowerCase();
+      return aValue.localeCompare(bValue);
+    };
+
+    const compareByTypeMakeModelYearAsc = (a, b) => {
+      const typeCompare = compareTextAsc(a.vehicleType?.name, b.vehicleType?.name);
+      if (typeCompare !== 0) return typeCompare;
+
+      const makeCompare = compareTextAsc(a.make, b.make);
+      if (makeCompare !== 0) return makeCompare;
+
+      const modelCompare = compareTextAsc(a.model, b.model);
+      if (modelCompare !== 0) return modelCompare;
+
+      const yearA = parseInt(a.year, 10) || 0;
+      const yearB = parseInt(b.year, 10) || 0;
+      if (yearA !== yearB) return yearA - yearB;
+
+      return compareTextAsc(a.name, b.name);
+    };
+
     const comparator = (a, b) => {
+      if (orderBy === 'vehicleType') {
+        const result = compareByTypeMakeModelYearAsc(a, b);
+        return order === 'asc' ? result : -result;
+      }
+
       let aValue = a[orderBy];
       let bValue = b[orderBy];
 

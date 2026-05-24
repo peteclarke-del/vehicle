@@ -109,12 +109,26 @@ const TodoDialog = ({ open, onClose, vehicleId, todo }) => {
   const availableConsumables = consumables.filter((cItem) => !cItem.lastChanged || selectedConsumables.some((sc) => sc.id === cItem.id));
 
   return (
-    <Dialog open={open} onClose={() => onClose(false)} fullWidth maxWidth="md">
-      <DialogTitle>{todo ? t('todo.edit') || 'Edit TODO' : t('todo.add') || 'Add TODO'}</DialogTitle>
+    <Dialog open={open} onClose={() => onClose(false)} fullWidth maxWidth="md" aria-labelledby="todo-dialog-title">
+      <DialogTitle id="todo-dialog-title">{todo ? t('todo.edit') || 'Edit TODO' : t('todo.add') || 'Add TODO'}</DialogTitle>
       <DialogContent>
         <Box display="flex" flexDirection="column" gap={2} mt={1}>
-          <TextField label={t('todo.titleLabel') || 'Title'} value={title} onChange={(e) => setTitle(e.target.value)} fullWidth />
-          <TextField label={t('todo.description') || 'Description'} value={description} onChange={(e) => setDescription(e.target.value)} fullWidth multiline rows={3} />
+          <TextField
+            label={t('todo.titleLabel') || 'Title'}
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            fullWidth
+            inputProps={{ 'aria-label': t('todo.titleLabel') || 'Title' }}
+          />
+          <TextField
+            label={t('todo.description') || 'Description'}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            fullWidth
+            multiline
+            rows={3}
+            inputProps={{ 'aria-label': t('todo.description') || 'Description' }}
+          />
 
           <Autocomplete
             multiple
@@ -125,7 +139,7 @@ const TodoDialog = ({ open, onClose, vehicleId, todo }) => {
             renderTags={(value, getTagProps) => value.map((option, index) => (
               <Chip label={formatStockLabel(option, option.description || option.partNumber || '')} {...getTagProps({ index })} />
             ))}
-            renderInput={(params) => <TextField {...params} label={t('todo.parts') || 'Parts'} />}
+            renderInput={(params) => <TextField {...params} label={t('todo.parts') || 'Parts'} inputProps={{ ...params.inputProps, 'aria-label': t('todo.parts') || 'Parts' }} />}
           />
 
           <Autocomplete
@@ -140,17 +154,28 @@ const TodoDialog = ({ open, onClose, vehicleId, todo }) => {
                 {...getTagProps({ index })}
               />
             ))}
-            renderInput={(params) => <TextField {...params} label={t('todo.consumables') || 'Consumables'} />}
+            renderInput={(params) => <TextField {...params} label={t('todo.consumables') || 'Consumables'} inputProps={{ ...params.inputProps, 'aria-label': t('todo.consumables') || 'Consumables' }} />}
           />
 
-          <TextField type="date" label={t('todo.due') || 'Due'} value={dueDate} onChange={(e) => setDueDate(e.target.value)} InputLabelProps={{ shrink: true }} />
+          <TextField
+            type="date"
+            label={t('todo.due') || 'Due'}
+            value={dueDate}
+            onChange={(e) => setDueDate(e.target.value)}
+            InputLabelProps={{ shrink: true }}
+            inputProps={{ 'aria-label': t('todo.due') || 'Due' }}
+          />
 
-          <FormControlLabel control={<Checkbox checked={done} onChange={(e) => setDone(e.target.checked)} />} label={t('todo.done') || 'Completed'} />
+          <FormControlLabel
+            control={<Checkbox id="todo-done-checkbox" checked={done} onChange={(e) => setDone(e.target.checked)} inputProps={{ 'aria-label': t('todo.done') || 'Completed', 'aria-labelledby': 'todo-done-label' }} />}
+            label={<span id="todo-done-label">{t('todo.done') || 'Completed'}</span>}
+            htmlFor="todo-done-checkbox"
+          />
         </Box>
       </DialogContent>
       <DialogActions>
-        <Button onClick={() => onClose(false)} disabled={loading}>{t('common.cancel') || 'Cancel'}</Button>
-        <Button variant="contained" onClick={handleSave} disabled={loading}>{loading ? t('common.loading') : (t('common.save') || 'Save')}</Button>
+        <Button onClick={() => onClose(false)} disabled={loading} aria-label={t('common.cancel') || 'Cancel'}>{t('common.cancel') || 'Cancel'}</Button>
+        <Button variant="contained" onClick={handleSave} disabled={loading} aria-label={t('common.save') || 'Save'}>{loading ? t('common.loading') : (t('common.save') || 'Save')}</Button>
       </DialogActions>
     </Dialog>
   );

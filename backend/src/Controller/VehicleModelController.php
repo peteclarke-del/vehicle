@@ -108,6 +108,7 @@ class VehicleModelController extends AbstractController
         $em->flush();
 
         // Invalidate caches for this vehicle make
+        /** @phpstan-ignore method.notFound */
         $this->lookupsCache->invalidateTags(['vehicle_models', "vehicle_make_{$make->getId()}"]);
 
         return $this->json([

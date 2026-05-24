@@ -14,7 +14,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
-use Sensio\Bundle\FrameworkExtraBundle\Configuration\IsGranted;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 use App\Controller\Trait\UserSecurityTrait;
 
 #[Route('/api/todos')]
@@ -44,7 +44,7 @@ class TodoController extends AbstractController
 
         if ($vehicleId) {
             $vehicle = $this->em->getRepository(\App\Entity\Vehicle::class)->find($vehicleId);
-            if (!$vehicle || (!$this->isAdminForUser($user) && $vehicle->getOwner()->getId() !== $user->getId())) {
+            if (!$vehicle || (!$this->isAdminForUser($user) && $vehicle->getOwner()?->getId() !== $user->getId())) {
                 return $this->json(['error' => 'Vehicle not found'], 404);
             }
 
@@ -77,7 +77,7 @@ class TodoController extends AbstractController
         $vehicleId = $payload['vehicleId'] ?? null;
         $vehicle = $this->em->getRepository(Vehicle::class)->find($vehicleId);
         $user = $this->getUser();
-        if (!$vehicle || !$user instanceof User || (!$this->isAdminForUser($user) && $vehicle->getOwner()->getId() !== $user->getId())) {
+        if (!$vehicle || !$user instanceof User || (!$this->isAdminForUser($user) && $vehicle->getOwner()?->getId() !== $user->getId())) {
             return new JsonResponse(['error' => 'Vehicle not found'], Response::HTTP_BAD_REQUEST);
         }
 
@@ -95,7 +95,7 @@ class TodoController extends AbstractController
                 $part = $this->em->getRepository(Part::class)->find($pid);
                 if ($part) {
                     // only attach parts that do not already have an installation date
-                    if (method_exists($part, 'getInstallationDate') && $part->getInstallationDate() === null) {
+                    if ($part->getInstallationDate() === null) {
                         $todo->addPart($part);
                     }
                 }
@@ -106,7 +106,7 @@ class TodoController extends AbstractController
                 $cons = $this->em->getRepository(Consumable::class)->find($cid);
                 if ($cons) {
                     // only attach consumables that do not already have a lastChanged date
-                    if (method_exists($cons, 'getLastChanged') && $cons->getLastChanged() === null) {
+                    if ($cons->getLastChanged() === null) {
                         $todo->addConsumable($cons);
                     }
                 }
@@ -115,19 +115,23 @@ class TodoController extends AbstractController
 
         $errors = $this->validator->validate($todo);
         if (count($errors) > 0) {
-            return new JsonResponse(['errors' => (string) $errors], Response::HTTP_BAD_REQUEST);
+            $errorMessages = [];
+            foreach ($errors as $error) {
+                $errorMessages[] = $error->getMessage();
+            }
+            return new JsonResponse(['errors' => $errorMessages], Response::HTTP_BAD_REQUEST);
         }
 
         // If this todo was created as completed, cascade completed date to linked parts/consumables
         if ($todo->isDone() && $todo->getCompletedBy() instanceof \DateTimeInterface) {
             $completedAt = $todo->getCompletedBy();
             foreach ($todo->getParts() as $part) {
-                if (method_exists($part, 'getInstallationDate') && $part->getInstallationDate() === null) {
+                if ($part->getInstallationDate() === null) {
                     $part->setInstallationDate($completedAt);
                 }
             }
             foreach ($todo->getConsumables() as $cons) {
-                if (method_exists($cons, 'getLastChanged') && $cons->getLastChanged() === null) {
+                if ($cons->getLastChanged() === null) {
                     $cons->setLastChanged($completedAt);
                 }
             }
@@ -148,7 +152,8 @@ class TodoController extends AbstractController
         }
 
         $user = $this->getUser();
-        if (!$user instanceof User || (!$this->isAdminForUser($user) && $todo->getVehicle()->getOwner()->getId() !== $user->getId())) {
+        $vehicle = $todo->getVehicle();
+        if (!$user instanceof User || !$vehicle || (!$this->isAdminForUser($user) && $vehicle->getOwner()?->getId() !== $user->getId())) {
             return $this->json(['error' => 'Not authorized'], 403);
         }
 
@@ -174,7 +179,7 @@ class TodoController extends AbstractController
                     $part = $this->em->getRepository(Part::class)->find($pid);
                     if ($part) {
                         // only attach if installationDate not already set
-                        if (method_exists($part, 'getInstallationDate') && $part->getInstallationDate() === null) {
+                        if ($part->getInstallationDate() === null) {
                             $todo->addPart($part);
                         }
                     }
@@ -190,7 +195,7 @@ class TodoController extends AbstractController
                     $cons = $this->em->getRepository(Consumable::class)->find($cid);
                     if ($cons) {
                         // only attach if lastChanged not already set
-                        if (method_exists($cons, 'getLastChanged') && $cons->getLastChanged() === null) {
+                        if ($cons->getLastChanged() === null) {
                             $todo->addConsumable($cons);
                         }
                     }
@@ -211,49 +216,24 @@ class TodoController extends AbstractController
 
         $errors = $this->validator->validate($todo);
         if (count($errors) > 0) {
-            return new JsonResponse(['errors' => (string) $errors], Response::HTTP_BAD_REQUEST);
+            $errorMessages = [];
+            foreach ($errors as $error) {
+                $errorMessages[] = $error->getMessage();
+            }
+            return new JsonResponse(['errors' => $errorMessages], Response::HTTP_BAD_REQUEST);
         }
 
         // If todo is now marked done, cascade completed date to linked parts/consumables
         if ($todo->isDone() && $todo->getCompletedBy() instanceof \DateTimeInterface) {
             $completedAt = $todo->getCompletedBy();
             foreach ($todo->getParts() as $part) {
-                if (method_exists($part, 'getInstallationDate') && $part->getInstallationDate() === null) {
+                if ($part->getInstallationDate() === null) {
                     $part->setInstallationDate($completedAt);
                 }
             }
             foreach ($todo->getConsumables() as $cons) {
-                if (method_exists($cons, 'getLastChanged') && $cons->getLastChanged() === null) {
-                    // protect against setters that don't accept nulls/types
-                    try {
-                        $cons->setLastChanged($completedAt);
-                    } catch (\TypeError $e) {
-                        // skip if setter signature mismatches
-                    }
-                }
-            }
-        } else {
-            // If marking as not done, clear installation/lastChanged where allowed
-            if (!$todo->isDone()) {
-                foreach ($todo->getParts() as $part) {
-                    if (method_exists($part, 'setInstallationDate')) {
-                        $part->setInstallationDate(null);
-                    }
-                }
-                foreach ($todo->getConsumables() as $cons) {
-                    if (method_exists($cons, 'setLastChanged')) {
-                        try {
-                            $rm = new \ReflectionMethod($cons, 'setLastChanged');
-                            $param = $rm->getParameters()[0] ?? null;
-                            if ($param === null || $param->allowsNull()) {
-                                $cons->setLastChanged(null);
-                            }
-                        } catch (\ReflectionException $e) {
-                            // skip if we cannot reflect
-                        } catch (\TypeError $e) {
-                            // setter doesn't accept null, skip
-                        }
-                    }
+                if ($cons->getLastChanged() === null) {
+                    $cons->setLastChanged($completedAt);
                 }
             }
         }
@@ -273,7 +253,8 @@ class TodoController extends AbstractController
         }
 
         $user = $this->getUser();
-        if (!$user instanceof User || (!$this->isAdminForUser($user) && $todo->getVehicle()->getOwner()->getId() !== $user->getId())) {
+        $vehicle = $todo->getVehicle();
+        if (!$user instanceof User || !$vehicle || (!$this->isAdminForUser($user) && $vehicle->getOwner()?->getId() !== $user->getId())) {
             return $this->json(['error' => 'Not authorized'], 403);
         }
 
@@ -283,6 +264,9 @@ class TodoController extends AbstractController
         return new JsonResponse(null, Response::HTTP_NO_CONTENT);
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     private function serializeTodo(Todo $todo): array
     {
         return [

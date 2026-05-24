@@ -73,7 +73,7 @@ const Dashboard = () => {
   const [menuAnchorEl, setMenuAnchorEl] = useState(null);
   const [menuVehicleId, setMenuVehicleId] = useState(null);
   const [sortOrder, setSortOrder] = useState(() => {
-    return SafeStorage.get('vehicleSortOrder', 'name');
+    return SafeStorage.get('vehicleSortOrder', 'typeMakeModelYear');
   });
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
@@ -289,7 +289,34 @@ const Dashboard = () => {
   useEffect(() => {
     if (vehicles && vehicles.length > 0) {
       let ordered = [...vehicles];
+
+      const compareTextAsc = (left, right) => {
+        const aValue = (left || '').toString().toLowerCase();
+        const bValue = (right || '').toString().toLowerCase();
+        return aValue.localeCompare(bValue);
+      };
+
+      const compareByTypeMakeModelYearAsc = (a, b) => {
+        const typeCompare = compareTextAsc(a.vehicleType?.name, b.vehicleType?.name);
+        if (typeCompare !== 0) return typeCompare;
+
+        const makeCompare = compareTextAsc(a.make, b.make);
+        if (makeCompare !== 0) return makeCompare;
+
+        const modelCompare = compareTextAsc(a.model, b.model);
+        if (modelCompare !== 0) return modelCompare;
+
+        const yearA = parseInt(a.year, 10) || 0;
+        const yearB = parseInt(b.year, 10) || 0;
+        if (yearA !== yearB) return yearA - yearB;
+
+        return compareTextAsc(a.name, b.name);
+      };
+
       switch (sortOrder) {
+        case 'typeMakeModelYear':
+          ordered.sort(compareByTypeMakeModelYearAsc);
+          break;
         case 'name':
           ordered.sort((a, b) => a.name.localeCompare(b.name));
           break;
@@ -307,7 +334,7 @@ const Dashboard = () => {
           ordered.sort((a, b) => (b.year || 0) - (a.year || 0));
           break;
         default:
-          ordered.sort((a, b) => a.name.localeCompare(b.name));
+          ordered.sort(compareByTypeMakeModelYearAsc);
           break;
       }
       setOrderedVehicles(ordered);
@@ -1009,6 +1036,7 @@ const Dashboard = () => {
                     label={t('dashboard.sortBy')}
                     onChange={handleSortChange}
                   >
+                    <MenuItem value="typeMakeModelYear">Type / Make / Model / Year</MenuItem>
                     <MenuItem value="name">{t('common.name')}</MenuItem>
                     <MenuItem value="registration">{t('common.registrationNumber')}</MenuItem>
                     <MenuItem value="make">{t('dashboard.make')}</MenuItem>

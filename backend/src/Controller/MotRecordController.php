@@ -8,6 +8,7 @@ use App\Controller\Trait\UserSecurityTrait;
 use App\Controller\Trait\JsonValidationTrait;
 use App\Entity\Attachment;
 use App\Entity\MotRecord;
+use App\Entity\User;
 use App\Entity\ServiceRecord;
 use App\Entity\Vehicle;
 use App\Entity\Part;
@@ -50,7 +51,7 @@ class MotRecordController extends AbstractController
 
         $vehicle = $this->entityManager->getRepository(Vehicle::class)->find($data['vehicleId']);
         $user = $this->getUserEntity();
-        if (!$vehicle || !$user || (!$this->isAdminForUser($user) && $vehicle->getOwner()->getId() !== $user->getId())) {
+        if (!$vehicle instanceof Vehicle || !$user instanceof User || (!$this->isAdminForUser($user) && $vehicle->getOwner()?->getId() !== $user->getId())) {
             return new JsonResponse(['error' => 'Vehicle not found'], 404);
         }
 
@@ -73,7 +74,7 @@ class MotRecordController extends AbstractController
     {
         $motRecord = $this->entityManager->getRepository(MotRecord::class)->find($id);
         $user = $this->getUserEntity();
-        if (!$motRecord || !$user || (!$this->isAdminForUser($user) && $motRecord->getVehicle()->getOwner()->getId() !== $user->getId())) {
+        if (!$motRecord instanceof MotRecord || !$user instanceof User || (!$this->isAdminForUser($user) && $motRecord->getVehicle()?->getOwner()?->getId() !== $user->getId())) {
             return new JsonResponse(['error' => 'MOT record not found'], 404);
         }
 
@@ -85,7 +86,7 @@ class MotRecordController extends AbstractController
     {
         $motRecord = $this->entityManager->getRepository(MotRecord::class)->find($id);
         $user = $this->getUserEntity();
-        if (!$motRecord || !$user || (!$this->isAdminForUser($user) && $motRecord->getVehicle()->getOwner()->getId() !== $user->getId())) {
+        if (!$motRecord instanceof MotRecord || !$user instanceof User || (!$this->isAdminForUser($user) && $motRecord->getVehicle()?->getOwner()?->getId() !== $user->getId())) {
             return new JsonResponse(['error' => 'MOT record not found'], 404);
         }
 
@@ -112,7 +113,7 @@ class MotRecordController extends AbstractController
     {
         $motRecord = $this->entityManager->getRepository(MotRecord::class)->find($id);
         $user = $this->getUserEntity();
-        if (!$motRecord || !$user || (!$this->isAdminForUser($user) && $motRecord->getVehicle()->getOwner()->getId() !== $user->getId())) {
+        if (!$motRecord instanceof MotRecord || !$user instanceof User || (!$this->isAdminForUser($user) && $motRecord->getVehicle()?->getOwner()?->getId() !== $user->getId())) {
             return new JsonResponse(['error' => 'MOT record not found'], 404);
         }
 
@@ -127,7 +128,7 @@ class MotRecordController extends AbstractController
     {
         $motRecord = $this->entityManager->getRepository(MotRecord::class)->find($id);
         $user = $this->getUserEntity();
-        if (!$motRecord || !$user || (!$this->isAdminForUser($user) && $motRecord->getVehicle()->getOwner()->getId() !== $user->getId())) {
+        if (!$motRecord instanceof MotRecord || !$user instanceof User || (!$this->isAdminForUser($user) && $motRecord->getVehicle()?->getOwner()?->getId() !== $user->getId())) {
             return new JsonResponse(['error' => 'MOT record not found'], 404);
         }
 
@@ -197,7 +198,7 @@ class MotRecordController extends AbstractController
 
         if (!empty($vehicleId)) {
             $vehicle = $this->entityManager->getRepository(Vehicle::class)->find((int)$vehicleId);
-            if (!$vehicle || (!$this->isAdminForUser($user) && $vehicle->getOwner()->getId() !== $user->getId())) {
+            if (!$vehicle instanceof Vehicle || (!$this->isAdminForUser($user) && $vehicle->getOwner()?->getId() !== $user->getId())) {
                 return new JsonResponse(['error' => 'Vehicle not found'], 404);
             }
 
@@ -239,6 +240,10 @@ class MotRecordController extends AbstractController
     /**
      * Check if any service record has bundled this MOT's test cost
      */
+    /**
+     * @param array<string, mixed> $serialized
+     * @return array<string, mixed>
+     */
     private function addTestCostBundledFlag(array $serialized, MotRecord $mot): array
     {
         $serviceRecord = $this->entityManager->getRepository(ServiceRecord::class)->findOneBy([
@@ -267,7 +272,7 @@ class MotRecordController extends AbstractController
 
         $vehicle = $this->entityManager->getRepository(Vehicle::class)->find((int)$vehicleId);
         $user = $this->getUserEntity();
-        if (!$vehicle || !$user || (!$this->isAdminForUser($user) && $vehicle->getOwner()->getId() !== $user->getId())) {
+        if (!$vehicle instanceof Vehicle || !$user instanceof User || (!$this->isAdminForUser($user) && $vehicle->getOwner()?->getId() !== $user->getId())) {
             return new JsonResponse(['error' => 'Vehicle not found'], 404);
         }
 
@@ -430,9 +435,7 @@ class MotRecordController extends AbstractController
                 $mot = new MotRecord();
                 $mot->setVehicle($vehicle);
                 $mot->setTestCost($newData['testCost']);
-                if (isset($newData['testDate'])) {
-                    $mot->setTestDate(new \DateTime($newData['testDate']));
-                }
+                $mot->setTestDate(new \DateTime($newData['testDate']));
                 $this->updateMotRecordFromData($mot, $newData);
                 $this->entityManager->persist($mot);
                 $imported++;
@@ -448,6 +451,7 @@ class MotRecordController extends AbstractController
         return new JsonResponse(['imported' => $imported, 'importedIds' => $importedIds]);
     }
 
+    /** @param array<string, mixed> $data */
     private function updateMotRecordFromData(MotRecord $mot, array $data): void
     {
         if (isset($data['testDate'])) {

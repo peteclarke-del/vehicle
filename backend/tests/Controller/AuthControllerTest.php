@@ -10,6 +10,7 @@ class AuthControllerTest extends BaseWebTestCase
     {
         $this->client->request('POST', '/api/register', [], [], [
             'CONTENT_TYPE' => 'application/json',
+            'REMOTE_ADDR' => '10.0.0.11',
         ], json_encode([
             'email' => 'not-an-email',
             'password' => 'Password123!',
@@ -24,6 +25,7 @@ class AuthControllerTest extends BaseWebTestCase
     {
         $this->client->request('POST', '/api/register', [], [], [
             'CONTENT_TYPE' => 'application/json',
+            'REMOTE_ADDR' => '10.0.0.12',
         ], json_encode([
             'email' => 'test@example.com',
             'password' => 'Password123!',

@@ -12,19 +12,38 @@ class RoadTaxControllerTest extends BaseWebTestCase
     public function testRoadTaxCrudFlow(): void
     {
         $em = $this->getEntityManager();
-        $user = $em->getRepository(User::class)->findOneBy(['email' => 'test@example.com']);
+        $user = $em->getRepository(User::class)
+            ->findOneBy(['email' => 'test@example.com']);
         $vehicle = $this->createTestVehicle($user, 'TAX-' . uniqid());
 
-        $this->client->request('POST', '/api/road-tax', [], [], [
-            'HTTP_AUTHORIZATION' => $this->getAuthToken(),
-            'CONTENT_TYPE' => 'application/json',
-        ], json_encode([
+        $payloadData = [
             'vehicleId' => $vehicle->getId(),
             'startDate' => '2026-01-01',
-            'endDate' => '2026-12-31',
-            'cost' => 200,
-        ]));
+            'expiryDate' => '2026-12-31',
+            'amount' => 200,
+            'notes' => 'Annual road tax',
+        ];
+        $payload = json_encode($payloadData);
 
-        $this->assertContains($this->client->getResponse()->getStatusCode(), [201, 400, 500]);
+        $this->client->request(
+            'POST',
+            '/api/road-tax',
+            [],
+            [],
+            [
+                'HTTP_AUTHORIZATION' => $this->getAuthToken(),
+                'CONTENT_TYPE' => 'application/json',
+            ],
+            $payload
+        );
+
+        $this->assertSame(201, $this->client->getResponse()->getStatusCode());
+        $data = json_decode(
+            (string) $this->client->getResponse()->getContent(),
+            true
+        );
+        $this->assertIsArray($data);
+        $this->assertArrayHasKey('id', $data);
+        $this->assertSame('Annual road tax', $data['notes']);
     }
 }

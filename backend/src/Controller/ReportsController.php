@@ -33,8 +33,6 @@ use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
  */
 class ReportsController extends AbstractController
 {
-    private const BATCH_SIZE = 100;
-
     /**
      * @var ReportEngine
      */
@@ -66,7 +64,7 @@ class ReportsController extends AbstractController
      */
     private function disableProfiler(): void
     {
-        if (isset($this->container) && $this->container->has('profiler')) {
+        if ($this->container->has('profiler')) {
             try {
                 $profiler = $this->container->get('profiler');
                 if (is_object($profiler) && method_exists($profiler, 'disable')) {
@@ -169,7 +167,7 @@ class ReportsController extends AbstractController
         $report->setUser($user);
         $report->setName((string)($data['name'] ?? ($data['template'] ?? 'Report')));
         $report->setTemplateKey($data['template'] ?? null);
-        $report->setVehicleId(isset($data['vehicleId']) && $data['vehicleId'] !== null ? (int)$data['vehicleId'] : null);
+        $report->setVehicleId(isset($data['vehicleId']) ? (int)$data['vehicleId'] : null);
 
         // Store entire incoming payload so we can regenerate later. This will include
         // `templateContent` when the frontend provides it (runtime-editable templates).
@@ -224,7 +222,7 @@ class ReportsController extends AbstractController
         $fileType = 'xlsx'; // Default to xlsx for better compatibility
         if ($requestedFormat && in_array($requestedFormat, ['xlsx', 'pdf', 'csv'])) {
             $fileType = $requestedFormat;
-        } elseif (is_array($template) && isset($template['outputs']) && is_array($template['outputs'])) {
+        } elseif (isset($template['outputs']) && is_array($template['outputs'])) {
             foreach ($template['outputs'] as $o) {
                 if (isset($o['mode']) && $o['mode'] === 'file' && !empty($o['fileType'])) {
                     $fileType = $o['fileType'];
@@ -277,7 +275,7 @@ class ReportsController extends AbstractController
             return $this->generateReportWithEngine($r, $template, $reportParams, $fileType);
         }
 
-        if ($fileType === 'xlsx' && is_array($template)) {
+        if ($fileType === 'xlsx') {
             return $this->generateXlsxReport($r, $template, $reportParams, $em);
         }
 
@@ -295,8 +293,8 @@ class ReportsController extends AbstractController
      * Generate report using the new ReportEngine (template-driven).
      *
      * @param Report $r
-     * @param array $template
-     * @param array $reportParams
+     * @param array<mixed> $template
+     * @param array<mixed> $reportParams
      * @param string $format
      *
      * @return Response
@@ -328,8 +326,8 @@ class ReportsController extends AbstractController
      * Generate XLSX report with memory-efficient streaming.
      *
      * @param Report $r
-     * @param array $template
-     * @param array $reportParams
+     * @param array<mixed> $template
+     * @param array<mixed> $reportParams
      * @param EntityManagerInterface $em
      *
      * @return Response
@@ -380,7 +378,7 @@ class ReportsController extends AbstractController
                     $first = $rows[0] ?? [];
                     $cols = [];
                     foreach (array_keys($first) as $k) {
-                        $cols[] = ['key' => $k, 'label' => ucfirst(str_replace('_', ' ', $k))];
+                        $cols[] = ['key' => $k, 'label' => ucfirst(str_replace('_', ' ', (string)$k))];
                     }
                 }
 
@@ -427,7 +425,7 @@ class ReportsController extends AbstractController
                     foreach ($cols as $c) {
                         $colLetter = Coordinate::stringFromColumnIndex($colNum);
                         $key = $c['key'] ?? $c['field'] ?? null;
-                        $val = $key !== null && is_array($row) && array_key_exists($key, $row) ? $row[$key] : ($row[$colNum - 1] ?? '');
+                        $val = $key !== null && array_key_exists($key, $row) ? $row[$key] : ($row[$colNum - 1] ?? '');
                         $coord = $colLetter . $rnum;
                         
                         if (!empty($c['format']) && $c['format'] === 'currency') {
@@ -475,6 +473,9 @@ class ReportsController extends AbstractController
             // Stream the file back to the client
             $response = new StreamedResponse(function () use ($tmpFile) {
                 $handle = fopen($tmpFile, 'rb');
+                if ($handle === false) {
+                    return;
+                }
                 while (!feof($handle)) {
                     echo fread($handle, 8192);
                     flush();
@@ -500,11 +501,11 @@ class ReportsController extends AbstractController
      *
      * Fetch rows for a sheet using memory-efficient array hydration.
      *
-     * @param array $sdef
-     * @param array $reportParams
+     * @param array<mixed> $sdef
+     * @param array<mixed> $reportParams
      * @param EntityManagerInterface $em
      *
-     * @return array
+     * @return array<mixed>
      */
     private function fetchRowsForSheet(array $sdef, array $reportParams, EntityManagerInterface $em): array
     {
@@ -537,10 +538,10 @@ class ReportsController extends AbstractController
      * Fetch entity rows using array hydration to avoid Doctrine object overhead.
      *
      * @param string $source
-     * @param array $reportParams
+     * @param array<mixed> $reportParams
      * @param EntityManagerInterface $em
      *
-     * @return array
+     * @return array<mixed>
      */
     private function fetchEntityRows(string $source, array $reportParams, EntityManagerInterface $em): array
     {
@@ -672,10 +673,10 @@ class ReportsController extends AbstractController
      *
      * Compute derived fields like MPG.
      *
-     * @param array $rows
-     * @param array $derivedDefs
+     * @param array<mixed> $rows
+     * @param array<mixed> $derivedDefs
      *
-     * @return array
+     * @return array<mixed>
      */
     private function computeDerivedFields(array $rows, array $derivedDefs): array
     {
@@ -713,11 +714,11 @@ class ReportsController extends AbstractController
      *
      * Apply sorting to rows.
      *
-     * @param array $rows
-     * @param array $cols
-     * @param array $sdef
+     * @param array<mixed> $rows
+     * @param array<mixed> $cols
+     * @param array<mixed> $sdef
      *
-     * @return array
+     * @return array<mixed>
      */
     private function applySorting(array $rows, array $cols, array $sdef): array
     {
@@ -759,9 +760,9 @@ class ReportsController extends AbstractController
      * Write aggregate row to sheet.
      *
      * @param mixed $sheet
-     * @param array $rows
-     * @param array $cols
-     * @param array $aggregates
+     * @param array<mixed> $rows
+     * @param array<mixed> $cols
+     * @param array<mixed> $aggregates
      * @param int $rnum
      *
      * @return void
@@ -798,8 +799,8 @@ class ReportsController extends AbstractController
      * Generate CSV report.
      *
      * @param Report $r
-     * @param array $template
-     * @param array $reportParams
+     * @param array<mixed> $template
+     * @param array<mixed> $reportParams
      * @param EntityManagerInterface $em
      *
      * @return Response
@@ -825,6 +826,9 @@ class ReportsController extends AbstractController
         }
 
         $fh = fopen('php://temp', 'r+');
+        if ($fh === false) {
+            return new Response('Failed to generate CSV', Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
         if ($headers) {
             fputcsv($fh, $headers);
         }
@@ -856,8 +860,8 @@ class ReportsController extends AbstractController
      * Generate PDF report.
      *
      * @param Report $r
-     * @param array $template
-     * @param array $reportParams
+     * @param array<mixed> $template
+     * @param array<mixed> $reportParams
      * @param EntityManagerInterface $em
      *
      * @return Response

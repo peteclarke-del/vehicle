@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Entity\Specification;
+use App\Entity\User;
 use App\Entity\Vehicle;
 use App\Service\VehicleSpecificationScraperService;
 use Doctrine\ORM\EntityManagerInterface;
@@ -31,17 +32,24 @@ class SpecificationController extends AbstractController
         return in_array('ROLE_ADMIN', $roles, true);
     }
 
+    private function getCurrentUserEntity(): ?User
+    {
+        $user = $this->getUser();
+        return $user instanceof User ? $user : null;
+    }
+
     #[Route('/{id}/specifications', name: 'api_vehicle_specifications', methods: ['GET'])]
     public function getSpecifications(int $id): JsonResponse
     {
         $vehicle = $this->entityManager->getRepository(Vehicle::class)->find($id);
+        $user = $this->getCurrentUserEntity();
 
-        if (!$vehicle) {
+        if (!$vehicle instanceof Vehicle || !$user instanceof User) {
             return $this->json(['error' => 'Vehicle not found'], 404);
         }
 
         // Check if user owns this vehicle (admins bypass)
-        if (!$this->isAdminForUser($this->getUser()) && $vehicle->getOwner() !== $this->getUser()) {
+        if (!$this->isAdminForUser($user) && $vehicle->getOwner() !== $user) {
             return $this->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -60,13 +68,14 @@ class SpecificationController extends AbstractController
     public function scrapeSpecifications(int $id): JsonResponse
     {
         $vehicle = $this->entityManager->getRepository(Vehicle::class)->find($id);
+        $user = $this->getCurrentUserEntity();
 
-        if (!$vehicle) {
+        if (!$vehicle instanceof Vehicle || !$user instanceof User) {
             return $this->json(['error' => 'Vehicle not found'], 404);
         }
 
         // Check if user owns this vehicle (admins bypass)
-        if (!$this->isAdminForUser($this->getUser()) && $vehicle->getOwner() !== $this->getUser()) {
+        if (!$this->isAdminForUser($user) && $vehicle->getOwner() !== $user) {
             return $this->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -105,13 +114,14 @@ class SpecificationController extends AbstractController
     public function updateSpecifications(int $id, Request $request): JsonResponse
     {
         $vehicle = $this->entityManager->getRepository(Vehicle::class)->find($id);
+        $user = $this->getCurrentUserEntity();
 
-        if (!$vehicle) {
+        if (!$vehicle instanceof Vehicle || !$user instanceof User) {
             return $this->json(['error' => 'Vehicle not found'], 404);
         }
 
         // Check if user owns this vehicle (admins bypass)
-        if (!$this->isAdminForUser($this->getUser()) && $vehicle->getOwner() !== $this->getUser()) {
+        if (!$this->isAdminForUser($user) && $vehicle->getOwner() !== $user) {
             return $this->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -142,13 +152,14 @@ class SpecificationController extends AbstractController
     public function deleteSpecifications(int $id): JsonResponse
     {
         $vehicle = $this->entityManager->getRepository(Vehicle::class)->find($id);
+        $user = $this->getCurrentUserEntity();
 
-        if (!$vehicle) {
+        if (!$vehicle instanceof Vehicle || !$user instanceof User) {
             return $this->json(['error' => 'Vehicle not found'], 404);
         }
 
         // Check if user owns this vehicle (admins bypass)
-        if (!$this->isAdminForUser($this->getUser()) && $vehicle->getOwner() !== $this->getUser()) {
+        if (!$this->isAdminForUser($user) && $vehicle->getOwner() !== $user) {
             return $this->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -164,6 +175,9 @@ class SpecificationController extends AbstractController
         return $this->json(['message' => 'Specifications deleted successfully']);
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     private function serializeSpecification(Specification $spec): array
     {
         return [
@@ -351,6 +365,9 @@ class SpecificationController extends AbstractController
         $existing->setSourceUrl($scraped->getSourceUrl());
     }
 
+    /**
+     * @param array<string, mixed> $data
+     */
     private function updateSpecificationFromData(Specification $spec, array $data): void
     {
         if (isset($data['engineType'])) {

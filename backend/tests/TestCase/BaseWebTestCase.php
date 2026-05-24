@@ -19,6 +19,9 @@ abstract class BaseWebTestCase extends WebTestCase
     protected static string $authToken = '';
     protected static bool $usersSeeded = false;
     protected static bool $schemaCreated = false;
+
+    /** Registrations of vehicles created during this test instance; used for upload cleanup. */
+    protected array $testVehicleRegistrations = [];
     
     public static function setUpBeforeClass(): void
     {
@@ -112,24 +115,85 @@ abstract class BaseWebTestCase extends WebTestCase
     }
 
     /**
-     * Create a minimal valid vehicle for testing
+     * Create a minimal valid vehicle for testing.
+     * The vehicle's registration is tracked so its upload directory can be
+     * removed automatically in tearDown().
      */
     protected function createTestVehicle(\App\Entity\User $owner, ?string $registration = null): \App\Entity\Vehicle
     {
         $em = $this->getEntityManager();
-        
+        $reg = $registration ?? 'TEST' . rand(100, 999);
+
         $vehicle = new \App\Entity\Vehicle();
         $vehicle->setOwner($owner);
-        $vehicle->setName($registration ?? 'Test-' . uniqid());
-        $vehicle->setRegistration($registration ?? 'TEST' . rand(100, 999));
+        $vehicle->setName($reg);
+        $vehicle->setRegistration($reg);
         $vehicle->setVehicleType($this->getVehicleType('Car'));
         $vehicle->setMileage(10000);
         $vehicle->setPurchaseCost('5000.00');
         $vehicle->setPurchaseDate(new \DateTime('-1 year'));
-        
+
         $em->persist($vehicle);
         $em->flush();
-        
+
+        $this->testVehicleRegistrations[] = $reg;
+
         return $vehicle;
+    }
+
+    protected function tearDown(): void
+    {
+        $this->cleanTestUploadDirs();
+        parent::tearDown();
+    }
+
+    /**
+     * Remove any upload directories that were created for test vehicles
+     * during this test instance.  Uses the same slugging logic as
+     * AttachmentController::getStorageSubdirectory().
+     */
+    private function cleanTestUploadDirs(): void
+    {
+        if (empty($this->testVehicleRegistrations)) {
+            return;
+        }
+
+        // Resolve uploads dir from the kernel project dir (inside Docker:
+        // /var/www/html/uploads/vehicles).  __DIR__ is tests/TestCase, so two
+        // levels up reaches the project root that the kernel also reports as
+        // kernel.project_dir.
+        $uploadsVehiclesDir = dirname(__DIR__, 2) . '/uploads/vehicles';
+
+        foreach ($this->testVehicleRegistrations as $reg) {
+            // Mirror strtolower(slugger->slug($reg)) — replace any run of
+            // non-alphanumeric characters with a single hyphen and lowercase.
+            $slug = strtolower((string) preg_replace('/[^a-zA-Z0-9]+/', '-', $reg));
+            $slug = trim($slug, '-');
+
+            $dir = $uploadsVehiclesDir . '/' . $slug;
+            if (is_dir($dir)) {
+                $this->removeDirectoryRecursively($dir);
+            }
+        }
+
+        $this->testVehicleRegistrations = [];
+    }
+
+    private function removeDirectoryRecursively(string $dir): void
+    {
+        $items = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($dir, \RecursiveDirectoryIterator::SKIP_DOTS),
+            \RecursiveIteratorIterator::CHILD_FIRST
+        );
+
+        foreach ($items as $item) {
+            if ($item->isDir()) {
+                rmdir($item->getRealPath());
+            } else {
+                unlink($item->getRealPath());
+            }
+        }
+
+        rmdir($dir);
     }
 }

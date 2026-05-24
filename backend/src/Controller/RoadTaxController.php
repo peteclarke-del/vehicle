@@ -7,6 +7,7 @@ namespace App\Controller;
 use App\Controller\Trait\UserSecurityTrait;
 use App\Controller\Trait\JsonValidationTrait;
 use App\Entity\RoadTax;
+use App\Entity\User;
 use App\Entity\Vehicle;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -32,13 +33,13 @@ class RoadTaxController extends AbstractController
     {
         $vehicleId = $request->query->get('vehicleId');
         $user = $this->getUserEntity();
-        if (!$user) {
+        if (!$user instanceof User) {
             return new JsonResponse(['error' => 'Unauthorized'], 401);
         }
 
         if ($vehicleId) {
             $vehicle = $this->entityManager->getRepository(Vehicle::class)->find((int)$vehicleId);
-            if (!$vehicle || (!$this->isAdminForUser($user) && $vehicle->getOwner()->getId() !== $user->getId())) {
+            if (!$vehicle instanceof Vehicle || (!$this->isAdminForUser($user) && $vehicle->getOwner()?->getId() !== $user->getId())) {
                 return new JsonResponse(['error' => 'Vehicle not found'], 404);
             }
 
@@ -76,7 +77,7 @@ class RoadTaxController extends AbstractController
 
         $vehicle = $this->entityManager->getRepository(Vehicle::class)->find($data['vehicleId'] ?? null);
         $user = $this->getUserEntity();
-        if (!$vehicle || !$user || (!$this->isAdminForUser($user) && $vehicle->getOwner()->getId() !== $user->getId())) {
+        if (!$vehicle instanceof Vehicle || !$user instanceof User || (!$this->isAdminForUser($user) && $vehicle->getOwner()?->getId() !== $user->getId())) {
             return new JsonResponse(['error' => 'Vehicle not found'], 404);
         }
 
@@ -99,11 +100,12 @@ class RoadTaxController extends AbstractController
     {
         $rt = $this->entityManager->getRepository(RoadTax::class)->find($id);
         $user = $this->getUserEntity();
-        if (!$rt || !$user || (!$this->isAdminForUser($user) && $rt->getVehicle()->getOwner()->getId() !== $user->getId())) {
+        $rtVehicle = $rt instanceof RoadTax ? $rt->getVehicle() : null;
+        if (!$rt instanceof RoadTax || !$user instanceof User || !$rtVehicle instanceof Vehicle || (!$this->isAdminForUser($user) && $rtVehicle->getOwner()?->getId() !== $user->getId())) {
             return new JsonResponse(['error' => 'Road tax record not found'], 404);
         }
 
-        if ($rt->getVehicle()->isRoadTaxExempt()) {
+        if ($rtVehicle->isRoadTaxExempt()) {
             return new JsonResponse(['error' => 'Vehicle is road tax exempt'], 400);
         }
 
@@ -124,7 +126,8 @@ class RoadTaxController extends AbstractController
     {
         $rt = $this->entityManager->getRepository(RoadTax::class)->find($id);
         $user = $this->getUserEntity();
-        if (!$rt || !$user || (!$this->isAdminForUser($user) && $rt->getVehicle()->getOwner()->getId() !== $user->getId())) {
+        $rtVehicle = $rt instanceof RoadTax ? $rt->getVehicle() : null;
+        if (!$rt instanceof RoadTax || !$user instanceof User || !$rtVehicle instanceof Vehicle || (!$this->isAdminForUser($user) && $rtVehicle->getOwner()?->getId() !== $user->getId())) {
             return new JsonResponse(['error' => 'Road tax record not found'], 404);
         }
         // Allow deletion even if the vehicle is marked road-tax-exempt.
@@ -134,11 +137,16 @@ class RoadTaxController extends AbstractController
         return new JsonResponse(['message' => 'Road tax record deleted']);
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     private function serializeRoadTax(RoadTax $rt): array
     {
+        $vehicleId = $rt->getVehicle()?->getId();
+
         return [
             'id' => $rt->getId(),
-            'vehicleId' => $rt->getVehicle()->getId(),
+            'vehicleId' => $vehicleId,
             'startDate' => $rt->getStartDate()?->format('Y-m-d'),
             'expiryDate' => $rt->getExpiryDate()?->format('Y-m-d'),
             'amount' => $rt->getAmount(),
@@ -149,6 +157,9 @@ class RoadTaxController extends AbstractController
         ];
     }
 
+    /**
+     * @param array<string, mixed> $data
+     */
     private function updateRoadTaxFromData(RoadTax $rt, array $data): void
     {
         if (isset($data['startDate']) && $data['startDate']) {
@@ -157,7 +168,7 @@ class RoadTaxController extends AbstractController
         if (isset($data['expiryDate']) && $data['expiryDate']) {
             $rt->setExpiryDate(new \DateTime($data['expiryDate']));
         }
-        if (isset($data['amount'])) {
+        if (array_key_exists('amount', $data)) {
             $rt->setAmount($data['amount'] === null ? null : (string)$data['amount']);
         }
         if (isset($data['sorn'])) {

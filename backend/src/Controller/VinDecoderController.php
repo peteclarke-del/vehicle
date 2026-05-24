@@ -12,6 +12,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 use App\Controller\Trait\UserSecurityTrait;
+use App\Entity\User;
 
 #[Route('/api/vehicles')]
 class VinDecoderController extends AbstractController
@@ -34,7 +35,8 @@ class VinDecoderController extends AbstractController
         }
 
         // Check if user owns this vehicle (admins bypass)
-        if (!$this->isAdminForUser($this->getUser()) && $vehicle->getOwner() !== $this->getUser()) {
+        $user = $this->getUser();
+        if (!$this->isAdminForUser($user instanceof User ? $user : null) && $vehicle->getOwner() !== $user) {
             return $this->json(['error' => 'Unauthorized'], 403);
         }
 

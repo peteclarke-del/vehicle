@@ -92,7 +92,7 @@ class ServiceRecordController extends AbstractController
             if (
                 !$vehicle
                 || (!$this->isAdminForUser($user)
-                    && $vehicle->getOwner()->getId() !== $user->getId()
+                    && $vehicle->getOwner()?->getId() !== $user->getId()
                     && (!$assignment || !$assignment->canView()))
             ) {
                 return new JsonResponse(['error' => 'Vehicle not found'], 404);
@@ -127,7 +127,7 @@ class ServiceRecordController extends AbstractController
                 $ownIds = array_map(fn($v) => $v->getId(), $ownVehicles);
                 $assignedVehicles = [];
                 foreach ($assignments as $a) {
-                    if ($a->canView() && !in_array($a->getVehicle()->getId(), $ownIds, true)) {
+                    if ($a->canView() && !in_array($a->getVehicle()?->getId(), $ownIds, true)) {
                         $assignedVehicles[] = $a->getVehicle();
                     }
                 }
@@ -190,7 +190,7 @@ class ServiceRecordController extends AbstractController
             !$serviceRecord
             || !$user
             || (!$this->isAdminForUser($user)
-                && $serviceRecord->getVehicle()->getOwner()->getId() !== $user->getId()
+                && $serviceRecord->getVehicle()?->getOwner()?->getId() !== $user->getId()
                 && (!$assignment || !$assignment->canView()))
         ) {
             return new JsonResponse(['error' => 'Service record not found'], 404);
@@ -231,7 +231,7 @@ class ServiceRecordController extends AbstractController
         }
 
         $vehicle = $this->entityManager->getRepository(Vehicle::class)->find((int)$data['vehicleId']);
-        if (!$vehicle || (!$this->isAdminForUser($user) && $vehicle->getOwner()->getId() !== $user->getId())) {
+        if (!$vehicle || (!$this->isAdminForUser($user) && $vehicle->getOwner()?->getId() !== $user->getId())) {
             return new JsonResponse(['error' => 'Vehicle not found'], 404);
         }
 
@@ -284,7 +284,7 @@ class ServiceRecordController extends AbstractController
         $serviceRecord = $this->entityManager->getRepository(ServiceRecord::class)->find($id);
         $user = $this->getUserEntity();
 
-        if (!$serviceRecord || !$user || (!$this->isAdminForUser($user) && $serviceRecord->getVehicle()->getOwner()->getId() !== $user->getId())) {
+        if (!$serviceRecord || !$user || (!$this->isAdminForUser($user) && $serviceRecord->getVehicle()?->getOwner()?->getId() !== $user->getId())) {
             return new JsonResponse(['error' => 'Service record not found'], 404);
         }
 
@@ -364,7 +364,7 @@ class ServiceRecordController extends AbstractController
         $serviceRecord = $this->entityManager->getRepository(ServiceRecord::class)->find($id);
         $user = $this->getUserEntity();
 
-        if (!$serviceRecord || !$user || (!$this->isAdminForUser($user) && $serviceRecord->getVehicle()->getOwner()->getId() !== $user->getId())) {
+        if (!$serviceRecord || !$user || (!$this->isAdminForUser($user) && $serviceRecord->getVehicle()?->getOwner()?->getId() !== $user->getId())) {
             return new JsonResponse(['error' => 'Service record not found'], 404);
         }
 
@@ -410,7 +410,7 @@ class ServiceRecordController extends AbstractController
         $serviceRecord = $this->entityManager->getRepository(ServiceRecord::class)->find($id);
         $user = $this->getUserEntity();
 
-        if (!$serviceRecord || !$user || (!$this->isAdminForUser($user) && $serviceRecord->getVehicle()->getOwner()->getId() !== $user->getId())) {
+        if (!$serviceRecord || !$user || (!$this->isAdminForUser($user) && $serviceRecord->getVehicle()?->getOwner()?->getId() !== $user->getId())) {
             return new JsonResponse(['error' => 'Service record not found'], 404);
         }
 
@@ -518,28 +518,21 @@ class ServiceRecordController extends AbstractController
      * @param ServiceRecord $service
      * @param bool $detailed
      *
-     * @return array
+     * @return array<string, mixed>
      */
     private function serializeServiceRecord(ServiceRecord $service, bool $detailed = false): array
     {
         // Initialize cost variables with defaults or explicit entity values
-        $laborCost = $service->getLaborCost() ?? '0.00';
-        $partsCost = $service->getPartsCost() ?? '0.00';
+        $laborCost = $this->numericString($service->getLaborCost() ?? '0.00');
+        $partsCost = $this->numericString($service->getPartsCost());
         $consumablesCost = $service->getConsumablesCost() ?? null;
-
         // If itemised entries exist, compute costs from them when no explicit consumablesCost provided
         $items = $service->getItems();
         if (count($items) > 0) {
-            $laborCost = method_exists($service, 'sumItemsByType')
-                ? $service->sumItemsByType('labour')
-                : $laborCost;
-            $partsCost = method_exists($service, 'sumItemsByType')
-                ? $service->sumItemsByType('part')
-                : $partsCost;
+            $laborCost = $this->numericString($service->sumItemsByType('labour'));
+            $partsCost = $this->numericString($service->sumItemsByType('part'));
             if ($consumablesCost === null) {
-                $consumablesCost = method_exists($service, 'sumItemsByType')
-                    ? $service->sumItemsByType('consumable')
-                    : '0.00';
+                $consumablesCost = $service->sumItemsByType('consumable');
             }
         }
 
@@ -556,13 +549,13 @@ class ServiceRecordController extends AbstractController
         foreach ($directParts as $part) {
             if (!isset($linkedPartIds[$part->getId()]) && $part->isIncludedInServiceCost()) {
                 $cost = $part->getCost() ?? '0.00';
-                $qty = $part->getQuantity() ?? 1;
-                $total = bcmul((string)$cost, (string)$qty, 2);
-                $additionalPartsCost = bcadd($additionalPartsCost, $total, 2);
+                $qty = $part->getQuantity();
+                $total = bcmul($this->numericString($cost), $this->numericString($qty, '1'), 2);
+                $additionalPartsCost = bcadd($this->numericString($additionalPartsCost), $this->numericString($total), 2);
             }
         }
         if ($additionalPartsCost !== '0.00') {
-            $partsCost = bcadd($partsCost, $additionalPartsCost, 2);
+            $partsCost = bcadd($this->numericString($partsCost), $this->numericString($additionalPartsCost), 2);
         }
 
         // Also include consumables directly linked that aren't in service_items
@@ -578,35 +571,32 @@ class ServiceRecordController extends AbstractController
         foreach ($directConsumables as $consumable) {
             if (!isset($linkedConsumableIds[$consumable->getId()]) && $consumable->isIncludedInServiceCost()) {
                 $cost = $consumable->getCost() ?? '0.00';
-                $qty = $consumable->getQuantity() ?? 1;
-                $total = bcmul((string)$cost, (string)$qty, 2);
-                $additionalConsumablesCost = bcadd($additionalConsumablesCost, $total, 2);
+                $qty = $consumable->getQuantity();
+                $total = bcmul($this->numericString($cost), $this->numericString($qty, '1'), 2);
+                $additionalConsumablesCost = bcadd($this->numericString($additionalConsumablesCost), $this->numericString($total), 2);
             }
         }
         if ($consumablesCost === null) {
             $consumablesCost = $additionalConsumablesCost;
         } else {
-            $consumablesCost = bcadd($consumablesCost, $additionalConsumablesCost, 2);
+            $consumablesCost = bcadd($this->numericString($consumablesCost), $this->numericString($additionalConsumablesCost), 2);
         }
 
-        // Ensure consumablesCost is always a string for serialization
-        $consumablesCost = $consumablesCost ?? '0.00';
-
         // Calculate total cost including direct parts/consumables
-        $additionalCosts = $service->getAdditionalCosts() ?? '0.00';
-        $totalCost = bcadd(bcadd($laborCost, $partsCost, 2), $consumablesCost, 2);
-        $totalCost = bcadd($totalCost, $additionalCosts, 2);
+        $additionalCosts = $service->getAdditionalCosts();
+        $totalCost = bcadd(bcadd($this->numericString($laborCost), $this->numericString($partsCost), 2), $this->numericString($consumablesCost), 2);
+        $totalCost = bcadd($this->numericString($totalCost), $this->numericString($additionalCosts), 2);
 
         // Include linked MOT test cost if this service bundles it
         $motTestCost = '0.00';
         if ($service->getMotRecord() && $service->includesMotTestCost()) {
             $motTestCost = $service->getMotRecord()->getTestCost() ?? '0.00';
-            $totalCost = bcadd($totalCost, $motTestCost, 2);
+            $totalCost = bcadd($this->numericString($totalCost), $this->numericString($motTestCost), 2);
         }
 
         $data = [
             'id' => $service->getId(),
-            'vehicleId' => $service->getVehicle()->getId(),
+            'vehicleId' => $service->getVehicle()?->getId(),
             'serviceDate' => $service->getServiceDate()?->format('Y-m-d'),
             'serviceType' => $service->getServiceType(),
             'motRecordId' => $service->getMotRecord()?->getId(),
@@ -642,14 +632,14 @@ class ServiceRecordController extends AbstractController
             foreach ($directParts as $part) {
                 if (!isset($linkedPartIds[$part->getId()])) {
                     $cost = $part->getCost() ?? '0.00';
-                    $qty = $part->getQuantity() ?? 1;
+                    $qty = $part->getQuantity();
                     $data['items'][] = [
                         'id' => null,
                         'type' => 'part',
                         'description' => $part->getDescription() ?? $part->getName() ?? '',
                         'cost' => $cost,
                         'quantity' => $qty,
-                        'total' => bcmul((string)$cost, (string)$qty, 2),
+                        'total' => bcmul($this->numericString($cost), $this->numericString($qty, '1'), 2),
                         'partId' => $part->getId(),
                         'includedInServiceCost' => $part->isIncludedInServiceCost(),
                     ];
@@ -660,14 +650,14 @@ class ServiceRecordController extends AbstractController
             foreach ($directConsumables as $consumable) {
                 if (!isset($linkedConsumableIds[$consumable->getId()])) {
                     $cost = $consumable->getCost() ?? '0.00';
-                    $qty = $consumable->getQuantity() ?? 1;
+                    $qty = $consumable->getQuantity();
                     $data['items'][] = [
                         'id' => null,
                         'type' => 'consumable',
                         'description' => $consumable->getDescription() ?? '',
                         'cost' => $cost,
                         'quantity' => $qty,
-                        'total' => bcmul((string)$cost, (string)$qty, 2),
+                        'total' => bcmul($this->numericString($cost), $this->numericString($qty, '1'), 2),
                         'consumableId' => $consumable->getId(),
                         'includedInServiceCost' => $consumable->isIncludedInServiceCost(),
                     ];
@@ -683,7 +673,7 @@ class ServiceRecordController extends AbstractController
      *
      * @param ServiceItem $item
      *
-     * @return array
+     * @return array<string, mixed>
      */
     private function serializeItem(ServiceItem $item): array
     {
@@ -708,7 +698,7 @@ class ServiceRecordController extends AbstractController
      * function updateServiceRecordFromData
      *
      * @param ServiceRecord $service
-     * @param array $data
+     * @param array<string, mixed> $data
      *
      * @return void
      */
@@ -755,7 +745,7 @@ class ServiceRecordController extends AbstractController
             if (!is_numeric($data['mileage']) || (int)$data['mileage'] < 0) {
                 throw new \InvalidArgumentException('Invalid mileage');
             }
-            $service->setMileage($data['mileage']);
+            $service->setMileage((int)$data['mileage']);
         }
 
         if (isset($data['serviceProvider'])) {
@@ -970,6 +960,23 @@ class ServiceRecordController extends AbstractController
     }
 
     /**
+     * Convert a value to numeric-string for bcmath operations.
+     * @param mixed $value
+     * @param string $default numeric-string
+     * @return numeric-string
+     */
+    private function numericString(mixed $value, string $default = '0.00'): string
+    {
+        if (is_numeric($value)) {
+            /** @var numeric-string $result */
+            $result = (string) $value;
+            return $result;
+        }
+        /** @var numeric-string $default */
+        return $default;
+    }
+
+    /**
      * function calculateTotal
      *
      * @param string $cost
@@ -980,7 +987,7 @@ class ServiceRecordController extends AbstractController
     private function calculateTotal(string $cost, string $quantity): string
     {
         if (function_exists('bcmul')) {
-            return bcmul($cost, $quantity, 2);
+            return bcmul($this->numericString($cost), $this->numericString($quantity, '1'), 2);
         }
 
         // Fallback calculation
@@ -1013,7 +1020,7 @@ class ServiceRecordController extends AbstractController
         }
 
         $service = $item->getServiceRecord();
-        if (!$service || (!$this->isAdminForUser($user) && $service->getVehicle()->getOwner()->getId() !== $user->getId())) {
+        if (!$service || (!$this->isAdminForUser($user) && $service->getVehicle()?->getOwner()?->getId() !== $user->getId())) {
             return new JsonResponse(['error' => 'Not authorized to update this item'], 403);
         }
 
@@ -1081,7 +1088,7 @@ class ServiceRecordController extends AbstractController
         }
 
         $service = $item->getServiceRecord();
-        if (!$service || (!$this->isAdminForUser($user) && $service->getVehicle()->getOwner()->getId() !== $user->getId())) {
+        if (!$service || (!$this->isAdminForUser($user) && $service->getVehicle()?->getOwner()?->getId() !== $user->getId())) {
             return new JsonResponse(['error' => 'Not authorized to delete this item'], 403);
         }
 

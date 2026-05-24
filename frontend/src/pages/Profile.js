@@ -62,18 +62,17 @@ const Profile = () => {
       <Typography variant="h4" gutterBottom>
         {t('nav.profile')}
       </Typography>
-      
       <Card sx={{ maxWidth: 600, mt: 3 }}>
         <CardContent>
           <Typography variant="h6" gutterBottom>
             {t('profile.userInformation')}
           </Typography>
           {success && (
-            <Alert severity="success" sx={{ mb: 2 }}>
+            <Alert severity="success" sx={{ mb: 2 }} role="status" aria-live="polite">
               Profile updated successfully!
             </Alert>
           )}
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} aria-label={t('profile.updateProfileForm') || 'Update profile form'}>
             <Grid container spacing={2}>
               <Grid item xs={12}>
                 <TextField
@@ -81,6 +80,7 @@ const Profile = () => {
                   disabled
                   label={t('auth.email')}
                   value={user?.email || ''}
+                  inputProps={{ 'aria-label': t('auth.email') || 'Email address' }}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -91,6 +91,7 @@ const Profile = () => {
                   label={t('auth.firstName')}
                   value={formData.firstName}
                   onChange={handleChange}
+                  inputProps={{ 'aria-label': t('auth.firstName') || 'First name' }}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -101,6 +102,7 @@ const Profile = () => {
                   label={t('auth.lastName')}
                   value={formData.lastName}
                   onChange={handleChange}
+                  inputProps={{ 'aria-label': t('auth.lastName') || 'Last name' }}
                 />
               </Grid>
               <Grid item xs={12}>
@@ -111,6 +113,7 @@ const Profile = () => {
                   label={t('common.theme')}
                   value={formData.theme}
                   onChange={handleChange}
+                  inputProps={{ 'aria-label': t('common.theme') || 'Theme' }}
                 >
                   <MenuItem value="light">{t('common.light')}</MenuItem>
                   <MenuItem value="dark">{t('common.dark')}</MenuItem>
@@ -122,15 +125,14 @@ const Profile = () => {
                   variant="contained"
                   disabled={loading}
                   fullWidth
+                  aria-label={t('profile.updateProfile') || 'Update profile'}
                 >
                   {loading ? <KnightRiderLoader size={18} /> : t('profile.updateProfile')}
                 </Button>
               </Grid>
             </Grid>
           </form>
-
           <Divider sx={{ my: 3 }} />
-
           <Typography variant="h6" gutterBottom>
             {t('profile.security')}
           </Typography>
@@ -139,12 +141,12 @@ const Profile = () => {
             startIcon={<LockIcon />}
             onClick={() => setShowPasswordDialog(true)}
             fullWidth
+            aria-label={t('profile.changePassword') || 'Change password'}
           >
             {t('profile.changePassword')}
           </Button>
         </CardContent>
       </Card>
-
       <PasswordChangeDialog
         open={showPasswordDialog}
         onClose={() => setShowPasswordDialog(false)}

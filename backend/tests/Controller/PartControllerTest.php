@@ -13,7 +13,8 @@ class PartControllerTest extends BaseWebTestCase
     public function testCreatePartFromStockDecrementsStockQuantity(): void
     {
         $em = $this->getEntityManager();
-        $user = $em->getRepository(User::class)->findOneBy(['email' => 'test@example.com']);
+        $user = $em->getRepository(User::class)
+            ->findOneBy(['email' => 'test@example.com']);
         self::assertInstanceOf(User::class, $user);
 
         $stockItem = new StockItem();
@@ -28,15 +29,39 @@ class PartControllerTest extends BaseWebTestCase
         $em->persist($stockItem);
         $em->flush();
 
-        $this->client->request('POST', '/api/parts', [], [], [
-            'HTTP_AUTHORIZATION' => $this->getAuthToken(),
-            'CONTENT_TYPE' => 'application/json',
-        ], json_encode([
-            'vehicleId' => 1,
+        $vehicle = $this->createTestVehicle($user, 'PART-' . uniqid());
+
+        $payloadData = [
+            'vehicleId' => $vehicle->getId(),
             'stockItemId' => $stockItem->getId(),
             'quantity' => 1,
-        ]));
+        ];
+        $payload = json_encode($payloadData);
 
-        $this->assertContains($this->client->getResponse()->getStatusCode(), [201, 400, 404, 500]);
+        $this->client->request(
+            'POST',
+            '/api/parts',
+            [],
+            [],
+            [
+                'HTTP_AUTHORIZATION' => $this->getAuthToken(),
+                'CONTENT_TYPE' => 'application/json',
+            ],
+            $payload
+        );
+
+        $this->assertSame(201, $this->client->getResponse()->getStatusCode());
+        $responseData = json_decode(
+            (string) $this->client->getResponse()->getContent(),
+            true
+        );
+        $this->assertIsArray($responseData);
+        $this->assertArrayHasKey('id', $responseData);
+
+        $em->clear();
+        $updatedStockItem = $em->getRepository(StockItem::class)
+            ->find($stockItem->getId());
+        $this->assertInstanceOf(StockItem::class, $updatedStockItem);
+        $this->assertSame('2', $updatedStockItem->getQuantity());
     }
 }

@@ -9,9 +9,27 @@ framework:
         cookie_secure: auto
         cookie_samesite: lax
         storage_factory_id: session.storage.factory.native
+    rate_limiter:
+        register:
+            policy: 'fixed_window'
+            limit: 3
+            interval: '1 hour'
+        refresh_token:
+            policy: 'sliding_window'
+            limit: 60
+            interval: '1 minute'
 
 when@test:
     framework:
         test: true
         session:
             storage_factory_id: session.storage.factory.mock_file
+        rate_limiter:
+            register:
+                policy: 'fixed_window'
+                limit: 1000
+                interval: '1 hour'
+            refresh_token:
+                policy: 'sliding_window'
+                limit: 10000
+                interval: '1 minute'

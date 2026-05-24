@@ -145,6 +145,8 @@ function AppRoutes() {
 }
 
 function App() {
+  const { t } = useTranslation();
+
   // Prevent default browser drag/drop behavior globally
   useEffect(() => {
     const cleanup = preventDefaultDragDrop();
@@ -153,6 +155,9 @@ function App() {
 
   return (
     <BrowserRouter>
+      <a className="skip-link" href="#app-main-content">
+        {t('accessibility.skipToMain', { defaultValue: 'Skip to main content' })}
+      </a>
       <AuthProvider>
         <ThemeProvider>
           <UserPreferencesProvider>
