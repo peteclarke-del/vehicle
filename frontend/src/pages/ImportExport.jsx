@@ -528,6 +528,13 @@ const ImportExport = () => {
       saveBlob(blob, `vehicles_full_export_${new Date().toISOString().split('T')[0]}.zip`);
       pushStageHistory('Downloading', 'Download completed in browser.', new Date().toISOString());
 
+      if (activeExportJobId) {
+        const cleanupUrl = `/api/vehicles/export-zip-jobs/${activeExportJobId}/cleanup`;
+        fetch(cleanupUrl, { method: 'POST', headers: auth() }).catch(() => {
+          // Best-effort cleanup; TTL pruning handles fallback cleanup.
+        });
+      }
+
       setExportProgress(100);
       setExportStatus('success');
       setExportMessage(t('importExport.modal.exportSuccessAll') || 'Full export downloaded');

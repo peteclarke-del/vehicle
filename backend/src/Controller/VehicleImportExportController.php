@@ -477,6 +477,32 @@ class VehicleImportExportController extends AbstractController
         return $response;
     }
 
+    #[Route('/export-zip-jobs/{jobId}/cleanup', name: 'vehicles_export_zip_job_cleanup', methods: ['POST'])]
+    public function exportZipJobCleanup(string $jobId): JsonResponse
+    {
+        $user = $this->getUserEntity();
+        if (!$user) {
+            return new JsonResponse(['error' => 'Unauthorized'], 401);
+        }
+
+        $job = $this->exportZipJobService->getJob($jobId);
+        if (!is_array($job)) {
+            return new JsonResponse(['error' => 'Export job not found'], 404);
+        }
+
+        $isAdmin = $this->isAdminForUser($user);
+        if (!$this->exportZipJobService->canAccessJob($job, $user, $isAdmin)) {
+            return new JsonResponse(['error' => 'Export job not found'], 404);
+        }
+
+        $this->exportZipJobService->cleanupJobArtifacts($jobId);
+
+        return new JsonResponse([
+            'ok' => true,
+            'message' => 'Export job artifacts cleaned',
+        ]);
+    }
+
     private function startExportZipWorker(string $jobId, LoggerInterface $logger): int
     {
         $projectDirParam = $this->getParameter('kernel.project_dir');
