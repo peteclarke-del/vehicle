@@ -157,7 +157,14 @@ export const AuthProvider = ({ children }) => {
         logger.warn('Failed to apply user language', err);
       }
     } catch (error) {
-      SafeStorage.remove('token');
+      const status = error?.response?.status;
+      // Only clear auth when token is truly invalid/unauthorized.
+      // Preserve token on transient 5xx/backend errors to avoid forced logout loops.
+      if (status === 401 || status === 403) {
+        SafeStorage.remove('token');
+        setToken(null);
+        setUser(null);
+      }
     } finally {
       setLoading(false);
     }
@@ -179,13 +186,14 @@ export const AuthProvider = ({ children }) => {
     // Try to request a long-lived refresh token from the backend
     try {
       const resp = await api.post('/auth/issue-refresh');
-      if (resp?.data?.refreshToken) {
-        SafeStorage.set('refreshToken', resp.data.refreshToken);
+      const refreshPayload = resp?.data?.data || resp?.data || {};
+      if (refreshPayload?.refreshToken) {
+        SafeStorage.set('refreshToken', refreshPayload.refreshToken);
       }
       // If server returned a token tailored to user's session TTL, adopt it
-      if (resp?.data?.token) {
-        SafeStorage.set('token', resp.data.token);
-        setToken(resp.data.token);
+      if (refreshPayload?.token) {
+        SafeStorage.set('token', refreshPayload.token);
+        setToken(refreshPayload.token);
       }
     } catch (e) {
       // non-fatal: continue without refresh token
