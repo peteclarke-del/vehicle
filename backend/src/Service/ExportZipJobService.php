@@ -11,7 +11,8 @@ use Psr\Log\LoggerInterface;
 
 class ExportZipJobService
 {
-    private const JOB_TTL_HOURS = 24;
+    private const ACTIVE_JOB_TTL_HOURS = 24;
+    private const FINISHED_JOB_TTL_MINUTES = 30;
 
     public function __construct(
         private readonly string $projectDir,
@@ -258,7 +259,8 @@ class ExportZipJobService
         }
 
         $now = new DateTimeImmutable();
-        $cutoff = $now->sub(new DateInterval('PT' . self::JOB_TTL_HOURS . 'H'));
+        $activeCutoff = $now->sub(new DateInterval('PT' . self::ACTIVE_JOB_TTL_HOURS . 'H'));
+        $finishedCutoff = $now->sub(new DateInterval('PT' . self::FINISHED_JOB_TTL_MINUTES . 'M'));
 
         foreach ($entries as $entry) {
             if ($entry === '.' || $entry === '..') {
@@ -276,18 +278,25 @@ class ExportZipJobService
                 continue;
             }
 
-            $updatedAt = $job['updatedAt'] ?? null;
-            if (!is_string($updatedAt)) {
+            $status = (string) ($job['status'] ?? '');
+            $isFinished = in_array($status, ['completed', 'failed', 'cancelled'], true);
+
+            $referenceDateRaw = $isFinished
+                ? ($job['completedAt'] ?? $job['updatedAt'] ?? null)
+                : ($job['updatedAt'] ?? null);
+
+            if (!is_string($referenceDateRaw) || $referenceDateRaw === '') {
                 continue;
             }
 
             try {
-                $updatedDate = new DateTimeImmutable($updatedAt);
+                $referenceDate = new DateTimeImmutable($referenceDateRaw);
             } catch (\Throwable $e) {
                 continue;
             }
 
-            if ($updatedDate < $cutoff) {
+            $cutoff = $isFinished ? $finishedCutoff : $activeCutoff;
+            if ($referenceDate < $cutoff) {
                 $this->removeDirectory($this->getJobDirectory($jobId));
             }
         }
