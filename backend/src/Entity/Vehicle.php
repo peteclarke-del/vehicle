@@ -909,7 +909,17 @@ class Vehicle
      */
     public function getComputedRoadTaxAnnualCost(): ?string
     {
-        $latestRecord = $this->getLatestRoadTaxRecord();
+        $latestDate = null;
+        $latestRecord = null;
+        foreach ($this->roadTaxRecords as $rt) {
+            $d = $rt->getExpiryDate() ?? $rt->getStartDate();
+            if ($d instanceof \DateTimeInterface) {
+                if ($latestDate === null || $d > $latestDate) {
+                    $latestDate = $d;
+                    $latestRecord = $rt;
+                }
+            }
+        }
 
         if ($latestRecord) {
             return $latestRecord->getNormalizedAnnualAmount();
