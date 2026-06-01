@@ -976,6 +976,7 @@ class VehicleController extends AbstractController
         'lastServiceDate' => $lastServiceDate,
         'motExpiryDate' => $motExpiryDate,
         'roadTaxExpiryDate' => $vehicle->getRoadTaxExpiryDate()?->format('Y-m-d'),
+        'isRoadTaxSorn' => $vehicle->getComputedRoadTaxIsSorn(),
         'insuranceExpiryDate' => $vehicle->getComputedInsuranceExpiryDate()?->format('Y-m-d'),
         'isRoadTaxExempt' => $vehicle->isRoadTaxExempt(),
         'isMotExempt' => $vehicle->isMotExempt(),

@@ -407,6 +407,26 @@ class Vehicle
         return $this->getComputedRoadTaxExpiryDate();
     }
 
+    private function getLatestRoadTaxRecord(): ?RoadTax
+    {
+        $latestRecord = null;
+        $latestMoment = null;
+
+        foreach ($this->roadTaxRecords as $rt) {
+            $moment = $rt->getStartDate() ?? $rt->getCreatedAt() ?? $rt->getExpiryDate();
+            if (!$moment instanceof \DateTimeInterface) {
+                continue;
+            }
+
+            if ($latestMoment === null || $moment > $latestMoment) {
+                $latestMoment = $moment;
+                $latestRecord = $rt;
+            }
+        }
+
+        return $latestRecord;
+    }
+
     /**
      * Compute road tax expiry from the most recently *started* road tax record.
      * Uses startDate (not expiryDate) to find the latest record so that a SORN
@@ -415,16 +435,12 @@ class Vehicle
      */
     public function getComputedRoadTaxExpiryDate(): ?\DateTimeInterface
     {
-        $latestRecord = null;
-        foreach ($this->roadTaxRecords as $rt) {
-            $d = $rt->getStartDate();
-            if ($d instanceof \DateTimeInterface) {
-                if ($latestRecord === null || $d > $latestRecord->getStartDate()) {
-                    $latestRecord = $rt;
-                }
-            }
-        }
-        return $latestRecord?->getExpiryDate();
+        return $this->getLatestRoadTaxRecord()?->getExpiryDate();
+    }
+
+    public function getComputedRoadTaxIsSorn(): bool
+    {
+        return (bool) $this->getLatestRoadTaxRecord()?->getSorn();
     }
 
     public function getRoadTaxRecords(): Collection

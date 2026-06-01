@@ -128,4 +128,31 @@ describe('VehicleDetails Component', () => {
       expect(screen.getByText('vehicleDetails.vehicleInformation')).toBeInTheDocument();
     });
   });
+
+  test('shows SORN label instead of tax expiry date when active tax record is SORN', async () => {
+    mockApi.get.mockImplementation((url) => {
+      if (url.includes('/vehicles/1/stats')) {
+        return Promise.resolve({ data: mockStats });
+      }
+      if (url.includes('/vehicles/1')) {
+        return Promise.resolve({
+          data: {
+            ...mockVehicle,
+            roadTaxExpiryDate: '2030-01-01',
+            isRoadTaxSorn: true,
+          },
+        });
+      }
+      if (url.includes('/depreciation')) {
+        return Promise.resolve({ data: { schedule: [] } });
+      }
+      return Promise.resolve({ data: null });
+    });
+
+    renderWithProviders();
+
+    await waitFor(() => {
+      expect(screen.getByText('roadTax.sorn')).toBeInTheDocument();
+    });
+  });
 });
