@@ -336,7 +336,14 @@ const VehicleDetails = () => {
                     <Typography variant="body2" color="textSecondary" sx={{ minWidth: 140 }}>
                       {t('vehicleDetails.roadTaxExpiry')}:
                     </Typography>
-                    {vehicle.roadTaxExpiryDate ? (
+                    {vehicle.isRoadTaxSorn ? (
+                      <Chip
+                        label={t('roadTax.sorn')}
+                        color="warning"
+                        variant="outlined"
+                        size="small"
+                      />
+                    ) : vehicle.roadTaxExpiryDate ? (
                       <Chip
                         icon={getDateStatus(vehicle.roadTaxExpiryDate)?.icon}
                         label={vehicle.roadTaxExpiryDate}
