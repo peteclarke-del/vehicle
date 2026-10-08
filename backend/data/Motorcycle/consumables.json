@@ -394,5 +394,41 @@
     "name": "Tyre/Tire Valve Stem",
     "unit": "unit",
     "description": "Valve stem."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Fuel Injector Seal Kit",
+    "unit": "kit",
+    "description": "Replacement O-rings and seals for servicing fuel injectors on fuel-injected motorcycles."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Clutch Master Cylinder Rebuild Kit",
+    "unit": "kit",
+    "description": "Seals and internal service components for rebuilding a compatible hydraulic clutch master cylinder."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Brake Caliper Hardware Kit",
+    "unit": "kit",
+    "description": "Slider pins, boots, clips, and fitting hardware for servicing a brake caliper."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Brake Shoes (Drum Brakes)",
+    "unit": "set",
+    "description": "Replacement friction shoes for motorcycles fitted with drum brakes."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Fork Dust Seals",
+    "unit": "pair",
+    "description": "External dust seals that protect fork oil seals and sliding surfaces from dirt and water."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Wheel Bearing Seal Kit",
+    "unit": "kit",
+    "description": "Replacement seals and related fitting components for a motorcycle wheel bearing."
   }
 ]

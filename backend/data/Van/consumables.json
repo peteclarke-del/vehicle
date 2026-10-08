@@ -496,5 +496,59 @@
     "name": "Rear Door Hinge Lubricant",
     "unit": "ml",
     "description": "Lubricant for rear door hinges and mechanisms."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Carburettor Rebuild Kit",
+    "unit": "kit",
+    "description": "Gaskets, seals, jets, and float valve components for rebuilding a carburettor on older petrol vans."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Fuel Injector Seal Kit",
+    "unit": "kit",
+    "description": "Replacement O-rings, seals, and retainers for servicing diesel or petrol fuel injectors."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Brake Caliper Hardware Kit",
+    "unit": "kit",
+    "description": "Slider pins, boots, clips, and fitting hardware for servicing a brake caliper."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Brake Master Cylinder Rebuild Kit",
+    "unit": "kit",
+    "description": "Seals and internal service components for rebuilding a compatible brake master cylinder."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Clutch Master/Slave Cylinder Rebuild Kit",
+    "unit": "kit",
+    "description": "Seals and service components for compatible hydraulic clutch master or slave cylinders."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Steering Rack Rebuild Kit",
+    "unit": "kit",
+    "description": "Seals and service components for rebuilding a compatible steering rack."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Alternator Repair Kit",
+    "unit": "kit",
+    "description": "Model-specific brushes, bearings, regulator, or rectifier components for alternator repair."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Starter Motor Repair Kit",
+    "unit": "kit",
+    "description": "Model-specific brushes, solenoid contacts, or drive components for starter motor repair."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Wheel Bearing Seal Kit",
+    "unit": "kit",
+    "description": "Replacement seals and related fitting components for a wheel bearing or hub."
   }
 ]

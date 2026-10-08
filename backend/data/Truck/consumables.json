@@ -466,5 +466,59 @@
     "name": "Hand Cleaner",
     "unit": "ml",
     "description": "Heavy-duty hand cleaner for mechanics."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Fuel Injector Nozzle/Seal Repair Kit",
+    "unit": "kit",
+    "description": "Model-specific nozzle, seal, and service components for repairing a diesel fuel injector."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Brake Caliper Rebuild Kit",
+    "unit": "kit",
+    "description": "Pistons, seals, boots, and service parts for rebuilding a compatible disc brake caliper."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Brake Master Cylinder Rebuild Kit",
+    "unit": "kit",
+    "description": "Seals and internal service components for rebuilding a compatible hydraulic brake master cylinder."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Air Brake Compressor Repair Kit",
+    "unit": "kit",
+    "description": "Model-specific seals, valves, and wear components for servicing an air brake compressor."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Brake Chamber Diaphragm Kit",
+    "unit": "kit",
+    "description": "Diaphragm, seals, and service parts for an air brake chamber."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Wheel Hub Seal Kit",
+    "unit": "kit",
+    "description": "Oil seals and fitting components for servicing a truck wheel hub."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Steering Gearbox Rebuild Kit",
+    "unit": "kit",
+    "description": "Seals and wear components for rebuilding a compatible truck steering gearbox."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Alternator Repair Kit",
+    "unit": "kit",
+    "description": "Model-specific brushes, bearings, regulator, or rectifier components for alternator repair."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Starter Motor Repair Kit",
+    "unit": "kit",
+    "description": "Model-specific brushes, solenoid contacts, or drive components for starter motor repair."
   }
 ]

@@ -63,5 +63,25 @@
     "vehicleType": "Motorcycle",
     "name": "Electrical & Control",
     "description": "ECUs, ignition systems, regulators, and electronic control components."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Cooling System",
+    "description": "Radiators, coolant pumps, thermostats, fans, and hoses on liquid-cooled motorcycles."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Final Drive",
+    "description": "Drive chains, sprockets, belts, shafts, and related final-drive components."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Lighting & Instruments",
+    "description": "Headlamps, indicators, tail lamps, instrument clusters, and rider information displays."
+  },
+  {
+    "vehicleType": "Motorcycle",
+    "name": "Luggage & Accessories",
+    "description": "Panniers, top boxes, racks, guards, screens, and fitted motorcycle accessories."
   }
 ]
