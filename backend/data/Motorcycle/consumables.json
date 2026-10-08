@@ -73,6 +73,12 @@
   },
   {
     "vehicleType": "Motorcycle",
+    "name": "Carburettor Rebuild Kit",
+    "unit": "kit",
+    "description": "Complete rebuild kit for carburettors including jets, needles, O-rings, gaskets, and float valve; restores correct fuelling on carb-fed motorcycles."
+  },
+  {
+    "vehicleType": "Motorcycle",
     "name": "Spark Plugs",
     "unit": "unit",
     "description": "Correct heat range and type spark plugs; gap per specification."
