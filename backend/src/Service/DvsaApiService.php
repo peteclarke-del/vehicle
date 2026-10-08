@@ -47,7 +47,7 @@ class DvsaApiService
      */
     public function getMotHistory(string $registration): ?array
     {
-        // Prefer OAuth2 token flow when configured (per DVSA auth docs). If not configured, fall back to x-api-key.
+        // The current DVSA MOT History API requires both OAuth2 and an API key.
         if (!$this->apiKey && !$this->tokenUrl) {
             // Allow tests to exercise the HTTP client even when no API
             // credentials are configured. Log a warning but continue so
@@ -64,17 +64,26 @@ class DvsaApiService
             $headers = ['Accept' => 'application/json'];
 
             $token = $this->getAccessToken();
+            // Do not send a misleading API-key-only request when OAuth is configured
+            // but token acquisition failed. DVSA requires both credentials.
+            if ($this->tokenUrl && (!$token || !$this->apiKey)) {
+                if (!$this->apiKey) {
+                    $this->logger->warning('DVSA API key is not configured');
+                }
+                return [];
+            }
+
             if ($token) {
                 $headers['Authorization'] = 'Bearer ' . $token;
             }
 
             if ($this->apiKey) {
-                $headers['x-api-key'] = $this->apiKey;
+                $headers['X-API-Key'] = $this->apiKey;
             }
 
             // Log request URL for diagnostics (redact sensitive headers)
             $this->logger->info('DVSA request url: ' . $apiUrl);
-            $safeHeaders = array_diff_key($headers, array_flip(['Authorization', 'x-api-key']));
+            $safeHeaders = array_diff_key($headers, array_flip(['Authorization', 'x-api-key', 'X-API-Key']));
             $this->logger->info('DVSA request headers: ' . json_encode($safeHeaders));
 
             $response = $this->httpClient->request('GET', $apiUrl, [
@@ -243,6 +252,7 @@ class DvsaApiService
             $response = $this->httpClient->request('POST', $tokenUrl, [
                 'headers' => [
                     'Accept' => 'application/json',
+                    'Content-Type' => 'application/x-www-form-urlencoded',
                 ],
                 'body' => [
                     'grant_type' => 'client_credentials',
