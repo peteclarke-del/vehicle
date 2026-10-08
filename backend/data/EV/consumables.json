@@ -346,5 +346,23 @@
     "name": "Pedestrian Warning Speaker",
     "unit": "unit",
     "description": "External speaker for AVAS (Acoustic Vehicle Alerting System)."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Brake Master Cylinder Rebuild Kit",
+    "unit": "kit",
+    "description": "Seals and internal service components for rebuilding a compatible brake master cylinder."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Brake Caliper Hardware Kit",
+    "unit": "kit",
+    "description": "Slider pins, boots, clips, and fitting hardware for servicing a brake caliper."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Wheel Bearing Seal Kit",
+    "unit": "kit",
+    "description": "Replacement seals and related fitting components for a wheel bearing or hub."
   }
 ]

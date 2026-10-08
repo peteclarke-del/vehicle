@@ -58,5 +58,40 @@
     "vehicleType": "Van",
     "name": "Electrical & Control",
     "description": "Vehicle control units, wiring systems, and electronic modules."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Cooling System",
+    "description": "Radiators, pumps, thermostats, fans, hoses, and engine cooling components."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "HVAC & Climate Control",
+    "description": "Cab heating, ventilation, air conditioning, cabin filters, and climate control components."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Drivetrain & Axles",
+    "description": "Drive shafts, CV joints, differentials, axle assemblies, and final-drive components."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Interior & Restraints",
+    "description": "Cab seats, trim, seat belts, airbags, and interior fittings."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Lighting & Visibility",
+    "description": "Headlamps, tail lamps, indicators, mirrors, wipers, and visibility components."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "Cargo & Load Equipment",
+    "description": "Load-area fittings, cargo restraints, partitions, floor systems, and loading equipment."
+  },
+  {
+    "vehicleType": "Van",
+    "name": "ADAS & Safety Systems",
+    "description": "Driver assistance sensors, cameras, parking sensors, and related safety electronics."
   }
 ]

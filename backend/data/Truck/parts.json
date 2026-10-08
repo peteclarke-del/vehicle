@@ -58,5 +58,45 @@
     "vehicleType": "Truck",
     "name": "Electrical & Control",
     "description": "Engine, chassis, and transmission control electronics."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Cooling System",
+    "description": "Heavy-duty radiators, pumps, thermostats, fans, and engine cooling components."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "HVAC & Cab Systems",
+    "description": "Cab heating, ventilation, air conditioning, climate controls, and cabin filtration."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Drivetrain & Axles",
+    "description": "Drive shafts, differentials, prop shafts, axle assemblies, and final-drive components."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Air Brake & Pneumatic Systems",
+    "description": "Air compressors, dryers, reservoirs, valves, brake chambers, and pneumatic lines."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Hydraulic Systems",
+    "description": "Hydraulic pumps, cylinders, hoses, valves, and power take-off equipment."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Trailer Coupling & Fifth Wheel",
+    "description": "Fifth wheels, kingpins, coupling hardware, and trailer connection components."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Lighting & Safety Systems",
+    "description": "Work lamps, marker lamps, warning systems, mirrors, and vehicle safety equipment."
+  },
+  {
+    "vehicleType": "Truck",
+    "name": "Cab Interior & Restraints",
+    "description": "Cab seats, trim, seat belts, airbags, and driver controls."
   }
 ]

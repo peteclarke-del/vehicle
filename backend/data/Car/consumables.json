@@ -562,5 +562,53 @@
     "name": "Wash Mitt",
     "unit": "unit",
     "description": "Soft mitt for washing the car exterior."
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Carburettor Rebuild Kit",
+    "unit": "kit",
+    "description": "Gaskets, seals, jets, and float valve components for rebuilding a carburettor on older petrol vehicles."
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Fuel Injector Seal Kit",
+    "unit": "kit",
+    "description": "Replacement O-rings, seals, and retainers for servicing fuel injectors."
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Brake Caliper Hardware Kit",
+    "unit": "kit",
+    "description": "Slider pins, boots, clips, and fitting hardware for servicing a brake caliper."
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Steering Rack Rebuild Kit",
+    "unit": "kit",
+    "description": "Seals and service components for rebuilding a compatible steering rack."
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Power Steering Pump Rebuild Kit",
+    "unit": "kit",
+    "description": "Seals and wear components for rebuilding a hydraulic power steering pump."
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Alternator Repair Kit",
+    "unit": "kit",
+    "description": "Model-specific brushes, bearings, regulator, or rectifier components for alternator repair."
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Starter Motor Repair Kit",
+    "unit": "kit",
+    "description": "Model-specific brushes, solenoid contacts, or drive components for starter motor repair."
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Wheel Bearing Seal Kit",
+    "unit": "kit",
+    "description": "Replacement seals and related fitting components for a wheel bearing or hub."
   }
 ]

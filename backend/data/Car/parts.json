@@ -58,5 +58,35 @@
     "vehicleType": "Car",
     "name": "Electrical & Control",
     "description": "Vehicle control modules, wiring looms, sensors, and electronic upgrade components."
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Cooling System",
+    "description": "Radiators, pumps, thermostats, fans, hoses, and engine cooling components."
+  },
+  {
+    "vehicleType": "Car",
+    "name": "HVAC & Climate Control",
+    "description": "Heating, ventilation, air conditioning, cabin filters, and climate control components."
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Drivetrain & Axles",
+    "description": "Drive shafts, CV joints, differentials, axle assemblies, and final-drive components."
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Interior & Restraints",
+    "description": "Seats, trim, seat belts, airbags, and interior fittings."
+  },
+  {
+    "vehicleType": "Car",
+    "name": "Lighting & Visibility",
+    "description": "Headlamps, tail lamps, indicators, mirrors, wipers, and visibility components."
+  },
+  {
+    "vehicleType": "Car",
+    "name": "ADAS & Safety Systems",
+    "description": "Driver assistance sensors, cameras, parking sensors, and related safety electronics."
   }
 ]

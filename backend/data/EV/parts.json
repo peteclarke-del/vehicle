@@ -51,12 +51,37 @@
   },
   {
     "vehicleType": "EV",
-    "name": "Ignition",
+    "name": "Start & Drive Enable",
     "description": "Start/enable and control components such as relays, sensors, and control modules."
   },
   {
     "vehicleType": "EV",
     "name": "Electrical & Control",
     "description": "Vehicle control units, sensors, and low-voltage electrical systems."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "HVAC & Climate Control",
+    "description": "Heating, ventilation, air conditioning, heat pumps, and cabin climate controls."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Low-Voltage Electrical",
+    "description": "12-volt batteries, wiring, fuses, relays, and auxiliary electrical components."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Lighting & Visibility",
+    "description": "Headlamps, tail lamps, indicators, mirrors, wipers, and visibility components."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "Interior & Restraints",
+    "description": "Seats, trim, seat belts, airbags, and interior fittings."
+  },
+  {
+    "vehicleType": "EV",
+    "name": "ADAS & Safety Systems",
+    "description": "Driver assistance sensors, cameras, parking sensors, and related safety electronics."
   }
 ]
