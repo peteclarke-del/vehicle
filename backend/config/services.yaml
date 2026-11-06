@@ -27,6 +27,8 @@ services:
             - '../src/DependencyInjection/'
             - '../src/Entity/'
             - '../src/Kernel.php'
+            # Test-only: registered in services_test.yaml. Never load elsewhere.
+            - '../src/EventSubscriber/TestAuthSubscriber.php'
 
     App\Controller\:
         resource: '../src/Controller/'

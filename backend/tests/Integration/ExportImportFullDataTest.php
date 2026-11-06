@@ -161,6 +161,10 @@ class ExportImportFullDataTest extends KernelTestCase
             $exportResult->getMessage() ?? 'Export failed'
         );
 
+        // Export no longer pre-copies files into $zipDir; ExportZipArchiveBuilder
+        // does that when packing. Stage them here as the builder would.
+        $this->stageZipAttachments($exportResult->getData(), $exportDir);
+
         $importUser = new User();
         $importUser->setEmail('stock-import@example.com');
         $importUser->setPassword('hashed');
@@ -197,5 +201,25 @@ class ExportImportFullDataTest extends KernelTestCase
         @unlink($exportDir . '/attachments/' . ($exportResult->getData()['stockItems'][0]['receiptAttachment']['exportFilename'] ?? ''));
         @rmdir($exportDir . '/attachments');
         @rmdir($exportDir);
+    }
+
+    /**
+     * Copy files referenced by `_zipSourcePath`/`_zipTargetPath` into $dir.
+     */
+    private function stageZipAttachments(mixed $data, string $dir): void
+    {
+        if (!is_array($data)) {
+            return;
+        }
+        if (isset($data['_zipSourcePath'], $data['_zipTargetPath']) && is_file($data['_zipSourcePath'])) {
+            $target = $dir . '/' . ltrim((string) $data['_zipTargetPath'], '/');
+            if (!is_dir(dirname($target))) {
+                mkdir(dirname($target), 0777, true);
+            }
+            copy($data['_zipSourcePath'], $target);
+        }
+        foreach ($data as $value) {
+            $this->stageZipAttachments($value, $dir);
+        }
     }
 }

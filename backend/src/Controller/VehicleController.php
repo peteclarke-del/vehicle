@@ -524,11 +524,11 @@ class VehicleController extends AbstractController
             }
         }
 
-        // Invalidate vehicle caches
-        $this->cache->invalidateTags(['vehicles', 'vehicle.' . $vehicle->getId(), 'user.' . $user->getId(), 'dashboard']);
-
         $vehicle->setUpdatedAt(new \DateTime());
         $this->entityManager->flush();
+
+        // Invalidate after flush so a concurrent read can't re-cache stale data
+        $this->cache->invalidateTags(['vehicles', 'vehicle.' . $vehicle->getId(), 'user.' . $user->getId(), 'dashboard']);
 
         return $this->json($this->serializeVehicle($vehicle));
     }
