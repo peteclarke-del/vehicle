@@ -6,12 +6,8 @@ const {getDefaultConfig, mergeConfig} = require('@react-native/metro-config');
  *
  * @type {import('metro-config').MetroConfig}
  */
-const config = {
-  resolver: {
-    // Resolve crypto and other Node.js built-ins
-    // These are needed because some packages (like axios) try to use Node.js modules
-    unstable_enablePackageExports: false,
-  },
-};
+// Package "exports" resolution must stay enabled: RN 0.87's own packages
+// (e.g. @react-native/asset-utils) are only resolvable through it.
+const config = {};
 
 module.exports = mergeConfig(getDefaultConfig(__dirname), config);
