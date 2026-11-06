@@ -1729,6 +1729,44 @@ Import vehicles from ZIP archive.
 
 **Request:** `multipart/form-data` with ZIP file.
 
+Vehicles whose registration already exists are skipped and reported in `errors`. Use `full-import` to update existing vehicles.
+
+---
+
+#### POST /api/vehicles/full-import
+
+Full import: make the account match a ZIP export. Vehicles already in the user's account (matched on registration number) are **replaced** with the file's version, so edits made since the export are applied. Vehicles not in the file are kept unless `wipeData` is set.
+
+**Request:** `multipart/form-data`
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `file` | file | ZIP export (required) |
+| `wipeData` | bool | Remove **all** of the user's vehicles, stock items and attachments first (default `false`). Never affects other users. |
+| `deleteFiles` | bool | Also delete upload files of removed records from disk. Only honoured with `wipeData` (default `false`). |
+
+**Behaviour:**
+- All-or-nothing. An empty file, or any vehicle failing to import, rolls everything back and returns `400`.
+- Files are deleted only after the import commits.
+- Vehicle assignments (sharing) are kept for replaced vehicles. A wipe removes them.
+- Also useful for refreshing data after a schema change: export, migrate, then Full import with `wipeData`.
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "imported": 21,
+  "failed": 0,
+  "fullImport": {
+    "removedVehicles": 21,
+    "removedStockItems": 47,
+    "removedAttachments": 130,
+    "deletedFiles": 0,
+    "restoredAssignments": 2
+  }
+}
+```
+
 ---
 
 #### DELETE /api/vehicles/purge-all

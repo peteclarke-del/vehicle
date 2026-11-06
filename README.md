@@ -78,7 +78,7 @@ A comprehensive web application for managing personal or fleet vehicles, built w
 - **Secure Authentication**: JWT-based authentication with role management
 - **API-First Design**: RESTful API with comprehensive documentation
 - **Docker Development**: Fully containerised development environment
-- **Import/Export**: Full data export/import including attachments
+- **Import/Export**: Full data export/import including attachments. **Full import** updates existing vehicles from an export, with optional wipe-first and file deletion (see [docs](docs/API_REFERENCE.md#post-apivehiclesfull-import))
 - **Automated Testing**: PHPUnit and Jest test suites
 - **Database Migrations**: Version-controlled schema management
 - **Baseline Schema State**: Consolidated baseline migration at `backend/migrations/Version20260512220157.php`
