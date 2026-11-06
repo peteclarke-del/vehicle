@@ -139,6 +139,7 @@
           <li><a href="#frontend-dashboard">Dashboard</a></li>
           <li><a href="#frontend-vehicles">Vehicles</a></li>
           <li><a href="#frontend-records">Records &amp; Forms</a></li>
+          <li><a href="#frontend-import-export">Import &amp; Export</a></li>
           <li><a href="#frontend-admin">Admin Panel</a></li>
           <li><a href="#frontend-reports">Reports</a></li>
           <li><a href="#frontend-contexts">Contexts &amp; Hooks</a></li>
@@ -2213,7 +2214,41 @@ cd vehicle</code></pre>
       <span class="endpoint-path">/api/vehicles/import-zip</span>
       <span class="endpoint-desc">Import from ZIP with attachments</span>
     </div>
-    <div class="endpoint-body"><p>Imports the JSON data and restores attachment files to the correct directories.</p></div>
+    <div class="endpoint-body"><p>Imports the JSON data and restores attachment files to the correct directories. Vehicles whose registration already exists are <strong>skipped</strong> (reported in <code>errors</code>); use <code>full-import</code> to update existing vehicles.</p></div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method method-post">POST</span>
+      <span class="endpoint-path">/api/vehicles/full-import</span>
+      <span class="endpoint-desc">Full import: make the account match a ZIP export</span>
+    </div>
+    <div class="endpoint-body">
+      <p>Takes the same ZIP as <code>import-zip</code>, but instead of skipping vehicles that already exist, it <strong>replaces</strong> them with the version in the file, so any edits (status, details, records) made since the export are applied. Vehicles are matched on registration number within the importing user's account. Vehicles not in the file are kept unless <code>wipeData</code> is set.</p>
+      <h4>Form Fields (multipart/form-data)</h4>
+      <table class="docs-table">
+        <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>file</code></td><td>file</td><td>ZIP export (required)</td></tr>
+          <tr><td><code>wipeData</code></td><td>bool</td><td>Remove <strong>all</strong> of the user's vehicles, stock items and attachments before importing (default: false). Other users are never affected.</td></tr>
+          <tr><td><code>deleteFiles</code></td><td>bool</td><td>Also delete the upload files (images, documents) of removed records from disk. Only honoured with <code>wipeData</code> (default: false, files are kept).</td></tr>
+        </tbody>
+      </table>
+      <p>All-or-nothing: if the file is empty or any vehicle fails to import, the wipe/replace is rolled back and the response is <code>400</code> with nothing changed. Files are only deleted after the import has committed. Vehicle sharing (assignments) is preserved for replaced vehicles; a wipe removes it.</p>
+      <h4>Response (200)</h4>
+      <pre><code>{
+  "success": true,
+  "imported": 21,
+  "failed": 0,
+  "fullImport": {
+    "removedVehicles": 21,
+    "removedStockItems": 47,
+    "removedAttachments": 130,
+    "deletedFiles": 0,
+    "restoredAssignments": 2
+  }
+}</code></pre>
+    </div>
   </div>
 
   <div class="endpoint">
@@ -2439,6 +2474,14 @@ cd vehicle</code></pre>
     is rolled back. The service creates vehicles and all sub-entities (fuel records, service records with
     items, parts, consumables, MOT records, insurance policies, road tax, todos, attachments, and specifications).
     It handles duplicate detection, ID remapping, and relationship reconstruction.
+  </p>
+  <p>
+    <strong>Full import</strong> adds a preparation step in <code>FullImportPreparer</code>, run inside the same
+    transaction as the import: it removes the user's vehicles that the file will replace (or, with
+    <code>wipeData</code>, all of the user's vehicles, stock items and attachments), records vehicle assignments
+    so they can be re-applied afterwards, and collects upload file paths. Files are deleted only after commit,
+    and only when <code>deleteFiles</code> is set. Paths are resolved against <code>uploads/</code> and never
+    followed outside it.
   </p>
 </section>
 
@@ -3068,6 +3111,25 @@ cd vehicle</code></pre>
   </p>
 </section>
 
+<section id="frontend-import-export" data-section-name="Frontend Guide">
+  <h3>Import &amp; Export</h3>
+  <p>The <strong>Import / Export</strong> page offers three ways to bring data in:</p>
+  <table class="docs-table">
+    <thead><tr><th>Option</th><th>What it does</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Import JSON</strong></td><td>Adds vehicles from a JSON export. Existing vehicles (same registration) are skipped.</td></tr>
+      <tr><td><strong>Import ZIP</strong></td><td>Adds vehicles, images and attachments from a ZIP export. Existing vehicles are skipped.</td></tr>
+      <tr><td><strong>Full import</strong></td><td>Makes your account match a ZIP export. Vehicles already in your account are replaced with the file's version, so edits since the export (status, details, records) are applied. Vehicles not in the file are kept.</td></tr>
+    </tbody>
+  </table>
+  <p>After choosing a file for Full import, a dialog shows the filename and two options:</p>
+  <ul>
+    <li><strong>Wipe my data first</strong>: deletes all of your vehicles, stock items and attachments before importing, so the account is rebuilt from the file alone. Other users' data is never touched.</li>
+    <li><strong>Also delete uploaded images and documents from disk</strong>: only available with wipe. When unticked, files stay on disk.</li>
+  </ul>
+  <p>Full import is all-or-nothing: if any vehicle in the file fails to import, nothing is changed. It is also a convenient way to refresh your data after a database schema change. See the <a href="#faq-import-export">FAQ</a>.</p>
+</section>
+
 <section id="frontend-admin" data-section-name="Frontend Guide">
   <h3>Admin Panel</h3>
   <p>
@@ -3465,7 +3527,17 @@ cd vehicle</code></pre>
 
   <div class="info-card warning">
     <div class="info-card-title">Import fails</div>
-    <p>Ensure the JSON format matches the export format exactly. Common issues include duplicate VINs or registration numbers (the system enforces uniqueness), missing required fields, and malformed dates. The import is transactional - if anything fails, nothing is committed. Check the error response body for specifics.</p>
+    <p>Ensure the JSON format matches the export format exactly. Common issues include duplicate VINs or registration numbers (the system enforces uniqueness), missing required fields, and malformed dates. Regular imports skip rows that fail and report them in the response's <code>errors</code>; Full import is all-or-nothing. Check the error response body for specifics.</p>
+  </div>
+
+  <div class="info-card info">
+    <div class="info-card-title">My changes weren't imported (e.g. a vehicle marked Sold)</div>
+    <p><strong>Import ZIP</strong> only adds vehicles that don't already exist; vehicles with a matching registration are skipped. Use <strong>Full import</strong> to update existing vehicles from the file.</p>
+  </div>
+
+  <div class="info-card info">
+    <div class="info-card-title">Refreshing the database after a schema change</div>
+    <p>Full import with <em>Wipe my data first</em> rebuilds your account from an export, so every record is re-created through the current entities and defaults. Take a ZIP export, run the migrations, then Full import with wipe. Leave <em>Delete files</em> unticked to keep existing uploads on disk.</p>
   </div>
 
   <div class="info-card warning">

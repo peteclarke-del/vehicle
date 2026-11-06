@@ -873,7 +873,10 @@ class VehicleImportService
         array &$stats
     ): Vehicle {
         // Check for duplicate
-        $regNum = trim($vehicleData['registrationNumber']);
+        $regNum = trim((string) ($vehicleData['registrationNumber'] ?? ''));
+        if ($regNum === '') {
+            throw new ImportException('Vehicle is missing a registration number');
+        }
         if (isset($existingVehiclesMap[$regNum])) {
             throw new ImportException("Vehicle with registration '$regNum' already exists");
         }
