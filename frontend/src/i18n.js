@@ -35,6 +35,9 @@ i18n
 
     backend: {
       loadPath: '/locales/{{lng}}/translation.json',
+      // Always revalidate so new strings appear straight after a deploy
+      // instead of a stale cached copy showing raw keys.
+      requestOptions: { cache: 'no-cache' },
     },
 
     detection: {
