@@ -169,6 +169,39 @@ The APK will be at `android/app/build/outputs/apk/release/app-release.apk`
 3. Open the APK file to install
 4. Launch "Vehicle Manager" from your app drawer
 
+### Updating the app (from GitHub Releases)
+
+The app updates itself from this repository's GitHub Releases. No Play Store is needed.
+
+- **On launch** the app checks the latest release and, if it's newer, offers *Download & install* or *Later*. *Later* skips that version until a newer one appears.
+- **Settings → Check for updates** runs the same check manually. The *Update required* screen (shown when the server needs a newer app) has the same button.
+- The first time, Android asks you to allow **Install unknown apps** for Vehicle Manager. Allow it, then tap *Download & install* again.
+- Android installs the update over the existing app and keeps your data. It only accepts an APK with the same package name and signing key and a higher version code.
+
+#### Publishing a release
+
+Tag a commit and push the tag:
+
+```bash
+git tag mobile-v1.1.0
+git push origin mobile-v1.1.0
+```
+
+`.github/workflows/mobile-release.yml` runs the tests, builds the release APK with `versionName=1.1.0` and `versionCode=1001000`, and publishes it to the GitHub Release `mobile-v1.1.0` as `vehicle-manager-1.1.0.apk` (with a `.sha256`). You can also run the workflow manually from the Actions tab with a version. PRs that touch `mobile/` build and test the APK but publish nothing.
+
+Rules:
+- Tags must be `mobile-vX.Y.Z`, and each release must be higher than the last.
+- Only non-draft, non-prerelease releases with an `.apk` asset are offered. Mark a release *pre-release* to hold it back.
+
+#### Signing key
+
+Updates only install if they are signed with the **same key** as the installed app.
+
+- Builds up to 1.0.0 were signed with the repo's public **debug keystore**. Until you configure a release key, CI uses the same debug key, so updates install over existing installs.
+- The debug key is public, so anyone could build an APK that your phone would accept as an update. The app only downloads from this repo's releases, which limits the risk, but a private release key is better.
+- To switch to a release key, create one (see *Signing for Release* below) and add these repository secrets: `ANDROID_KEYSTORE_BASE64` (`base64 -w0 vehicle-release.keystore`), `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` and `ANDROID_KEY_PASSWORD`.
+- The first release signed with the new key **cannot** update a debug-signed install. Uninstall the app once and install that APK by hand. Updates install automatically from then on. Export a backup first if you use standalone mode.
+
 ### Signing for Release
 
 For Google Play Store distribution, create a release keystore:

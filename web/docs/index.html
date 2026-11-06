@@ -3313,6 +3313,18 @@ cd vehicle</code></pre>
     <li><strong>Clear Data &amp; Disconnect</strong> - Reset the app to ServerConfigScreen</li>
     <li><strong>Logout</strong></li>
   </ul>
+  <h4>Updating the app</h4>
+  <p>The app updates itself from the project's GitHub Releases:</p>
+  <ul>
+    <li>On launch it checks for a newer release and offers <strong>Download &amp; install</strong> or <strong>Later</strong>. <em>Later</em> skips that version.</li>
+    <li><strong>Settings → Check for updates</strong> checks on demand. The same button is on the <em>Update required</em> screen.</li>
+    <li>The first time, allow <strong>Install unknown apps</strong> for Vehicle Manager when Android asks, then tap install again.</li>
+    <li>Android installs the update over the existing app and keeps your data.</li>
+  </ul>
+  <div class="info-card info">
+    <div class="info-card-title">Publishing a mobile release</div>
+    <p>Push a tag <code>mobile-vX.Y.Z</code>. The <code>Mobile release</code> GitHub Action builds and tests the APK and attaches it to the release. Updates must be signed with the same key as the installed app; see <code>mobile/README.md</code> for setting up a release key.</p>
+  </div>
 </section>
 
 <!-- ============================================================
