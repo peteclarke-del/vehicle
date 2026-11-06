@@ -9,6 +9,16 @@ jest.mock('../hooks/useApiData', () => ({
 }));
 const { fetchArrayData } = require('../hooks/useApiData');
 
+// Stub the confirm dialog so tests can trigger onConfirm with edited values.
+jest.mock('../components/StatusChangeDialog', () => ({ onConfirm }) => (
+  <button
+    type="button"
+    onClick={() => onConfirm({ newStatus: 'Sold', date: '2026-10-01', notes: 'Sold to neighbour' })}
+  >
+    mock-confirm-status
+  </button>
+));
+
 const mockApi = {
   get: jest.fn().mockResolvedValue({ data: [] }),
   post: jest.fn().mockResolvedValue({ data: {} }),
@@ -184,5 +194,28 @@ describe('VehicleDialog', () => {
       const nameField = screen.getByLabelText(/vehicle\.name/i);
       expect(nameField.value).toBe('My Car');
     });
+  });
+
+  test('status change persists confirmed values and reloads parent on cancel', async () => {
+    renderWithProviders(
+      <VehicleDialog
+        open={true}
+        onClose={mockOnClose}
+        vehicle={{ id: 42, name: 'My Car', registration: 'AB12CDE', status: 'Live' }}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'mock-confirm-status' }));
+
+    await waitFor(() => {
+      expect(mockApi.put).toHaveBeenCalledWith('/vehicles/42', {
+        status: 'Sold',
+        statusChangeDate: '2026-10-01',
+        statusChangeNotes: 'Sold to neighbour',
+      });
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'common.cancel' }));
+    expect(mockOnClose).toHaveBeenCalledWith(true);
   });
 });

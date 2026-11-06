@@ -160,6 +160,7 @@ class Vehicle
         $this->roadTaxRecords = new ArrayCollection();
         $this->images = new ArrayCollection();
         $this->statusHistory = new ArrayCollection();
+        $this->todos = new ArrayCollection();
         $this->createdAt = new \DateTime();
         $this->updatedAt = new \DateTime();
     }

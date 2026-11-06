@@ -520,14 +520,20 @@ class VehicleImportExportController extends AbstractController
         $environment = (string) $this->getParameter('kernel.environment');
 
         $command = sprintf(
-            'nohup %s %s app:export-zip-job %s --env=%s --no-debug > /dev/null 2>&1 & echo $!',
+            'nohup %s %s app:export-zip-job %s --env=%s --no-debug < /dev/null > %s 2>&1 & echo $!',
             escapeshellarg($phpBinary),
             escapeshellarg($consolePath),
             escapeshellarg($jobId),
-            escapeshellarg($environment)
+            escapeshellarg($environment),
+            escapeshellarg($this->exportZipJobService->getWorkerLogPath($jobId))
         );
 
-        $process = Process::fromShellCommandline($command, $projectDirParam);
+        // Symfony Process inherits $_SERVER, which under PHP-FPM carries CGI
+        // request vars (QUERY_STRING, REQUEST_URI, HTTP_AUTHORIZATION, ...).
+        // symfony/runtime refuses to boot a console app when QUERY_STRING is
+        // set, so the worker died instantly and the job hung at "prepare".
+        // Unset them (false = remove) so the worker gets a clean CLI env.
+        $process = Process::fromShellCommandline($command, $projectDirParam, $this->buildWorkerEnv());
         $process->setTimeout(10);
         $process->run();
 
@@ -547,6 +553,31 @@ class VehicleImportExportController extends AbstractController
         ]);
 
         return $pid;
+    }
+
+    /**
+     * @return array<string, false>
+     */
+    private function buildWorkerEnv(): array
+    {
+        $cgiVars = [
+            'QUERY_STRING', 'REQUEST_URI', 'REQUEST_METHOD', 'REQUEST_SCHEME',
+            'REQUEST_TIME', 'REQUEST_TIME_FLOAT', 'SCRIPT_NAME', 'SCRIPT_FILENAME',
+            'SCRIPT_URL', 'SCRIPT_URI', 'PHP_SELF', 'PATH_INFO', 'PATH_TRANSLATED',
+            'DOCUMENT_ROOT', 'DOCUMENT_URI', 'GATEWAY_INTERFACE', 'SERVER_SOFTWARE',
+            'SERVER_PROTOCOL', 'SERVER_NAME', 'SERVER_ADDR', 'SERVER_PORT',
+            'REMOTE_ADDR', 'REMOTE_PORT', 'REDIRECT_STATUS', 'CONTENT_TYPE',
+            'CONTENT_LENGTH', 'HTTPS', 'FCGI_ROLE', 'argv', 'argc',
+        ];
+
+        $env = [];
+        foreach (array_keys($_SERVER) as $key) {
+            if (is_string($key) && (str_starts_with($key, 'HTTP_') || in_array($key, $cgiVars, true))) {
+                $env[$key] = false;
+            }
+        }
+
+        return $env;
     }
 
     private function terminateWorkerProcess(int $pid, LoggerInterface $logger, string $jobId): void
