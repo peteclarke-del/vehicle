@@ -1,6 +1,7 @@
 import React from 'react';
 import {ScrollView, StyleSheet, View} from 'react-native';
 import {Button, Card, List, Text, useTheme} from 'react-native-paper';
+import CheckForUpdatesButton from './CheckForUpdatesButton';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {AppCompatibilityEvaluation, AppCompatibilityPayload} from '../services/appCompatibility';
 
@@ -86,6 +87,13 @@ const UpdateRequiredScreen: React.FC<UpdateRequiredScreenProps> = ({
               <Button mode="contained" onPress={onRetry} style={styles.button}>
                 Retry Check
               </Button>
+            </View>
+            {evaluation.requiresAppUpdate ? (
+              <View style={styles.buttonRow}>
+                <CheckForUpdatesButton />
+              </View>
+            ) : null}
+            <View>
             </View>
           </Card.Content>
         </Card>

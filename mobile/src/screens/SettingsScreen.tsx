@@ -1,4 +1,7 @@
-import React, {useState, useCallback} from 'react';
+import React, {useState, useCallback, useEffect} from 'react';
+import Config from '../config';
+import CheckForUpdatesButton from '../components/CheckForUpdatesButton';
+import {getInstalledVersion} from '../services/appUpdate';
 import {
   View,
   StyleSheet,
@@ -57,6 +60,10 @@ const SettingsScreen: React.FC = () => {
 
   const [currencyDialogVisible, setCurrencyDialogVisible] = useState(false);
   const [languageDialogVisible, setLanguageDialogVisible] = useState(false);
+  const [installedVersion, setInstalledVersion] = useState(Config.APP_VERSION);
+  useEffect(() => {
+    getInstalledVersion(Config.APP_VERSION).then(setInstalledVersion);
+  }, []);
 
   const currentLanguage = getLanguageByCode(preferences.preferredLanguage || 'en');
 
@@ -304,9 +311,10 @@ const SettingsScreen: React.FC = () => {
       <List.Section style={styles.section}>
         <List.Item
           title={t('settings.version')}
-          description="1.0.0"
+          description={installedVersion}
           left={props => <List.Icon {...props} icon="information" />}
         />
+        <CheckForUpdatesButton variant="list" />
       </List.Section>
 
       <Divider />

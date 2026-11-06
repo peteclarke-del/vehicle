@@ -20,6 +20,7 @@ import {lightTheme, darkTheme} from './src/theme';
 import RootNavigator from './src/navigation/RootNavigator';
 import {initializeNotifications, requestNotificationPermission} from './src/services/NotificationService';
 import UpdateRequiredScreen from './src/components/UpdateRequiredScreen';
+import UpdatePrompt from './src/components/UpdatePrompt';
 import {
   AppCompatibilityEvaluation,
   AppCompatibilityPayload,
@@ -55,6 +56,7 @@ const AppContent = () => {
             <NavigationContainer theme={navigationTheme}>
               <RootNavigator />
             </NavigationContainer>
+            <UpdatePrompt />
           </VehicleSelectionProvider>
         </PermissionsProvider>
       </SyncProvider>

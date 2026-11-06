@@ -299,6 +299,13 @@ await addPendingChange({
 // Auto-syncs when back online via NetInfo listener
 ```
 
+### Self-update (GitHub Releases)
+
+- `.github/workflows/mobile-release.yml` builds the APK on `mobile-vX.Y.Z` tags (versionCode = MAJOR*1e6 + MINOR*1e3 + PATCH, passed as `-PappVersionName/-PappVersionCode`) and attaches it to a GitHub Release. PRs touching `mobile/` build only.
+- Native module `AppUpdater` (`android/.../update/AppUpdaterModule.kt`) handles the version, install permission, DownloadManager download and the FileProvider install intent. It requires `REQUEST_INSTALL_PACKAGES`.
+- `src/services/appUpdate.ts` reads the GitHub releases API and picks the newest stable `mobile-v*` release with an `.apk` hosted on `github.com`. `UpdatePrompt` checks on launch; `CheckForUpdatesButton` appears in Settings and on `UpdateRequiredScreen`.
+- Signing: CI uses the `ANDROID_KEYSTORE_*` secrets if set, otherwise the repo debug keystore (matching existing installs). Changing key needs one manual reinstall.
+
 ### API Communication
 
 The mobile app uses the same backend API with special considerations:
@@ -447,7 +454,8 @@ class RecordController extends AbstractController
 | `FeatureFlagService` | Feature flag resolution per user |
 | `OpenApiVehicleAdapter` | OpenAPI vehicle specifications |
 | `VehicleExportService` | Export to JSON/ZIP |
-| `VehicleImportService` | Import from JSON/ZIP |
+| `VehicleImportService` | Import from JSON/ZIP (skips vehicles whose registration already exists) |
+| `FullImportPreparer` | Full import (`POST /api/vehicles/full-import`): replaces existing vehicles by registration, or with `wipeData` clears the user's vehicles/stock/attachments first; `deleteFiles` removes upload files after commit. Runs in one transaction with the import; any failed row rolls back. Only the importing user's data is touched. |
 | `ReceiptOcrService` | Extract data from receipt images (delegates to ReceiptTemplateService) |
 | `ReceiptTemplateService` | OCR template matching for receipt parsing |
 | `UrlScraperService` | Scrape product information |

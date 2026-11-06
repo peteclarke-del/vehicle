@@ -26,6 +26,7 @@ import { buildUrl as helpersBuildUrl, authHeaders } from '../components/ImportHe
 import { saveBlob, downloadJsonObject } from '../components/DownloadHelpers';
 import { useVehicles } from '../contexts/VehiclesContext';
 import { demoGuard } from '../utils/demoMode';
+import FullImportDialog from '../components/FullImportDialog';
 
 const ImportExport = () => {
   const { t } = useTranslation();
@@ -45,6 +46,7 @@ const ImportExport = () => {
   const [importStatus, setImportStatus] = useState('uploading'); // 'uploading', 'processing', 'success', 'error'
   const [importMessage, setImportMessage] = useState('');
   const [importError, setImportError] = useState('');
+  const [fullImportFile, setFullImportFile] = useState(null);
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [exportProgress, setExportProgress] = useState(0);
   const [exportStatus, setExportStatus] = useState('processing'); // 'processing', 'downloading', 'success', 'error'
@@ -656,7 +658,24 @@ const ImportExport = () => {
     }
   };
 
-  const handleZipFileSelected = async (file) => {
+  const handleZipFileSelected = (file) => uploadZip(file, '/vehicles/import-zip');
+
+  const handleFullImportFileSelected = (file) => {
+    if (!file) return;
+    if (demoGuard(t)) return;
+    setFullImportFile(file);
+  };
+
+  const confirmFullImport = ({ wipeData, deleteFiles }) => {
+    const file = fullImportFile;
+    setFullImportFile(null);
+    uploadZip(file, '/vehicles/full-import', {
+      wipeData: wipeData ? '1' : '0',
+      deleteFiles: wipeData && deleteFiles ? '1' : '0',
+    });
+  };
+
+  const uploadZip = async (file, endpoint, fields = {}) => {
     if (!file) return;
     if (demoGuard(t)) return;
     
@@ -667,9 +686,10 @@ const ImportExport = () => {
     setImportError('');
 
     try {
-      const url = buildUrl('/vehicles/import-zip');
+      const url = buildUrl(endpoint);
       const fd = new FormData();
       fd.append('file', file, file.name);
+      Object.entries(fields).forEach(([k, v]) => fd.append(k, v));
       
       // Simulate upload progress
       setImportProgress(20);
@@ -797,10 +817,31 @@ const ImportExport = () => {
                   </span>
                 </Tooltip>
               </label>
+
+              <input
+                accept=".zip,application/zip,application/x-zip-compressed"
+                style={{ display: 'none' }}
+                id="full-import-file-top"
+                type="file"
+                onChange={(e) => { handleFullImportFileSelected(e.target.files && e.target.files[0]); e.target.value = ''; }}
+              />
+              <label htmlFor="full-import-file-top">
+                <Tooltip title={t('importExport.tooltip.fullImport') || 'Make this account match a ZIP export: existing vehicles are updated from the file'}>
+                  <span>
+                    <Button startIcon={<CloudUpload />} variant="contained" color="warning" component="span">{t('importExport.fullImport') || 'Full import'}</Button>
+                  </span>
+                </Tooltip>
+              </label>
             </Box>
           </Grid>
         </Grid>
       </Paper>
+      <FullImportDialog
+        open={Boolean(fullImportFile)}
+        fileName={fullImportFile ? fullImportFile.name : ''}
+        onClose={() => setFullImportFile(null)}
+        onConfirm={confirmFullImport}
+      />
       <ImportPreview open={importPreviewOpen} data={importPreviewData} fileName={importFileName} onClose={() => setImportPreviewOpen(false)} onConfirm={confirmJsonImport} />
 
       {/* Import Progress Modal */}

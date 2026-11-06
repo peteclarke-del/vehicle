@@ -53,6 +53,7 @@ A comprehensive web application for managing personal or fleet vehicles, built w
 - **20 Languages**: Full internationalisation matching web app (all languages except Pirate)
 - **Preferences**: Theme (light/dark/system), currency, distance units, volume units
 - **Docker Build**: Reproducible APK builds via Docker container
+- **Self-update**: The app checks this repo's GitHub Releases and installs new versions directly. Releases are built by CI from `mobile-vX.Y.Z` tags (see [mobile/README.md](mobile/README.md#updating-the-app-from-github-releases))
 
 ### Administration Panel
 - **User Management**: Create, enable/disable, and manage users with role assignment
@@ -78,7 +79,7 @@ A comprehensive web application for managing personal or fleet vehicles, built w
 - **Secure Authentication**: JWT-based authentication with role management
 - **API-First Design**: RESTful API with comprehensive documentation
 - **Docker Development**: Fully containerised development environment
-- **Import/Export**: Full data export/import including attachments
+- **Import/Export**: Full data export/import including attachments. **Full import** updates existing vehicles from an export, with optional wipe-first and file deletion (see [docs](docs/API_REFERENCE.md#post-apivehiclesfull-import))
 - **Automated Testing**: PHPUnit and Jest test suites
 - **Database Migrations**: Version-controlled schema management
 - **Baseline Schema State**: Consolidated baseline migration at `backend/migrations/Version20260512220157.php`

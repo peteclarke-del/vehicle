@@ -59,6 +59,10 @@ services:
         arguments:
             $uploadDirectory: '%kernel.project_dir%/uploads'
 
+    App\Service\FullImportPreparer:
+        arguments:
+            $uploadDirectory: '%kernel.project_dir%/uploads'
+
     App\Service\SiteAdapter\EbayAdapter:
         arguments:
             $ebayClientId: '%env(EBAY_CLIENT_ID)%'

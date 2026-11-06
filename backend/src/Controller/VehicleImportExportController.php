@@ -38,6 +38,7 @@ use App\Service\ExportZipJobRunner;
 use App\Service\ExportZipJobService;
 use App\Service\VehicleExportService;
 use App\Service\VehicleImportService;
+use App\Service\FullImportPreparer;
 use Symfony\Component\Process\PhpExecutableFinder;
 use Symfony\Component\Process\Process;
 
@@ -80,7 +81,8 @@ class VehicleImportExportController extends AbstractController
         VehicleImportService $importService,
         ExportZipArchiveBuilder $exportZipArchiveBuilder,
         ExportZipJobService $exportZipJobService,
-        ExportZipJobRunner $exportZipJobRunner
+        ExportZipJobRunner $exportZipJobRunner,
+        private FullImportPreparer $fullImportPreparer
     ) {
         $this->exportService = $exportService;
         $this->importService = $importService;
@@ -634,7 +636,7 @@ class VehicleImportExportController extends AbstractController
      *
      * @return JsonResponse
      */
-    public function importZip(Request $request, EntityManagerInterface $entityManager, LoggerInterface $logger, TagAwareCacheInterface $cache): JsonResponse
+    public function importZip(Request $request, EntityManagerInterface $entityManager, LoggerInterface $logger, TagAwareCacheInterface $cache, ?array $fullImport = null): JsonResponse
     {
         try {
             $user = $this->getUserEntity();
@@ -788,7 +790,7 @@ class VehicleImportExportController extends AbstractController
             if (!is_string($importContent)) {
                 return new JsonResponse(['error' => 'Invalid import payload encoding'], 500);
             }
-            $importRequest = new Request([], [], [], [], [], [], $importContent);
+            $importRequest = new Request([], [], $fullImport !== null ? ['_fullImport' => $fullImport] : [], [], [], [], $importContent);
             $result = $this->import($importRequest, $entityManager, $logger, $cache, $tmpDir);
 
             // build registration -> vehicle map for image import
@@ -961,6 +963,25 @@ class VehicleImportExportController extends AbstractController
         }
     }
 
+    #[Route('/full-import', name: 'vehicles_full_import', methods: ['POST'])]
+    /**
+     * Full import: import a ZIP export so the account matches the file.
+     * Vehicles already present (same registration) are replaced with the
+     * file's version. Form fields:
+     *  - wipeData=1     remove ALL of the user's vehicles, stock and attachments first
+     *  - deleteFiles=1  also delete the upload files of removed records (requires wipeData)
+     */
+    public function fullImport(Request $request, EntityManagerInterface $entityManager, LoggerInterface $logger, TagAwareCacheInterface $cache): JsonResponse
+    {
+        $wipeData = filter_var($request->request->get('wipeData', false), FILTER_VALIDATE_BOOLEAN);
+        $deleteFiles = $wipeData && filter_var($request->request->get('deleteFiles', false), FILTER_VALIDATE_BOOLEAN);
+
+        return $this->importZip($request, $entityManager, $logger, $cache, [
+            'wipeData' => $wipeData,
+            'deleteFiles' => $deleteFiles,
+        ]);
+    }
+
     #[Route('/import', name: 'vehicles_import', methods: ['POST'])]
 
     /**
@@ -1018,8 +1039,49 @@ class VehicleImportExportController extends AbstractController
                 return new JsonResponse(['error' => 'Invalid JSON format'], Response::HTTP_BAD_REQUEST);
             }
 
+            // Full import: make the account match the file before importing.
+            // Only reachable via /full-import (request attribute, not client input).
+            $fullImport = $request->attributes->get('_fullImport');
+            $fullImportStats = null;
+            if (is_array($fullImport)) {
+                $vehicleRows = isset($data['vehicles']) && is_array($data['vehicles']) ? $data['vehicles'] : (array_is_list($data) ? $data : []);
+                $hasStock = !empty($data['stockItems']) && is_array($data['stockItems']);
+                if ($vehicleRows === [] && !$hasStock) {
+                    // Never wipe an account on the strength of an empty file.
+                    return $this->json(['success' => false, 'error' => 'Full import file contains no vehicles or stock items; nothing was changed.'], 400);
+                }
+                // Prepare + import are one unit: roll back unless the import fully succeeds.
+                $entityManager->beginTransaction();
+                $fullImportStats = $this->fullImportPreparer->prepare(
+                    $user,
+                    array_values(array_filter($vehicleRows, 'is_array')),
+                    (bool) ($fullImport['wipeData'] ?? false),
+                    (bool) ($fullImport['deleteFiles'] ?? false),
+                );
+            }
+
             // Delegate to service
             $result = $this->importService->importVehicles($data, $user, $zipExtractDir);
+
+            if ($fullImportStats !== null) {
+                // Partial results are not acceptable here: a wipe followed by a
+                // half-successful import would silently lose data.
+                if (!$result->isSuccess() || $result->getFailedCount() > 0) {
+                    $entityManager->rollback();
+                    $entityManager->clear();
+                    return $this->json([
+                        'success' => false,
+                        'error' => 'Full import failed; no changes were made.',
+                        'errors' => $result->getErrors(),
+                    ], 400);
+                }
+                $fullImportStats['restoredAssignments'] = $this->fullImportPreparer->restoreAssignments($user, $fullImportStats['assignments']);
+                unset($fullImportStats['assignments']);
+                $entityManager->commit();
+                $fullImportStats['deletedFiles'] = $this->fullImportPreparer->deleteFiles($fullImportStats['pendingFiles']);
+                unset($fullImportStats['pendingFiles']);
+                $cache->invalidateTags(['vehicles', 'user.' . $user->getId(), 'dashboard']);
+            }
 
             // Clear cache if import was successful
             if ($result->isSuccess() && $result->getImportedCount() > 0) {
@@ -1039,6 +1101,9 @@ class VehicleImportExportController extends AbstractController
                 'executionTime' => $result->getExecutionTime(),
                 'statistics' => $result->getStatistics(),
             ];
+            if ($fullImportStats !== null) {
+                $response['fullImport'] = $fullImportStats;
+            }
 
             if (count($result->getErrors()) > 0) {
                 $response['errors'] = $result->getErrors();
@@ -1047,7 +1112,10 @@ class VehicleImportExportController extends AbstractController
             $statusCode = $result->isSuccess() ? 200 : ($result->getImportedCount() > 0 ? 207 : 400);
 
             return new JsonResponse($response, $statusCode);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+            if ($entityManager->getConnection()->isTransactionActive() && $request->attributes->has('_fullImport')) {
+                $entityManager->rollback();
+            }
             $logger->error('Import failed with uncaught exception', [
                 'exception' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
