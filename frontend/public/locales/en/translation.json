@@ -950,13 +950,23 @@
       "downloadImagesManifest": "Download a JSON manifest describing selected images.",
       "downloadZip": "Download selected images and attachments as a ZIP file.",
       "previewClose": "Close preview without importing",
-      "previewConfirm": "Confirm and upload the displayed import data"
+      "previewConfirm": "Confirm and upload the displayed import data",
+      "fullImport": "Make this account match a ZIP export: existing vehicles are updated from the file"
     },
     "import": "Import",
     "noPreview": "No preview available.",
     "previewTitle": "Preview Import Data",
     "showingRows": "Showing {{shown}} of {{total}} rows",
-    "no_manifest_vehicle_images_skipped": "No manifest.json file found, vehicle images were skipped"
+    "no_manifest_vehicle_images_skipped": "No manifest.json file found, vehicle images were skipped",
+    "fullImport": "Full import",
+    "fullImportFile": "File: {{file}}",
+    "fullImportHelp": "Vehicles in the file replace vehicles with the same registration, so any changes made since the export was taken are applied. Vehicles not in the file are kept.",
+    "fullImportWipeData": "Wipe my data first (start from a blank account)",
+    "fullImportDeleteFiles": "Also delete uploaded images and documents from disk",
+    "fullImportWarnData": "All of your vehicles, stock items and attachments will be deleted before importing. Files on disk are kept. Anything not in this file will be lost.",
+    "fullImportWarnFiles": "All of your vehicles, stock items and attachments will be deleted, and their files removed from disk, before importing. Anything not in this file will be lost.",
+    "fullImportSafety": "If any vehicle in the file fails to import, nothing is changed.",
+    "fullImportConfirm": "Start full import"
   },
   "todo": {
     "title": "Vehicle TODOs",

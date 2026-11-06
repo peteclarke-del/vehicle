@@ -454,7 +454,8 @@ class RecordController extends AbstractController
 | `FeatureFlagService` | Feature flag resolution per user |
 | `OpenApiVehicleAdapter` | OpenAPI vehicle specifications |
 | `VehicleExportService` | Export to JSON/ZIP |
-| `VehicleImportService` | Import from JSON/ZIP |
+| `VehicleImportService` | Import from JSON/ZIP (skips vehicles whose registration already exists) |
+| `FullImportPreparer` | Full import (`POST /api/vehicles/full-import`): replaces existing vehicles by registration, or with `wipeData` clears the user's vehicles/stock/attachments first; `deleteFiles` removes upload files after commit. Runs in one transaction with the import; any failed row rolls back. Only the importing user's data is touched. |
 | `ReceiptOcrService` | Extract data from receipt images (delegates to ReceiptTemplateService) |
 | `ReceiptTemplateService` | OCR template matching for receipt parsing |
 | `UrlScraperService` | Scrape product information |
