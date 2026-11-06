@@ -61,6 +61,9 @@ const VehicleDialog = ({ open, vehicle, onClose }) => {
   const { t } = useTranslation();
   const [statusSelect, setStatusSelect] = useState('');
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
+  // Status changes are persisted immediately, so the parent must reload even
+  // if the edit dialog is then cancelled.
+  const [statusChanged, setStatusChanged] = useState(false);
   const [statusDialogData, setStatusDialogData] = useState({ newStatus: '', date: new Date().toISOString().slice(0,10), notes: '' });
 
   const _statusValues = ['Live', 'Sold', 'Scrapped', 'Exported'];
@@ -261,8 +264,10 @@ const VehicleDialog = ({ open, vehicle, onClose }) => {
   };
 
   const handleClose = (saved) => {
+    const reload = Boolean(saved) || statusChanged;
     setFormData(initialForm);
-    onClose(saved);
+    setStatusChanged(false);
+    onClose(reload);
   };
 
   const lookupRegistration = async (registration) => {
@@ -443,9 +448,10 @@ const VehicleDialog = ({ open, vehicle, onClose }) => {
     }
   };
 
-  const handleConfirmStatusChange = async () => {
+  const handleConfirmStatusChange = async (confirmed) => {
     if (!vehicle || !vehicle.id) return;
-    const { newStatus, date, notes } = statusDialogData;
+    // Use the values the user confirmed (they may have edited date/notes).
+    const { newStatus, date, notes } = { ...statusDialogData, ...(confirmed || {}) };
     try {
       const payload = { status: newStatus };
       if (date) payload.statusChangeDate = date;
@@ -453,6 +459,7 @@ const VehicleDialog = ({ open, vehicle, onClose }) => {
       await api.put(`/vehicles/${vehicle.id}`, payload);
       // update local form state to reflect new status
       setFormData(prev => ({ ...prev, status: newStatus }));
+      setStatusChanged(true);
       setStatusDialogOpen(false);
     } catch (err) {
       logger.error('Error changing status:', err);

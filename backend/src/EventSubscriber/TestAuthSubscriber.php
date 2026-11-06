@@ -6,6 +6,7 @@ namespace App\EventSubscriber;
 
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
@@ -22,7 +23,9 @@ class TestAuthSubscriber implements EventSubscriberInterface
 {
     public function __construct(
         private EntityManagerInterface $em,
-        private TokenStorageInterface $tokenStorage
+        private TokenStorageInterface $tokenStorage,
+        #[Autowire('%kernel.environment%')]
+        private string $environment = 'prod'
     ) {
     }
 
@@ -36,6 +39,11 @@ class TestAuthSubscriber implements EventSubscriberInterface
 
     public function onKernelRequest(RequestEvent $event): void
     {
+        // Defence in depth: this must never authenticate outside the test env.
+        if ($this->environment !== 'test') {
+            return;
+        }
+
         $request = $event->getRequest();
 
         // Prefer a test-only header so the real Authorization header isn't processed

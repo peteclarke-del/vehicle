@@ -191,6 +191,11 @@ class ExportZipJobService
         return $this->getJobDirectory($jobId) . '/export.zip';
     }
 
+    public function getWorkerLogPath(string $jobId): string
+    {
+        return $this->getJobDirectory($jobId) . '/worker.log';
+    }
+
     public function getWorkDirectory(string $jobId): string
     {
         return $this->getJobDirectory($jobId) . '/work';
