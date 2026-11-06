@@ -63,8 +63,9 @@ android {
         applicationId "com.vehiclemanager"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0.0"
+        // CI passes -PappVersionName=x.y.z -PappVersionCode=N (from the mobile-v* tag)
+        versionCode project.hasProperty("appVersionCode") ? project.appVersionCode.toInteger() : 1
+        versionName project.hasProperty("appVersionName") ? project.appVersionName : "1.0.0"
     }
     signingConfigs {
         debug {

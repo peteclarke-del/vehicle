@@ -1,0 +1,146 @@
+# Build the Android app and publish it as a GitHub Release.
+# The mobile app checks these releases ("Check for updates") and installs them.
+#
+# Release: push a tag  mobile-vX.Y.Z   (e.g. git tag mobile-v1.1.0 && git push origin mobile-v1.1.0)
+#          or run this workflow manually with a version.
+#
+# Signing: Android only installs an update signed with the SAME key as the
+# installed app. If the ANDROID_KEYSTORE_BASE64 secret is set it is used;
+# otherwise the build is signed with the repo's debug keystore (which is what
+# existing sideloaded installs were built with). Switching keys later requires
+# one manual uninstall/reinstall on each device.
+name: Mobile release
+
+on:
+  push:
+    tags: ['mobile-v*']
+  # PRs touching the app: build + test only, nothing is published.
+  pull_request:
+    paths: ['mobile/**', '.github/workflows/mobile-release.yml']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version (X.Y.Z)'
+        required: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: mobile-release-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve version
+        id: v
+        working-directory: .
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          elif [ "${{ github.event_name }}" = "pull_request" ]; then
+            VERSION="0.0.${{ github.run_number }}"
+          else
+            VERSION="${GITHUB_REF_NAME#mobile-v}"
+          fi
+          if ! echo "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "Version must be X.Y.Z, got '$VERSION'"; exit 1
+          fi
+          IFS=. read -r MA MI PA <<< "$VERSION"
+          # Monotonic versionCode from semver (supports minor/patch up to 999).
+          CODE=$(( MA * 1000000 + MI * 1000 + PA ))
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "code=$CODE" >> "$GITHUB_OUTPUT"
+          echo "tag=mobile-v$VERSION" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: android-actions/setup-android@v3
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.4.1'
+
+      - name: Install JS dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Run tests
+        run: npx jest --ci
+
+      - name: Copy icon fonts
+        run: |
+          mkdir -p android/app/src/main/assets/fonts
+          cp node_modules/react-native-vector-icons/Fonts/*.ttf android/app/src/main/assets/fonts/
+
+      - name: Release keystore (optional)
+        if: github.event_name != 'pull_request'
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.keystore"
+            {
+              echo "VEHICLE_RELEASE_STORE_FILE=$RUNNER_TEMP/release.keystore"
+              echo "VEHICLE_RELEASE_STORE_PASSWORD=$STORE_PASSWORD"
+              echo "VEHICLE_RELEASE_KEY_ALIAS=$KEY_ALIAS"
+              echo "VEHICLE_RELEASE_KEY_PASSWORD=$KEY_PASSWORD"
+            } >> "$HOME/.gradle/gradle.properties"
+            echo "Signing with release keystore"
+          else
+            echo "::warning::ANDROID_KEYSTORE_BASE64 not set - signing with the public debug keystore"
+          fi
+
+      - name: Build release APK
+        working-directory: mobile/android
+        run: |
+          echo "sdk.dir=$ANDROID_HOME" > local.properties
+          gradle --no-daemon assembleRelease -x lintVitalRelease \
+            -PappVersionName=${{ steps.v.outputs.version }} \
+            -PappVersionCode=${{ steps.v.outputs.code }}
+
+      - name: Rename APK
+        id: apk
+        run: |
+          OUT="vehicle-manager-${{ steps.v.outputs.version }}.apk"
+          cp android/app/build/outputs/apk/release/app-release.apk "$OUT"
+          sha256sum "$OUT" > "$OUT.sha256"
+          echo "path=mobile/$OUT" >> "$GITHUB_OUTPUT"
+
+      - name: Upload PR build
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: apk-pr-${{ github.event.number }}
+          path: ${{ steps.apk.outputs.path }}
+          retention-days: 7
+
+      - name: Publish GitHub release
+        if: github.event_name != 'pull_request'
+        working-directory: .
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.v.outputs.tag }}
+        run: |
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            gh release create "$TAG" --target "$GITHUB_SHA" --title "Mobile $TAG" --generate-notes
+          fi
+          gh release upload "$TAG" "${{ steps.apk.outputs.path }}" "${{ steps.apk.outputs.path }}.sha256" --clobber

@@ -53,6 +53,7 @@ A comprehensive web application for managing personal or fleet vehicles, built w
 - **20 Languages**: Full internationalisation matching web app (all languages except Pirate)
 - **Preferences**: Theme (light/dark/system), currency, distance units, volume units
 - **Docker Build**: Reproducible APK builds via Docker container
+- **Self-update**: The app checks this repo's GitHub Releases and installs new versions directly. Releases are built by CI from `mobile-vX.Y.Z` tags (see [mobile/README.md](mobile/README.md#updating-the-app-from-github-releases))
 
 ### Administration Panel
 - **User Management**: Create, enable/disable, and manage users with role assignment

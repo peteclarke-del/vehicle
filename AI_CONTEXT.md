@@ -299,6 +299,13 @@ await addPendingChange({
 // Auto-syncs when back online via NetInfo listener
 ```
 
+### Self-update (GitHub Releases)
+
+- `.github/workflows/mobile-release.yml` builds the APK on `mobile-vX.Y.Z` tags (versionCode = MAJOR*1e6 + MINOR*1e3 + PATCH, passed as `-PappVersionName/-PappVersionCode`) and attaches it to a GitHub Release. PRs touching `mobile/` build only.
+- Native module `AppUpdater` (`android/.../update/AppUpdaterModule.kt`) handles the version, install permission, DownloadManager download and the FileProvider install intent. It requires `REQUEST_INSTALL_PACKAGES`.
+- `src/services/appUpdate.ts` reads the GitHub releases API and picks the newest stable `mobile-v*` release with an `.apk` hosted on `github.com`. `UpdatePrompt` checks on launch; `CheckForUpdatesButton` appears in Settings and on `UpdateRequiredScreen`.
+- Signing: CI uses the `ANDROID_KEYSTORE_*` secrets if set, otherwise the repo debug keystore (matching existing installs). Changing key needs one manual reinstall.
+
 ### API Communication
 
 The mobile app uses the same backend API with special considerations:
