@@ -1,21 +1,35 @@
-# Docker Compose for building the Vehicle Manager Android APK
-# Usage: docker compose -f docker-compose.mobile.yml up --build
+# Builds the Vehicle Manager Android APK locally - same toolchain and signing
+# as the GitHub release workflow (.github/workflows/mobile-release.yml).
+#
+# Usage:
+#   MOBILE_VERSION=1.1.1 docker compose -f docker-compose.mobile.yml up --build
+#
+# Output: mobile/output/vehicle-manager-<version>.apk (+ .sha256)
+# Needs an x86_64 host (Android build tools are x86_64-only) and ~8 GB RAM.
+# Use a version higher than the one installed, or Android refuses the update.
 
 services:
   mobile-build:
     build:
       context: ./mobile
       dockerfile: docker/Dockerfile
+    platform: linux/amd64
+    # One-shot build container - the default bridge is all it needs (no
+    # project network, which also avoids exhausting Docker's address pools).
+    network_mode: bridge
     container_name: vehicle-mobile-build
-    volumes:
-      # Output directory for the built APK
-      - ./mobile/output:/app/output
-      # Cache gradle dependencies
-      - gradle-cache:/root/.gradle
     environment:
-      - ANDROID_HOME=/opt/android-sdk
-      - JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
-    command: /bin/bash /app/docker/build.sh
+      MOBILE_VERSION: ${MOBILE_VERSION:-}
+      BUILD_VARIANT: ${BUILD_VARIANT:-release}
+      RUN_TESTS: ${RUN_TESTS:-0}
+      # Optional release signing - mount the keystore and set these
+      ORG_GRADLE_PROJECT_VEHICLE_RELEASE_STORE_FILE: ${ANDROID_KEYSTORE_FILE:-}
+      ORG_GRADLE_PROJECT_VEHICLE_RELEASE_STORE_PASSWORD: ${ANDROID_KEYSTORE_PASSWORD:-}
+      ORG_GRADLE_PROJECT_VEHICLE_RELEASE_KEY_ALIAS: ${ANDROID_KEY_ALIAS:-}
+      ORG_GRADLE_PROJECT_VEHICLE_RELEASE_KEY_PASSWORD: ${ANDROID_KEY_PASSWORD:-}
+    volumes:
+      - ./mobile/output:/app/output
+      - gradle-cache:/root/.gradle
 
 volumes:
   gradle-cache:

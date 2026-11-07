@@ -17,7 +17,7 @@ A React Native mobile application for Android that provides vehicle management o
 
 ## Prerequisites
 
-- Node.js 18 or higher
+- Node.js 22.13 or higher
 - Java Development Kit (JDK) 17
 - Android Studio with Android SDK
 - Android device or emulator (API 24+)
@@ -139,10 +139,24 @@ This method requires no local Android SDK installation:
 
 ```bash
 # From the project root directory
-docker compose -f docker-compose.mobile.yml up --build
+MOBILE_VERSION=1.1.1 docker compose -f docker-compose.mobile.yml up --build
 ```
 
-The APK will be output to `mobile/output/app-release.apk`
+The APK is written to `mobile/output/vehicle-manager-<version>.apk` with a
+`.sha256` beside it. The image matches the GitHub release workflow (Node 22,
+JDK 17, Gradle 9.4.1, Android SDK 37, NDK 27.1) and signs with the same key,
+so a local build installs over a release from GitHub.
+
+- `MOBILE_VERSION` – `X.Y.Z`; defaults to `version` in `package.json`.
+  Android refuses to install a lower version than the one on the phone.
+- `BUILD_VARIANT=debug` – debug build (`vehicle-manager-<version>-debug.apk`).
+- `RUN_TESTS=1` – run the Jest suite first.
+- Private release key: mount the keystore into the container and set
+  `ANDROID_KEYSTORE_FILE` (path inside the container),
+  `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`.
+
+Needs an x86_64 host with about 8 GB RAM (Android's build tools don't run
+on ARM, so not on a Raspberry Pi).
 
 ### Option 2: Local Build
 
