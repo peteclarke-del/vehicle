@@ -1,103 +1,66 @@
 #!/bin/bash
-# Build script for Android APK
-
-set -e
-
-echo "=== Vehicle Manager Android Build ==="
-
-# Navigate to app directory
+# Builds the Android APK inside the docker-compose.mobile.yml container.
+#
+# Environment:
+#   MOBILE_VERSION   X.Y.Z version name (default: "version" in package.json).
+#                    versionCode = X*1000000 + Y*1000 + Z, same as CI, so a
+#                    local build installs over / updates to GitHub releases.
+#   BUILD_VARIANT    release (default) | debug
+#   RUN_TESTS        1 to run the jest suite first
+#   Release signing (optional, otherwise the repo debug key is used, which is
+#   also what GitHub releases use unless the keystore secrets are set):
+#     ORG_GRADLE_PROJECT_VEHICLE_RELEASE_STORE_FILE (path inside container)
+#     ORG_GRADLE_PROJECT_VEHICLE_RELEASE_STORE_PASSWORD
+#     ORG_GRADLE_PROJECT_VEHICLE_RELEASE_KEY_ALIAS
+#     ORG_GRADLE_PROJECT_VEHICLE_RELEASE_KEY_PASSWORD
+set -euo pipefail
 cd /app
 
-# Use an isolated Gradle user home per container run to avoid cache/journal
-# lock contention when previous runs left daemons behind in the shared cache.
-export GRADLE_USER_HOME="${GRADLE_USER_HOME:-/tmp/.gradle-$(date +%s)-$$}"
-mkdir -p "$GRADLE_USER_HOME"
-echo "Using GRADLE_USER_HOME=$GRADLE_USER_HOME"
+VERSION="${MOBILE_VERSION:-$(node -p "require('./package.json').version")}"
+if ! [[ "$VERSION" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+  echo "MOBILE_VERSION must be X.Y.Z (got '$VERSION')" >&2
+  exit 1
+fi
+CODE=$(( BASH_REMATCH[1] * 1000000 + BASH_REMATCH[2] * 1000 + BASH_REMATCH[3] ))
+VARIANT="${BUILD_VARIANT:-release}"
 
-# Use conservative Gradle settings to reduce memory pressure in containers.
-# These can be overridden from docker-compose with environment variables.
-export GRADLE_OPTS="${GRADLE_OPTS:--Xmx1536m -Dorg.gradle.daemon=false -Dorg.gradle.workers.max=1 -Dkotlin.daemon.jvm.options=-Xmx512m}"
-GRADLE_MAX_WORKERS="${GRADLE_MAX_WORKERS:-1}"
-GRADLE_FLAGS=(--no-daemon "--max-workers=${GRADLE_MAX_WORKERS}")
+# Compose passes unset signing vars as empty strings; Gradle would treat an
+# empty property as "configured", so drop them to fall back to the debug key.
+for v in STORE_FILE STORE_PASSWORD KEY_ALIAS KEY_PASSWORD; do
+  name="ORG_GRADLE_PROJECT_VEHICLE_RELEASE_$v"
+  [ -n "${!name:-}" ] || unset "$name"
+done
+echo "=== Vehicle Manager Android build: $VERSION (code $CODE, $VARIANT) ==="
 
-# Install dependencies if needed
-if [ ! -d "node_modules" ]; then
-    echo "Installing npm dependencies..."
-    npm install
+if [ "${RUN_TESTS:-0}" = "1" ]; then
+  npx jest --ci
 fi
 
-# Ensure local.properties exists
+mkdir -p android/app/src/main/assets/fonts
+cp node_modules/react-native-vector-icons/Fonts/*.ttf android/app/src/main/assets/fonts/
 echo "sdk.dir=${ANDROID_HOME}" > android/local.properties
 
-# Generate gradle wrapper if it doesn't exist (volume mount may overwrite it)
+# Keep memory modest for small hosts; override via GRADLE_OPTS.
+export GRADLE_OPTS="${GRADLE_OPTS:--Xmx2g -Dorg.gradle.daemon=false}"
+
 cd android
-if [ ! -f "gradle/wrapper/gradle-wrapper.jar" ]; then
-    echo "Generating Gradle wrapper..."
-    gradle wrapper --gradle-version=8.6
-fi
-
-# Copy react-native-vector-icons fonts into android assets
-echo "Copying vector icon fonts..."
-mkdir -p /app/android/app/src/main/assets/fonts
-cp /app/node_modules/react-native-vector-icons/Fonts/*.ttf /app/android/app/src/main/assets/fonts/ 2>/dev/null || echo "Warning: Could not copy vector icon fonts"
-
-# Clean previous builds
-echo "Cleaning previous builds..."
-./gradlew "${GRADLE_FLAGS[@]}" clean
-
-# Build APK(s). Default behavior is release with fallback to debug when
-# release fails (commonly due to OOM / exit 137 on constrained hosts).
-BUILD_VARIANT="${BUILD_VARIANT:-release}"
-
-build_release() {
-    echo "Building release APK..."
-    ./gradlew "${GRADLE_FLAGS[@]}" assembleRelease -x lintVitalRelease
-}
-
-build_debug() {
-    echo "Building debug APK..."
-    ./gradlew "${GRADLE_FLAGS[@]}" assembleDebug
-}
-
-case "$BUILD_VARIANT" in
-    release)
-        if ! build_release; then
-            echo "Release build failed; attempting debug APK fallback..."
-            build_debug
-        fi
-        ;;
-    debug)
-        build_debug
-        ;;
-    both)
-        if ! build_release; then
-            echo "Release build failed; continuing to debug APK build..."
-        fi
-        build_debug
-        ;;
-    *)
-        echo "Invalid BUILD_VARIANT='$BUILD_VARIANT' (expected: release|debug|both)"
-        exit 1
-        ;;
+case "$VARIANT" in
+  release) TASK=assembleRelease; EXTRA=(-x lintVitalRelease) ;;
+  debug)   TASK=assembleDebug;   EXTRA=() ;;
+  *) echo "BUILD_VARIANT must be release or debug" >&2; exit 1 ;;
 esac
+gradle --no-daemon "$TASK" "${EXTRA[@]}" \
+  -PappVersionName="$VERSION" -PappVersionCode="$CODE"
 
-# Copy APK to output directory
-echo "Copying APK to output..."
-mkdir -p /app/output
-copied=0
-for apk in app/build/outputs/apk/release/*.apk app/build/outputs/apk/debug/*.apk; do
-    if [ -f "$apk" ]; then
-        cp "$apk" /app/output/
-        copied=1
-    fi
-done
-
-if [ "$copied" -ne 1 ]; then
-    echo "No APK artifacts were found to copy."
-    exit 1
+APK="app/build/outputs/apk/$VARIANT/app-$VARIANT.apk"
+OUT_NAME="vehicle-manager-$VERSION.apk"
+if [ "$VARIANT" = debug ]; then
+  OUT_NAME="vehicle-manager-$VERSION-debug.apk"
 fi
+mkdir -p /app/output
+cp "$APK" "/app/output/$OUT_NAME"
+(cd /app/output && sha256sum "$OUT_NAME" > "$OUT_NAME.sha256")
 
-echo ""
-echo "=== Build Complete ==="
-echo "APK location: /app/output/"
+echo
+echo "=== Build complete: mobile/output/$OUT_NAME ==="
 ls -la /app/output/

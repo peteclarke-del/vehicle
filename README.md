@@ -475,8 +475,7 @@ vehicle-management-system/
 ├── docs/                    # Documentation
 │   ├── FRONTEND_LIBRARIES.md
 │   ├── BACKEND_LIBRARIES.md
-│   ├── API_REFERENCE.md
-│   └── AI_CONTEXT.md
+│   └── API_REFERENCE.md
 ├── uploads/                 # User file uploads
 ├── docker-compose.yml       # Docker services
 ├── docker-compose.mobile.yml # Mobile APK build config
@@ -674,7 +673,7 @@ The project uses Docker Compose v3.9 with multi-stage builds and environment-spe
 - **mysql**: MySQL 8.0 with healthcheck
 - **php**: PHP 8.4-FPM with Xdebug (dev only)
 - **nginx**: Nginx Alpine with custom config and healthcheck
-- **frontend**: Node 20 (dev) or Nginx (prod)
+- **frontend**: Node 22 (dev) or Nginx (prod)
 
 **Networks:**
 - `vehicle_network`: Bridge network for service communication
@@ -746,26 +745,30 @@ Comprehensive documentation is available in the `docs/` folder:
 | [FRONTEND_LIBRARIES.md](docs/FRONTEND_LIBRARIES.md) | React hooks, utilities, and contexts |
 | [BACKEND_LIBRARIES.md](docs/BACKEND_LIBRARIES.md) | PHP traits, services, and patterns |
 | [API_REFERENCE.md](docs/API_REFERENCE.md) | Complete REST API documentation |
-| [AI_CONTEXT.md](docs/AI_CONTEXT.md) | Application overview for AI assistants |
 | [Mobile README](mobile/README.md) | React Native mobile app documentation |
 
 ### Building the Mobile App
 
-The Android APK is built using Docker for reproducibility:
+Releases are built by GitHub Actions when a `mobile-v*` tag is pushed (see
+[Mobile README](mobile/README.md#updating-the-app)). To build the same APK
+locally with Docker (x86_64 host, ~8 GB RAM, first build downloads the
+Android SDK):
 
 ```bash
-# Build the Docker image
-docker-compose -f docker-compose.mobile.yml build
-
-# Build the APK
-docker-compose -f docker-compose.mobile.yml run --rm mobile-build
-
-# Output: mobile/output/app-release.apk (~59MB)
+MOBILE_VERSION=1.1.1 docker compose -f docker-compose.mobile.yml up --build
+# Output: mobile/output/vehicle-manager-1.1.1.apk (+ .sha256)
 ```
+
+It uses the same toolchain (Node 22, JDK 17, Gradle 9.4.1, Android SDK 37)
+and signing key as the release workflow, so it installs over a GitHub
+release. Use a version higher than the installed one. Options:
+`BUILD_VARIANT=debug`, `RUN_TESTS=1`, and `ANDROID_KEYSTORE_FILE` /
+`ANDROID_KEYSTORE_PASSWORD` / `ANDROID_KEY_ALIAS` / `ANDROID_KEY_PASSWORD`
+for a private release key.
 
 Install on a connected device or emulator:
 ```bash
-adb install -r mobile/output/app-release.apk
+adb install -r mobile/output/vehicle-manager-1.1.1.apk
 ```
 
 ### Admin Panel
@@ -833,8 +836,6 @@ The application uses the following main entities:
 | UserFeatureOverride | Per-user feature flag enable/disable overrides |
 | RefreshToken | JWT refresh tokens |
 
-See [docs/AI_CONTEXT.md](docs/AI_CONTEXT.md) for detailed entity relationships.
-
 ## Troubleshooting
 
 ### Common Issues
@@ -847,8 +848,6 @@ See [docs/AI_CONTEXT.md](docs/AI_CONTEXT.md) for detailed entity relationships.
 | Port conflicts | Check `lsof -i :3000` and modify docker-compose.yml |
 | 401 Unauthorized errors | JWT token expired; re-login |
 | Attachment not appearing | Ensure `finalizeAttachmentLink()` is called after flush |
-
-For detailed troubleshooting, see [docs/AI_CONTEXT.md](docs/AI_CONTEXT.md#common-issues-and-solutions).
 
 ## License
 

@@ -1,78 +1,43 @@
-# Android build environment for React Native
-FROM node:18-bullseye
+# Android build environment for the Vehicle Manager app (React Native 0.87).
+# Mirrors .github/workflows/mobile-release.yml so a local build produces the
+# same APK as a GitHub release (same toolchain, same debug signing key).
+#
+# Usage (from the repo root):
+#   MOBILE_VERSION=1.1.1 docker compose -f docker-compose.mobile.yml up --build
+# The APK is written to mobile/output/vehicle-manager-<version>.apk
 
-# Set environment variables
-ENV ANDROID_HOME=/opt/android-sdk
-ENV ANDROID_SDK_ROOT=/opt/android-sdk
-ENV PATH="${PATH}:${ANDROID_HOME}/cmdline-tools/latest/bin:${ANDROID_HOME}/platform-tools:${ANDROID_HOME}/build-tools/35.0.0"
+FROM node:22-bookworm
 
-# Install dependencies
-RUN apt-get update && apt-get install -y \
-    openjdk-17-jdk \
-    wget \
-    unzip \
-    git \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+ENV ANDROID_HOME=/opt/android-sdk \
+    ANDROID_SDK_ROOT=/opt/android-sdk \
+    JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 \
+    GRADLE_VERSION=9.4.1
+ENV PATH="${PATH}:${ANDROID_HOME}/cmdline-tools/latest/bin:${ANDROID_HOME}/platform-tools:/opt/gradle-${GRADLE_VERSION}/bin"
 
-# Set JAVA_HOME
-ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends openjdk-17-jdk-headless wget unzip \
+ && rm -rf /var/lib/apt/lists/*
 
-# Download and install Android command line tools
-RUN mkdir -p ${ANDROID_HOME}/cmdline-tools && \
-    cd ${ANDROID_HOME}/cmdline-tools && \
-    wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O cmdline-tools.zip && \
-    unzip -q cmdline-tools.zip && \
-    rm cmdline-tools.zip && \
-    mv cmdline-tools latest
+# Android command-line tools + the SDK packages android/build.gradle asks for
+# (compileSdk 37, build-tools 37.0.0, NDK 27.1.12297006).
+RUN mkdir -p ${ANDROID_HOME}/cmdline-tools \
+ && cd ${ANDROID_HOME}/cmdline-tools \
+ && wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O tools.zip \
+ && unzip -q tools.zip && rm tools.zip && mv cmdline-tools latest \
+ && yes | sdkmanager --licenses > /dev/null \
+ && sdkmanager --install "platform-tools" "platforms;android-37.0" "build-tools;37.0.0" "ndk;27.1.12297006" > /dev/null
 
-# Accept licenses and install SDK components (including SDK 35 for newer dependencies)
-RUN yes | sdkmanager --licenses && \
-    sdkmanager "platform-tools" \
-    "platforms;android-34" \
-    "platforms;android-35" \
-    "build-tools;34.0.0" \
-    "build-tools;35.0.0" \
-    "ndk;26.1.10909125"
+# Gradle (the repo ships wrapper properties but no wrapper jar; CI also runs
+# a plain Gradle of the same version).
+RUN wget -q "https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip" -O /tmp/gradle.zip \
+ && unzip -q /tmp/gradle.zip -d /opt && rm /tmp/gradle.zip
 
-# Install Gradle globally to generate wrapper
-ENV GRADLE_VERSION=8.7
-RUN wget -q "https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip" -O /tmp/gradle.zip && \
-    unzip -q /tmp/gradle.zip -d /opt && \
-    rm /tmp/gradle.zip && \
-    ln -s /opt/gradle-${GRADLE_VERSION}/bin/gradle /usr/local/bin/gradle
-
-# Create app directory
 WORKDIR /app
 
-# Copy package files first for better caching
-COPY package*.json ./
+# Dependencies first for layer caching (same flags as CI).
+COPY package.json package-lock.json ./
+RUN npm ci --legacy-peer-deps --no-audit --no-fund
 
-# Install npm dependencies
-RUN npm install
-
-# Copy the rest of the application
 COPY . .
 
-# Copy react-native-vector-icons fonts into Android assets
-RUN mkdir -p android/app/src/main/assets/fonts && \
-    cp node_modules/react-native-vector-icons/Fonts/*.ttf android/app/src/main/assets/fonts/
-
-# Generate gradle wrapper files manually (to avoid evaluating build.gradle)
-# First, generate wrapper in a temp directory, then copy to android
-RUN mkdir -p /tmp/gradle-init && \
-    cd /tmp/gradle-init && \
-    gradle init --type basic --dsl groovy --project-name temp && \
-    gradle wrapper --gradle-version ${GRADLE_VERSION} && \
-    mkdir -p /app/android/gradle/wrapper && \
-    cp -r gradle/wrapper/* /app/android/gradle/wrapper/ && \
-    cp gradlew /app/android/ && \
-    cp gradlew.bat /app/android/ && \
-    chmod +x /app/android/gradlew && \
-    rm -rf /tmp/gradle-init
-
-# Create local.properties for Android
-RUN echo "sdk.dir=${ANDROID_HOME}" > android/local.properties
-
-# Default command - build release APK
-CMD ["npm", "run", "build:android"]
+CMD ["/bin/bash", "/app/docker/build.sh"]

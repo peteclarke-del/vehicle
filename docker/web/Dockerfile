@@ -10,6 +10,8 @@ COPY docker/web/nginx.conf /etc/nginx/conf.d/default.conf
 COPY web/index.html /usr/share/nginx/html/
 COPY web/css/ /usr/share/nginx/html/css/
 COPY web/js/ /usr/share/nginx/html/js/
+COPY web/docs/ /usr/share/nginx/html/docs/
+COPY web/config.js /usr/share/nginx/html/
 
 EXPOSE 80
 
