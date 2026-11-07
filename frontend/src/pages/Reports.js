@@ -29,6 +29,7 @@ import {
 } from '@mui/material';
 import { Download as DownloadIcon, Delete as DeleteIcon, PictureAsPdf as PdfIcon, TableChart as XlsxIcon } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
+import { useVehicles } from '../contexts/VehiclesContext';
 import { useTranslation } from 'react-i18next';
 import VehicleSelector from '../components/VehicleSelector';
 import { saveBlob } from '../components/DownloadHelpers';
@@ -44,12 +45,12 @@ const Reports = () => {
   const { api } = useAuth();
   const { t } = useTranslation();
 
-  const [vehicles, setVehicles] = useState([]);
   const [reports, setReports] = useState([]);
   const [templates, setTemplates] = useState([]);
   const [selectedTemplateKey, setSelectedTemplateKey] = useState(null);
   const [selectedPeriodIndex, setSelectedPeriodIndex] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const { vehicles, refreshVehicles } = useVehicles();
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const { orderBy, order, handleRequestSort } = usePersistedSort('reports', 'generatedAt', 'desc');
@@ -66,9 +67,8 @@ const Reports = () => {
   const [downloadingReport, setDownloadingReport] = useState(null);
 
   const fetchVehicles = useCallback(async () => {
-    const data = await fetchArrayData(api, '/vehicles');
-    setVehicles(data);
-  }, [api]);
+    await refreshVehicles(true);
+  }, [refreshVehicles]);
 
   const loadReports = useCallback(async () => {
     setLoading(true);

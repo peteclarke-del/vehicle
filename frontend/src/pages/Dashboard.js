@@ -216,7 +216,11 @@ const Dashboard = () => {
     );
   });
 
-  // No need to load vehicles - VehiclesContext handles it automatically
+  // Vehicles come from the shared VehiclesContext. Refresh it whenever the
+  // dashboard opens so edits made on any other screen are always reflected.
+  useEffect(() => {
+    refreshVehicles(true);
+  }, [refreshVehicles]);
 
   // Fetch and set dashboard totals (extracted as a named function)
   const fetchDashboardTotals = useCallback(async (periodMonths = 12) => {

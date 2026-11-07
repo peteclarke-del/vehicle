@@ -18,6 +18,10 @@ const mockToKm = (v) => v;
 const mockGetLabel = () => 'mi';
 const mockDistanceResult = { convert: mockConvert, toKm: mockToKm, getLabel: mockGetLabel };
 
+const mockRefreshVehicles = jest.fn().mockResolvedValue([]);
+jest.mock('../contexts/VehiclesContext', () => ({
+  useVehicles: () => ({ vehicles: [], loading: false, refreshVehicles: mockRefreshVehicles }),
+}));
 jest.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (k) => k }),
 }));

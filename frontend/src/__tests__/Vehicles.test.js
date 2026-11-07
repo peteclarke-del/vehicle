@@ -5,6 +5,9 @@ import Vehicles from '../pages/Vehicles';
 import { AuthContext } from '../contexts/AuthContext';
 
 // Vehicles fetches its own data via fetchArrayData('/vehicles')
+jest.mock('../contexts/VehiclesContext', () => ({
+  useVehicles: () => require('../testUtils/vehiclesContextFromFetchMock').default(),
+}));
 jest.mock('../hooks/useApiData', () => ({
   useApiData: jest.fn(() => ({ data: [], loading: false, error: null, fetchData: jest.fn(), setData: jest.fn() })),
   fetchArrayData: jest.fn(),

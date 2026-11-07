@@ -22,6 +22,7 @@ import {
 } from '@mui/material';
 import { Add, Edit, Delete } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
+import { useVehicles } from '../contexts/VehiclesContext';
 import { useTranslation } from 'react-i18next';
 import logger from '../utils/logger';
 import TodoDialog from '../components/TodoDialog';
@@ -39,8 +40,8 @@ const Todo = () => {
   const { api } = useAuth();
   const { t } = useTranslation();
   const { regFirst, regLast } = useRegistrationLabel();
-  const [vehicles, setVehicles] = useState([]);
   const [todos, setTodos] = useState([]);
+  const { vehicles, refreshVehicles } = useVehicles();
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -93,10 +94,9 @@ const Todo = () => {
   const { page, rowsPerPage, paginatedRows: paginatedTodos, handleChangePage, handleChangeRowsPerPage } = useTablePagination(filteredTodos);
 
   const fetchVehicles = useCallback(async () => {
-    const data = await fetchArrayData(api, '/vehicles');
-    setVehicles(data);
+    await refreshVehicles(true);
     setLoading(false);
-  }, [api]);
+  }, [refreshVehicles]);
 
   const loadTodos = useCallback(async (signal) => {
     const url = !selectedVehicle || selectedVehicle === '__all__' ? '/todos' : `/todos?vehicleId=${selectedVehicle}`;

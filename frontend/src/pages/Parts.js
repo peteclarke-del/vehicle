@@ -24,7 +24,6 @@ import { matchesFreeText } from '../utils/searchText';
 
 const Parts = () => {
   const [parts, setParts] = useState([]);
-  const [vehicles, setVehicles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedPart, setSelectedPart] = useState(null);
@@ -32,7 +31,7 @@ const Parts = () => {
   const [openServiceDialog, setOpenServiceDialog] = useState(false);
   const [selectedServiceRecord, setSelectedServiceRecord] = useState(null);
   const { api } = useAuth();
-  const { notifyRecordChange } = useVehicles();
+  const { vehicles, refreshVehicles, notifyRecordChange } = useVehicles();
   const { t, i18n } = useTranslation();
   const { regFirst, regLast } = useRegistrationLabel();
   const { orderBy, order, handleRequestSort } = usePersistedSort('parts', 'description', 'asc');
@@ -45,10 +44,9 @@ const Parts = () => {
   );
 
   const loadVehicles = useCallback(async () => {
-    const data = await fetchArrayData(api, '/vehicles');
-    setVehicles(data);
+    await refreshVehicles(true);
     setLoading(false);
-  }, [api]);
+  }, [refreshVehicles]);
 
   const loadParts = useCallback(async (signal) => {
     const options = signal ? { signal } : {};
