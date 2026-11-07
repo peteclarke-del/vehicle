@@ -24,7 +24,6 @@ import { matchesFreeText } from '../utils/searchText';
 
 const Consumables = () => {
   const [consumables, setConsumables] = useState([]);
-  const [vehicles, setVehicles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedConsumable, setSelectedConsumable] = useState(null);
@@ -32,7 +31,7 @@ const Consumables = () => {
   const [openServiceDialog, setOpenServiceDialog] = useState(false);
   const [selectedServiceRecord, setSelectedServiceRecord] = useState(null);
   const { api } = useAuth();
-  const { notifyRecordChange } = useVehicles();
+  const { vehicles, refreshVehicles, notifyRecordChange } = useVehicles();
   const { t, i18n } = useTranslation();
   const { regFirst, regLast } = useRegistrationLabel();
   const { first: mileageFirst, last: mileageLast } = useSplitLabel('consumables.mileageAtChange', 'Mileage at', 'Change');
@@ -47,10 +46,9 @@ const Consumables = () => {
   );
 
   const loadVehicles = useCallback(async () => {
-    const data = await fetchArrayData(api, '/vehicles');
-    setVehicles(data);
+    await refreshVehicles(true);
     setLoading(false);
-  }, [api]);
+  }, [refreshVehicles]);
 
   const loadConsumables = useCallback(async (signal) => {
     const options = signal ? { signal } : {};

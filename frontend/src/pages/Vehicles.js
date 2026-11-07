@@ -48,8 +48,8 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useUserPreferences } from '../contexts/UserPreferencesContext';
 import { useAuth } from '../contexts/AuthContext';
+import { useVehicles } from '../contexts/VehiclesContext';
 import { useTranslation } from 'react-i18next';
-import { fetchArrayData } from '../hooks/useApiData';
 import { useDistance } from '../hooks/useDistance';
 import useTablePagination from '../hooks/useTablePagination';
 import usePersistedSort from '../hooks/usePersistedSort';
@@ -61,7 +61,9 @@ import { demoGuard } from '../utils/demoMode';
 import { matchesFreeText } from '../utils/searchText';
 
 const Vehicles = () => {
-  const [vehicles, setVehicles] = useState([]);
+  // Shared vehicle list (VehiclesContext) - the same data every screen
+  // and the dashboard read, refreshed after any edit.
+  const { vehicles, refreshVehicles } = useVehicles();
   const [loading, setLoading] = useState(true);
   const { convert, format } = useDistance();
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -80,12 +82,12 @@ const Vehicles = () => {
   const { api } = useAuth();
   const { t } = useTranslation();
 
+
   const loadVehicles = useCallback(async () => {
     setLoading(true);
-    const data = await fetchArrayData(api, '/vehicles');
-    setVehicles(data);
+    await refreshVehicles(true);
     setLoading(false);
-  }, [api]);
+  }, [refreshVehicles]);
 
   useEffect(() => {
     loadVehicles();

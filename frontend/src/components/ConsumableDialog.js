@@ -15,6 +15,7 @@ import {
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
+import { useVehicles } from '../contexts/VehiclesContext';
 import { useUserPreferences } from '../contexts/UserPreferencesContext';
 import { useDistance } from '../hooks/useDistance';
 import useVehicleStatusFilter from '../hooks/useVehicleStatusFilter';
@@ -27,6 +28,7 @@ import logger from '../utils/logger';
 export default function ConsumableDialog({ open, onClose, consumable, vehicleId, onVehicleMoved }) {
   const { t } = useTranslation();
   const { api } = useAuth();
+  const { refreshVehicles } = useVehicles();
   const { setDefaultVehicle } = useUserPreferences();
   const { convert, toKm, getLabel } = useDistance();
   const [formData, setFormData] = useState({
@@ -302,8 +304,7 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId,
   useEffect(() => {
     const loadVehicles = async () => {
       try {
-        const resp = await api.get('/vehicles');
-        const list = Array.isArray(resp.data) ? resp.data : [];
+        const list = await refreshVehicles(true);
         setMoveVehicles([
           { id: '__stock__', registration: t('parts.generalStock', 'General Stock'), status: 'Live', alwaysVisible: true },
           ...list,
@@ -317,7 +318,7 @@ export default function ConsumableDialog({ open, onClose, consumable, vehicleId,
     if (open && consumable?.id) {
       loadVehicles();
     }
-  }, [open, consumable?.id, api, t]);
+  }, [open, consumable?.id, refreshVehicles, t]);
 
   useEffect(() => {
     const load = async () => {

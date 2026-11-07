@@ -23,7 +23,6 @@ import { matchesFreeText } from '../utils/searchText';
 
 const FuelRecords = () => {
   const [records, setRecords] = useState([]);
-  const [vehicles, setVehicles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingRecords, setLoadingRecords] = useState(false);
   const recordsAbortRef = React.useRef(null);
@@ -31,7 +30,7 @@ const FuelRecords = () => {
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const { api } = useAuth();
-  const { notifyRecordChange } = useVehicles();
+  const { vehicles, refreshVehicles, notifyRecordChange } = useVehicles();
   const { t, i18n } = useTranslation();
   const { regFirst, regLast } = useRegistrationLabel();
   const { convert, format, getLabel } = useDistance();
@@ -56,10 +55,9 @@ const FuelRecords = () => {
   }, [api]);
 
   const loadVehicles = useCallback(async () => {
-    const data = await fetchArrayData(api, '/vehicles');
-    setVehicles(data);
+    await refreshVehicles(true);
     setLoading(false);
-  }, [api]);
+  }, [refreshVehicles]);
 
   const loadRecords = useCallback(async () => {
     if (recordsAbortRef.current) {

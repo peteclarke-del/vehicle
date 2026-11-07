@@ -15,6 +15,7 @@ import {
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
+import { useVehicles } from '../contexts/VehiclesContext';
 import { useUserPreferences } from '../contexts/UserPreferencesContext';
 import { useDistance } from '../hooks/useDistance';
 import useVehicleStatusFilter from '../hooks/useVehicleStatusFilter';
@@ -44,6 +45,7 @@ const normalizeListPayload = (payload, nestedKeys = []) => {
 export default function PartDialog({ open, onClose, part, vehicleId, onVehicleMoved }) {
   const { t } = useTranslation();
   const { api } = useAuth();
+  const { refreshVehicles } = useVehicles();
   const { setDefaultVehicle } = useUserPreferences();
   const { convert, toKm, getLabel } = useDistance();
   const [formData, setFormData] = useState({
@@ -275,8 +277,7 @@ export default function PartDialog({ open, onClose, part, vehicleId, onVehicleMo
   useEffect(() => {
     const loadVehicles = async () => {
       try {
-        const resp = await api.get('/vehicles');
-        const list = Array.isArray(resp.data) ? resp.data : [];
+        const list = await refreshVehicles(true);
         setMoveVehicles([
           { id: '__stock__', registration: t('parts.generalStock', 'General Stock'), status: 'Live', alwaysVisible: true },
           ...list,
@@ -290,7 +291,7 @@ export default function PartDialog({ open, onClose, part, vehicleId, onVehicleMo
     if (open && part?.id) {
       loadVehicles();
     }
-  }, [open, part?.id, api, t]);
+  }, [open, part?.id, refreshVehicles, t]);
 
   // Fetch vehicle to get vehicleTypeId (for vehicle-bound parts)
   useEffect(() => {

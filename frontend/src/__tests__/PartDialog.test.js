@@ -8,6 +8,10 @@ import { MemoryRouter } from 'react-router-dom';
 const mockSetDefaultVehicle = jest.fn();
 
 // Mock i18next
+const mockRefreshVehicles = jest.fn().mockResolvedValue([]);
+jest.mock('../contexts/VehiclesContext', () => ({
+  useVehicles: () => ({ vehicles: [], loading: false, refreshVehicles: mockRefreshVehicles }),
+}));
 jest.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key) => key,

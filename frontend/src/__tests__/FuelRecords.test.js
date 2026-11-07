@@ -6,6 +6,9 @@ import { AuthContext } from '../contexts/AuthContext';
 
 // FuelRecords fetches vehicles itself via fetchArrayData('/vehicles')
 // and uses useVehicles only for notifyRecordChange
+jest.mock('../contexts/VehiclesContext', () => ({
+  useVehicles: () => require('../testUtils/vehiclesContextFromFetchMock').default(),
+}));
 jest.mock('../hooks/useApiData', () => ({
   useApiData: jest.fn(() => ({ data: [], loading: false, error: null, fetchData: jest.fn(), setData: jest.fn() })),
   fetchArrayData: jest.fn(),
