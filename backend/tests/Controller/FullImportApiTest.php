@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Controller;
 
+use App\Entity\Attachment;
 use App\Entity\StockItem;
 use App\Entity\User;
 use App\Entity\Vehicle;
@@ -91,6 +92,50 @@ class FullImportApiTest extends BaseWebTestCase
         self::assertCount(1, $this->getEntityManager()->getRepository(StockItem::class)->findBy(['user' => $this->user($this->otherEmail)]));
     }
 
+    public function testWipeWithFileDeletionKeepsFilesReimportedAtSamePath(): void
+    {
+        $reg = 'FP' . random_int(10, 99) . ' ABC';
+        $slug = 'full-import-test-' . uniqid();
+        $keptPath = 'vehicles/' . $slug . '/kept.pdf';
+        $stalePath = 'vehicles/' . $slug . '/stale.pdf';
+        $uploads = static::getContainer()->getParameter('kernel.project_dir') . '/uploads/';
+        @mkdir($uploads . 'vehicles/' . $slug, 0777, true);
+        file_put_contents($uploads . $keptPath, 'old');
+        file_put_contents($uploads . $stalePath, 'old');
+
+        $em = $this->getEntityManager();
+        $this->createVehicle($this->user($this->email), $reg, 'Old', 'Live');
+        $vehicle = $this->vehiclesFor($this->email)[0];
+        foreach ([$keptPath, $stalePath] as $path) {
+            $a = (new Attachment())->setUser($vehicle->getOwner())->setVehicle($vehicle)
+                ->setFilename(basename($path))->setOriginalName(basename($path))
+                ->setMimeType('application/pdf')->setFileSize(3)->setStoragePath($path);
+            $em->persist($a);
+        }
+        $em->flush();
+
+        $row = $this->vehicleRow($reg, 'New', 'Live');
+        $row['attachments'] = [[
+            'filename' => 'kept.pdf', 'exportFilename' => 'kept.pdf', 'storagePath' => $keptPath,
+            'mimeType' => 'application/pdf', 'fileSize' => 3,
+        ]];
+
+        try {
+            $response = $this->postZip('/api/vehicles/full-import', [$row], ['wipeData' => '1', 'deleteFiles' => '1'], [
+                'attachments/kept.pdf' => 'new',
+            ]);
+            self::assertResponseIsSuccessful();
+            self::assertSame(1, $response['fullImport']['deletedFiles']);
+            self::assertFileExists($uploads . $keptPath, 'Re-imported file must survive post-import cleanup');
+            self::assertSame('new', file_get_contents($uploads . $keptPath));
+            self::assertFileDoesNotExist($uploads . $stalePath);
+        } finally {
+            @unlink($uploads . $keptPath);
+            @unlink($uploads . $stalePath);
+            @rmdir($uploads . 'vehicles/' . $slug);
+        }
+    }
+
     public function testDeleteFilesIgnoredWithoutWipe(): void
     {
         $response = $this->fullImport([$this->vehicleRow('DF' . random_int(10, 99) . ' ABC', 'X', 'Live')], ['deleteFiles' => '1']);
@@ -140,14 +185,18 @@ class FullImportApiTest extends BaseWebTestCase
     /**
      * @param list<array<string, mixed>> $vehicles
      * @param array<string, string> $fields
+     * @param array<string, string> $extraFiles
      * @return array<string, mixed>
      */
-    private function postZip(string $url, array $vehicles, array $fields = []): array
+    private function postZip(string $url, array $vehicles, array $fields = [], array $extraFiles = []): array
     {
         $zipPath = sys_get_temp_dir() . '/full-import-' . uniqid() . '.zip';
         $zip = new \ZipArchive();
         $zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
         $zip->addFromString('vehicles.json', json_encode($vehicles));
+        foreach ($extraFiles as $name => $content) {
+            $zip->addFromString($name, $content);
+        }
         $zip->close();
 
         $this->client->request('POST', $url, $fields, [
