@@ -59,7 +59,7 @@ const ImportExport = () => {
 
   const cancelExportRef = useRef(false);
 
-  const apiBase = process.env.REACT_APP_API_URL || '';
+  const apiBase = process.env.REACT_APP_API_URL || '/api';
   const auth = authHeaders;
 
   // Helper: build full URL (apiBase + path) with provided params object.

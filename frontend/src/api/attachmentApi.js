@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Matches the REACT_APP_API_URL pattern used in AuthContext (already includes /api).
 // Append /attachments — not /api/attachments — to avoid a doubled /api segment.
-const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8081/api';
+const API_BASE = process.env.REACT_APP_API_URL || '/api';
 
 /**
  * Upload a file as an attachment.
