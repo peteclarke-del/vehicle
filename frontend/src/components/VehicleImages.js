@@ -241,7 +241,7 @@ const VehicleImages = ({ vehicle }) => {
             {images.map((image, index) => (
               <ImageListItem key={image.id} sx={{ cursor: 'pointer' }}>
                 <img
-                  src={`${(process.env.REACT_APP_API_URL || 'http://localhost:8000').replace(/\/api\/?$/, '')}${image.path}`}
+                  src={`${(process.env.REACT_APP_API_URL || '/api').replace(/\/api\/?$/, '')}${image.path}`}
                   alt={image.caption || `Vehicle image ${index + 1}`}
                   loading="lazy"
                   style={{ height: 200, objectFit: 'cover' }}
@@ -398,7 +398,7 @@ const VehicleImages = ({ vehicle }) => {
               {images[currentIndex] && (
                 <>
                   <img
-                    src={`${(process.env.REACT_APP_API_URL || 'http://localhost:8000').replace(/\/api\/?$/, '')}${
+                    src={`${(process.env.REACT_APP_API_URL || '/api').replace(/\/api\/?$/, '')}${
                       images[currentIndex].path
                     }`}
                     alt={images[currentIndex].caption || 'Vehicle image'}

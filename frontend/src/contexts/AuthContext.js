@@ -18,7 +18,7 @@ export const useAuth = () => {
 
 const api = axios.create({
   // Default to the nginx host port used by the dev environment (8081).
-  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:8081/api',
+  baseURL: process.env.REACT_APP_API_URL || '/api',
 });
 
 api.interceptors.request.use(
