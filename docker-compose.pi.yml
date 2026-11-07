@@ -15,7 +15,7 @@
 #   APP_SECRET          - Random 32-char hex string (openssl rand -hex 16)
 #
 # Recommended overrides (set in .env):
-#   REACT_APP_API_URL   - API URL as seen by the BROWSER, e.g. http://mypi:8081/api
+#   REACT_APP_API_URL   - Baked into the frontend build via frontend/.env; defaults to /api (same origin, recommended)
 #   CORS_ALLOW_ORIGIN   - Regex of allowed origins, e.g. '^https?://mypi(:[0-9]+)?$'
 #
 # First deploy only:
