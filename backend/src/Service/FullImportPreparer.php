@@ -10,6 +10,7 @@ use App\Entity\StockItem;
 use App\Entity\User;
 use App\Entity\Vehicle;
 use App\Entity\VehicleAssignment;
+use App\Entity\VehicleImage;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 
@@ -195,8 +196,18 @@ class FullImportPreparer
         if ($root === false) {
             return 0;
         }
+        // The import re-creates images/attachments at their original paths,
+        // so a file from the wiped data may now belong to an imported record.
+        $inUse = [];
+        foreach ($this->referencedPaths() as $referenced) {
+            $inUse[$this->relativeUploadPath($referenced)] = true;
+        }
+
         $deleted = 0;
         foreach (array_unique(array_filter($paths)) as $path) {
+            if (isset($inUse[$this->relativeUploadPath($path)])) {
+                continue;
+            }
             $relative = preg_replace('#^/?uploads/#', '', ltrim((string) $path, '/'));
             $full = realpath($root . '/' . $relative);
             // Never follow a path outside the uploads directory.
@@ -206,6 +217,30 @@ class FullImportPreparer
         }
 
         return $deleted;
+    }
+
+    /** @return list<string> */
+    private function referencedPaths(): array
+    {
+        $paths = [];
+        foreach ([[VehicleImage::class, 'path'], [Attachment::class, 'storagePath']] as [$class, $field]) {
+            $rows = $this->entityManager->createQueryBuilder()
+                ->select('e.' . $field . ' AS p')
+                ->from($class, 'e')
+                ->where('e.' . $field . ' IS NOT NULL')
+                ->getQuery()
+                ->getScalarResult();
+            foreach ($rows as $row) {
+                $paths[] = (string) $row['p'];
+            }
+        }
+
+        return $paths;
+    }
+
+    private function relativeUploadPath(?string $path): string
+    {
+        return (string) preg_replace('#^/?uploads/#', '', ltrim((string) $path, '/'));
     }
 
     private function normaliseReg(?string $reg): string
