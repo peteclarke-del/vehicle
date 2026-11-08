@@ -178,6 +178,15 @@ The app updates itself from this repository's GitHub Releases. No Play Store is 
 - The first time, Android asks you to allow **Install unknown apps** for Vehicle Manager. Allow it, then tap *Download & install* again.
 - Android installs the update over the existing app and keeps your data. It only accepts an APK with the same package name and signing key and a higher version code.
 
+#### Server version check
+
+On launch and whenever the app returns to the foreground, it asks the server (`GET /api/app-compatibility`, no login needed) which app versions it expects:
+
+- **Older than `MOBILE_LATEST_APP_VERSION`:** the app asks the user to update. This is shown even if they chose *Later* for that release, and still explains the situation when the download isn't available. The app keeps working.
+- **Older than `MOBILE_MIN_APP_VERSION`:** the *Update required* screen blocks the app until it is updated.
+
+Both are set in the server's `backend/.env` (defaults: latest `1.1.0`, minimum `1.0.0`). After publishing a release, raise `MOBILE_LATEST_APP_VERSION` to it so existing installs are prompted. Raise `MOBILE_MIN_APP_VERSION` only when the server no longer works with older apps.
+
 #### Publishing a release
 
 Tag a commit and push the tag:
@@ -186,6 +195,8 @@ Tag a commit and push the tag:
 git tag mobile-v1.1.0
 git push origin mobile-v1.1.0
 ```
+
+Then set `MOBILE_LATEST_APP_VERSION=1.1.0` in the server's `backend/.env` and restart the PHP container so existing installs are asked to update (see *Server version check*).
 
 `.github/workflows/mobile-release.yml` runs the tests, builds the release APK with `versionName=1.1.0` and `versionCode=1001000`, and publishes it to the GitHub Release `mobile-v1.1.0` as `vehicle-manager-1.1.0.apk` (with a `.sha256`). You can also run the workflow manually from the Actions tab with a version. PRs that touch `mobile/` build and test the APK but publish nothing.
 
