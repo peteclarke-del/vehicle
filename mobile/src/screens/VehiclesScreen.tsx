@@ -19,6 +19,8 @@ import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useAuth} from '../contexts/AuthContext';
+import {useRefreshOnFocus} from '../hooks/useRefreshOnFocus';
+import {useVehicles} from '../contexts/VehiclesContext';
 import {useSync} from '../contexts/SyncContext';
 import {useUserPreferences} from '../contexts/UserPreferencesContext';
 import {useVehicleSelection} from '../contexts/VehicleSelectionContext';
@@ -51,11 +53,12 @@ const VehiclesScreen: React.FC = () => {
   const theme = useTheme();
   const navigation = useNavigation<NavigationProp>();
   const {api} = useAuth();
+  // Shared list (VehiclesContext): same data as every other screen.
+  const {vehicles, refreshVehicles} = useVehicles() as {vehicles: Vehicle[]; refreshVehicles: () => Promise<any[]>};
   const {isOnline} = useSync();
   const {preferences} = useUserPreferences();
   const {setGlobalVehicleId} = useVehicleSelection();
   
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [filteredVehicles, setFilteredVehicles] = useState<Vehicle[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -63,29 +66,14 @@ const VehiclesScreen: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
   const loadVehicles = useCallback(async () => {
-    try {
-      // Load from cache first
-      try {
-        const cached = await AsyncStorage.getItem('cache_vehicles');
-        if (cached) {
-          setVehicles(JSON.parse(cached));
-        }
-      } catch (e) { /* cache miss is fine */ }
-
-      const response = await api.get('/vehicles');
-      const data = Array.isArray(response.data) ? response.data : [];
-      setVehicles(data);
-      await AsyncStorage.setItem('cache_vehicles', JSON.stringify(data)).catch(() => {});
-    } catch (error) {
-      console.error('Error loading vehicles:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, [api]);
+    await refreshVehicles();
+    setLoading(false);
+  }, [refreshVehicles]);
 
   useEffect(() => {
     loadVehicles();
   }, [loadVehicles]);
+  useRefreshOnFocus(loadVehicles);
 
   useEffect(() => {
     let filtered = vehicles;
@@ -197,7 +185,7 @@ const VehiclesScreen: React.FC = () => {
       />
       
       <View style={styles.filterRow}>
-        {['all', 'Live', 'Sold', 'Scrapped'].map(status => (
+        {['all', 'Live', 'Sold', 'Scrapped', 'Exported'].map(status => (
           <Chip
             key={status}
             selected={statusFilter === status}

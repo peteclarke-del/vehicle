@@ -19,6 +19,7 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {useNavigation} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {useAuth} from '../contexts/AuthContext';
+import {useVehicles} from '../contexts/VehiclesContext';
 import {useSync} from '../contexts/SyncContext';
 import {useVehicleSelection} from '../contexts/VehicleSelectionContext';
 import {MainStackParamList} from '../navigation/MainNavigator';
@@ -34,6 +35,7 @@ const QuickFuelScreen: React.FC = () => {
   const theme = useTheme();
   const navigation = useNavigation<NavigationProp>();
   const {api} = useAuth();
+  const {refreshVehicles} = useVehicles();
   const {isOnline, addPendingChange} = useSync();
   const {globalVehicleId, setGlobalVehicleId} = useVehicleSelection();
 
@@ -88,7 +90,7 @@ const QuickFuelScreen: React.FC = () => {
 
   const loadVehicles = async () => {
     try {
-      const res = await api.get('/vehicles');
+      const res = await refreshVehicles().then(data => ({data}));
       const list = Array.isArray(res.data) ? res.data : [];
       setVehicles(list);
       // If global vehicle is set, pre-populate mileage

@@ -15,6 +15,7 @@ import {AuthProvider} from './src/contexts/AuthContext';
 import {UserPreferencesProvider, useUserPreferences} from './src/contexts/UserPreferencesContext';
 import {SyncProvider} from './src/contexts/SyncContext';
 import {VehicleSelectionProvider} from './src/contexts/VehicleSelectionContext';
+import {VehiclesProvider} from './src/contexts/VehiclesContext';
 import {PermissionsProvider} from './src/contexts/PermissionsContext';
 import {lightTheme, darkTheme} from './src/theme';
 import RootNavigator from './src/navigation/RootNavigator';
@@ -51,6 +52,7 @@ const AppContent = () => {
   return (
     <PaperProvider theme={paperTheme}>
       <SyncProvider>
+        <VehiclesProvider>
         <PermissionsProvider>
           <VehicleSelectionProvider>
             <NavigationContainer theme={navigationTheme}>
@@ -59,6 +61,7 @@ const AppContent = () => {
             <UpdatePrompt />
           </VehicleSelectionProvider>
         </PermissionsProvider>
+        </VehiclesProvider>
       </SyncProvider>
     </PaperProvider>
   );

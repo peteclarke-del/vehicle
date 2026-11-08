@@ -16,6 +16,8 @@ import {useNavigation} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useAuth} from '../contexts/AuthContext';
+import {useRefreshOnFocus} from '../hooks/useRefreshOnFocus';
+import {useVehicles} from '../contexts/VehiclesContext';
 import {useSync} from '../contexts/SyncContext';
 import {useUserPreferences} from '../contexts/UserPreferencesContext';
 import {useVehicleSelection} from '../contexts/VehicleSelectionContext';
@@ -53,6 +55,7 @@ const FuelRecordsScreen: React.FC = () => {
   const theme = useTheme();
   const navigation = useNavigation<NavigationProp>();
   const {api} = useAuth();
+  const {refreshVehicles} = useVehicles();
   const {isOnline} = useSync();
   const {preferences} = useUserPreferences();
   const {globalVehicleId, setGlobalVehicleId} = useVehicleSelection();
@@ -77,7 +80,7 @@ const FuelRecordsScreen: React.FC = () => {
 
       // Then fetch from network
       const [vehiclesRes, recordsRes] = await Promise.all([
-        api.get('/vehicles'),
+        refreshVehicles().then(data => ({data})),
         api.get('/fuel-records', {
           params: globalVehicleId !== 'all' ? {vehicleId: globalVehicleId} : {},
         }),
@@ -100,6 +103,7 @@ const FuelRecordsScreen: React.FC = () => {
   useEffect(() => {
     loadData();
   }, [loadData]);
+  useRefreshOnFocus(loadData);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);

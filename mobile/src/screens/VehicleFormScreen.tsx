@@ -17,6 +17,7 @@ import {
 import {useNavigation, useRoute, RouteProp} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {useAuth} from '../contexts/AuthContext';
+import {useVehicles} from '../contexts/VehiclesContext';
 import {useSync} from '../contexts/SyncContext';
 import {MainStackParamList} from '../navigation/MainNavigator';
 import LoadingScreen from '../components/LoadingScreen';
@@ -70,6 +71,7 @@ const VehicleFormScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProps>();
   const {api} = useAuth();
+  const {refreshVehicles, updateVehicleLocally} = useVehicles();
   const {isOnline, addPendingChange} = useSync();
   
   const vehicleId = route.params?.vehicleId;
@@ -121,6 +123,12 @@ const VehicleFormScreen: React.FC = () => {
       Alert.alert('Validation Error', 'Registration number is required');
       return;
     }
+    // The server requires these to create a vehicle (an offline-queued
+    // create missing them would be rejected later and lost).
+    if (!formData.make.trim() || !formData.model.trim() || !formData.year.trim()) {
+      Alert.alert('Validation Error', 'Make, model and year are required');
+      return;
+    }
 
     setSaving(true);
 
@@ -151,6 +159,8 @@ const VehicleFormScreen: React.FC = () => {
         } else {
           await api.post('/vehicles', payload);
         }
+        // Update the shared list so every screen shows the change now.
+        await refreshVehicles();
       } else {
         // Queue for sync when offline
         await addPendingChange({
@@ -159,6 +169,10 @@ const VehicleFormScreen: React.FC = () => {
           entityId: isEditing ? vehicleId : undefined,
           data: payload,
         });
+        // Show the edit everywhere straight away; it syncs when back online.
+        if (isEditing && vehicleId) {
+          updateVehicleLocally(vehicleId, payload);
+        }
       }
       navigation.goBack();
     } catch (error: any) {
@@ -249,6 +263,7 @@ const VehicleFormScreen: React.FC = () => {
             {value: 'Live', label: 'Live'},
             {value: 'Sold', label: 'Sold'},
             {value: 'Scrapped', label: 'Scrapped'},
+            {value: 'Exported', label: 'Exported'},
           ]}
           style={styles.segmented}
         />

@@ -19,6 +19,7 @@ import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useAuth} from '../contexts/AuthContext';
+import {useRefreshOnFocus} from '../hooks/useRefreshOnFocus';
 import {useSync} from '../contexts/SyncContext';
 import {useUserPreferences} from '../contexts/UserPreferencesContext';
 import {formatCurrency, formatDate} from '../utils/formatters';
@@ -103,6 +104,7 @@ const StockItemsScreen: React.FC = () => {
   useEffect(() => {
     loadData();
   }, [loadData]);
+  useRefreshOnFocus(loadData);
 
   useEffect(() => {
     let filtered = items;
