@@ -2294,6 +2294,15 @@ cd vehicle</code></pre>
 
   <div class="endpoint">
     <div class="endpoint-header">
+      <span class="method method-get">GET</span>
+      <span class="endpoint-path">/api/app-compatibility</span>
+      <span class="endpoint-desc">Mobile app version check</span>
+    </div>
+    <div class="endpoint-body"><p>Returns the mobile app versions this server expects (<code>mobile.latestSupportedVersion</code>, <code>mobile.minimumSupportedVersion</code>). The app checks it on launch and when brought to the foreground: older than <em>latest</em> it asks the user to update; older than <em>minimum</em> it is blocked until updated. Configure with <code>MOBILE_LATEST_APP_VERSION</code> and <code>MOBILE_MIN_APP_VERSION</code> in <code>backend/.env</code>. No authentication required.</p></div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
       <span class="method method-post">POST</span>
       <span class="endpoint-path">/api/client-logs</span>
       <span class="endpoint-desc">Client-side log receiver</span>
@@ -3318,6 +3327,7 @@ cd vehicle</code></pre>
   <ul>
     <li>On launch it checks for a newer release and offers <strong>Download &amp; install</strong> or <strong>Later</strong>. <em>Later</em> skips that version.</li>
     <li><strong>Settings → Check for updates</strong> checks on demand. The same button is on the <em>Update required</em> screen.</li>
+    <li><strong>Server version check.</strong> If the server expects a newer app (<code>MOBILE_LATEST_APP_VERSION</code>), the app asks you to update, even if you chose <em>Later</em> for that release. If it is below the server's minimum (<code>MOBILE_MIN_APP_VERSION</code>), the app is blocked until updated. After publishing a release, raise <code>MOBILE_LATEST_APP_VERSION</code> on the server so existing installs are prompted.</li>
     <li>The first time, allow <strong>Install unknown apps</strong> for Vehicle Manager when Android asks, then tap install again.</li>
     <li>Android installs the update over the existing app and keeps your data.</li>
   </ul>

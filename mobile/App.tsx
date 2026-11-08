@@ -3,7 +3,7 @@ import {NavigationContainer, DefaultTheme, DarkTheme} from '@react-navigation/na
 import {Provider as PaperProvider} from 'react-native-paper';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
 import {GestureHandlerRootView} from 'react-native-gesture-handler';
-import {StyleSheet, useColorScheme, View, ActivityIndicator} from 'react-native';
+import {AppState, StyleSheet, useColorScheme, View, ActivityIndicator} from 'react-native';
 import {useTranslation} from 'react-i18next';
 import axios from 'axios';
 
@@ -15,12 +15,14 @@ import {AuthProvider} from './src/contexts/AuthContext';
 import {UserPreferencesProvider, useUserPreferences} from './src/contexts/UserPreferencesContext';
 import {SyncProvider} from './src/contexts/SyncContext';
 import {VehicleSelectionProvider} from './src/contexts/VehicleSelectionContext';
+import {VehiclesProvider} from './src/contexts/VehiclesContext';
 import {PermissionsProvider} from './src/contexts/PermissionsContext';
 import {lightTheme, darkTheme} from './src/theme';
 import RootNavigator from './src/navigation/RootNavigator';
 import {initializeNotifications, requestNotificationPermission} from './src/services/NotificationService';
 import UpdateRequiredScreen from './src/components/UpdateRequiredScreen';
 import UpdatePrompt from './src/components/UpdatePrompt';
+import {getInstalledVersion} from './src/services/appUpdate';
 import {
   AppCompatibilityEvaluation,
   AppCompatibilityPayload,
@@ -28,7 +30,7 @@ import {
 } from './src/services/appCompatibility';
 
 // Inner component that has access to preferences
-const AppContent = () => {
+const AppContent = ({serverExpectsVersion}: {serverExpectsVersion?: string}) => {
   const {preferences} = useUserPreferences();
   const systemColorScheme = useColorScheme();
   const {i18n} = useTranslation();
@@ -51,14 +53,16 @@ const AppContent = () => {
   return (
     <PaperProvider theme={paperTheme}>
       <SyncProvider>
+        <VehiclesProvider>
         <PermissionsProvider>
           <VehicleSelectionProvider>
             <NavigationContainer theme={navigationTheme}>
               <RootNavigator />
             </NavigationContainer>
-            <UpdatePrompt />
+            <UpdatePrompt serverExpectsVersion={serverExpectsVersion} />
           </VehicleSelectionProvider>
         </PermissionsProvider>
+        </VehiclesProvider>
       </SyncProvider>
     </PaperProvider>
   );
@@ -70,8 +74,9 @@ const AppWithConfig = () => {
   const [compatibilityLoading, setCompatibilityLoading] = useState(false);
   const [compatibilityPayload, setCompatibilityPayload] = useState<AppCompatibilityPayload | null>(null);
   const [compatibilityEvaluation, setCompatibilityEvaluation] = useState<AppCompatibilityEvaluation | null>(null);
+  const [installedVersion, setInstalledVersion] = useState<string>(Config.APP_VERSION);
 
-  const checkCompatibility = useCallback(async () => {
+  const checkCompatibility = useCallback(async (background = false) => {
     if (!isConfigured || mode !== 'web') {
       setCompatibilityPayload(null);
       setCompatibilityEvaluation(null);
@@ -79,9 +84,15 @@ const AppWithConfig = () => {
       return;
     }
 
-    setCompatibilityLoading(true);
+    // Only block the UI with a spinner on the first check, not on re-checks.
+    if (!background) {
+      setCompatibilityLoading(true);
+    }
 
     try {
+      // Compare the version actually installed (native), not a build constant.
+      const appVersion = await getInstalledVersion(Config.APP_VERSION);
+      setInstalledVersion(appVersion);
       const baseUrl = serverUrl || Config.API_URL || 'http://10.0.2.2:8081/api';
       const response = await axios.get(`${baseUrl}/app-compatibility`, {timeout: 15000});
       const payload = response.data as AppCompatibilityPayload;
@@ -89,11 +100,15 @@ const AppWithConfig = () => {
       setCompatibilityEvaluation(
         evaluateAppCompatibility(
           payload,
-          Config.APP_VERSION,
+          appVersion,
           Config.SUPPORTED_SERVER_API_COMPATIBILITY_VERSIONS,
         ),
       );
     } catch (error: any) {
+      if (background && !error?.response) {
+        // Re-check while offline: keep the last known result.
+        return;
+      }
       if (error?.response?.status === 404) {
         const fallbackPayload: AppCompatibilityPayload = {
           server: {
@@ -121,6 +136,16 @@ const AppWithConfig = () => {
 
   useEffect(() => {
     checkCompatibility();
+  }, [checkCompatibility]);
+
+  // Server may have been upgraded while the app was in the background.
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', state => {
+      if (state === 'active') {
+        checkCompatibility(true);
+      }
+    });
+    return () => sub.remove();
   }, [checkCompatibility]);
 
   if (configLoading) {
@@ -153,8 +178,8 @@ const AppWithConfig = () => {
         <UpdateRequiredScreen
           evaluation={compatibilityEvaluation}
           payload={compatibilityPayload}
-          appVersion={Config.APP_VERSION}
-          onRetry={checkCompatibility}
+          appVersion={installedVersion}
+          onRetry={() => checkCompatibility()}
           onChangeServer={resetConfig}
         />
       </PaperProvider>
@@ -164,7 +189,7 @@ const AppWithConfig = () => {
   return (
     <AuthProvider>
       <UserPreferencesProvider>
-        <AppContent />
+        <AppContent serverExpectsVersion={compatibilityEvaluation?.recommendedVersion} />
       </UserPreferencesProvider>
     </AuthProvider>
   );

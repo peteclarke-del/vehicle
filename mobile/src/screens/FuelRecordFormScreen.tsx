@@ -16,6 +16,7 @@ import {
 import {useNavigation, useRoute, RouteProp} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {useAuth} from '../contexts/AuthContext';
+import {useVehicles} from '../contexts/VehiclesContext';
 import {useSync} from '../contexts/SyncContext';
 import {MainStackParamList} from '../navigation/MainNavigator';
 import VehicleSelector from '../components/VehicleSelector';
@@ -56,6 +57,7 @@ const FuelRecordFormScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProps>();
   const {api} = useAuth();
+  const {refreshVehicles} = useVehicles();
   const {isOnline, addPendingChange} = useSync();
   
   const recordId = route.params?.recordId;
@@ -115,7 +117,7 @@ const FuelRecordFormScreen: React.FC = () => {
 
   const loadData = async () => {
     try {
-      const vehiclesRes = await api.get('/vehicles');
+      const vehiclesRes = await refreshVehicles().then(data => ({data}));
       setVehicles(vehiclesRes.data || []);
 
       if (isEditing) {

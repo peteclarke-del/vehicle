@@ -54,6 +54,7 @@ class SystemCheckControllerTest extends BaseWebTestCase
         $this->assertIsArray($responseData);
         $this->assertSame('0.96.0', $responseData['server']['releaseVersion'] ?? null);
         $this->assertSame('1.0.0', $responseData['mobile']['minimumSupportedVersion'] ?? null);
+        $this->assertSame('1.1.0', $responseData['mobile']['latestSupportedVersion'] ?? null);
         $this->assertSame(1, $responseData['compatibility']['apiCompatibilityVersion'] ?? null);
         $this->assertSame('8d148cf', $responseData['server']['compatibilityBaselineCommit'] ?? null);
     }

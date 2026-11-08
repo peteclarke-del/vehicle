@@ -1,4 +1,5 @@
 import React, {createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode} from 'react';
+import {AppState} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 import {useAuth} from './AuthContext';
@@ -108,8 +109,14 @@ export const SyncProvider: React.FC<SyncProviderProps> = ({children}) => {
         } catch (error: any) {
           console.error(`[Sync] Failed to sync change ${change.id}:`, error.message);
 
-          if (error.response?.status >= 400 && error.response?.status < 500) {
-            // Client error (4xx) - discard, no point retrying
+          const status: number | undefined = error.response?.status;
+          if (status === 401 || status === 403) {
+            // Not logged in (expired session) - keep the change unchanged and
+            // send it after the next login; never discard user edits for this.
+            updatedRetries[change.id] = change.retryCount || 0;
+          } else if (status && status >= 400 && status < 500 && status !== 408 && status !== 429) {
+            // Rejected by the server (validation, not found...) - retrying won't help
+            console.warn(`[Sync] Server rejected change ${change.id} (${status}) - discarding`);
             successfulIds.push(change.id);
             failedCount++;
           } else {
@@ -156,6 +163,11 @@ export const SyncProvider: React.FC<SyncProviderProps> = ({children}) => {
     }
   };
 
+  // Listeners registered once below must always call the latest doSync
+  // (it closes over the current api client / server URL).
+  const doSyncRef = useRef(doSync);
+  doSyncRef.current = doSync;
+
   // Monitor network connectivity
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener(state => {
@@ -166,7 +178,7 @@ export const SyncProvider: React.FC<SyncProviderProps> = ({children}) => {
         console.log('[Sync] Back online - auto-syncing pending changes');
         setTimeout(() => {
           if (pendingRef.current.length > 0) {
-            doSync();
+            doSyncRef.current();
           }
         }, 2000);
       }
@@ -188,6 +200,10 @@ export const SyncProvider: React.FC<SyncProviderProps> = ({children}) => {
           const parsed = JSON.parse(stored);
           setPendingChanges(parsed);
           pendingRef.current = parsed;
+          // Changes queued in a previous session: send them as soon as possible.
+          if (parsed.length > 0 && onlineRef.current && authRef.current) {
+            doSyncRef.current();
+          }
         }
 
         const syncTime = await AsyncStorage.getItem(SYNC_TIME_KEY);
@@ -205,9 +221,19 @@ export const SyncProvider: React.FC<SyncProviderProps> = ({children}) => {
   // Auto-sync when auth state changes and we're online with pending changes
   useEffect(() => {
     if (isOnline && isAuthenticated && pendingRef.current.length > 0 && !syncingRef.current) {
-      doSync();
+      doSyncRef.current();
     }
   }, [isAuthenticated, isOnline]);
+
+  // Back in the foreground: send anything still queued.
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', state => {
+      if (state === 'active' && pendingRef.current.length > 0) {
+        doSyncRef.current();
+      }
+    });
+    return () => sub.remove();
+  }, []);
 
   const addPendingChange = useCallback(async (
     change: Omit<PendingChange, 'id' | 'timestamp' | 'retryCount'>,
@@ -228,12 +254,12 @@ export const SyncProvider: React.FC<SyncProviderProps> = ({children}) => {
 
     // Try to sync immediately if online
     if (onlineRef.current && authRef.current && !syncingRef.current) {
-      setTimeout(() => doSync(), 500);
+      setTimeout(() => doSyncRef.current(), 500);
     }
   }, [persistChanges]);
 
   const syncNow = useCallback(async () => {
-    await doSync();
+    await doSyncRef.current();
   }, []);
 
   const clearPendingChanges = useCallback(async () => {

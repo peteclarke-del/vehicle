@@ -39,6 +39,8 @@ security:
         - { path: ^/api/login, roles: PUBLIC_ACCESS }
         - { path: ^/api/register, roles: PUBLIC_ACCESS }
         - { path: ^/api/system-check, roles: PUBLIC_ACCESS }
+        # Mobile app checks version compatibility before the user logs in
+        - { path: ^/api/app-compatibility, roles: PUBLIC_ACCESS }
         - { path: ^/api/auth/refresh, roles: PUBLIC_ACCESS }
         - { path: ^/api/reports/templates, roles: PUBLIC_ACCESS }
         - { path: ^/api/notifications/stream, roles: PUBLIC_ACCESS }

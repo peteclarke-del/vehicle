@@ -18,6 +18,8 @@ import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useAuth} from '../contexts/AuthContext';
+import {useRefreshOnFocus} from '../hooks/useRefreshOnFocus';
+import {useVehicles} from '../contexts/VehiclesContext';
 import {useSync} from '../contexts/SyncContext';
 import {useUserPreferences} from '../contexts/UserPreferencesContext';
 import {useVehicleSelection} from '../contexts/VehicleSelectionContext';
@@ -63,6 +65,7 @@ const ConsumablesScreen: React.FC = () => {
   const theme = useTheme();
   const navigation = useNavigation<NavigationProp>();
   const {api} = useAuth();
+  const {refreshVehicles} = useVehicles();
   const {isOnline} = useSync();
   const {preferences} = useUserPreferences();
 
@@ -89,7 +92,7 @@ const ConsumablesScreen: React.FC = () => {
       } catch (e) { /* cache miss is fine */ }
 
       const [vehiclesRes, consumablesRes] = await Promise.all([
-        api.get('/vehicles'),
+        refreshVehicles().then(data => ({data})),
         api.get('/consumables', {
           params: globalVehicleId !== 'all' ? {vehicleId: globalVehicleId} : {},
         }),
@@ -114,6 +117,7 @@ const ConsumablesScreen: React.FC = () => {
   useEffect(() => {
     loadData();
   }, [loadData]);
+  useRefreshOnFocus(loadData);
 
   useEffect(() => {
     let filtered = consumables;
