@@ -17,7 +17,7 @@ A React Native mobile application for Android that provides vehicle management o
 
 ## Prerequisites
 
-- Node.js 18 or higher
+- Node.js 22.13 or higher
 - Java Development Kit (JDK) 17
 - Android Studio with Android SDK
 - Android device or emulator (API 24+)
@@ -139,10 +139,24 @@ This method requires no local Android SDK installation:
 
 ```bash
 # From the project root directory
-docker compose -f docker-compose.mobile.yml up --build
+MOBILE_VERSION=1.1.1 docker compose -f docker-compose.mobile.yml up --build
 ```
 
-The APK will be output to `mobile/output/app-release.apk`
+The APK is written to `mobile/output/vehicle-manager-<version>.apk` with a
+`.sha256` beside it. The image matches the GitHub release workflow (Node 22,
+JDK 17, Gradle 9.4.1, Android SDK 37, NDK 27.1) and signs with the same key,
+so a local build installs over a release from GitHub.
+
+- `MOBILE_VERSION` – `X.Y.Z`; defaults to `version` in `package.json`.
+  Android refuses to install a lower version than the one on the phone.
+- `BUILD_VARIANT=debug` – debug build (`vehicle-manager-<version>-debug.apk`).
+- `RUN_TESTS=1` – run the Jest suite first.
+- Private release key: mount the keystore into the container and set
+  `ANDROID_KEYSTORE_FILE` (path inside the container),
+  `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`.
+
+Needs an x86_64 host with about 8 GB RAM (Android's build tools don't run
+on ARM, so not on a Raspberry Pi).
 
 ### Option 2: Local Build
 
@@ -178,6 +192,15 @@ The app updates itself from this repository's GitHub Releases. No Play Store is 
 - The first time, Android asks you to allow **Install unknown apps** for Vehicle Manager. Allow it, then tap *Download & install* again.
 - Android installs the update over the existing app and keeps your data. It only accepts an APK with the same package name and signing key and a higher version code.
 
+#### Server version check
+
+On launch and whenever the app returns to the foreground, it asks the server (`GET /api/app-compatibility`, no login needed) which app versions it expects:
+
+- **Older than `MOBILE_LATEST_APP_VERSION`:** the app asks the user to update. This is shown even if they chose *Later* for that release, and still explains the situation when the download isn't available. The app keeps working.
+- **Older than `MOBILE_MIN_APP_VERSION`:** the *Update required* screen blocks the app until it is updated.
+
+Both are set in the server's `backend/.env` (defaults: latest `1.1.0`, minimum `1.0.0`). After publishing a release, raise `MOBILE_LATEST_APP_VERSION` to it so existing installs are prompted. Raise `MOBILE_MIN_APP_VERSION` only when the server no longer works with older apps.
+
 #### Publishing a release
 
 Tag a commit and push the tag:
@@ -186,6 +209,8 @@ Tag a commit and push the tag:
 git tag mobile-v1.1.0
 git push origin mobile-v1.1.0
 ```
+
+Then set `MOBILE_LATEST_APP_VERSION=1.1.0` in the server's `backend/.env` and restart the PHP container so existing installs are asked to update (see *Server version check*).
 
 `.github/workflows/mobile-release.yml` runs the tests, builds the release APK with `versionName=1.1.0` and `versionCode=1001000`, and publishes it to the GitHub Release `mobile-v1.1.0` as `vehicle-manager-1.1.0.apk` (with a `.sha256`). You can also run the workflow manually from the Actions tab with a version. PRs that touch `mobile/` build and test the APK but publish nothing.
 

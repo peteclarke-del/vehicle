@@ -22,6 +22,7 @@ import {useNavigation, useRoute, RouteProp} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {useAuth} from '../contexts/AuthContext';
+import {useRefreshOnFocus} from '../hooks/useRefreshOnFocus';
 import {useUserPreferences} from '../contexts/UserPreferencesContext';
 import {formatCurrency, formatDate, formatMileage, convertDistance} from '../utils/formatters';
 import {MainStackParamList} from '../navigation/MainNavigator';
@@ -135,6 +136,7 @@ const VehicleDetailScreen: React.FC = () => {
   useEffect(() => {
     loadVehicle();
   }, [loadVehicle]);
+  useRefreshOnFocus(loadVehicle);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);

@@ -33,7 +33,6 @@
 #
 # =============================================================================
 
-version: '3.9'
 
 services:
   # =========================================================================
@@ -194,7 +193,9 @@ services:
       dockerfile: /mnt/data/docker/vehicle/docker/node/Dockerfile
       target: production
       args:
-        ENV_FILE: .env.demo
+        # Demo mode is set here rather than via the gitignored .env.demo, so
+        # a fresh clone builds the demo correctly.
+        REACT_APP_DEMO_MODE: "true"
     ports:
       - "${DEMO_FRONTEND_PORT:-3001}:80"
     networks:

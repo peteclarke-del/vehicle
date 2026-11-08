@@ -20,6 +20,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useNavigation} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {useAuth} from '../contexts/AuthContext';
+import {useRefreshOnFocus} from '../hooks/useRefreshOnFocus';
+import {useVehicles} from '../contexts/VehiclesContext';
 import {useSync} from '../contexts/SyncContext';
 import {useUserPreferences} from '../contexts/UserPreferencesContext';
 import {formatCurrency, formatDate, convertDistance} from '../utils/formatters';
@@ -43,6 +45,7 @@ const DashboardScreen: React.FC = () => {
   const theme = useTheme();
   const navigation = useNavigation<NavigationProp>();
   const {api} = useAuth();
+  const {refreshVehicles} = useVehicles();
   const {isOnline, pendingChanges, lastSyncTime} = useSync();
   const {preferences} = useUserPreferences();
 
@@ -95,7 +98,7 @@ const DashboardScreen: React.FC = () => {
       } catch (e) { /* cache miss is fine */ }
 
       const [vehiclesRes, totalsRes] = await Promise.all([
-        api.get('/vehicles'),
+        refreshVehicles().then(data => ({data})),
         api.get('/vehicles/totals').catch(() => ({data: null})),
       ]);
 
@@ -140,6 +143,7 @@ const DashboardScreen: React.FC = () => {
   useEffect(() => {
     loadDashboardData();
   }, [loadDashboardData]);
+  useRefreshOnFocus(loadDashboardData);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);

@@ -3,8 +3,14 @@ parameters:
     app.release_version: '0.96.0'
     app.internal_version: '2026.05.19+server.compat.1'
     app.mobile_api_compatibility_version: 1
-    app.mobile_min_supported_version: '1.0.0'
-    app.mobile_latest_supported_version: '1.0.0'
+    # Mobile app versions this server expects. Older than "latest" -> the app
+    # asks the user to update (non-blocking); older than "min" -> the app is
+    # blocked until updated. Override with MOBILE_LATEST_APP_VERSION /
+    # MOBILE_MIN_APP_VERSION in .env (e.g. right after publishing a release).
+    env(MOBILE_MIN_APP_VERSION): '1.0.0'
+    env(MOBILE_LATEST_APP_VERSION): '1.1.0'
+    app.mobile_min_supported_version: '%env(MOBILE_MIN_APP_VERSION)%'
+    app.mobile_latest_supported_version: '%env(MOBILE_LATEST_APP_VERSION)%'
     app.mobile_min_supported_server_release_version: '0.96.0'
     app.mobile_compatibility_baseline_commit: '8d148cf'
     app.mobile_compatibility_baseline_label: 'mobile stock items + consolidated migrations'

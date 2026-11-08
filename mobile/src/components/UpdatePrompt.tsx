@@ -6,6 +6,7 @@ import Config from '../config';
 import {
   AvailableUpdate,
   checkForUpdate,
+  compareVersions,
   dismissVersion,
   getDismissedVersion,
   getInstalledVersion,
@@ -13,42 +14,66 @@ import {
   isUpdaterAvailable,
 } from '../services/appUpdate';
 
-/** Silent update check on launch; prompts once per new version. */
-const UpdatePrompt = () => {
+interface Props {
+  /**
+   * App version the connected server expects. When the installed app is
+   * older, the prompt is shown even if the user dismissed that release before.
+   */
+  serverExpectsVersion?: string;
+}
+
+/**
+ * Update check on launch (and when the server reports a newer expected app
+ * version); prompts once per new release unless the server needs it.
+ */
+const UpdatePrompt = ({serverExpectsVersion}: Props) => {
   const {t} = useTranslation();
   const [update, setUpdate] = useState<AvailableUpdate | null>(null);
+  const [installedVersion, setInstalledVersion] = useState<string | null>(null);
+  // Server wants a newer app but no downloadable release was found.
+  const [serverOnly, setServerOnly] = useState(false);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (!isUpdaterAvailable()) {
-      return;
-    }
     let cancelled = false;
     (async () => {
-      try {
-        const installed = await getInstalledVersion(Config.APP_VERSION);
-        const found = await checkForUpdate(installed);
-        if (!found || cancelled) {
-          return;
+      const installed = await getInstalledVersion(Config.APP_VERSION);
+      if (cancelled) {
+        return;
+      }
+      setInstalledVersion(installed);
+      const neededByServer = !!serverExpectsVersion
+        && compareVersions(installed, serverExpectsVersion) < 0;
+      let found: AvailableUpdate | null = null;
+      if (isUpdaterAvailable()) {
+        try {
+          found = await checkForUpdate(installed);
+        } catch {
+          // offline or rate-limited: try again next launch
         }
-        if ((await getDismissedVersion()) === found.version) {
-          return;
-        }
+      }
+      if (cancelled) {
+        return;
+      }
+      if (found && (neededByServer || (await getDismissedVersion()) !== found.version)) {
         setUpdate(found);
-      } catch {
-        // offline or rate-limited: try again next launch
+        setServerOnly(false);
+      } else if (neededByServer) {
+        setUpdate(null);
+        setServerOnly(true);
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [serverExpectsVersion]);
 
   const later = useCallback(async () => {
     if (update) {
       await dismissVersion(update.version);
     }
     setUpdate(null);
+    setServerOnly(false);
   }, [update]);
 
   const install = useCallback(async () => {
@@ -70,24 +95,42 @@ const UpdatePrompt = () => {
     }
   }, [update, t]);
 
-  if (!update) {
+  const neededByServer = !!serverExpectsVersion && !!installedVersion
+    && compareVersions(installedVersion, serverExpectsVersion) < 0;
+
+  if (!update && !serverOnly) {
     return null;
   }
 
   return (
     <Portal>
       <Dialog visible onDismiss={later}>
-        <Dialog.Title>{t('update.available', {version: update.version})}</Dialog.Title>
+        <Dialog.Title>
+          {neededByServer
+            ? t('update.serverNewerTitle')
+            : t('update.available', {version: update?.version})}
+        </Dialog.Title>
         <Dialog.Content>
-          <Text variant="bodyMedium" numberOfLines={12}>
-            {update.notes || t('update.noNotes')}
-          </Text>
+          {neededByServer ? (
+            <Text variant="bodyMedium" style={{marginBottom: 8}}>
+              {t('update.serverNewer', {installed: installedVersion, expected: serverExpectsVersion})}
+            </Text>
+          ) : null}
+          {update ? (
+            <Text variant="bodyMedium" numberOfLines={12}>
+              {update.notes || t('update.noNotes')}
+            </Text>
+          ) : (
+            <Text variant="bodyMedium">{t('update.serverNewerNoDownload')}</Text>
+          )}
         </Dialog.Content>
         <Dialog.Actions>
           <Button onPress={later} disabled={busy}>{t('update.later')}</Button>
-          <Button mode="contained" onPress={install} loading={busy} disabled={busy}>
-            {t('update.install')}
-          </Button>
+          {update ? (
+            <Button mode="contained" onPress={install} loading={busy} disabled={busy}>
+              {t('update.install')}
+            </Button>
+          ) : null}
         </Dialog.Actions>
       </Dialog>
     </Portal>

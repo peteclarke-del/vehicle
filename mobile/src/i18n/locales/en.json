@@ -179,6 +179,9 @@
     "permissionNeeded": "Allow \"Install unknown apps\" for Vehicle Manager in the settings page that just opened, then tap Download & install again.",
     "failed": "Update failed: {{error}}",
     "checkFailed": "Couldn't check for updates: {{error}}",
-    "unsupported": "Updates are only available on Android."
+    "unsupported": "Updates are only available on Android.",
+    "serverNewerTitle": "Please update the app",
+    "serverNewer": "Your server is running a newer release and expects app version {{expected}}. You have {{installed}}. Some features may not work until you update.",
+    "serverNewerNoDownload": "The update couldn't be downloaded right now. Use Settings → Check for updates later, or ask your administrator for the latest app."
   }
 }

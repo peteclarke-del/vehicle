@@ -1,5 +1,5 @@
 # Development stage - for hot reload and development
-FROM node:20-alpine AS development
+FROM node:22-alpine AS development
 
 WORKDIR /app
 
@@ -17,7 +17,7 @@ EXPOSE 3000
 CMD ["npm", "start"]
 
 # Build stage - creates optimized production build
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 
 WORKDIR /app
 
@@ -30,23 +30,31 @@ RUN npm ci --prefer-offline --no-audit
 # Copy source code
 COPY . .
 
-# Choose which .env file to bake into the production bundle.
-# CRA reads .env.production.local with HIGHER priority than .env,
-# so any values in the chosen file override the defaults in .env.
-#
-#   .env       — production defaults (password policy, API at /api)
-#   .env.demo  — demo overrides      (demo mode ON, same policy)
-#
-# Compose files pass the appropriate file via the ENV_FILE build arg.
+# Settings baked into the production bundle, highest priority first:
+#   1. Build args below (set by the compose files, e.g. demo mode)
+#   2. ENV_FILE - an extra env file copied to .env.production.local
+#   3. frontend/.env - local customisation (gitignored)
+#   4. frontend/.env.example - tracked defaults, used when .env is missing
+#      (fresh clone), so the API path and password policy are never unset.
 ARG ENV_FILE
-RUN if [ -n "$ENV_FILE" ]; then \
+ARG REACT_APP_API_URL
+ARG REACT_APP_DEMO_MODE
+ARG REACT_APP_PASSWORD_POLICY
+RUN set -e; \
+    for v in REACT_APP_API_URL REACT_APP_DEMO_MODE REACT_APP_PASSWORD_POLICY; do \
+      eval "[ -n \"\${$v}\" ]" || unset "$v"; \
+    done; \
+    if [ ! -f .env ] && [ -f .env.example ]; then \
+      cp .env.example .env; echo "No frontend/.env - using .env.example defaults"; \
+    fi; \
+    if [ -n "$ENV_FILE" ]; then \
       if [ -f "$ENV_FILE" ]; then \
-        cp "$ENV_FILE" .env.production.local; \
-        echo "Using $ENV_FILE as .env.production.local"; \
+        cp "$ENV_FILE" .env.production.local; echo "Using $ENV_FILE as .env.production.local"; \
       else \
-        echo "WARNING: ENV_FILE='$ENV_FILE' not found — using .env defaults"; \
+        echo "WARNING: ENV_FILE='$ENV_FILE' not found - using .env defaults"; \
       fi; \
-    fi && npm run build
+    fi; \
+    npm run build
 
 # Production stage - serve optimized build with nginx
 FROM nginx:alpine AS production

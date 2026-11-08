@@ -1860,6 +1860,27 @@ Detailed system status check.
 
 ---
 
+#### GET /api/app-compatibility
+
+Versions the server expects from the mobile app. No authentication required (the app checks it before login).
+
+**Response (200, abridged):**
+```json
+{
+  "server": { "releaseVersion": "0.96.0" },
+  "mobile": {
+    "minimumSupportedVersion": "1.0.0",
+    "latestSupportedVersion": "1.1.0",
+    "minimumSupportedServerReleaseVersion": "0.96.0"
+  },
+  "compatibility": { "apiCompatibilityVersion": 1 }
+}
+```
+
+An app older than `latestSupportedVersion` asks the user to update; older than `minimumSupportedVersion` it is blocked until updated. Set with `MOBILE_LATEST_APP_VERSION` / `MOBILE_MIN_APP_VERSION` in `backend/.env`.
+
+---
+
 #### GET /api/vehicle-types
 
 List available vehicle types.

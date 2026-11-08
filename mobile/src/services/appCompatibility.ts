@@ -19,6 +19,14 @@ export interface AppCompatibilityPayload {
 export interface AppCompatibilityEvaluation {
   isCompatible: boolean;
   requiresAppUpdate: boolean;
+  /**
+   * The app still works with this server but is older than the version the
+   * server was released with (mobile.latestSupportedVersion) - prompt the
+   * user to update, without blocking.
+   */
+  updateRecommended?: boolean;
+  /** The app version the server expects, when updateRecommended. */
+  recommendedVersion?: string;
   requiresServerUpdate: boolean;
   reasons: string[];
 }
@@ -89,10 +97,17 @@ export const evaluateAppCompatibility = (
     );
   }
 
+  const latestMobileVersion = payload.mobile?.latestSupportedVersion;
+  const updateRecommended = !requiresAppUpdate
+    && !!latestMobileVersion
+    && compareVersions(appVersion, latestMobileVersion) < 0;
+
   return {
     isCompatible: reasons.length === 0,
     requiresAppUpdate,
     requiresServerUpdate,
+    updateRecommended,
+    recommendedVersion: updateRecommended ? latestMobileVersion : undefined,
     reasons,
   };
 };
